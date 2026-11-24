@@ -784,7 +784,7 @@ emoji_picker :: proc(ui: ^Ui_State) {
 				sticker_control("PickerGifs", 0, tr("GIFs"), ui.gif_tab ? .Selected : .Normal)
 			}
 			if ui.gif_tab {gif_picker(ui); return}
-			if ui.sticker_tab {sticker_picker(ui); return}
+			if ui.sticker_tab {sticker_picker(ui, {width - 24, height}); return}
 		}
 		eyebrow(tr("RECENT"))
 		if nendo.box(nendo.id("PkRecentRow"))(

@@ -181,21 +181,34 @@ handle_shell_foreground :: proc(ui: ^Ui_State, captured: bool) -> bool {
 }
 
 build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
-	commands := build_layout_pass(ui, frame_time)
-	if layout_overflow || ui.page != .Chats {
-		return commands
+	anchored_reveal := ui.sticker_reveal && single_pane()
+	anchor_id: nendo.Id
+	anchor: nendo.Element_Data
+	if anchored_reveal {
+		anchor_id = nendo.id("ComposeBox")
+		anchor = nendo.element(anchor_id)
 	}
-	// In a short window, the inbox can't clamp its outer clip until the
-	// rail's full height is known. Redo the windowing before drawing it.
-	rail := nendo.scroll(nendo.id("RailContent"))
-	if rail.found && nendo.element(nendo.id("ChatList")).found {
-		bottom := -max(0, rail.content.height - rail.viewport.height)
-		if rail.clip.offset.y < bottom {
-			rail.position.y = clamp(rail.position.y, bottom, 0)
-			return build_layout_pass(ui, 0)
+	commands := build_layout_pass(ui, frame_time)
+	if layout_overflow {return commands}
+	reflow := false
+	if ui.page == .Chats {
+		// The inbox needs the rail's full height before clamping its outer clip.
+		rail := nendo.scroll(nendo.id("RailContent"))
+		if rail.found && nendo.element(nendo.id("ChatList")).found {
+			bottom := -max(0, rail.content.height - rail.viewport.height)
+			if rail.clip.offset.y < bottom {
+				rail.position.y = clamp(rail.position.y, bottom, 0)
+				reflow = true
+			}
 		}
 	}
-	return commands
+	// The floating picker reads the composer rectangle from the last pass.
+	if anchored_reveal && anchor != nendo.element(anchor_id) {
+		commands = build_layout_pass(ui, 0)
+		if layout_overflow {return commands}
+		reflow = false
+	}
+	return sticker_resolve_scroll(ui) || reflow ? build_layout_pass(ui, 0) : commands
 }
 
 @(private = "file")

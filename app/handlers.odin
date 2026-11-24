@@ -1341,6 +1341,7 @@ picker_commit_recents :: proc(ui: ^Ui_State) {
 close_picker :: proc(ui: ^Ui_State) {
 	picker_commit_recents(ui)
 	ui.picker_open = false
+	ui.sticker_reveal = false
 	ui.focus = .Compose
 	if ui.picker_mode == .Group_Image {
 		ui.focus = ui.gemoji_dest == .New_Chat ? .NC_Name : .Invite

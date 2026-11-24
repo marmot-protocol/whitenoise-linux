@@ -211,6 +211,8 @@ The loading message and progress bar stay above the scrollable filters and resul
 
 The destination picker passes fixed-height rows to nendo for forwarding, theme sharing, and adding a peer to a group. It reads group IDs from the painted rows before rebuilding the list. A release acts only on the chat that was pressed, even if a live refresh changed its index.
 
+The composer sticker grid mounts fixed-height rows near the viewport. Arrow keys scroll to the focused row by its position in the filtered grid, even when the row has not been built.
+
 | Path | What's there |
 | --- | --- |
 | `app/` | The whole app: panes, layout, state, workers, vault, media viewers |
