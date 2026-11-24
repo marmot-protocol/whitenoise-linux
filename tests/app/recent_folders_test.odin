@@ -2,9 +2,11 @@ package main
 
 import marmot "../marmot"
 import "base:runtime"
+import "core:fmt"
 import "core:os"
 import "core:strings"
 import "core:testing"
+import "core:text/edit"
 import "nendo"
 import rl "sdlrl"
 
@@ -154,4 +156,68 @@ recent_folder_filters :: proc(t: ^testing.T) {
 	testing.expect(t, !ui.prefs.recent_chats)
 	testing.expect(t, !nendo.element(nendo.id("FolderPill", 0)).found)
 	testing.expect(t, nendo.element(nendo.id("FolderHeader", 0)).found)
+
+	first_filler := len(ui.chats)
+	for i in 0 ..< 64 {
+		append(
+			&ui.chats,
+			Chat_Row_Ui{group_id = fmt.aprintf("filler-%d", i), title = "Conversation"},
+		)
+	}
+	rl.SetWindowSize(1280, 420)
+	nendo.set_dimensions({1280, 420})
+	edit.init(&ui.ed, context.allocator, context.allocator)
+	defer edit.destroy(&ui.ed)
+	defer {
+		search_stop()
+		for chat in ui.chats[first_filler:] {delete(chat.group_id)}
+		delete(ui.chats)
+		delete(ui.sidebar_filter)
+		delete(ui.filter_hits)
+		text_drag = nil
+	}
+	client: marmot.Client // Search is queued but workers do not run in this fixture.
+	owner := nendo.id("RailContent")
+	for query in ([]string{"newer", "no such chat", "conversation"}) {
+		if rail := nendo.scroll(owner); rail.found {rail.position.y = 0}
+		frame(&ui)
+		filter := nendo.element(nendo.id("FilterBox")).rect
+		nendo.set_pointer({filter.x + 8, filter.y + 8}, .Down)
+		forced_press = true
+		handle_chat(&ui, &client)
+		forced_press = false
+		text_drag = nil
+		testing.expect_value(t, ui.focus, Focus.Filter)
+		rail := nendo.scroll(owner)
+		if !testing.expect(t, rail.found && rail.content.height > rail.viewport.height) {return}
+		keep_scroll := query == "conversation"
+		offset := (rail.viewport.height - rail.content.height) * (keep_scroll ? 0.5 : 1)
+		rail.position.y = offset
+		frame(&ui)
+		testing.expect(t, !nendo.element(nendo.id("ChatRow", 2)).found)
+
+		for c in query {rl.PushChar(c)}
+		handle_chat(&ui, &client)
+		testing.expect_value(t, string(ui.sidebar_filter[:]), query)
+		nendo.update_scroll(.Off, {}, 1.0 / 60)
+		frame(&ui)
+		if keep_scroll {
+			testing.expect_value(t, nendo.scroll(owner).clip.offset.y, offset)
+		} else {
+			id := query == "newer" ? nendo.id("ChatRow", 2) : nendo.id("ChatListNoMatch")
+			result := nendo.element(id)
+			clip := nendo.element(owner).rect
+			testing.expect(
+				t,
+				result.found &&
+				result.rect.y >= clip.y &&
+				result.rect.y + result.rect.height <= clip.y + clip.height,
+				query,
+			)
+		}
+
+		rl.PushKey(.ESCAPE, true)
+		handle_chat(&ui, &client)
+		rl.PushKey(.ESCAPE, false)
+	}
 }

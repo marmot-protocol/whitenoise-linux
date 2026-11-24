@@ -202,6 +202,8 @@ The timeline measures messages with their preceding markers and passes measured 
 
 The sidebar uses fixed rows for recent chats and one measured row per folder in the grouped view. An expanded folder contains its own fixed run and inherits the sidebar's scroll position. Keyboard cycling keeps the full order of expanded chats, including rows nendo did not build. The contacts list counts a letter heading as part of its first contact's row.
 
+In short windows, `RailContent` scrolls both the chat list and its controls. If filtering puts that offset past the new end, `build_layout` clamps it and lays out the frame again before drawing. An offset still in range stays put.
+
 | Path | What's there |
 | --- | --- |
 | `app/` | The whole app: panes, layout, state, workers, vault, media viewers |

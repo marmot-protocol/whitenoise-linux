@@ -181,6 +181,25 @@ handle_shell_foreground :: proc(ui: ^Ui_State, captured: bool) -> bool {
 }
 
 build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
+	commands := build_layout_pass(ui, frame_time)
+	if layout_overflow || ui.page != .Chats {
+		return commands
+	}
+	// In a short window, the inbox can't clamp its outer clip until the
+	// rail's full height is known. Redo the windowing before drawing it.
+	rail := nendo.scroll(nendo.id("RailContent"))
+	if rail.found && nendo.element(nendo.id("ChatList")).found {
+		bottom := -max(0, rail.content.height - rail.viewport.height)
+		if rail.clip.offset.y < bottom {
+			rail.position.y = clamp(rail.position.y, bottom, 0)
+			return build_layout_pass(ui, 0)
+		}
+	}
+	return commands
+}
+
+@(private = "file")
+build_layout_pass :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 	tab_scroll_save(ui)
 	ui.timeline_entries, ui.timeline_root = nil, -1
 	defer {ui.timeline_entries, ui.timeline_root = nil, -1}
