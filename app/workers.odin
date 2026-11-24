@@ -454,8 +454,6 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 
 @(private)
 live_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, job: ^Chat_List_Work) {
-	selected_group: string
-	if ui.selected >= 0 {selected_group = ui.chats[ui.selected].group_id}
 	// Unread counts before the reload, to spot the chats that gained
 	// messages for desktop notifications.
 	old_unread := make(map[string]u64, context.temp_allocator)
@@ -463,19 +461,12 @@ live_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, job: ^Chat_List_Work) 
 		old_unread[chat.group_id] = chat.unread
 	}
 	chat_list_apply(ui, job)
-	ui.selected = -1
-	for chat, i in ui.chats {
-		if chat.group_id == selected_group {
-			ui.selected = i
-			break
-		}
-	}
 	focused := rl.IsWindowFocused()
-	for chat in ui.chats {
+	for chat, i in ui.chats {
 		gate := Notify_Gate {
 			enabled = ui.prefs.notify_desktop,
 			focused = focused,
-			viewing = chat.group_id == selected_group,
+			viewing = i == ui.selected,
 			muted   = chat.muted,
 			from_me = chat.last_mine,
 			blocked = chat.last_blocked,

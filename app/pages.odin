@@ -700,7 +700,13 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if clicked("SignOutBtn") {
-		confirm_ask(ui, .Sign_Out, ui.account_ref, account_label(ui, ui.account_ref), account_local(ui) ? 0 : 1)
+		confirm_ask(
+			ui,
+			.Sign_Out,
+			ui.account_ref,
+			account_label(ui, ui.account_ref),
+			account_local(ui) ? 0 : 1,
+		)
 	}
 	if clicked("SignOutWipeBtn") {
 		profile := device_current(ui)
@@ -868,7 +874,11 @@ accounts_adopt :: proc(
 		}
 	}
 	old, old_signed_out := ui.accounts, ui.signed_out_accounts
-	previous := make(map[string]^Account_Row_Ui, len(old) + len(old_signed_out), context.temp_allocator)
+	previous := make(
+		map[string]^Account_Row_Ui,
+		len(old) + len(old_signed_out),
+		context.temp_allocator,
+	)
 	for &row in old {previous[row.id_hex] = &row}
 	for &row in old_signed_out {previous[row.id_hex] = &row}
 	ui.accounts, ui.signed_out_accounts = {}, {}
@@ -1870,9 +1880,12 @@ chat_list_apply :: proc(ui: ^Ui_State, job: ^Chat_List_Work) {
 	}
 	rows := job.rows
 	if rows == nil {return}
-	search_group: string
-	if ui.selected >= 0 && ui.selected < len(ui.chats) && ui.chats[ui.selected].search_only {
-		search_group = ui.chats[ui.selected].group_id
+	selected_group: string
+	search_only := false
+	if ui.selected >= 0 && ui.selected < len(ui.chats) {
+		selected := &ui.chats[ui.selected]
+		selected_group = selected.group_id
+		search_only = selected.search_only
 	}
 	fresh := make([dynamic]Chat_Row_Ui, 0, int(rows.rows_len))
 	for i in 0 ..< rows.rows_len {
@@ -1889,10 +1902,17 @@ chat_list_apply :: proc(ui: ^Ui_State, job: ^Chat_List_Work) {
 		)
 	}
 	chats_replace(&ui.chats, fresh)
-	if search_group != "" {
-		gs_keep_open_chat(ui, search_group)
-		ui.selected = -1
-		for chat, i in ui.chats {if chat.group_id == search_group {ui.selected = i; break}}
+	if search_only {
+		gs_keep_open_chat(ui, selected_group)
+	}
+	ui.selected = -1
+	if selected_group != "" {
+		for chat, i in ui.chats {
+			if chat.group_id == selected_group {
+				ui.selected = i
+				break
+			}
+		}
 	}
 	ui.my_pic_url = profile_info(job.client, string(job.account)).pic_url
 	queue_group_pics(ui, job.client)
