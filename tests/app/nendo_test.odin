@@ -505,3 +505,106 @@ layout_wrap_row_aspect :: proc(t: ^testing.T) {
 	testing.expect_value(t, nendo.element(first).rect, nendo.Rect{10, 10, 80, 40})
 	testing.expect_value(t, nendo.element(last).rect, nendo.Rect{96, 30, 80, 20})
 }
+
+@(test)
+layout_percent_clamps_to_cap :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	nendo.set_context(nil)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.init(memory, {800, 600})
+	anchor, menu, sibling := nendo.id("Anchor"), nendo.id("Menu"), nendo.id("Sibling")
+	for trial in ([2]struct {
+			width, anchor_w, menu_w, sibling_w: f32,
+		}{{180, 76, 76, 76}, {400, 120, 100, 252}}) {
+		nendo.begin()
+		if nendo.box()(
+		{
+			width = nendo.fixed(trial.width),
+			height = nendo.fixed(100),
+			padding = nendo.pad(10),
+			gap = 8,
+		},
+		) {
+			if nendo.box(anchor)(
+			{
+				width = nendo.percent(0.5, max = 120),
+				height = nendo.percent(0.75, max = 60),
+				padding = nendo.pad(5),
+			},
+			) {}
+			if nendo.box(sibling)({width = nendo.grow(), height = nendo.fixed(30)}) {}
+			if nendo.box(menu)(
+			{
+				width = nendo.percent(1, max = 100),
+				height = nendo.percent(0.5, max = 12),
+				floating = {
+					attach_to = .Element,
+					parent = anchor.id,
+					attach = {parent = .Left_Bottom},
+				},
+			},
+			) {}
+		}
+		nendo.end(0)
+		testing.expect_value(t, nendo.element(anchor).rect, nendo.Rect{10, 10, trial.anchor_w, 60})
+		testing.expect_value(t, nendo.element(menu).rect, nendo.Rect{10, 70, trial.menu_w, 12})
+		testing.expect_value(
+			t,
+			nendo.element(sibling).rect,
+			nendo.Rect{18 + trial.anchor_w, 10, trial.sibling_w, 30},
+		)
+	}
+
+	fit_row, tall_contents := nendo.id("FitRow"), nendo.id("TallContents")
+	square, short_square := nendo.id("Square"), nendo.id("ShortSquare")
+	wrap_child := nendo.id("WrapHeight")
+	nendo.begin()
+	if nendo.box(fit_row)({width = nendo.fixed(100)}) {
+		if nendo.box()({height = nendo.fixed(20)}) {}
+		if nendo.box(tall_contents)({height = nendo.percent(0.5, max = 1000)}) {
+			if nendo.box()({height = nendo.fixed(80)}) {}
+		}
+	}
+	if nendo.box()({width = nendo.fixed(200), height = nendo.fixed(200)}) {
+		if nendo.box(square)({height = nendo.percent(0.5, max = 30), aspect = 1}) {}
+		if nendo.box()(
+		{
+			width = nendo.fixed(100),
+			height = nendo.percent(0.25),
+			direction = .Wrap_Row,
+			aspect = 2,
+		},
+		) {
+			if nendo.box(wrap_child)(
+			{width = nendo.fixed(50), height = nendo.percent(0.5, max = 24)},
+			) {}
+		}
+	}
+	if nendo.box()({width = nendo.fixed(200), height = nendo.fixed(40)}) {
+		if nendo.box(short_square)({width = nendo.percent(0.5, max = 70), aspect = 1}) {}
+	}
+	nendo.end(0)
+	testing.expect_value(t, nendo.element(fit_row).rect.height, 20)
+	testing.expect_value(t, nendo.element(tall_contents).rect.height, 10)
+	testing.expect_value(t, nendo.element(square).rect, nendo.Rect{100, 0, 30, 30})
+	testing.expect_value(t, nendo.element(wrap_child).rect.height, 24)
+	testing.expect_value(t, nendo.element(short_square).rect, nendo.Rect{300, 0, 40, 40})
+
+	for width in ([2]f32{100, 80}) {
+		nendo.begin()
+		if nendo.box()({width = nendo.fixed(width), direction = .Wrap_Row, gap = 8}) {
+			for i in 0 ..< 2 {
+				if nendo.box(nendo.id("WrappedPercent", u32(i)))(
+				{width = nendo.percent(0.5, max = 46), height = nendo.fixed(20)},
+				) {}
+			}
+		}
+		nendo.end(0)
+		last := nendo.element(nendo.id("WrappedPercent", 1)).rect
+		want := width == 100 ? nendo.Rect{54, 0, 46, 20} : nendo.Rect{0, 28, 40, 20}
+		testing.expect_value(t, last, want)
+	}
+}

@@ -245,6 +245,9 @@ group_files_layout :: proc(t: ^testing.T) {
 		testing.expect(t, abs(nendo.element(nendo.id("GroupFilesList")).rect.y - list_y) <= 1)
 		testing.expect(t, nendo.element(nendo.id("GroupFilesOption", 1)).found)
 		menu := nendo.element(nendo.id("GroupFilesOptions")).rect
+		trigger := nendo.element(nendo.id("GroupFilesFilter", u32(Group_File_Menu.Sender))).rect
+		testing.expect_value(t, menu.x, trigger.x)
+		testing.expect_value(t, menu.width, trigger.width)
 		testing.expect(t, menu.x >= 0 && menu.x + menu.width <= width)
 		ui.group_files_menu = .None
 	}

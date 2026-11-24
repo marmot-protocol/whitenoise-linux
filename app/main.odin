@@ -206,6 +206,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 	settings_full := settings_workspace_visible(ui) && !settings_float
 	page := shell_page(ui)
 	page_backdrop := wash_payload()
+	LOGIN_MARGIN :: 12
 
 	if nendo.box(nendo.id("Root"))(
 	{
@@ -223,7 +224,12 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 		// no status bar).
 		if !logged_in {
 			if nendo.box(nendo.id("LoginCanvas"))(
-			{width = nendo.grow(), height = nendo.grow(), align = {x = .Center, y = .Center}},
+			{
+				width = nendo.grow(),
+				height = nendo.grow(),
+				padding = {left = LOGIN_MARGIN, right = LOGIN_MARGIN},
+				align = {x = .Center, y = .Center},
+			},
 			) {
 				login_pane(ui)
 			}
@@ -293,6 +299,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 								width = nendo.grow(),
 								height = nendo.grow(),
 								direction = .Column,
+								padding = {left = LOGIN_MARGIN, right = LOGIN_MARGIN},
 								align = {x = .Center, y = .Center},
 								gap = 12,
 							},

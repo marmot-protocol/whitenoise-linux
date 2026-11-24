@@ -175,7 +175,7 @@ login_pane :: proc(ui: ^Ui_State) {
 	first_account := len(ui.accounts) == 0 && !ui.add_account_open
 	if nendo.box(nendo.id("LoginCard"))(
 	{
-		width = nendo.grow(max = fit_w(first_account && !pairing ? 480 : 660)),
+		width = nendo.percent(1, max = first_account && !pairing ? 480 : 660),
 		height = nendo.fit(max = modal_h(1200)),
 		direction = .Column,
 		padding = nendo.pad(

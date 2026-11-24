@@ -504,10 +504,14 @@ get_hash_map_item :: proc(id: u32) -> ^Layout_Element_Hash_Map_Item {
 @(private)
 update_aspect_ratio_box :: proc(layout_element: ^Layout_Element) {
 	if layout_element.config.aspect != 0 {
-		if layout_element.dimensions.width == 0 && layout_element.dimensions.height != 0 {
+		if layout_element.config.width.kind != .Percent &&
+		   layout_element.dimensions.width == 0 &&
+		   layout_element.dimensions.height != 0 {
 			layout_element.dimensions.width =
 				layout_element.dimensions.height * layout_element.config.aspect
-		} else if layout_element.dimensions.width != 0 && layout_element.dimensions.height == 0 {
+		} else if layout_element.config.height.kind != .Percent &&
+		   layout_element.dimensions.width != 0 &&
+		   layout_element.dimensions.height == 0 {
 			layout_element.dimensions.height =
 				layout_element.dimensions.width * (1 / layout_element.config.aspect)
 		}
@@ -652,6 +656,7 @@ close_element :: proc() {
 		)
 	} else {
 		open_layout_element.dimensions.width = 0
+		open_layout_element.min_dimensions.width = 0
 	}
 
 	// Clamp element min and max height to the values configured in the layout
@@ -669,6 +674,7 @@ close_element :: proc() {
 		)
 	} else {
 		open_layout_element.dimensions.height = 0
+		open_layout_element.min_dimensions.height = 0
 	}
 
 	update_aspect_ratio_box(open_layout_element)

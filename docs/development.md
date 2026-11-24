@@ -174,7 +174,9 @@ It reads flat by intent. The layout is immediate-mode: every frame rebuilds the 
 
 For an auto-fit grid, set `width = nendo.grow()`, `gap`, and `grid = {min_cell_width = 120, row_height = 80}` on a box. Declare the tiles as direct children without setting their width or height. Nendo uses the allocated inner width to choose the column count and size the tiles. The gap applies on both axes, and a partial row keeps the same column widths as the full rows.
 
-For buttons or chips of different widths, set `direction = .Wrap_Row`. Nendo keeps children in declaration order and starts a new line when the next child would exceed the allocated inner width. `gap` applies between items and between lines. `align.x` aligns each line, and `align.y` aligns items within their line. Items do not grow to absorb gaps in a line. Use a fixed-height or aspect-ratio container for items with percentage heights.
+For buttons or chips of different widths, set `direction = .Wrap_Row`. Nendo keeps children in declaration order and starts a new line when the next child would exceed the allocated inner width. `gap` applies between items and between lines. `align.x` aligns each line, and `align.y` aligns items within their line. Items do not grow to absorb gaps in a line. For items with percentage heights, give the container a fixed height, percentage height, or aspect ratio.
+
+Use `nendo.percent(1, max = 480)` to fill the parent up to a cap. A row or column subtracts padding and any gaps on the sizing axis before applying the percentage. A wrapping row applies the percentage to its padded width before packing items with gaps. A floating box uses the full size of its anchor, so `nendo.percent(1)` makes a menu as wide as its trigger. Use `nendo.grow(max = 480)` to share leftover space with siblings.
 
 | Path | What's there |
 | --- | --- |

@@ -77,8 +77,8 @@ fixed :: proc(size: f32) -> Size {
 	return Size{min = size, max = size, kind = .Fixed}
 }
 
-percent :: proc(p: f32) -> Size {
-	return Size{percent = p, kind = .Percent}
+percent :: proc(p: f32, max: f32 = 0) -> Size {
+	return Size{percent = p, max = max, kind = .Percent}
 }
 
 @(private)

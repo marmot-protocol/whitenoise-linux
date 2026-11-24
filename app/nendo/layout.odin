@@ -29,6 +29,12 @@ grid_content_height :: proc(element: ^Layout_Element) -> f32 {
 }
 
 @(private)
+resolve_percent :: proc(size: Size, available: f32) -> f32 {
+	length := cmax(f32(0), available) * size.percent
+	return size.max > 0 ? cmin(length, size.max) : length
+}
+
+@(private)
 size_wrapped_item :: proc(child: ^Layout_Element, inner_width: f32) {
 	if child.is_text_element {
 		if child.text_config.wrap == .Words {
@@ -47,13 +53,21 @@ size_wrapped_item :: proc(child: ^Layout_Element, inner_width: f32) {
 			cmin(child.dimensions.width, inner_width),
 		)
 	case .Percent:
-		child.dimensions.width = inner_width * box.width.percent
+		child.dimensions.width = resolve_percent(box.width, inner_width)
 	case .Fixed:
 	}
-	if box.aspect > 0 && .Height not_in child.animated_size {
+	if box.aspect > 0 && box.height.kind != .Percent && .Height not_in child.animated_size {
 		child.dimensions.height = child.dimensions.width / box.aspect
 		box.height = fixed(child.dimensions.height)
 	}
+}
+
+@(private)
+wrap_item_height :: proc(child: ^Layout_Element, inner_height: f32) -> f32 {
+	if !child.is_text_element && child.config.height.kind == .Percent {
+		child.dimensions.height = resolve_percent(child.config.height, inner_height)
+	}
+	return child.dimensions.height
 }
 
 @(private)
@@ -76,10 +90,7 @@ measure_wrap_rows :: proc(ctx: ^Context, parent: ^Layout_Element) -> f32 {
 	for i in 0 ..< count {
 		child := array_get(&ctx.layout_elements, parent.children.elements[i])
 		if child.exiting {continue}
-		if !child.is_text_element && child.config.height.kind == .Percent {
-			child.dimensions.height = inner_height * child.config.height.percent
-		}
-		size := child.dimensions
+		size := Dimensions{child.dimensions.width, wrap_item_height(child, inner_height)}
 		width := row.width + (has_item ? gap : 0) + size.width
 		if has_item && width > inner_width {
 			array_add(&ctx.wrapped_rows, Wrapped_Row{end = i, dimensions = row})
@@ -92,6 +103,24 @@ measure_wrap_rows :: proc(ctx: ^Context, parent: ^Layout_Element) -> f32 {
 	}
 	array_add(&ctx.wrapped_rows, Wrapped_Row{end = count, dimensions = row})
 	return height + row.height
+}
+
+@(private)
+resize_wrap_rows :: proc(ctx: ^Context, parent: ^Layout_Element, inner_height: f32) {
+	start: i32
+	for index := parent.wrap_first; start < i32(parent.children.length); index += 1 {
+		row := array_get(&ctx.wrapped_rows, index)
+		row.dimensions.height = 0
+		for i in start ..< row.end {
+			child := array_get(&ctx.layout_elements, parent.children.elements[i])
+			if child.exiting {continue}
+			row.dimensions.height = cmax(
+				row.dimensions.height,
+				wrap_item_height(child, inner_height),
+			)
+		}
+		start = row.end
+	}
 }
 
 @(private)
@@ -150,16 +179,19 @@ size_containers_along_axis :: proc(
 				case .Grow:
 					root_element.dimensions.width = parent_layout_element.dimensions.width
 				case .Percent:
-					root_element.dimensions.width =
-						parent_layout_element.dimensions.width * root_element.config.width.percent
+					root_element.dimensions.width = resolve_percent(
+						root_element.config.width,
+						parent_layout_element.dimensions.width,
+					)
 				}
 				#partial switch root_element.config.height.kind {
 				case .Grow:
 					root_element.dimensions.height = parent_layout_element.dimensions.height
 				case .Percent:
-					root_element.dimensions.height =
-						parent_layout_element.dimensions.height *
-						root_element.config.height.percent
+					root_element.dimensions.height = resolve_percent(
+						root_element.config.height,
+						parent_layout_element.dimensions.height,
+					)
 				}
 			}
 		}
@@ -205,6 +237,9 @@ size_containers_along_axis :: proc(
 			inner: f32
 			if x_axis && (grid || wrap) {
 				inner = cmax(f32(0), parent_size - parent_padding)
+			}
+			if !x_axis && wrap && parent_layout_config.height.kind == .Percent {
+				resize_wrap_rows(ctx, parent, parent_size - parent_padding)
 			}
 			if grid && x_axis {
 				stride := parent_layout_config.grid.min_cell_width + parent_child_gap
@@ -308,12 +343,15 @@ size_containers_along_axis :: proc(
 			    child_offset += 1 {
 				child_element_index := parent.children.elements[child_offset]
 				child_element := array_get(&ctx.layout_elements, child_element_index)
+				if child_element.exiting {continue}
 				child_sizing := get_element_sizing(child_element, x_axis)
 				child_size :=
 					x_axis ? &child_element.dimensions.width : &child_element.dimensions.height
 				if child_sizing.kind == .Percent {
-					child_size^ =
-						(parent_size - total_padding_and_child_gaps) * child_sizing.percent
+					child_size^ = resolve_percent(
+						child_sizing,
+						parent_size - total_padding_and_child_gaps,
+					)
 					if sizing_along_axis {
 						inner_content_size += child_size^
 					}
@@ -634,19 +672,24 @@ calculate_final_layout :: proc(pass: Layout_Pass) {
 			&ctx.layout_elements,
 			array_get_value(&aspect_ratio_elements, i),
 		)
-		if aspect_element.config.direction == .Wrap_Row &&
-		   aspect_element.config.grid.min_cell_width <= 0 {
+		box := &aspect_element.config
+		if box.height.kind == .Percent {continue}
+		if box.direction == .Wrap_Row && box.grid.min_cell_width <= 0 {
 			if .Height not_in aspect_element.animated_size {
-				aspect_element.dimensions.height =
-					aspect_element.dimensions.width / aspect_element.config.aspect
+				aspect_element.dimensions.height = aspect_element.dimensions.width / box.aspect
 			}
 			// Width is final. A smaller height would break the ratio without repacking.
-			aspect_element.config.height = fixed(aspect_element.dimensions.height)
+			box.height = fixed(aspect_element.dimensions.height)
 			continue
 		}
-		aspect_element.dimensions.height =
-			(1 / aspect_element.config.aspect) * aspect_element.dimensions.width
-		aspect_element.config.height.max = aspect_element.dimensions.height
+		aspect_element.dimensions.height = (1 / box.aspect) * aspect_element.dimensions.width
+		box.height.max = aspect_element.dimensions.height
+		if box.width.kind == .Percent {
+			aspect_element.min_dimensions.height = cmin(
+				aspect_element.min_dimensions.height,
+				box.height.max,
+			)
+		}
 	}
 
 	// Propagate effect of text wrapping, aspect scaling etc. on height of parents
@@ -668,6 +711,11 @@ calculate_final_layout :: proc(pass: Layout_Pass) {
 		current_element := current_element_tree_node.layout_element
 		if !ctx.tree_node_visited.items[dfs_buffer.length - 1] {
 			ctx.tree_node_visited.items[dfs_buffer.length - 1] = true
+			if !current_element.is_text_element &&
+			   current_element.config.height.kind == .Percent &&
+			   current_element.config.floating.attach_to == .None {
+				current_element.dimensions.height = 0
+			}
 			// If the element has no children or is the container for a text element, don't bother inspecting it
 			if current_element.is_text_element || current_element.children.length == 0 {
 				dfs_buffer.length -= 1
@@ -692,21 +740,25 @@ calculate_final_layout :: proc(pass: Layout_Pass) {
 
 		// DFS node has been visited, this is on the way back up to the root
 		layout_config := &current_element.config
+		relative_height := layout_config.height.kind == .Percent
 		if current_element.grid_columns > 0 || layout_config.direction == .Wrap_Row {
 			rows_height :=
 				current_element.grid_columns > 0 ? grid_content_height(current_element) : measure_wrap_rows(ctx, current_element)
 			content_height :=
 				rows_height + f32(layout_config.padding.top) + f32(layout_config.padding.bottom)
-			if current_element.grid_columns > 0 || layout_config.aspect == 0 {
+			if !relative_height &&
+			   (current_element.grid_columns > 0 || layout_config.aspect == 0) {
 				current_element.dimensions.height = clamp(
 					content_height,
 					layout_config.height.min,
 					layout_config.height.max,
 				)
 			}
-			if !layout_config.clip.y {
+			if !relative_height && !layout_config.clip.y {
 				current_element.min_dimensions.height = current_element.dimensions.height
 			}
+		} else if relative_height {
+			continue
 		} else if layout_config.direction == .Row {
 			// Resize any parent containers that have grown in height along their non layout axis
 			for j: i32 = 0; j < i32(current_element.children.length); j += 1 {
@@ -756,10 +808,10 @@ calculate_final_layout :: proc(pass: Layout_Pass) {
 			&ctx.layout_elements,
 			array_get_value(&aspect_ratio_elements, i),
 		)
-		if aspect_element.config.direction == .Wrap_Row &&
-		   aspect_element.config.grid.min_cell_width <= 0 {continue}
-		aspect_element.dimensions.width =
-			aspect_element.config.aspect * aspect_element.dimensions.height
+		box := &aspect_element.config
+		if (box.width.kind == .Percent && box.height.kind == .Percent) ||
+		   (box.direction == .Wrap_Row && box.grid.min_cell_width <= 0) {continue}
+		aspect_element.dimensions.width = box.aspect * aspect_element.dimensions.height
 	}
 
 	// Sort tree roots by z-index

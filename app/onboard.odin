@@ -201,6 +201,7 @@ step_view :: proc(ui: ^Ui_State, step: Step) -> Step_View {
 
 // Inline shares the rail's scroll container so Notes remains reachable.
 get_started_pane :: proc(ui: ^Ui_State, mode: Onboard_Layout = .Scroll) {
+	side_padding := mode == .Inline ? u16(0) : u16(12)
 	if nendo.box(nendo.id("GetStarted"))(
 	{
 		width = nendo.grow(),
@@ -211,7 +212,7 @@ get_started_pane :: proc(ui: ^Ui_State, mode: Onboard_Layout = .Scroll) {
 			y = mode == .Inline || single_pane() || f32(rl.GetScreenHeight()) / UI_ZOOM < 600 ? .Top : .Center,
 		},
 		gap = 14,
-		padding = {top = 12, bottom = 12},
+		padding = {left = side_padding, right = side_padding, top = 12, bottom = 12},
 		clip = mode == .Scroll ? nendo.Clip{y = true, scroll = true} : nendo.Clip{},
 	},
 	) {
@@ -220,7 +221,7 @@ get_started_pane :: proc(ui: ^Ui_State, mode: Onboard_Layout = .Scroll) {
 		}
 		if nendo.box(nendo.id("GetStartedCard"))(
 		{
-			width = nendo.grow(max = fit_w(480)),
+			width = nendo.percent(1, max = 480),
 			direction = .Column,
 			padding = nendo.pad(single_pane() ? 16 : 24),
 			gap = 10,

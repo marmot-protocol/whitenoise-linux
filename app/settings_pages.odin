@@ -91,9 +91,12 @@ settings_row :: proc(stacked: bool = false) -> nendo.Box {
 	}
 }
 
+@(private = "file")
+SETTINGS_CONTENT_MAX :: f32(740)
+
 settings_body_width :: proc(ui: ^Ui_State) -> f32 {
 	available := max(120, settings_main_w(ui) - (settings_main_w(ui) < 560 ? 32 : 56))
-	return ui.settings_gallery ? available : min(available, 740)
+	return ui.settings_gallery ? available : min(available, SETTINGS_CONTENT_MAX)
 }
 
 // A row of choices. On phones it fills the width and scrolls sideways when
@@ -478,7 +481,11 @@ settings_pane :: proc(ui: ^Ui_State) {
 			},
 			) {
 				if nendo.box(nendo.id("SettingsContent"))(
-				{width = nendo.fixed(settings_body_width(ui)), direction = .Column, gap = 12},
+				{
+					width = nendo.percent(1, max = ui.settings_gallery ? 0 : SETTINGS_CONTENT_MAX),
+					direction = .Column,
+					gap = 12,
+				},
 				) {
 					if index {
 						if !wide {

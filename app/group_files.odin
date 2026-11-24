@@ -345,7 +345,7 @@ group_files_panel :: proc(ui: ^Ui_State) {
 				active := menu == .Type ? ui.group_files_type != .All : ui.group_files_sender != ""
 				if nendo.box(nendo.id("GroupFilesFilter", u32(menu)))(
 				{
-					width = single_pane() ? nendo.fixed(max(44, (page_w(ui) - 48) / 2)) : nendo.fit(max = max(100, (page_w(ui) - 48) / 2)),
+					width = nendo.percent(0.5, max = 260),
 					height = nendo.fit(min = tap_size() ? tap_min() : 0),
 					padding = {left = 12, right = 12, top = 8, bottom = 8},
 					gap = 8,
@@ -360,7 +360,7 @@ group_files_panel :: proc(ui: ^Ui_State) {
 						{font = FONT_ICON, size = 11, color = active ? ACCENT : TEXT_DIM},
 					)
 					if nendo.box(nendo.id("GroupFilterLabel", u32(menu)))(
-					{width = single_pane() ? nendo.grow() : nendo.fit(), clip = {x = true}},
+					{width = nendo.grow(), clip = {x = true}},
 					) {
 						nendo.text(
 							menu == .Type ? tr(GROUP_FILE_TYPES[ui.group_files_type]) : group_sender_label(ui, ui.group_files_sender),
@@ -388,7 +388,7 @@ group_files_panel :: proc(ui: ^Ui_State) {
 			count := menu == .Type ? len(GROUP_FILE_TYPES) : len(job.senders) + 1
 			if nendo.box(nendo.id("GroupFilesOptions"))(
 			{
-				width = nendo.fixed(min(260, (page_w(ui) - 48) / 2)),
+				width = nendo.percent(1),
 				height = nendo.fixed(min(modal_h(308), f32(min(count, 7)) * option_height)),
 				direction = .Column,
 				color = CARD,
