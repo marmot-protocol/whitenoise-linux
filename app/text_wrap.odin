@@ -65,18 +65,49 @@ wrapped_lines :: proc(
 ) -> []Wrap_Line {
 	key := Wrap_Key{text, width, UI_SCALE, size, mode, fonts, tile_px}
 	if lines, hit := wrap_cache[key]; hit && !wrap_flush {return lines}
+	lines := make([dynamic]Wrap_Line, context.temp_allocator)
+	plan_wrap_lines(&lines, text, width, size, mode, fonts, tile_px)
+	bytes := len(text) + len(fonts) + len(lines) * size_of(Wrap_Line)
+	if bytes > WRAP_CACHE_BYTES {return lines[:]}
+	// Evict between frames: a nested link card may still be reading an
+	// outer paragraph's spans. Large misses use this frame's scratch space.
+	// ponytail: bounded wholesale eviction; use LRU if mixed long bodies churn.
+	if wrap_flush || wrap_bytes + bytes > WRAP_CACHE_BYTES || len(wrap_cache) >= 1024 {
+		wrap_flush = true
+		return lines[:]
+	}
+	context.allocator = runtime.default_context().allocator
+	key.text = strings.clone(text)
+	key.fonts = strings.clone(fonts)
+	owned := make([]Wrap_Line, len(lines))
+	copy(owned, lines[:])
+	wrap_cache[key] = owned
+	wrap_bytes += bytes
+	return owned
+}
+
+@(private)
+plan_wrap_lines :: proc(
+	lines: ^[dynamic]Wrap_Line,
+	text: string,
+	width: f32,
+	size: u16,
+	mode: Wrap_Mode,
+	fonts: string = "",
+	tile_px: f32 = 0,
+	plain_font: u16 = FONT_BODY,
+) {
 	tile_px := tile_px
 	if mode != .Plain && tile_px <= 0 {
 		tile_px = mode == .Compose ? 18 : body_tile_size(text, size)
 	}
-	lines := make([dynamic]Wrap_Line, context.temp_allocator)
 	start := 0
 	i: u32
 	for {
 		end := len(text)
 		if nl := strings.index_byte(text[start:], '\n'); nl >= 0 {end = start + nl}
 		at := start
-		if at == end {append(&lines, Wrap_Line{at, at, i})}
+		if at == end {append(lines, Wrap_Line{at, at, i})}
 		for at < end {
 			// Cards occupy a whole row, even when their URL is wider
 			// than the column. Keep source offsets for selection/copy.
@@ -105,14 +136,14 @@ wrapped_lines :: proc(
 			}
 			for at < card_at {
 				cut :=
-					width > 0 ? wrap_break(text, at, card_at, width, size, mode, tile_px, fonts) : card_at
-				append(&lines, Wrap_Line{at, cut, i})
+					width > 0 ? wrap_break(text, at, card_at, width, size, mode, tile_px, fonts, plain_font) : card_at
+				append(lines, Wrap_Line{at, cut, i})
 				i += 1
 				at = cut
 				if at < card_at && text[at] == ' ' {at += 1}
 			}
 			if card_at < end {
-				append(&lines, Wrap_Line{card_at, card_end, i})
+				append(lines, Wrap_Line{card_at, card_end, i})
 				i += 1
 				at = card_end
 			}
@@ -122,23 +153,6 @@ wrapped_lines :: proc(
 		start = end + 1
 		i += 1
 	}
-	bytes := len(text) + len(fonts) + len(lines) * size_of(Wrap_Line)
-	if bytes > WRAP_CACHE_BYTES {return lines[:]}
-	// Evict between frames: a nested link card may still be reading an
-	// outer paragraph's spans. Large misses use this frame's scratch space.
-	// ponytail: bounded wholesale eviction; use LRU if mixed long bodies churn.
-	if wrap_flush || wrap_bytes + bytes > WRAP_CACHE_BYTES || len(wrap_cache) >= 1024 {
-		wrap_flush = true
-		return lines[:]
-	}
-	context.allocator = runtime.default_context().allocator
-	key.text = strings.clone(text)
-	key.fonts = strings.clone(fonts)
-	owned := make([]Wrap_Line, len(lines))
-	copy(owned, lines[:])
-	wrap_cache[key] = owned
-	wrap_bytes += bytes
-	return owned
 }
 
 // Which end of a string text_fit keeps.

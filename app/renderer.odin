@@ -163,6 +163,9 @@ theme_fonts_loaded: bool
 applied_text_scale: f32 = 1
 
 @(private)
+text_metrics_revision: u32
+
+@(private)
 apply_theme_fonts :: proc() {
 	if !theme_fonts_loaded {return}
 	body_changed := rl.SelectFontStack(FONT_BODY, theme_font_stack(THEME_FONT, .Body))
@@ -183,6 +186,7 @@ apply_theme_fonts :: proc() {
 	   !bold_italic_changed &&
 	   !scale_changed {return}
 	// Logical IDs are stable, so geometry caches cannot detect this switch.
+	text_metrics_revision += 1
 	wrap_clear()
 	if nendo.current_context() != nil {
 		nendo.reset_measure_cache()

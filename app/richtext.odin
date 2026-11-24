@@ -1625,11 +1625,12 @@ wrap_break :: proc(
 	mode: Wrap_Mode = .Text,
 	tile_px: f32 = 0,
 	fonts: string = "",
+	plain_font: u16 = FONT_BODY,
 ) -> int {
 	// Only measure the current line. Measuring the whole next word
 	// rescans a long unbroken suffix once per line (quadratic work).
 	cjk_cut := at
-	fit := rune_fit(text, at, end, width, font_size, mode, tile_px, fonts, &cjk_cut)
+	fit := rune_fit(text, at, end, width, font_size, mode, tile_px, fonts, &cjk_cut, plain_font)
 	if fit == end || text[fit] == ' ' {
 		return fit
 	}
@@ -1670,6 +1671,7 @@ rune_fit :: proc(
 	tile_px: f32 = 0,
 	fonts: string = "",
 	cjk_cut: ^int = nil,
+	plain_font: u16 = FONT_BODY,
 ) -> int {
 	pen: f32 = 0
 	previous_emoji := false
@@ -1702,7 +1704,8 @@ rune_fit :: proc(
 			previous = 0
 			continue
 		}
-		adv := rl.MeasureTextLine(text_font(fonts, i), font_size, cluster, 0).x
+		font := mode == .Plain && len(fonts) == 0 ? plain_font : text_font(fonts, i)
+		adv := rl.MeasureTextLine(font, font_size, cluster, 0).x
 		emoji := !literal && text_emoji(cluster) != nil
 		if emoji {adv = mode == .Compose ? 18 : (tile_px > 0 ? tile_px : f32(font_size) + 4)}
 		// Body segments have a 2px gap; plain graphemes share one run.

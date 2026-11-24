@@ -773,6 +773,7 @@ Ui_State :: struct {
 	gs_open:                             bool, // global cross-chat search modal
 	gs_input:                            [dynamic]u8, // its query box
 	gs_hits:                             [dynamic]Gs_Hit, // its result cards
+	gs_layout:                           Gs_Layout,
 	gs_chats:                            [dynamic]Chat_Row_Ui, // all local chats, including archives
 	gs_senders:                          [dynamic]string, // public keys seen across local chats
 	gs_filters_open:                     bool,

@@ -240,6 +240,7 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 	delete(ui.members); ui.members = {}
 	for hit in ui.gs_hits {mem.zero_slice(transmute([]u8)hit.snippet); gs_free_hit(hit)}
 	delete(ui.gs_hits); ui.gs_hits = {}
+	gs_layout_free(&ui.gs_layout)
 	for chat in ui.gs_chats {chat_free(chat)}
 	delete(ui.gs_chats); ui.gs_chats = {}
 	for id in ui.gs_senders {delete(id)}

@@ -440,6 +440,7 @@ gs_viewport :: proc(t: ^testing.T) {
 		g_ui, g_prefs = nil, nil
 		delete(ui.gs_input); delete(ui.gs_sender_input); delete(ui.gs_since); delete(ui.gs_until)
 		delete(ui.gs_chats); delete(ui.gs_hits)
+		gs_layout_free(&ui.gs_layout)
 	}
 	for size in ([][2]i32{{740, 700}, {390, 420}, {740, 500}}) {
 		rl.SetWindowSize(size[0], size[1])
@@ -484,6 +485,154 @@ gs_viewport :: proc(t: ^testing.T) {
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-gsearch-%d-%d.png", size[0], size[1]))
 		rl.EndDrawing()
 	}
+}
+
+@(test)
+gs_virtual_results :: proc(t: ^testing.T) {
+	if !test_isolated("gs_virtual_results") {return}
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(900, 800, "Global search results")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	init_fonts(); load_themes(); apply_theme(0, 0)
+	previous := nendo.current_context()
+	memory: []u8
+	init_layout(&memory, 32768, {900, 800})
+	defer {nendo.set_context(previous); delete(memory)}
+	ui := Ui_State {
+		gs_open          = true,
+		gs_group         = "group",
+		selected         = -1,
+		timeline_loading = true,
+	}
+	ui.prefs.reduce_motion = true
+	append(&ui.gs_input, "needle")
+	append(&ui.chats, Chat_Row_Ui{group_id = "group", title = "History"})
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {
+		g_ui, g_prefs = nil, nil
+		gs_clear_hits(&ui); delete(ui.gs_hits); gs_layout_free(&ui.gs_layout)
+		delete(ui.gs_input); delete(ui.chats); delete(ui.jump_id); delete(ui.prefs.last_chat)
+	}
+	append_page :: proc(ui: ^Ui_State, count: int) {
+		start := len(ui.gs_hits)
+		for i in start ..< start + count {
+			append(
+				&ui.gs_hits,
+				Gs_Hit {
+					group = strings.clone("group"),
+					msg_id = fmt.aprintf("message-%d", i),
+					title = strings.clone(
+						i % 2 == 0 ? "History" : "A long conversation title that keeps going until it wraps into another visible line",
+					),
+					sender = strings.clone("Alice"),
+					at = strings.clone("2026-09-30, 12:34"),
+					snippet = strings.clone(
+						i % 2 == 0 ? "one needle" : "The needle was in a paragraph long enough to wrap. Several more words show whether each result still gets the full snippet.",
+					),
+				},
+			)
+		}
+	}
+	owner := nendo.id("GsList")
+	append_page(&ui, GS_HITS_MAX)
+	commands := gs_test_frame(&ui)
+	first, second := nendo.element(nendo.id("GsHit", 0)), nendo.element(nendo.id("GsHit", 1))
+	testing.expect(t, first.found && second.found && second.rect.height > first.rect.height)
+	accent := false
+	for cmd in commands {
+		if cmd.kind == .Text &&
+		   cmd.text.text == "needle" &&
+		   cmd.text.color == ACCENT {accent = true}
+	}
+	testing.expect(t, accent)
+	data := nendo.scroll(owner)
+	if !testing.expect(t, data.found && data.content.height > data.viewport.height) {return}
+	data.position.y = data.viewport.height - data.content.height
+	gs_test_frame(&ui)
+	end_of_page := nendo.id("GsHit", GS_HITS_MAX - 1)
+	page_tail := nendo.element(end_of_page)
+	before := data.position.y
+	append_page(&ui, 5 * GS_HITS_MAX)
+	gs_test_frame(&ui)
+	testing.expect(t, page_tail.found && nendo.element(end_of_page).rect.y == page_tail.rect.y)
+	testing.expect_value(t, nendo.scroll(owner).position.y, before)
+
+	desktop_height := nendo.scroll(owner).content.height
+	last_id := nendo.id("GsHit", u32(len(ui.gs_hits) - 1))
+	for width in ([]i32{900, 390, 900}) {
+		rl.SetWindowSize(width, 800)
+		nendo.set_dimensions({f32(width), 800})
+		gs_test_frame(&ui)
+		data = nendo.scroll(owner)
+		height := data.content.height
+		testing.expect(t, width == 390 ? height > desktop_height : height == desktop_height)
+		data.position.y = data.viewport.height - height
+		commands = gs_test_frame(&ui)
+		viewport := nendo.element(owner).rect
+		last := nendo.element(last_id)
+		testing.expect(
+			t,
+			last.found &&
+			last.rect.y >= viewport.y &&
+			last.rect.y + last.rect.height <= viewport.y + viewport.height + 0.01,
+		)
+		mounted := 0
+		for _, i in ui.gs_hits {
+			if nendo.element(nendo.id("GsHit", u32(i))).found {mounted += 1}
+		}
+		testing.expect(t, mounted > 0 && mounted < 15)
+		if width == 390 {
+			rl.BeginDrawing(); render_nendo(commands)
+			rl.TakeScreenshot("/tmp/wn-gsearch-results.png")
+			rl.EndDrawing()
+		}
+	}
+
+	clear(&ui.gs_input) // A filter-only click does not write search history.
+	last := nendo.element(last_id).rect
+	nendo.set_pointer({last.x + last.width / 2, last.y + last.height / 2}, .Up)
+	forced_release = true
+	handle_gsearch(&ui, nil)
+	forced_release = false
+	testing.expect(t, !ui.gs_open && ui.gs_jump_pending)
+	testing.expect_value(t, ui.jump_id, "message-239")
+
+	gs_clear_hits(&ui)
+	append_page(&ui, 1)
+	gs_test_frame(&ui)
+	new_hit := nendo.element(nendo.id("GsHit", 0))
+	testing.expect(t, new_hit.found && new_hit.rect.y == nendo.element(owner).rect.y)
+
+	// Use a wide highlight face so measuring in the body face clips visibly.
+	rl.SelectFontStack(FONT_TITLE, FONT_MONO)
+	nendo.reset_measure_cache()
+	rl.SetWindowSize(390, 800)
+	nendo.set_dimensions({390, 800})
+	query := strings.repeat("i", 60, context.temp_allocator)
+	append(&ui.gs_input, query)
+	gs_clear_hits(&ui)
+	append_page(&ui, 1)
+	delete(ui.gs_hits[0].snippet)
+	ui.gs_hits[0].snippet = strings.concatenate({query, "🙂🙂🙂tail"})
+	commands = gs_test_frame(&ui)
+	card := nendo.element(nendo.id("GsHit", 0)).rect
+	header := nendo.element(nendo.id("GsHitTop", 0)).rect
+	end := card.x + card.width - 10
+	match_bytes := 0
+	found_tail := false
+	for cmd in commands {
+		if cmd.kind != .Text ||
+		   cmd.rect.y < header.y + header.height ||
+		   cmd.rect.y >= card.y + card.height {
+			continue
+		}
+		testing.expect(t, cmd.rect.x + cmd.rect.width <= end + 0.01, cmd.text.text)
+		if cmd.text.color == ACCENT {match_bytes += len(cmd.text.text)}
+		found_tail ||= strings.contains(cmd.text.text, "tail")
+	}
+	testing.expect_value(t, match_bytes, len(query))
+	testing.expect(t, found_tail)
 }
 
 @(private)
