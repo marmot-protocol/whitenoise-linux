@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-sudo apt-get update -qq
-sudo apt-get install -y -qq --no-install-recommends podman catatonit uidmap slirp4netns fuse-overlayfs
-image=docker.io/library/archlinux:base-devel
+if ! command -v podman >/dev/null; then
+  sudo apt-get update -qq
+  sudo apt-get install -y -qq --no-install-recommends podman catatonit uidmap slirp4netns fuse-overlayfs
+fi
+image=docker.io/library/archlinux@sha256:949ecb1661609ab7e8f6854ba03efd62792e7a796313738e94b040c095c20d91
+TIMEFORMAT='Arch benchmark image_pull=%R s'
 time podman pull "$image"
 
 available_kib() { awk '/^MemAvailable:/ {print $2}' /proc/meminfo; }
@@ -15,7 +18,9 @@ if ((memory <= 0)); then
 fi
 swap=$(awk '/^SwapFree:/ {printf "%.0f\n", $2 * 1024}' /proc/meminfo)
 quota=$(($(getconf _NPROCESSORS_ONLN) * 80000))
-name=wn-arch-pilot
+if ((quota > 640000)); then quota=640000; fi
+name="wn-arch-bench-$$"
+printf 'Arch benchmark cpu_quota=%s memory_bytes=%s\n' "$quota" "$memory"
 podman run --detach --name "$name" --init --privileged \
   --cpu-period 100000 --cpu-quota "$quota" --memory "${memory}b" --memory-swap "$((memory + swap))b" \
   --volume "$PWD:/work" --workdir /work --entrypoint sleep "$image" infinity
@@ -27,15 +32,19 @@ podman run --detach --name "$name" --init --privileged \
 guard=$!
 trap 'kill "$guard" 2>/dev/null || true; wait "$guard" 2>/dev/null || true; podman rm -f "$name"' EXIT
 
+TIMEFORMAT='Arch benchmark container_total=%R s'
 time podman exec "$name" bash -euo pipefail -c '
   pacman -Syu --noconfirm --needed git
   source packaging/arch/whitenoise-linux-git/PKGBUILD
   pacman -S --noconfirm --needed "${depends[@]}" "${makedepends[@]}"
+  printf "Arch benchmark packages_sha256="
+  pacman -Q | LC_ALL=C sort | sha256sum
   curl -fsSL -o /tmp/odin.tar.gz "${source[1]}"
   echo "${sha256sums[1]}  /tmp/odin.tar.gz" | sha256sum -c -
   mkdir -p /opt/odin
   tar -xzf /tmp/odin.tar.gz -C /opt/odin --strip-components=1
   export PATH="/opt/odin:$PATH" CARGO_BUILD_JOBS=6 WN_BUILD_JOBS=6 CMAKE_BUILD_PARALLEL_LEVEL=6
-  scripts/arch-package.sh
+  TIMEFORMAT="Arch benchmark build_package_boot=%R s"
+  time scripts/arch-package.sh
 '
 (cd dist && sha256sum -- *-archlinux-x86_64.tar.zst >SHA256SUMS.txt)

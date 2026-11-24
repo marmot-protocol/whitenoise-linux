@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  arch:
+  boat:
     if: github.repository == 'marmot-protocol/whitenoise-linux' && github.actor == 'dannym-arx'
     runs-on: ubuntu-24.04
     environment: wn-boat-arch-pilot
@@ -54,6 +54,32 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: boat-arch-pilot
+          path: dist/
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 3
+
+  hetzner:
+    if: github.repository == 'marmot-protocol/whitenoise-linux' && github.actor == 'dannym-arx'
+    runs-on: [self-hosted, Linux, X64, wn-build-server, arch, wn-cache-1]
+    timeout-minutes: 38
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build and boot the Arch package on Hetzner
+        run: |
+          set -euo pipefail
+          src=$(mktemp -d "$RUNNER_TEMP/arch-bench.XXXXXXXX")
+          trap 'rm -rf "$src"' EXIT
+          git archive --format=tar HEAD | tar xf - -C "$src"
+          (cd "$src" && bash scripts/boat-arch-pilot.sh)
+          mkdir -p dist
+          mv "$src"/dist/* dist/
+          (cd dist && sha256sum -c SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hetzner-arch-pilot
           path: dist/
           compression-level: 0
           if-no-files-found: error
