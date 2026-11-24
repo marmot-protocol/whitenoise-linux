@@ -228,6 +228,73 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 	testing.expect(t, !ui.chat_head_menu, "a tap elsewhere closes the menu")
 
 	forced_release = false
+	press_at :: proc(ui: ^Ui_State, point: nendo.Vector2) {
+		nendo.set_pointer(point, .Down)
+		forced_press = true
+		build_layout(ui, 0)
+		forced_press = false
+	}
+	config := ui.prefs.composer
+	ui.prefs.composer = composer_config(&ui.prefs)^
+	ui.prefs.composer.layout = .Expanded
+	ui.prefs.composer.slots[.Voice] = .Right
+	ui.prefs.composer.slots[.Timestamp] = .Menu
+	ed_set(&ui, &ui.compose, "")
+	build_layout(&ui, 0)
+	mic := nendo.element(nendo.id("MicBtn"))
+	if !testing.expect(t, mic.found) {return}
+	point := nendo.Vector2{mic.rect.x + mic.rect.width - 1, mic.rect.y + mic.rect.height / 2}
+	press_at(&ui, point)
+	if !testing.expect(t, nendo.pointer_over(nendo.id("MicBtn"))) {return}
+	rl.PushChar('x')
+	handle_chat(&ui, &client)
+	build_layout(&ui, 0)
+	nendo.set_pointer(point, .Up)
+	if !testing.expect(t, nendo.pointer_over(nendo.id("SendBtn"))) {return}
+	forced_release = true
+	handle_chat(&ui, &client)
+	forced_release = false
+	testing.expect(
+		t,
+		len(ui.pending) == 0 && string(ui.compose[:]) == "x",
+		"releasing a microphone press over Send keeps the draft",
+	)
+
+	press_at(&ui, point)
+	nendo.set_pointer(point, .Up)
+	forced_release = true
+	handle_chat(&ui, &client)
+	forced_release = false
+	if testing.expect_value(t, len(ui.pending), 1) {
+		testing.expect_value(t, ui.pending[0].body, "x")
+	}
+	testing.expect_value(t, string(ui.compose[:]), "")
+	for &pending in ui.pending {free_pending(&pending)}
+	delete(ui.pending)
+	ui.pending = nil
+
+	ui.prefs.composer.slots[.GM] = .Left
+	ui.prefs.composer.slots[.Timestamp] = .Left
+	build_layout(&ui, 0)
+	gm := nendo.element(nendo.id("GmBtn"))
+	if !testing.expect(t, gm.found) {return}
+	point = {gm.rect.x + gm.rect.width / 2, gm.rect.y + gm.rect.height / 2}
+	press_at(&ui, point)
+	rl.PushChar('x')
+	handle_chat(&ui, &client)
+	build_layout(&ui, 0)
+	nendo.set_pointer(point, .Up)
+	if !testing.expect(t, nendo.pointer_over(nendo.id("ComposeTimestampBtn"))) {return}
+	forced_release = true
+	handle_chat(&ui, &client)
+	forced_release = false
+	testing.expect(
+		t,
+		!ui.timestamp.open && string(ui.compose[:]) == "x",
+		"a shifted shortcut cannot take another button's click",
+	)
+	ui.prefs.composer = config
+
 	ed_set(&ui, &ui.compose, "/poll?")
 	rl.PushKey(.BACKSPACE, true)
 	handle_chat(&ui, &client)
@@ -323,11 +390,13 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 	build_layout(&ui, 0)
 	send := nendo.element(nendo.id("SendBtn"))
 	if !testing.expect(t, send.found) {return}
+	point = {send.rect.x + send.rect.width / 2, send.rect.y + send.rect.height / 2}
+	press_at(&ui, point)
 	// A stale click can land after the native result changes, before redraw.
 	job.thread_result = {job.thread_request.revision, .Unavailable}
 	timeline_drain(&ui, &client)
 	forced_release = true
-	nendo.set_pointer({send.rect.x + send.rect.width / 2, send.rect.y + send.rect.height / 2}, .Up)
+	nendo.set_pointer(point, .Up)
 	testing.expect(t, handle_poll(&ui, &client))
 	forced_release = false
 	testing.expect(t, ui.poll_open && ui.poll_ticket == 0)
