@@ -157,7 +157,7 @@ appearance_activate :: proc(ui: ^Ui_State, control: nendo.Id) {
 		if control == nendo.id("MessageLinesPlus") && lines < max(int) {lines += 1}
 		if control == nendo.id("MessageLinesReset") {lines = DEFAULT_MESSAGE_LINES}
 		ui.prefs.message_lines = lines
-		for &msg in ui.messages {msg.excerpt = {}; msg.row_height = 0}
+		for &msg in ui.messages {msg.excerpt = {}; msg.row_measure = {}}
 		for &pending in ui.pending {pending.excerpt = {}}
 		for _, &card in nev_cards {card.excerpt = {}}
 		save_settings(ui)

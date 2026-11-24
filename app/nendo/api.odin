@@ -51,16 +51,25 @@ virtual_rows :: proc {
 virtual_rows_fixed :: proc(id: Id, count: int, row_height: f32, gap: u16 = 0) -> Virtual_Range {
 	stride := row_height + f32(gap)
 	height := cmax(f32(0), f32(count) * stride - f32(gap))
-	top, window := virtual_window(height)
+	top, bottom := virtual_window(height)
+	if bottom < 0 || top > height || top > bottom {
+		open_virtual_run(id, 0, 0, gap)
+		return {remaining = height}
+	}
 	first := clamp(int(top / stride) - 1, 0, count)
-	end := clamp(int((top + window) / stride) + 2, first, count)
+	end := clamp(int(bottom / stride) + 2, first, count)
 	open_virtual_run(id, first, f32(first) * stride, gap)
 	return {first, end, cmax(f32(0), f32(count - end) * stride - f32(gap))}
 }
 
 // Offsets start at zero and end at the sum of row heights, without gaps.
 @(private, deferred_out = finish_virtual_rows)
-virtual_rows_offsets :: proc(id: Id, offsets: []f32, gap: u16 = 0) -> Virtual_Range {
+virtual_rows_offsets :: proc(
+	id: Id,
+	offsets: []f32,
+	gap: u16 = 0,
+	overscan: f32 = 0,
+) -> Virtual_Range {
 	count := max(0, len(offsets) - 1)
 	if count == 0 {
 		virtual_window(0)
@@ -69,10 +78,16 @@ virtual_rows_offsets :: proc(id: Id, offsets: []f32, gap: u16 = 0) -> Virtual_Ra
 	}
 	space := f32(gap)
 	height := offsets[count] + f32(count - 1) * space
-	top, window := virtual_window(height)
+	top, bottom := virtual_window(height)
+	top -= overscan
+	bottom += overscan
+	if bottom < 0 || top > height || top > bottom {
+		open_virtual_run(id, 0, 0, gap)
+		return {remaining = height}
+	}
 	// Shift the top by one gap to search row ends using the same edges.
 	first := clamp(virtual_lower_bound(offsets, space, top + space) - 2, 0, count)
-	end := clamp(virtual_lower_bound(offsets, space, top + window) + 1, first, count)
+	end := clamp(virtual_lower_bound(offsets, space, bottom) + 1, first, count)
 	open_virtual_run(id, first, offsets[first] + f32(first) * space, gap)
 	tail := end < count ? offsets[count] - offsets[end] + f32(count - end - 1) * space : 0
 	return {first, end, tail}
@@ -93,21 +108,22 @@ virtual_lower_bound :: proc(offsets: []f32, gap, y: f32) -> int {
 }
 
 @(private)
-virtual_window :: proc(height: f32) -> (top, window: f32) {
+virtual_window :: proc(height: f32) -> (top, bottom: f32) {
 	ctx := active_context
 	owner := get_open_layout_element()
 	limit := ctx.layout_dimensions.height
 	if owner.config.height.max > 0 {
 		limit = cmin(limit, owner.config.height.max)
 	}
-	window = limit
+	bottom = limit
 	clip := &owner.config.clip
 	inherited_clip := false
 	// A bounded picker keeps its own small window for keyboard reveal.
 	if !scroll_enabled(clip) ||
 	   owner.config.height.max <= 0 ||
 	   owner.config.height.max > ctx.layout_dimensions.height {
-		top, window, inherited_clip = virtual_ancestor_window(owner, limit)
+		top, bottom, inherited_clip = virtual_ancestor_window(owner)
+		bottom = cmin(bottom, cmax(f32(0), top) + limit)
 	}
 	prefix := flow_prefix_y(owner, ctx.layout_element_children_buffer.length)
 	if view := scroll_enabled(clip) ? find_scroll_data(owner.id) : nil; view != nil {
@@ -124,9 +140,9 @@ virtual_window :: proc(height: f32) -> (top, window: f32) {
 		view.scroll_position.y = -offset
 		clip.offset.y = -offset
 	}
-	top -= prefix
-	if clip.x || clip.y {top -= clip.offset.y}
-	return
+	if clip.y {top = cmax(f32(0), top)}
+	if clip.x || clip.y {prefix += clip.offset.y}
+	return top - prefix, bottom - prefix
 }
 
 @(private)
@@ -144,8 +160,9 @@ flow_prefix_y :: proc(parent: ^Layout_Element, children_end: i32) -> (y: f32) {
 	if parent.config.direction != .Column {return}
 	ctx := active_context
 	siblings := i32(parent.children.length)
-	y += f32(siblings) * f32(parent.config.gap)
-	for i in children_end - siblings ..< children_end {
+	height_sum := parent.virtual_prefix_height
+	// An open column only appends completed children. Reuse the prefix for later runs.
+	for i in children_end - siblings + parent.virtual_prefix_count ..< children_end {
 		child := array_get(
 			&ctx.layout_elements,
 			array_get_value(&ctx.layout_element_children_buffer, i),
@@ -164,25 +181,22 @@ flow_prefix_y :: proc(parent: ^Layout_Element, children_end: i32) -> (y: f32) {
 				}
 			}
 		}
-		y += height
+		height_sum += height
 	}
-	return
+	parent.virtual_prefix_height = height_sum
+	parent.virtual_prefix_count = siblings
+	return y + f32(siblings) * f32(parent.config.gap) + height_sum
 }
 
 @(private)
-virtual_ancestor_window :: proc(
-	owner: ^Layout_Element,
-	limit: f32,
-) -> (
-	top, height: f32,
-	clipped: bool,
-) {
+virtual_ancestor_window :: proc(owner: ^Layout_Element) -> (top, bottom: f32, clipped: bool) {
 	ctx := active_context
-	height = limit
+	canvas := ctx.layout_dimensions.height
 	if owner.config.floating.attach_to != .None {
-		top = cmax(f32(0), -floating_origin_y(owner))
-		return
+		y := floating_origin_y(owner)
+		return -y, canvas - y, false
 	}
+	top, bottom = -MAX_FLOAT, MAX_FLOAT
 	relative: f32
 	child := owner
 	children_end := ctx.layout_element_children_buffer.length - i32(owner.children.length)
@@ -213,7 +227,13 @@ virtual_ancestor_window :: proc(
 		if config.clip.y {
 			clipped = true
 			top = cmax(top, -relative)
-			if config.height.max > 0 {height = cmin(height, config.height.max)}
+			viewport := canvas
+			if config.height.kind == .Fixed {
+				viewport = config.height.min
+			} else if config.height.max > 0 {
+				viewport = cmin(viewport, config.height.max)
+			}
+			bottom = cmin(bottom, viewport - relative)
 		}
 		if config.floating.attach_to != .None {
 			relative += floating_origin_y(ancestor)
@@ -223,6 +243,7 @@ virtual_ancestor_window :: proc(
 		children_end -= i32(ancestor.children.length)
 	}
 	top = cmax(top, -relative)
+	bottom = cmin(bottom, canvas - relative)
 	return
 }
 

@@ -452,6 +452,63 @@ layout_virtual_rows_follow_ancestor_scroll :: proc(t: ^testing.T) {
 }
 
 @(test)
+layout_virtual_height_growth :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	nendo.set_context(nil)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.init(memory, {800, 100})
+
+	draw_rows :: proc() {
+		rows := nendo.virtual_rows(nendo.id("HeightGrowthRun"), 100, 20)
+		for i in rows.first ..< rows.end {
+			if nendo.box(nendo.id("HeightGrowthRow", u32(i)))({height = nendo.fixed(20)}) {}
+		}
+	}
+	for nested in ([2]bool{false, true}) {
+		for dimensions in ([4][2]f32{{100, 0}, {500, 0}, {500, 400}, {500, 0}}) {
+			height, footer := dimensions[0], dimensions[1]
+			nendo.set_dimensions({800, height})
+			nendo.begin()
+			if nendo.box()(
+			{width = nendo.fixed(100), height = nendo.grow(), direction = .Column},
+			) {
+				if nendo.box(nendo.id("HeightGrowthList"))(
+				{
+					width = nendo.grow(),
+					height = nendo.grow(),
+					direction = .Column,
+					clip = {y = true, scroll = true},
+				},
+				) {
+					if !nested {
+						draw_rows()
+					} else if nendo.box()({width = nendo.grow(), direction = .Column}) {
+						draw_rows()
+					}
+				}
+				if footer > 0 {
+					if nendo.box()({height = nendo.fixed(footer)}) {}
+				}
+			}
+			nendo.end(0)
+			testing.expect_value(
+				t,
+				nendo.scroll(nendo.id("HeightGrowthList")).viewport.height,
+				height - footer,
+			)
+			row := nendo.element(nendo.id("HeightGrowthRow", 23))
+			if height - footer == 500 {
+				testing.expect(t, row.found)
+				testing.expect_value(t, row.rect.y, 460)
+			}
+		}
+	}
+}
+
+@(test)
 layout_virtual_wrapped_header :: proc(t: ^testing.T) {
 	sync.lock(&nendo_test_mutex)
 	defer sync.unlock(&nendo_test_mutex)

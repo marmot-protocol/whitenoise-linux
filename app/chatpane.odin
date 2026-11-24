@@ -324,7 +324,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 					height = nendo.grow(),
 					direction = .Column,
 					padding = {left = u16(thread_slide()), top = 8, bottom = 8},
-					gap = 2,
+					gap = TIMELINE_GAP,
 					clip = {y = true, scroll = true},
 					// The theme's decor scene: nendo emits the Custom
 					// command before the children, so it paints behind
@@ -401,116 +401,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 					if len(cur) > 0 {
 						thread_root_plate(ui)
 					}
-					ui.timeline_metric = {body_wrap_w(), UI_SCALE, R_SCALE, chip_h()}
-					run: Msg_Run
-					wrap_w := body_wrap_w()
-					blocked_at := -1 // first row of the blocked run in progress
-					last_import := -1
-					for msg, i in messages {
-						if msg.thread_of != cur {
-							continue
-						}
-						if len(ui.unread_mark_id) > 0 && msg.id == ui.unread_mark_id {
-							run = {}
-							blocked_at = -1
-							// Center label between two rule lines.
-							if nendo.box(nendo.id("UnreadMarker"))(
-							{
-								width = nendo.grow(),
-								gap = 12,
-								align = {y = .Center},
-								padding = {left = 16, right = 16, top = 6, bottom = 2},
-							},
-							) {
-								if nendo.box(nendo.id("UnreadLineL"))(
-								{
-									width = nendo.grow(),
-									height = nendo.fixed(1),
-									color = ACCENT_DIM,
-								},
-								) {}
-								nendo.text(
-									tr("• NEW MESSAGES •"),
-									{font = FONT_MONO, size = 10, color = ACCENT, spacing = 2},
-								)
-								if nendo.box(nendo.id("UnreadLineR"))(
-								{
-									width = nendo.grow(),
-									height = nendo.fixed(1),
-									color = ACCENT_DIM,
-								},
-								) {}
-							}
-						}
-						if i == 0 || msg.day != messages[i - 1].day {
-							run = {}
-							blocked_at = -1
-							if nendo.box(nendo.id("DayMarker", u32(i)))(
-							{
-								direction = .Column,
-								padding = {left = 16, right = 16, top = 10, bottom = 4},
-							},
-							) {
-								nendo.text(
-									msg.day,
-									{
-										font = FONT_BODY,
-										size = 12,
-										color = TEXT_DIM,
-										spacing = 1,
-										wrap = .None,
-									},
-								)
-							}
-						}
-						// Grouping restarts on both sides of a blocked run, so a
-						// collapsed run never glues its neighbours together.
-						blocked := msg_blocked(ui, msg)
-						if !blocked {
-							if blocked_at >= 0 {run = {}}
-							blocked_at = -1
-						} else {
-							if blocked_at < 0 {
-								blocked_at = i
-								run = {}
-								blocked_run_row(
-									u32(i),
-									blocked_run_len(ui, i),
-									ui.blocked_open[msg.id],
-								)
-							}
-							if !ui.blocked_open[messages[blocked_at].id] {continue}
-						}
-						skip := timeline_skip(ui, msg)
-						if (msg.origin.kind != .None || last_import >= 0) &&
-						   !msg.system &&
-						   !msg.deleted &&
-						   !blocked &&
-						   !ui.hidden[msg.id] {
-							if last_import >= 0 &&
-							   (messages[last_import].origin.kind != msg.origin.kind ||
-									   messages[last_import].origin.slot != msg.origin.slot) {
-								history_import_divider(
-									msg.id,
-									messages[last_import].origin,
-									profile,
-									skip,
-								)
-								run = {}
-							}
-							last_import = msg.origin.kind == .None ? -1 : i
-						}
-						head := msg_run_step(&run, msg, wrap_w)
-						if skip {
-							if nendo.box(nendo.id(msg.system ? "SysRow" : "MsgRow", u32(i)))(
-							{width = nendo.grow(), height = nendo.fixed(msg.row_height)},
-							) {}
-						} else if msg.system {
-							system_row(u32(i), msg)
-						} else {
-							message_row(u32(i), msg, head)
-						}
-					}
+					timeline_rows(ui, messages, cur, profile)
 					// Optimistic rows at the tail: unacked sends grayed,
 					// failed ones danger with tap-to-retry.
 					for p, i in ui.pending {
@@ -528,6 +419,170 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 		}
 		chat_drop_overlay(ui)
 	}
+}
+
+@(private = "file")
+timeline_rows :: proc(
+	ui: ^Ui_State,
+	messages: []Msg_Ui,
+	thread: string,
+	profile: ^Device_Profile,
+) {
+	ui.timeline_metric = {body_wrap_w(), UI_SCALE, R_SCALE, chip_h()}
+	rows := make([dynamic]Timeline_Entry, 0, len(messages), context.temp_allocator)
+	run: Msg_Run
+	blocked_at, last_import := -1, -1
+	for &msg, i in messages {
+		if msg.thread_of != thread {continue}
+		row := Timeline_Entry {
+			index = i,
+		}
+		if ui.unread_mark_id != "" && msg.id == ui.unread_mark_id {row.shape.parts += {.Unread}}
+		if i == 0 || msg.day != messages[i - 1].day {row.shape.parts += {.Day}}
+		if row.shape.parts != {} {run, blocked_at = {}, -1}
+
+		// A collapsed run contributes its disclosure row, but not its messages.
+		blocked := msg_blocked(ui, msg)
+		if !blocked {
+			if blocked_at >= 0 {run = {}}
+			blocked_at = -1
+		} else {
+			if blocked_at < 0 {
+				blocked_at, run = i, {}
+				row.shape.blocked = blocked_run_len(ui, i)
+			}
+			if !ui.blocked_open[messages[blocked_at].id] {
+				msg.row_height = 0
+				if timeline_has_markers(row.shape) {append(&rows, row)}
+				continue
+			}
+		}
+		if (msg.origin.kind != .None || last_import >= 0) &&
+		   !msg.system &&
+		   !msg.deleted &&
+		   !blocked &&
+		   !ui.hidden[msg.id] {
+			if last_import >= 0 {
+				origin := &messages[last_import].origin
+				if origin.kind != msg.origin.kind || origin.slot != msg.origin.slot {
+					row.shape.parts += {.Import}
+					row.import_from, run = last_import, {}
+				}
+			}
+			last_import = msg.origin.kind == .None ? -1 : i
+		}
+		row.shape.parts += {.Body}
+		row.shape.head = msg_run_step(&run, msg, ui.timeline_metric.x)
+		append(&rows, row)
+	}
+	if len(rows) == 0 {return}
+	ui.timeline_entries = rows[:]
+	if nendo.box(nendo.id("TimelineRows"))(
+	{width = nendo.grow(), direction = .Column, gap = TIMELINE_GAP},
+	) {
+		view := nendo.scroll(nendo.id("Timeline"))
+		if !view.found {
+			for &row in rows {timeline_draw_entry(&row, ui, messages, profile)}
+			return
+		}
+		offsets := make([]f32, len(rows) + 1, context.temp_allocator)
+		for first := 0; first < len(rows); {
+			end := first
+			for end < len(rows) {
+				row := &rows[end]
+				msg := &messages[row.index]
+				height := timeline_cached_height(ui, msg, row.shape)
+				if height <= 0 {break}
+				offsets[end - first + 1] = offsets[end - first] + height
+				end += 1
+			}
+			if end > first {
+				// The Timeline owns scrolling. Each fit column ends with one measured run.
+				id := u32(rows[first].index)
+				if nendo.box(nendo.id("TimelineSpan", id))(
+				{width = nendo.grow(), direction = .Column},
+				) {
+					window := nendo.virtual_rows(
+						nendo.id("TimelineWindow", id),
+						offsets[:end - first + 1],
+						gap = TIMELINE_GAP,
+						overscan = view.viewport.height,
+					)
+					for &row in rows[first + window.first:first + window.end] {
+						timeline_draw_entry(&row, ui, messages, profile)
+					}
+				}
+			}
+			if end < len(rows) {
+				timeline_draw_entry(&rows[end], ui, messages, profile)
+				end += 1
+			}
+			first = end
+		}
+	}
+}
+
+@(private = "file")
+timeline_draw_entry :: proc(
+	row: ^Timeline_Entry,
+	ui: ^Ui_State,
+	messages: []Msg_Ui,
+	profile: ^Device_Profile,
+) {
+	row.mounted = true
+	msg := &messages[row.index]
+	index := u32(row.index)
+	if !timeline_has_markers(row.shape) {
+		timeline_draw_body(index, msg^, row.shape.head)
+		return
+	}
+	if nendo.box(nendo.id("TimelineEntry", index))(
+	{width = nendo.grow(), direction = .Column, gap = TIMELINE_GAP},
+	) {
+		if .Unread in row.shape.parts {
+			if nendo.box(nendo.id("UnreadMarker"))(
+			{
+				width = nendo.grow(),
+				gap = 12,
+				align = {y = .Center},
+				padding = {left = 16, right = 16, top = 6, bottom = 2},
+			},
+			) {
+				rule := nendo.Box {
+					width  = nendo.grow(),
+					height = nendo.fixed(1),
+					color  = ACCENT_DIM,
+				}
+				if nendo.box(nendo.id("UnreadLineL"))(rule) {}
+				nendo.text(
+					tr("• NEW MESSAGES •"),
+					{font = FONT_MONO, size = 10, color = ACCENT, spacing = 2},
+				)
+				if nendo.box(nendo.id("UnreadLineR"))(rule) {}
+			}
+		}
+		if .Day in row.shape.parts {
+			if nendo.box(nendo.id("DayMarker", index))(
+			{direction = .Column, padding = {left = 16, right = 16, top = 10, bottom = 4}},
+			) {
+				nendo.text(
+					msg.day,
+					{font = FONT_BODY, size = 12, color = TEXT_DIM, spacing = 1, wrap = .None},
+				)
+			}
+		}
+		if row.shape.blocked >
+		   0 {blocked_run_row(index, row.shape.blocked, ui.blocked_open[msg.id])}
+		if .Import in row.shape.parts {
+			history_import_divider(msg.id, messages[row.import_from].origin, profile)
+		}
+		if .Body in row.shape.parts {timeline_draw_body(index, msg^, row.shape.head)}
+	}
+}
+
+@(private = "file")
+timeline_draw_body :: proc(index: u32, msg: Msg_Ui, head: Msg_Head) {
+	if msg.system {system_row(index, msg)} else {message_row(index, msg, head)}
 }
 
 @(private = "file")
@@ -556,7 +611,6 @@ history_import_divider :: proc(
 	message_id: string,
 	origin: Message_Origin,
 	profile: ^Device_Profile,
-	placeholder: bool,
 ) {
 	// One line, so a roster rename cannot move the rows below this marker.
 	if nendo.box(nendo.id("HistoryImportDivider", nendo.id(message_id).id))(
@@ -569,7 +623,6 @@ history_import_divider :: proc(
 		clip = {x = true, y = true},
 	},
 	) {
-		if placeholder {return}
 		label: string
 		switch origin.kind {
 		case .None:

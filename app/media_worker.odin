@@ -616,11 +616,11 @@ media_drain :: proc(ui: ^Ui_State) {
 		view, _ := media_cached(job.kind, job.key)
 		for &msg in ui.messages {
 			if job.external_gif && giphy_message_url(msg.body) == job.key {
-				msg.row_height = 0
+				msg.row_measure = {}
 				ui.scroll_pending ||= at_bottom
 			}
 			if job.kind == .Image && msg.reply_image == job.key {
-				msg.row_height = 0
+				msg.row_measure = {}
 				ui.scroll_pending ||= at_bottom
 			}
 			// Several slots, in one message or many, can borrow one view.
@@ -629,7 +629,7 @@ media_drain :: proc(ui: ^Ui_State) {
 				   slot.kind != job.kind ||
 				   slot.key != job.key {continue}
 				media_ready(&slot, view)
-				msg.row_height = 0
+				msg.row_measure = {}
 				ui.scroll_pending ||= at_bottom
 			}
 		}

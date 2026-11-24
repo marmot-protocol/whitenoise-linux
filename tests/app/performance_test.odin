@@ -272,12 +272,18 @@ performance_layout :: proc(t: ^testing.T) {
 	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Timeline"})
+	ui.unread_mark_id = "message-125"
+	ui.blocked["blocked-fixture"] = true
 	for i in 0 ..< 1000 {
 		append(
 			&ui.messages,
 			Msg_Ui {
 				id = fmt.aprintf("message-%d", i),
+				day = fmt.aprintf("Day %d", i / 125),
 				sender = i == 999 ? strings.repeat("Long display name ", 12) : strings.clone("Alice"),
+				sender_id = i == 248 || i == 249 ? strings.clone("blocked-fixture") : "",
+				origin = {kind = i < 125 ? .Backup : .None},
+				thread_of = i == 501 ? strings.clone("message-500") : "",
 				body = fmt.aprintf(
 					"Message %d. A paragraph with several words to wrap across the conversation pane.",
 					i,
@@ -290,6 +296,9 @@ performance_layout :: proc(t: ^testing.T) {
 		delete(ui.messages)
 		delete(ui.chats)
 		delete(ui.accounts)
+		delete(ui.blocked); delete(ui.blocked_open); delete(ui.pending)
+		thread_clear(&ui); delete(ui.thread_stack)
+		delete(ui.jump_id); delete(ui.gs_flash_id); delete(ui.toast)
 		wrap_clear()
 		g_ui, g_prefs = nil, nil
 	}
@@ -301,7 +310,7 @@ performance_layout :: proc(t: ^testing.T) {
 	full_height: f32
 	for pass in 0 ..< 2 {
 		for sample in 0 ..< 7 {
-			if pass == 0 {for &msg in ui.messages {msg.row_height = 0}}
+			if pass == 0 {for &msg in ui.messages {msg.row_measure = {}}}
 			anim_tick(1.0 / 60)
 			start := time.tick_now()
 			build_layout(&ui, 1.0 / 60)
@@ -320,6 +329,11 @@ performance_layout :: proc(t: ^testing.T) {
 	)
 	testing.expect(t, abs(nendo.scroll(nendo.id("Timeline")).content.height - full_height) < 1)
 	testing.expect(t, nendo.element(nendo.id("MsgHead", 999)).found)
+	testing.expect(t, !nendo.element(nendo.id("MsgRow", 125)).found)
+	testing.expect(t, !nendo.element(nendo.id("DayMarker", 125)).found)
+	testing.expect(t, !nendo.element(nendo.id("UnreadMarker")).found)
+	import_marker := nendo.id("HistoryImportDivider", nendo.id("message-125").id)
+	testing.expect(t, !nendo.element(import_marker).found)
 	slice.sort(full[:]); slice.sort(windowed[:])
 	fmt.printf(
 		"layout rows=1000 mounted=%d median_ms full=%.3f windowed=%.3f\n",
@@ -332,13 +346,84 @@ performance_layout :: proc(t: ^testing.T) {
 	draw_frame(commands)
 	rl.TakeScreenshot("/tmp/wn-performance-layout.png")
 	rl.EndDrawing()
-	// A direct jump and a width change must rebuild previously hidden content.
-	ui.jump_id = strings.clone("message-0")
+	// Scattered invalidations leave one-entry measured spans on either side of the view.
+	data.position.y = -full_height / 2
+	for &msg, i in ui.messages {if i % 2 == 1 {msg.row_measure = {}}}
 	build_layout(&ui, 0)
-	testing.expect(t, nendo.element(nendo.id("MsgHead", 0)).found)
-	delete(ui.jump_id); ui.jump_id = ""
-	ui.timeline_metric.x -= 100
-	testing.expect(t, !timeline_skip(&ui, ui.messages[0]))
+	testing.expect(t, !nendo.element(nendo.id("MsgRow", 2)).found)
+	testing.expect(t, !nendo.element(nendo.id("MsgRow", 900)).found)
+	testing.expect(t, nendo.element(nendo.id("MsgRow", 3)).found)
+	testing.expect(t, nendo.element(nendo.id("MsgRow", 901)).found)
+	testing.expect(t, abs(data.content.height - full_height) < 1)
+	data.position.y = -max(data.content.height - data.viewport.height, 0)
+	build_layout(&ui, 0)
+	// A reply can jump to a loaded parent even if neither it nor its markers are mounted.
+	reply_jump_hover, forced_release = "message-125", true
+	handle_reply_jump(&ui)
+	forced_release = false
+	if !testing.expect_value(t, ui.jump_id, "message-125") {return}
+	build_layout(&ui, 0)
+	testing.expect(t, nendo.element(nendo.id("MsgHead", 125)).found)
+	testing.expect(t, !nendo.element(nendo.id("MsgRow", 500)).found)
+	ui.reading_pending = {
+		message = ui.jump_id,
+		offset  = -12,
+	}
+	for _ in 0 ..< 3 {timeline_scroll_apply(&ui); build_layout(&ui, 0)}
+	view := nendo.element(nendo.id("Timeline")).rect
+	row := nendo.element(nendo.id("MsgRow", 125))
+	testing.expect(t, row.found && abs(row.rect.y - view.y + 12) < 1)
+	testing.expect(t, nendo.element(nendo.id("DayMarker", 125)).found)
+	testing.expect(t, nendo.element(nendo.id("UnreadMarker")).found)
+	testing.expect(t, nendo.element(import_marker).found)
+	testing.expect_value(t, ui.jump_id, "")
+	// A measured blocked header keeps its height even when the bodies are absent.
+	data.position.y = -ui.messages[248].row_top + 30
+	build_layout(&ui, 0)
+	blocked := nendo.id("BlockedToggle", 248)
+	testing.expect(t, nendo.element(blocked).found)
+	testing.expect(t, !nendo.element(nendo.id("MsgRow", 248)).found)
+	ui.blocked_open[ui.messages[248].id] = true
+	build_layout(&ui, 0)
+	testing.expect(t, nendo.element(nendo.id("MsgRow", 248)).found)
+	delete_key(&ui.blocked_open, ui.messages[248].id)
+	build_layout(&ui, 0)
+	testing.expect(t, !nendo.element(nendo.id("MsgRow", 248)).found)
+	thread_push(&ui, "message-500")
+	for _ in 0 ..< 3 {build_layout(&ui, 0); timeline_scroll_apply(&ui)}
+	build_layout(&ui, 0)
+	root := nendo.element(nendo.id("MsgRow", 500))
+	testing.expect(t, root.found)
+	testing.expect_value(t, ui.messages[500].row_height, root.rect.height)
+	testing.expect(t, nendo.element(nendo.id("MsgRow", 501)).found)
+	testing.expect(t, !nendo.element(nendo.id("MsgRow", 502)).found)
+	thread_back(&ui)
+	for _ in 0 ..< 3 {build_layout(&ui, 0); timeline_scroll_apply(&ui)}
+	build_layout(&ui, 0)
+	testing.expect(t, nendo.element(nendo.id("MsgRow", 500)).found)
+	testing.expect(t, !nendo.element(nendo.id("MsgRow", 501)).found)
+	// A width change must rebuild previously hidden content to measure its wrapping.
+	rl.SetWindowSize(900, 800)
+	nendo.set_dimensions({900, 800})
+	build_layout(&ui, 0)
+	testing.expect(t, nendo.element(nendo.id("MsgHead", 999)).found)
+	rl.SetWindowSize(1200, 800)
+	nendo.set_dimensions({1200, 800})
+	for _ in 0 ..< 2 {build_layout(&ui, 0)}
+	append(
+		&ui.pending,
+		Pending_Send{body = "Pending", group_id = "test", account_ref = ui.account_ref},
+	)
+	ui.scroll_pending = true
+	for _ in 0 ..< 3 {build_layout(&ui, 0); timeline_scroll_apply(&ui)}
+	build_layout(&ui, 0)
+	view = nendo.element(nendo.id("Timeline")).rect
+	pending := nendo.element(nendo.id("PendingRow", 0))
+	testing.expect(
+		t,
+		pending.found && abs(view.y + view.height - 8 - pending.rect.y - pending.rect.height) < 1,
+	)
+	clear(&ui.pending)
 	// Scroll to the middle, then grow content above it without moving the reader.
 	data.position.y = -full_height / 2
 	build_layout(&ui, 0)
@@ -353,7 +438,7 @@ performance_layout :: proc(t: ^testing.T) {
 	ui.messages[0].body = strings.clone(
 		"A newly decoded attachment.\nLine two.\nLine three.\nLine four.",
 	)
-	ui.messages[0].row_height = 0
+	ui.messages[0].row_measure = {}
 	build_layout(&ui, 0)
 	testing.expect(
 		t,
@@ -403,6 +488,35 @@ performance_layout :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.jump_id, "")
 	testing.expect_value(t, scroll_residual, nendo.Vector2{})
 	delete(ui.jump_id); ui.jump_id = ""
+	// A remote deletion still collapses from its measured height after culling and re-sorting.
+	testing.expect(t, !nendo.element(nendo.id("MsgRow", 900)).found)
+	before := ui.messages[900].row_height
+	ui.messages[900].row_measure = {}
+	ui.messages_account = strings.clone(ui.account_ref)
+	ui.messages_group = strings.clone(ui.chats[0].group_id)
+	records := [?]marmot.Timeline_Message_Record {
+		{kind = 9, message_id_hex = "timeline-already-deleted", deleted = true, timeline_at = 1},
+		{kind = 9, message_id_hex = "message-900", deleted = true, timeline_at = 2},
+	}
+	deleted_page := marmot.Timeline_Page {
+		messages     = raw_data(records[:]),
+		messages_len = len(records),
+	}
+	timeline_apply(nil, &ui, &deleted_page)
+	translation_reflow(&ui, "message-900")
+	commands = build_layout(&ui, 0)
+	clips: [2]bool
+	for command in commands {
+		if command.kind != .Scissor_Start {continue}
+		for i in 0 ..< len(clips) {clips[i] ||= command.id == nendo.id("MsgRow", u32(i)).id}
+	}
+	testing.expect_value(t, clips, [2]bool{false, true})
+	h := nendo.element(nendo.id("MsgRow", 1)).rect.height
+	testing.expect(t, h > TOMBSTONE_H && h <= before)
+	for id in ([]string{"timeline-already-deleted", "message-900"}) {
+		key, _ := delete_key(&del_seen, id)
+		delete(key)
+	}
 	// A page already in flight must not consume the explicit latest request.
 	page: marmot.Timeline_Page
 	job := Timeline_Work {

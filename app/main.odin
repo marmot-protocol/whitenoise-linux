@@ -182,6 +182,8 @@ handle_shell_foreground :: proc(ui: ^Ui_State, captured: bool) -> bool {
 
 build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 	tab_scroll_save(ui)
+	ui.timeline_entries, ui.timeline_root = nil, -1
+	defer {ui.timeline_entries, ui.timeline_root = nil, -1}
 	timeline_draw_offset = 0
 	if data := nendo.scroll(nendo.id("Timeline")); data.found {
 		timeline_draw_offset = data.position.y
@@ -1716,7 +1718,7 @@ app_main :: proc() {
 						card := nev_cards[nev_more_hover]
 						excerpt_toggle(&card.excerpt, nev_more_id)
 						nev_cards[nev_more_hover] = card
-						for &msg in ui.messages {msg.row_height = 0}
+						for &msg in ui.messages {msg.row_measure = {}}
 					}
 					if nev_hint_hover != "" && mouse_released() && !modal_open(&ui) {
 						preview_message(nev_cards[nev_hint_hover].geocache.hint)

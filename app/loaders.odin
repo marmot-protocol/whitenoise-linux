@@ -453,7 +453,14 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 	for &msg, i in ui.messages {msg.mls_order = i}
 	slice.stable_sort_by(ui.messages[:], proc(a, b: Msg_Ui) -> bool {return a.sort_at < b.sort_at})
 	for &msg, i in ui.messages {
-		if old, found := previous_ids[msg.id]; !found || old != i {msg.row_height = 0}
+		old, found := previous_ids[msg.id]
+		if found && previous[old].id != "" {
+			// An omitted row has no box to seed its eventual deletion collapse.
+			msg.row_height = previous[old].row_height
+		}
+		if !found || old != i {
+			msg.row_measure = {}
+		}
 	}
 
 	for &msg in ui.messages {

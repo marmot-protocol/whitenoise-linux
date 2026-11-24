@@ -457,6 +457,9 @@ Msg_Ui :: struct {
 	excerpt:             Excerpt,
 	sticker:             Sticker_Ref,
 	row_height, row_top: f32,
+	row_inset:           f32,
+	row_shape:           Timeline_Shape,
+	// Clear the metrics to remeasure without losing the last height.
 	row_measure:         [4]f32, // width, pixel scale, corner scale, action height
 	visible_since:       time.Tick, // live observation until first presented row
 	id:                  string, // message_id_hex
@@ -631,6 +634,8 @@ Ui_State :: struct {
 	sticker_focus:                       int,
 	sticker_page:                        Sticker_Page,
 	timeline_metric:                     [4]f32,
+	timeline_entries:                    []Timeline_Entry, // only live from declaration to measurement
+	timeline_root:                       int, // pinned row index for the same build, -1 if absent
 	messages_group, messages_account:    string,
 	account_ref:                         string, // active account's full hex; "" when logged out
 	accounts:                            [dynamic]Account_Row_Ui, // switcher rows; non-empty means signed in

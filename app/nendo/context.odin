@@ -114,6 +114,8 @@ Layout_Element :: struct {
 	wrap_intrinsic:           Dimensions,
 	wrap_exit_position:       Vector2,
 	declared_height:          f32,
+	virtual_prefix_height:    f32,
+	virtual_prefix_count:     i32,
 }
 
 @(private)

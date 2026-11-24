@@ -209,7 +209,14 @@ handle_reply_jump :: proc(ui: ^Ui_State) {
 	defer reply_jump_hover = ""
 	for msg, i in ui.messages {
 		if msg.id != reply_jump_hover {continue}
-		if !nendo.element(nendo.id("MsgRow", u32(i))).found {break}
+		mounted := nendo.element(nendo.id("MsgRow", u32(i))).found
+		cached :=
+			msg.thread_of == thread_cur(ui) &&
+			msg.row_height > 0 &&
+			msg.row_measure == ui.timeline_metric &&
+			!msg.system &&
+			nendo.element(nendo.id("TimelineRows")).found
+		if !mounted && !cached {break}
 		delete(ui.jump_id)
 		ui.jump_id = strings.clone(reply_jump_hover)
 		gs_flash_jump(ui, ui.jump_id)
@@ -571,14 +578,18 @@ del_seen: map[string]struct {
 // Height for a row mid-collapse, and whether it is still collapsing.
 // The body is already gone from the model by the time the tombstone
 // arrives, so what animates is the row closing to the tombstone's size.
-delete_collapse :: proc(index: u32, id: string) -> (h: f32, active: bool, started: bool) {
+delete_collapse :: proc(
+	id: string,
+	previous_height: f32,
+) -> (
+	h: f32,
+	active: bool,
+	started: bool,
+) {
 	entry, seen := del_seen[id]
 	started = !seen
 	if !seen {
-		entry = {rl.GetTime(), TOMBSTONE_H}
-		if box := nendo.element(nendo.id("MsgRow", index)); box.found {
-			entry.from = box.rect.height
-		}
+		entry = {rl.GetTime(), max(TOMBSTONE_H, previous_height)}
 		del_seen[strings.clone(id)] = entry
 	}
 	t := f32(clamp((rl.GetTime() - entry.at) / DEL_SECS, 0, 1))
@@ -849,7 +860,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 	collapse_h, collapsing := f32(0), false
 	if msg.deleted {
 		started := false
-		collapse_h, collapsing, started = delete_collapse(index, msg.id)
+		collapse_h, collapsing, started = delete_collapse(msg.id, msg.row_height)
 		// A message deleted while it was on screen comes apart. One
 		// already deleted when the chat opened just is a tombstone:
 		// `landed` marks the first sighting, which is that case.

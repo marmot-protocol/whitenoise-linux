@@ -97,7 +97,7 @@ hidden_message_perf :: proc(t: ^testing.T) {
 		append(&ui.chats, chat); append(&ui.messages, msg)
 		for opened in 0 ..< 2 {
 			for &layer in ui.messages[0].secrets {layer.open = opened == 1}
-			ui.messages[0].row_height = 0
+			ui.messages[0].row_measure = {}
 			samples: [7]f64
 			for frame in 0 ..< 9 {
 				start := time.tick_now()

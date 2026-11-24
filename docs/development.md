@@ -198,6 +198,8 @@ if nendo.box(nendo.id("Results"))({
 
 For unequal heights, pass cumulative heights instead of a count and a row height. For rows of height 32, 56, and 24, set `offsets := []f32{0, 32, 88, 112}` and call `nendo.virtual_rows(id, offsets, gap = 4)`. Build row `i` at height `offsets[i + 1] - offsets[i]`. Leave gaps out of `offsets`: nendo adds them between rows. Supply positive heights known before layout. Nendo searches the slice without copying it or measuring offscreen rows.
 
+The timeline measures messages with their preceding markers and passes measured stretches to `nendo.virtual_rows`. Unmeasured rows, jump targets, and deletion animations stay outside those stretches so they can lay out even offscreen. The timeline still owns the reading anchor and pending sends. It passes one viewport of `overscan` in each direction. When a growing clip has not resolved its height, nendo uses the current canvas or the declared height cap rather than the previous viewport height.
+
 | Path | What's there |
 | --- | --- |
 | `app/` | The whole app: panes, layout, state, workers, vault, media viewers |

@@ -384,7 +384,24 @@ status_bar_viewports :: proc(t: ^testing.T) {
 					}
 					target := nendo.id(page == .Profile ? "SignOutBtn" : "ZoomMinus")
 					if page == .Settings && section == .Chats {
-						testing.expect(t, nendo.element(nendo.id("BoardEmpty", 0)).found)
+						board := nendo.id("FolderBoard")
+						if data := nendo.scroll(viewport); data.found {
+							bounds := nendo.element(board).rect
+							data.position.y = clamp(
+								data.position.y + box.y - bounds.y,
+								-max(data.content.height - data.viewport.height, 0),
+								0,
+							)
+						}
+						if data := nendo.scroll(board); data.found {data.position.y = 0}
+						for _ in 0 ..< 3 {build_layout(&ui, 0)}
+						empty := nendo.element(nendo.id("BoardEmpty", 0))
+						testing.expect(
+							t,
+							empty.found &&
+							empty.rect.y < status.y &&
+							empty.rect.y + empty.rect.height > box.y,
+						)
 						target = nendo.id("BoardChat", 11)
 						for id in ([]string{"SettingsPage", "FolderBoard"}) {
 							data := nendo.scroll(nendo.id(id))

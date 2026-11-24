@@ -180,6 +180,7 @@ thread_root_plate :: proc(ui: ^Ui_State) {
 		if msg.id != cur {
 			continue
 		}
+		ui.timeline_root = i
 		message_row(u32(i), msg)
 		if nendo.box(nendo.id("ThreadRootRule"))(
 		{

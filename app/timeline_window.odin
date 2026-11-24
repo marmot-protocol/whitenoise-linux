@@ -10,23 +10,41 @@ Reading_Place :: struct {
 	offset:  f32,
 }
 
-// Measure new rows once, then retain their height while off screen.
-// One viewport of overscan keeps wheel/fling movement ahead of the clip.
 @(private)
-timeline_skip :: proc(ui: ^Ui_State, msg: Msg_Ui) -> bool {
-	if msg.row_height <= 0 ||
-	   msg.deleted ||
+TIMELINE_GAP :: u16(2)
+
+@(private)
+Timeline_Shape :: struct {
+	parts:   bit_set[enum u8 {
+		Unread,
+		Day,
+		Import,
+		Body,
+	}],
+	head:    Msg_Head,
+	blocked: int,
+}
+
+@(private)
+Timeline_Entry :: struct {
+	index, import_from: int,
+	shape:              Timeline_Shape,
+	mounted:            bool,
+}
+
+@(private)
+timeline_has_markers :: proc(shape: Timeline_Shape) -> bool {
+	return shape.parts - {.Body} != {} || shape.blocked > 0
+}
+
+@(private)
+timeline_cached_height :: proc(ui: ^Ui_State, msg: ^Msg_Ui, shape: Timeline_Shape) -> f32 {
+	if msg.deleted ||
 	   msg.id == ui.jump_id ||
-	   msg.row_measure != ui.timeline_metric {
-		return false
-	}
-	data := nendo.scroll(nendo.id("Timeline"))
-	if !data.found {
-		return false
-	}
-	y := msg.row_top + data.position.y
-	h := data.viewport.height
-	return y + msg.row_height < -h || y > 2 * h
+	   msg.row_measure != ui.timeline_metric ||
+	   msg.row_shape != shape ||
+	   (.Body in shape.parts && msg.row_height <= 0) {return 0}
+	return msg.row_inset + msg.row_height
 }
 
 @(private)
@@ -39,29 +57,54 @@ timeline_measure :: proc(ui: ^Ui_State) {
 	if !view.found || !data.found {
 		return
 	}
-	cur := thread_cur(ui)
-	// Keep the first visible row in place when an attachment above it grows.
+	// The scrollbar can update the requested offset after declaration.
+	// Measure against the offset these boxes actually used.
+	origin := view.rect.y + timeline_draw_offset
 	anchor_delta: f32
 	anchored := ui.scroll_pending || ui.jump_id != ""
-	for &msg, i in ui.messages {
-		if msg.thread_of != cur && msg.id != cur {
-			continue
+	if i := ui.timeline_root; i >= 0 {
+		msg := &ui.messages[i]
+		row := nendo.element(nendo.id("MsgRow", u32(i))).rect
+		top := row.y - origin
+		if !anchored &&
+		   msg.row_measure == ui.timeline_metric &&
+		   msg.row_height > 0 &&
+		   msg.row_top + timeline_draw_offset >= 0 {
+			anchor_delta, anchored = top - msg.row_top, true
 		}
-		row := nendo.element(nendo.id(msg.system ? "SysRow" : "MsgRow", u32(i)))
-		if row.found {
-			// The scrollbar can change the requested offset during layout. Measure
-			// against the offset these boxes used, so anchoring cannot undo a drag.
-			top := row.rect.y - view.rect.y - timeline_draw_offset
-			if !anchored &&
-			   msg.row_height > 0 &&
-			   msg.row_measure == ui.timeline_metric &&
-			   msg.row_top + timeline_draw_offset >= 0 {
-				anchor_delta = top - msg.row_top
-				anchored = true
-			}
-			msg.row_height = row.rect.height
-			msg.row_top = top
-			msg.row_measure = ui.timeline_metric
+		msg.row_top, msg.row_height = top, row.height
+		// The same message can be a continued row elsewhere.
+		msg.row_shape, msg.row_measure = {}, ui.timeline_metric
+	}
+	top := nendo.element(nendo.id("TimelineRows")).rect.y - origin
+	for entry in ui.timeline_entries {
+		msg := &ui.messages[entry.index]
+		old_top, old_height := msg.row_top, msg.row_height
+		valid := msg.row_measure == ui.timeline_metric
+		has_body := .Body in entry.shape.parts
+		if entry.mounted {
+			index := u32(entry.index)
+			body: nendo.Rect
+			if has_body {body = nendo.element(nendo.id(msg.system ? "SysRow" : "MsgRow", index)).rect}
+			slot := body
+			if timeline_has_markers(
+				entry.shape,
+			) {slot = nendo.element(nendo.id("TimelineEntry", index)).rect}
+			top = slot.y - origin
+			msg.row_height = body.height
+			msg.row_inset = has_body ? body.y - slot.y : slot.height
+			msg.row_measure, msg.row_shape = ui.timeline_metric, entry.shape
+		}
+		msg.row_top = top + msg.row_inset
+		// Advance through spacers using the same cached heights nendo used.
+		top = msg.row_top + msg.row_height + f32(TIMELINE_GAP)
+		if !anchored &&
+		   has_body &&
+		   valid &&
+		   old_height > 0 &&
+		   old_top + timeline_draw_offset >= 0 {
+			anchor_delta = msg.row_top - old_top
+			anchored = true
 		}
 	}
 	if abs(anchor_delta) > 1 {

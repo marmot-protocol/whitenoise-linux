@@ -1350,7 +1350,7 @@ handle_geo :: proc(ui: ^Ui_State) {
 			geo_declined = true
 		}
 		// The panel, the map and neither differ in height.
-		for &msg in ui.messages {msg.row_height = 0}
+		for &msg in ui.messages {msg.row_measure = {}}
 	}
 }
 

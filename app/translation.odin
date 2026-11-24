@@ -199,7 +199,7 @@ translation_clear :: proc(ui: ^Ui_State) {
 	for value in ([]string{s.account, s.group, s.source, s.target}) {delete(value)}
 	s.results, s.order, s.language_choice, s.paused = nil, 0, 0, false
 	s.account, s.group, s.source, s.target = "", "", "", ""
-	for &msg in ui.messages {msg.row_height = 0}
+	for &msg in ui.messages {msg.row_measure = {}}
 }
 
 // Results never cross an account, conversation, or language choice.
@@ -274,7 +274,7 @@ translation_request :: proc(
 		order    = s.order,
 	}
 	s.results[result.key] = result
-	for &row in ui.messages {if row.id == msg.id {row.row_height = 0}}
+	for &row in ui.messages {if row.id == msg.id {row.row_measure = {}}}
 }
 
 @(private)
@@ -516,6 +516,7 @@ translation_visible :: proc(ui: ^Ui_State, action: Translation_Viewport_Action) 
 		y := msg.row_top + view.position.y
 		if msg.mine ||
 		   (msg.thread_of != thread && msg.id != thread) ||
+		   msg.row_measure != ui.timeline_metric ||
 		   msg.row_height <= 0 ||
 		   y + msg.row_height < 0 ||
 		   y > view.viewport.height {continue}
@@ -633,7 +634,7 @@ translation_action :: proc(
 translation_reflow :: proc(ui: ^Ui_State, id: string) {
 	for &msg, i in ui.messages {
 		if msg.id != id {continue}
-		msg.row_height = 0
+		msg.row_measure = {}
 		if ui.sel_on && ui.sel_block / 4096 == u32(i) {sel_clear(ui)}
 		return
 	}

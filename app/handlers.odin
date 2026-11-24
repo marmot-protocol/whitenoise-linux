@@ -864,14 +864,14 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				if !msg.deleted &&
 				   nendo.pointer_over(nendo.id("MsgReveal", u32(i) * 4096 + u32(j))) {
 					secret.open = !secret.open
-					ui.messages[i].row_height = 0
+					ui.messages[i].row_measure = {}
 					return
 				}
 				if !secret.open {break}
 			}
 			if nendo.pointer_over(nendo.id("MessageMore", u32(i) * 4096)) {
 				excerpt_toggle(&ui.messages[i].excerpt, u32(i) * 4096)
-				ui.messages[i].row_height = 0
+				ui.messages[i].row_measure = {}
 				return
 			}
 			if len(msg.id) == 0 {
