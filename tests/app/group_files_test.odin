@@ -142,6 +142,7 @@ group_files_layout :: proc(t: ^testing.T) {
 		member_nick      = -1,
 		row_menu         = -1,
 	}
+	ui.prefs.reduce_motion = true
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil}
 	ui.account_ref = "offline-fixture"
@@ -204,33 +205,51 @@ group_files_layout :: proc(t: ^testing.T) {
 	defer {group_files_job = nil; delete(job.files); delete(job.senders)}
 	ui.nicknames["alice"] = "Alice"
 	defer delete(ui.nicknames)
+	panel, list := nendo.id("GroupFilesPanel"), nendo.id("GroupFilesList")
+	last_card := nendo.id("GroupFile", u32(len(job.files) - 1))
 	for width in ([]f32{1000, 400}) {
 		rl.SetWindowSize(i32(width), 800)
 		nendo.set_dimensions({width, 800})
-		if data := nendo.scroll(nendo.id("GroupFilesList")); data.found {data.position.y = 0}
-		for _ in 0 ..< 3 {build_layout(&ui, 0)}
-		data := nendo.scroll(nendo.id("GroupFilesList"))
-		testing.expect(t, data.found)
-		card := nendo.element(nendo.id("GroupFile", 0)).rect
-		columns := max(
-			1,
-			int((data.viewport.width + GROUP_FILE_GAP) / (card.width + GROUP_FILE_GAP)),
-		)
+		if data := nendo.scroll(panel); data.found {data.position.y = 0}
+		for _ in 0 ..< 3 {
+			nendo.update_scroll(.Off, {}, 0)
+			build_layout(&ui, 0)
+		}
+		data := nendo.scroll(panel)
+		if !testing.expect(t, data.found) {return}
+		first := nendo.element(nendo.id("GroupFile", 0))
+		if !testing.expect(t, first.found) {return}
+		card := first.rect
+		grid := nendo.element(list).rect
+		columns := int((grid.width + GROUP_FILE_GAP) / (card.width + GROUP_FILE_GAP) + 0.5)
+		if !testing.expect(t, columns > 0) {return}
+		testing.expect_value(t, card.height, width == 1000 ? f32(GROUP_FILE_CARD_H) : 216)
 		testing.expect_value(
 			t,
-			data.content.height,
-			f32(((600 + columns - 1) / columns) * (GROUP_FILE_CARD_H + GROUP_FILE_GAP)),
+			grid.height,
+			f32((len(job.files) + columns - 1) / columns) * (card.height + GROUP_FILE_GAP),
 		)
-		for fraction in ([]f32{0, 0.5, 1}) {
-			data.position.y = -fraction * (data.content.height - data.viewport.height)
+		travel := data.content.height - data.viewport.height
+		testing.expect(t, travel > 0)
+		viewport := nendo.element(panel).rect
+		for step in 0 ..< 3 {
+			delta: f32
+			if step != 0 {
+				nendo.set_pointer({card.x + card.width + GROUP_FILE_GAP / 2, viewport.y + 10}, .Up)
+				delta =
+					step == 1 ? -travel / (2 * NENDO_SCROLL_PIXELS) : -travel / NENDO_SCROLL_PIXELS
+			}
+			nendo.update_scroll(.Off, {0, delta}, 0)
 			commands := build_layout(&ui, 0)
+			data = nendo.scroll(panel)
+			testing.expect(t, abs(data.position.y + f32(step) * travel / 2) < 0.01)
+			testing.expect_value(t, nendo.element(panel).rect, viewport)
 			mounted := 0
 			for _, i in job.files {if nendo.element(nendo.id("GroupFile", u32(i))).found {mounted += 1}}
 			testing.expect(t, mounted > 0 && mounted < 50)
 			testing.expect(t, !layout_overflow)
-			box := nendo.element(nendo.id("GroupFilesPanel")).rect
-			testing.expect(t, box.x + box.width <= width + 0.01)
-			if fraction == 0 {
+			testing.expect(t, viewport.x + viewport.width <= width + 0.01)
+			if step == 2 {
 				rl.BeginDrawing(); render_nendo(commands)
 				rl.TakeScreenshot(
 					width == 1000 ? "/tmp/wn-group-files-wide.png" : "/tmp/wn-group-files-narrow.png",
@@ -238,11 +257,16 @@ group_files_layout :: proc(t: ^testing.T) {
 				rl.EndDrawing()
 			}
 		}
-		testing.expect(t, nendo.element(nendo.id("GroupFile", 599)).found)
-		list_y := nendo.element(nendo.id("GroupFilesList")).rect.y
+		last := nendo.element(last_card)
+		testing.expect(t, last.found && last.rect.y >= viewport.y)
+		testing.expect(t, last.rect.y + last.rect.height <= viewport.y + viewport.height + 0.01)
+		nendo.set_pointer({-100, -100}, .Up)
+		data.position.y = 0
+		build_layout(&ui, 0)
+		list_y := nendo.element(list).rect.y
 		ui.group_files_menu = .Sender
 		build_layout(&ui, 0)
-		testing.expect(t, abs(nendo.element(nendo.id("GroupFilesList")).rect.y - list_y) <= 1)
+		testing.expect_value(t, nendo.element(list).rect.y, list_y)
 		testing.expect(t, nendo.element(nendo.id("GroupFilesOption", 1)).found)
 		menu := nendo.element(nendo.id("GroupFilesOptions")).rect
 		trigger := nendo.element(nendo.id("GroupFilesFilter", u32(Group_File_Menu.Sender))).rect
@@ -251,6 +275,41 @@ group_files_layout :: proc(t: ^testing.T) {
 		testing.expect(t, menu.x >= 0 && menu.x + menu.width <= width)
 		ui.group_files_menu = .None
 	}
+	data := nendo.scroll(panel)
+	mid := -(data.content.height - data.viewport.height) / 2
+	data.position.y = mid
+	nendo.update_scroll(.Off, {}, 0)
+	build_layout(&ui, 0)
+	rl.SetWindowSize(400, 220)
+	nendo.set_dimensions({400, 220})
+	nendo.update_scroll(.Off, {}, 0)
+	build_layout(&ui, 0)
+	short := nendo.scroll(panel)
+	if !testing.expect(t, short.found) {return}
+	testing.expect_value(t, short.position.y, mid)
+	viewport := nendo.element(panel).rect
+	nendo.set_pointer({viewport.x + viewport.width / 2, viewport.y + viewport.height / 2}, .Up)
+	nendo.update_scroll(.Off, {0, -short.content.height / NENDO_SCROLL_PIXELS}, 0)
+	commands := build_layout(&ui, 0)
+	last := nendo.element(last_card)
+	testing.expect(
+		t,
+		last.found && last.rect.y < viewport.y + viewport.height,
+		fmt.tprintf("last=%v viewport=%v", last, viewport),
+	)
+	testing.expect(t, last.rect.y + last.rect.height > viewport.y)
+	rl.BeginDrawing(); render_nendo(commands)
+	rl.TakeScreenshot("/tmp/wn-group-files-short.png")
+	rl.EndDrawing()
+	nendo.set_pointer({-100, -100}, .Up)
+	nendo.scroll(panel).position.y = mid
+	rl.SetWindowSize(400, 800)
+	nendo.set_dimensions({400, 800})
+	nendo.update_scroll(.Off, {}, 0)
+	build_layout(&ui, 0)
+	testing.expect_value(t, nendo.scroll(panel).position.y, mid)
+	nendo.scroll(panel).position.y = 0
+	build_layout(&ui, 0)
 	press :: proc(ui: ^Ui_State, key: rl.KeyboardKey) {
 		rl.PushKey(key, true)
 		handle_group_files(ui)

@@ -263,7 +263,8 @@ group_files_had_senders: bool
 
 @(private)
 group_files_panel :: proc(ui: ^Ui_State) {
-	defer scrollbar(nendo.id("GroupFilesPanel"))
+	compact := single_pane()
+	pad, gap := compact ? u16(12) : u16(18), compact ? u16(8) : u16(16)
 	option_height := tap_size() ? tap_min() : GROUP_FILE_OPTION_H
 	job := group_files_job
 	ready := job != nil && job.worker == nil && !sync.atomic_load(&job.cancel)
@@ -281,20 +282,51 @@ group_files_panel :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
-	if nendo.box(nendo.id("GroupFilesPanel"))(
+	panel, list := nendo.id("GroupFilesPanel"), nendo.id("GroupFilesList")
+	head, filters := nendo.id("GroupFilesHead"), nendo.id("GroupFilesFilters")
+	defer scrollbar(panel)
+
+	columns, rows, first, last: int
+	cell, card_height, stride: f32
+	if ready && job.err == "" && len(matches) > 0 {
+		width := max(1, page_w(ui) - 2 * f32(pad))
+		columns = max(1, int((width + GROUP_FILE_GAP) / 160))
+		cell = (width - f32((columns - 1) * GROUP_FILE_GAP)) / f32(columns)
+		rows = (len(matches) + columns - 1) / columns
+		card_height = tap_size() ? f32(216) : f32(GROUP_FILE_CARD_H)
+		stride = card_height + GROUP_FILE_GAP
+
+		canvas_height := f32(rl.GetScreenHeight()) / UI_ZOOM
+		top: f32
+		if data := nendo.scroll(panel); data.found {
+			list_top := f32(pad) + 2 * f32(gap)
+			for id in ([2]nendo.Id{head, filters}) {
+				part := nendo.element(id)
+				list_top += part.found ? part.rect.height : f32(option_height)
+			}
+			viewport := min(data.viewport.height, canvas_height)
+			content := list_top + f32(rows) * stride + f32(pad)
+			offset := clamp(-data.position.y, 0, max(0, content - viewport))
+			data.position.y = -offset
+			top = max(0, offset - list_top)
+		}
+		first = max(0, int(top / stride) - 1)
+		// The canvas also bounds the viewport on the first frame of a resize.
+		last = min(rows, int((top + canvas_height) / stride) + 2)
+	}
+
+	if nendo.box(panel)(
 	{
 		width = nendo.grow(),
 		height = nendo.grow(),
 		direction = .Column,
-		padding = nendo.pad(single_pane() ? 12 : 18),
-		gap = single_pane() ? 8 : 16,
+		padding = nendo.pad(pad),
+		gap = gap,
 		clip = {y = true, scroll = true},
 		color = BG,
 	},
 	) {
-		if nendo.box(nendo.id("GroupFilesHead"))(
-		{width = nendo.grow(), gap = 10, align = {y = .Center}},
-		) {
+		if nendo.box(head)({width = nendo.grow(), gap = 10, align = {y = .Center}}) {
 			nendo.text(tr("Files"), {font = FONT_TITLE, size = 22, color = TEXT})
 			if ready {
 				if nendo.box(nendo.id("GroupFilesCount"))(
@@ -339,7 +371,7 @@ group_files_panel :: proc(ui: ^Ui_State) {
 				if hovered() {tooltip(tr("Back to chat"))}
 			}
 		}
-		if nendo.box(nendo.id("GroupFilesFilters"))({width = nendo.grow(), gap = 8}) {
+		if nendo.box(filters)({width = nendo.grow(), gap = 8}) {
 			for menu in ([]Group_File_Menu{.Type, .Sender}) {
 				if menu == .Sender && !group_files_had_senders {continue}
 				active := menu == .Type ? ui.group_files_type != .All : ui.group_files_sender != ""
@@ -459,45 +491,31 @@ group_files_panel :: proc(ui: ^Ui_State) {
 				)
 				micro_button("GroupFilesReset", tr("Clear filters"))
 			}
+			return
 		}
-		if nendo.box(nendo.id("GroupFilesList"))(
-		{
-			width = nendo.grow(),
-			height = nendo.grow(min = 44),
-			direction = .Column,
-			clip = {y = true, scroll = true},
-		},
-		) {
-			width := max(120, page_w(ui) - 36)
-			columns := max(1, int((width + GROUP_FILE_GAP) / 160))
-			cell := (width - f32((columns - 1) * GROUP_FILE_GAP)) / f32(columns)
-			rows := (len(matches) + columns - 1) / columns
-			stride := (tap_size() ? 216 : GROUP_FILE_CARD_H) + GROUP_FILE_GAP
-			data := nendo.scroll(nendo.id("GroupFilesList"))
-			first := data.found ? clamp(int(-data.position.y / f32(stride)) - 1, 0, rows) : 0
-			last := min(rows, first + int(f32(rl.GetScreenHeight()) / UI_ZOOM / f32(stride)) + 3)
+		if nendo.box(list)({width = nendo.grow(), direction = .Column}) {
 			if nendo.box(nendo.id("GroupFilesBefore"))(
-			{height = nendo.fixed(f32(first * stride))},
+			{height = nendo.fixed(f32(first) * stride)},
 			) {}
 			for row in first ..< last {
 				if nendo.box(nendo.id("GroupFileRow", u32(row)))(
-				{width = nendo.grow(), height = nendo.fixed(f32(stride)), gap = GROUP_FILE_GAP},
+				{width = nendo.grow(), height = nendo.fixed(stride), gap = GROUP_FILE_GAP},
 				) {
 					for i in matches[row * columns:min((row + 1) * columns, len(matches))] {
-						group_file_card(ui, job, i, cell)
+						group_file_card(ui, job, i, {cell, card_height})
 					}
 				}
 			}
 			if nendo.box(nendo.id("GroupFilesAfter"))(
-			{height = nendo.fixed(f32((rows - last) * stride))},
+			{height = nendo.fixed(f32(rows - last) * stride)},
 			) {}
 		}
-		scrollbar(nendo.id("GroupFilesList"))
 	}
 }
 
 @(private)
-group_file_card :: proc(ui: ^Ui_State, job: ^Group_Files_Job, index: int, width: f32) {
+group_file_card :: proc(ui: ^Ui_State, job: ^Group_Files_Job, index: int, size: nendo.Dimensions) {
+	width := size.width
 	file := job.files[index]
 	ref := media_reference(file.record, file.index)
 	name := string(ref.file_name)
@@ -513,7 +531,7 @@ group_file_card :: proc(ui: ^Ui_State, job: ^Group_Files_Job, index: int, width:
 	if nendo.box(nendo.id("GroupFile", u32(index)))(
 	{
 		width = nendo.fixed(width),
-		height = nendo.fixed(tap_size() ? 216 : GROUP_FILE_CARD_H),
+		height = nendo.fixed(size.height),
 		direction = .Column,
 		color = hovered() ? HOVER : CARD,
 		border = {color = hovered() ? ACCENT : CARD_BORDER, width = bw()},
@@ -644,7 +662,9 @@ handle_group_files :: proc(ui: ^Ui_State) {
 			if ui.group_files_menu ==
 			   .Type {ui.group_files_type = Group_File_Type(i)} else {ui.group_files_sender = i == 0 ? "" : job.senders[i - 1]}
 			ui.group_files_menu = .None
-			if data := nendo.scroll(nendo.id("GroupFilesList")); data.found {data.position.y = 0}
+			if data := nendo.scroll(nendo.id("GroupFilesPanel")); data.found {
+				data.position.y = 0
+			}
 			return
 		}
 		if mouse_released() {ui.group_files_menu = .None}
