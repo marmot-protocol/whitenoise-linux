@@ -42,7 +42,8 @@ jobs:
       BOAT_CI_KEY: ${{ github.event_name != 'pull_request' && secrets.BOAT_CI_KEY || '' }}
       WN_RELEASE_VERSION: ${{ inputs.version }}
       RELEASE: ${{ matrix.target == 'windows-amd64' && github.event_name == 'push' && github.ref_type == 'tag' && inputs.version != '' }}
-      CARGO_BUILD_JOBS: 6
+      # ARM64 release codegen can exceed the container's memory at six jobs.
+      CARGO_BUILD_JOBS: ${{ matrix.target == 'linux-arm64' && 2 || 6 }}
       WN_BUILD_JOBS: 6
       CMAKE_BUILD_PARALLEL_LEVEL: 6
     strategy:
