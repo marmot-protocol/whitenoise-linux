@@ -28,7 +28,10 @@ when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
 	@(private)
 	appimage_update_start :: proc(test_feed: string, mode: Update_Mode) -> bool {
 		started := wn_appimage_start(
-			strings.clone_to_cstring(helper_path("wn-appimage-update"), context.temp_allocator),
+			strings.clone_to_cstring(
+				helper_path("appimage-update-lib/wn-appimage-update"),
+				context.temp_allocator,
+			),
 			strings.clone_to_cstring(data_home, context.temp_allocator),
 			strings.clone_to_cstring(APP_VERSION, context.temp_allocator),
 			strings.clone_to_cstring(test_feed, context.temp_allocator),

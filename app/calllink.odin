@@ -29,6 +29,7 @@ import "core:thread"
 
 import "nendo"
 
+_ :: os
 _ :: windows
 
 @(private)
@@ -292,7 +293,7 @@ call_client_worker :: proc(app: Call_App) {
 	defer frame_wake()
 	mime := fmt.aprintf("x-scheme-handler/%s", CALL_BRANDS[app].scheme)
 	defer delete(mime)
-	state, out, errs, err := os.process_exec(
+	state, out, errs, err := host_process_exec(
 		{command = {"xdg-mime", "query", "default", mime}},
 		context.allocator,
 	)

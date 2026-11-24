@@ -13,6 +13,7 @@ read -r -a EXTRA_FLAGS <<< "${CFLAGS:-}"
 "${AR_COMMAND[@]}" rcs "$OUT/libwnappimage.a" "$OUT/appimage_update_client.o"
 if [[ "$MODE" == bridge ]]; then exit 0; fi
 if [[ "$MODE" != helper ]]; then printf 'Usage: %s [bridge|helper] [out-dir]\n' "$0" >&2; exit 2; fi
+source "$HERE/scripts/appimage-runtime.sh"
 
 SOURCE="$HERE/vendor/appimage-updater"
 WORK="$OUT/appimage-updater-build"
@@ -70,11 +71,13 @@ cmake -S "$HERE/scripts/appimage-updater" -B "$WORK/helper" -G Ninja \
   -DFETCHCONTENT_SOURCE_DIR_ARGS="$SOURCE/appimageupdate-args"
 cmake --build "$WORK/helper" --target squashfuse-EXTERNAL --parallel "${JOBS:-2}"
 cmake --build "$WORK/helper" --target wn-appimage-update --parallel "${JOBS:-2}"
-cp "$WORK/helper/wn-appimage-update" "$OUT/wn-appimage-update"
 LIBS="$OUT/appimage-update-lib"
 rm -rf "$LIBS"
 mkdir -p "$LIBS"
-cp -L "$(command -v gpg)" "$LIBS/gpg"
+updater="$WORK/helper/wn-appimage-update"
+gpg="$(command -v gpg)"
+cp "$updater" "$LIBS/wn-appimage-update.elf"
+cp -L "$gpg" "$LIBS/gpg.elf"
 for repository in "$SOURCE"/*; do
   for license in "$repository"/LICENSE* "$repository"/COPYING* "$repository"/Copyright* "$repository"/lib/*/LICENSE* "$repository"/lib/*/COPYING*; do
     [[ -f "$license" ]] || continue
@@ -105,15 +108,15 @@ copy_system_license() {
     done
   fi
 }
-copy_system_license "$(command -v gpg)"
+copy_system_license "$gpg"
 for license in /usr/share/common-licenses/{GPL-2,GPL-3,LGPL-2,LGPL-2.1,LGPL-3} /usr/share/licenses/common/{GPL2,GPL3,LGPL2,LGPL2.1,LGPL3}/*; do
   [[ -f "$license" ]] || continue
   cp -L "$license" "$LIBS/LICENSE.common.$(basename "$(dirname "$license")").$(basename "$license")"
 done
 # Use ldd's loader-resolved transitive closure, copying real files rather than
 # symlinks: the runtime stages them O_NOFOLLOW outside the AppImage mount.
-# Never bundle glibc/the loader: mixing those with the host breaks execution.
-for executable in "$WORK/helper/wn-appimage-update" "$LIBS/gpg"; do
+# Copy glibc separately so the loader and its libraries come from one build.
+for executable in "$updater" "$gpg"; do
   while read -r name arrow resolved remainder; do
     if [[ "$arrow" == '=>' && "$resolved" == 'not' ]]; then printf 'Missing library: %s\n' "$name" >&2; exit 1; fi
     [[ "$arrow" == '=>' && "$resolved" == /* ]] || continue
@@ -127,7 +130,11 @@ for executable in "$WORK/helper/wn-appimage-update" "$LIBS/gpg"; do
     copy_system_license "$resolved"
   done < <(ldd "$executable")
 done
-# libappimageupdate is linked from the build tree: set the packaged binary's
-# lookup path independently of that tree. LD_LIBRARY_PATH switches to the
-# private staged lib directory when the helper is detached.
-patchelf --set-rpath '$ORIGIN/appimage-update-lib' "$OUT/wn-appimage-update"
+copy_appimage_glibc "$LIBS"
+patchelf --set-rpath '$ORIGIN' "$LIBS/wn-appimage-update.elf"
+write_appimage_launcher "$LIBS/wn-appimage-update" . wn-appimage-update.elf
+# Verification uses public keys only. An agent can outlive the verifier and
+# race removal of its temporary keyring. GPG looks for gpgconf.ctl in the
+# stage's bin directory. Do not inherit a host common.conf that enables keyboxd.
+printf 'rootdir = /proc/self/cwd\nsysconfdir = /proc/self/cwd/bin\n' > "$LIBS/gpgconf.ctl"
+write_appimage_launcher "$LIBS/gpg" . gpg.elf --no-autostart

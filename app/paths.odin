@@ -11,6 +11,9 @@ package main
 import "core:os"
 import "core:path/filepath"
 import "core:strings"
+import "core:sys/linux"
+
+_ :: linux
 
 when ODIN_OS == .Windows {
 	foreign import bundle_crt "system:ucrt"
@@ -74,13 +77,40 @@ res_font :: proc(name: string) -> cstring {
 }
 
 @(private)
-executable_path :: proc(allocator := context.temp_allocator) -> string {
+Executable_Target :: enum {
+	Payload,
+	Launch,
+}
+
+@(private)
+executable_path :: proc(
+	allocator := context.temp_allocator,
+	target := Executable_Target.Payload,
+) -> string {
 	// OpenBSD has no API for this; see paths_openbsd.odin.
 	when ODIN_OS == .OpenBSD {
 		if path := argv0_path(allocator); path != "" {return path}
 	}
 	path, err := os.get_executable_path(allocator)
 	if err != nil {return ""}
+	when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
+		// With an explicit ELF interpreter, /proc/self/exe names the loader.
+		loader_suffix :: "/usr/lib/ld-linux-x86-64.so.2"
+		if strings.has_suffix(path, loader_suffix) {
+			dir := os.get_env("APPDIR", context.temp_allocator)
+			if dir != "" && path[:len(path) - len(loader_suffix)] == dir {
+				delete(path, allocator)
+				if target == .Launch {
+					image := os.get_env("APPIMAGE", context.temp_allocator)
+					if filepath.is_abs(image) {return strings.clone(image, allocator)}
+					entry, _ := filepath.join({dir, "usr", "bin", "whitenoise"}, allocator)
+					return entry
+				}
+				binary, _ := filepath.join({dir, "usr", "bin", "whitenoise.elf"}, allocator)
+				return binary
+			}
+		}
+	}
 	return path
 }
 
@@ -130,6 +160,15 @@ curl_path :: proc() -> string {
 
 @(private)
 configure_bundle_environment :: proc() {
+	when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
+		audio_root := os.get_env("WN_APPIMAGE_AUDIO_ROOT", context.temp_allocator)
+		if strings.has_prefix(audio_root, "/proc/") {
+			// AppRun opens fd 9 for bundle names containing a colon.
+			FD_CLOEXEC :: linux.Fd(1)
+			err := linux.fcntl_setfd(9, .SETFD, FD_CLOEXEC)
+			assert(err == .NONE)
+		}
+	}
 	when ODIN_OS == .Windows || ODIN_OS == .Darwin {
 		fonts, err := filepath.join({res_dir(), "fonts.conf"}, context.temp_allocator)
 		if err == nil &&

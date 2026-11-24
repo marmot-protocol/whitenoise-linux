@@ -1837,7 +1837,7 @@ spawn_cmd :: proc(cmdline: string) {
 		)
 		windows.ShellExecuteW(nil, nil, windows.utf8_to_wstring("powershell.exe"), params, nil, 0)
 	} else {
-		state, out, errout, _ := os.process_exec(
+		state, out, errout, _ := host_process_exec(
 			{command = {"sh", "-c", fmt.tprintf("%s >/dev/null 2>&1 &", cmdline)}},
 			context.temp_allocator,
 		)
@@ -1880,7 +1880,7 @@ open_external :: proc(target: string) {
 // Use each desktop's user-level launch-at-login mechanism. Relocating an
 // unpacked app requires toggling this setting again.
 apply_autostart :: proc(on: bool) {
-	exe := executable_path()
+	exe := executable_path(target = .Launch)
 	if exe == "" {return}
 	when ODIN_OS == .Windows {
 		key := `HKCU:\Software\Microsoft\Windows\CurrentVersion\Run`

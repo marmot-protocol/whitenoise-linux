@@ -80,11 +80,11 @@ static void cleanup_stage(void) {
         return;
     }
     /* Remove only our private workspace. It never contains user-owned files. */
-    char libs[PATH_MAX];
-    if (snprintf(libs, sizeof libs, "%s/lib", client.stage) >= (int)sizeof libs) {
+    char bin[PATH_MAX];
+    if (snprintf(bin, sizeof bin, "%s/bin", client.stage) >= (int)sizeof bin) {
         return;
     }
-    DIR *dir = opendir(libs);
+    DIR *dir = opendir(bin);
     if (dir) {
         struct dirent *entry;
         while ((entry = readdir(dir))) {
@@ -92,12 +92,12 @@ static void cleanup_stage(void) {
                 continue;
             }
             char file[PATH_MAX];
-            if (snprintf(file, sizeof file, "%s/%s", libs, entry->d_name) < (int)sizeof file) {
+            if (snprintf(file, sizeof file, "%s/%s", bin, entry->d_name) < (int)sizeof file) {
                 unlink(file);
             }
         }
         closedir(dir);
-        rmdir(libs);
+        rmdir(bin);
     }
     dir = opendir(client.stage);
     if (dir) {
@@ -116,8 +116,8 @@ static void cleanup_stage(void) {
         rmdir(client.stage);
     }
 }
-static int stage_helper(char executable[PATH_MAX], char libs[PATH_MAX]) {
-    char source[PATH_MAX], destination[PATH_MAX];
+static int stage_helper(char executable[PATH_MAX]) {
+    char source[PATH_MAX], destination[PATH_MAX], bin[PATH_MAX];
     char *slash = strrchr(client.image, '/');
     if (!slash || (size_t)(slash - client.image) >= sizeof source) {
         return 0;
@@ -135,16 +135,14 @@ static int stage_helper(char executable[PATH_MAX], char libs[PATH_MAX]) {
         atomic_store(&client.status, STATUS_DIRECTORY);
         return 0;
     }
-    if (snprintf(executable, PATH_MAX, "%s/wn-appimage-update", client.stage) >= PATH_MAX ||
-        snprintf(libs, PATH_MAX, "%s/lib", client.stage) >= PATH_MAX || mkdir(libs, 0700)) {
-        return 0;
-    }
-    if (!copy_file(client.helper, executable, 0700)) {
+    if (snprintf(bin, sizeof bin, "%s/bin", client.stage) >= (int)sizeof bin ||
+        snprintf(executable, PATH_MAX, "%s/wn-appimage-update", bin) >= PATH_MAX ||
+        mkdir(bin, 0700)) {
         return 0;
     }
     slash = strrchr(client.helper, '/');
-    if (!slash || snprintf(source, sizeof source, "%.*s/appimage-update-lib",
-                           (int)(slash - client.helper), client.helper) >= (int)sizeof source) {
+    if (!slash || snprintf(source, sizeof source, "%.*s", (int)(slash - client.helper),
+                           client.helper) >= (int)sizeof source) {
         return 0;
     }
     DIR *dir = opendir(source);
@@ -159,7 +157,7 @@ static int stage_helper(char executable[PATH_MAX], char libs[PATH_MAX]) {
         }
         char file[PATH_MAX];
         if (snprintf(file, sizeof file, "%s/%s", source, entry->d_name) >= (int)sizeof file ||
-            snprintf(destination, sizeof destination, "%s/%s", libs, entry->d_name) >=
+            snprintf(destination, sizeof destination, "%s/%s", bin, entry->d_name) >=
                 (int)sizeof destination ||
             !copy_file(file, destination, 0700)) {
             ok = 0;
@@ -172,9 +170,8 @@ static int stage_helper(char executable[PATH_MAX], char libs[PATH_MAX]) {
 static void *update_worker(void *argument) {
     int channel = (int)(intptr_t)argument;
     int log_fd = -1;
-    char executable[PATH_MAX], libs[PATH_MAX], home[PATH_MAX];
-    if (!realpath(client.home, home) || !stage_helper(executable, libs) ||
-        atomic_load(&client.stop)) {
+    char executable[PATH_MAX], home[PATH_MAX];
+    if (!realpath(client.home, home) || !stage_helper(executable) || atomic_load(&client.stop)) {
         goto failed;
     }
     char log_path[PATH_MAX];
@@ -193,25 +190,6 @@ static void *update_worker(void *argument) {
                     client.feed, pid,          client.stage, client.automatic ? "1" : "0",
                     NULL};
     extern char **environ;
-    size_t count = 0;
-    while (environ[count]) {
-        ++count;
-    }
-    char **environment = calloc(count + 2, sizeof(char *));
-    char ldpath[PATH_MAX + 32];
-    snprintf(ldpath, sizeof ldpath, "LD_LIBRARY_PATH=%s", libs);
-    if (!environment) {
-        goto failed;
-    }
-    size_t used = 0;
-    for (size_t i = 0; i < count; ++i) {
-        if (!strncmp(environ[i], "LD_LIBRARY_PATH=", 16) ||
-            !strncmp(environ[i], "LD_PRELOAD=", 11)) {
-            continue;
-        }
-        environment[used++] = environ[i];
-    }
-    environment[used++] = ldpath;
     client.child = fork();
     if (!client.child) {
         if (setsid() < 0 || chdir(client.stage) != 0 || dup2(channel, STDIN_FILENO) < 0 ||
@@ -228,12 +206,11 @@ static void *update_worker(void *argument) {
                 close(fd);
             }
         }
-        execve(executable, args, environment);
+        execve(executable, args, environ);
         _exit(127);
     }
     close(log_fd);
     log_fd = -1;
-    free(environment);
     if (client.child < 0) {
         goto failed;
     }
@@ -305,7 +282,8 @@ int wn_appimage_start(const char *helper, const char *home, const char *version,
     const char *image = getenv("APPIMAGE"), *appdir = getenv("APPDIR");
     char running[PATH_MAX];
     ssize_t n = readlink("/proc/self/exe", running, sizeof running - 1);
-    if (!image || !appdir || image[0] != '/' || appdir[0] != '/' || n <= 0) {
+    if (!image || !appdir || image[0] != '/' || appdir[0] != '/' || n <= 0 ||
+        access(helper, X_OK) != 0) {
         return 0;
     }
     running[n] = 0;

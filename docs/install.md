@@ -13,16 +13,16 @@ Every tagged release publishes builds for Linux, Windows, macOS and OpenBSD on t
   <img alt="Who updates each package. Windows: Velopack checks at launch and every six hours, for the installer and the portable zip. AppImage: AppImageUpdate fetches signed deltas, with automatic downloads off until you opt in. macOS: Sparkle checks the Ed25519 signature before extracting. Flatpak: Orchard 0.3 or newer updates from outside the sandbox; the standalone bundle has no update remote. Arch: the AUR, with whitenoise-linux-bin or a source build. Tarballs for Linux and OpenBSD, and development builds: you download each release. AppImage and macOS update checks are off while a SOCKS5 proxy is configured." src="../assets/docs/install-updates-light.svg" width="880">
 </picture>
 
-## The AppImage needs nothing beside it
+## Run the AppImage
 
-The self-contained x86-64 AppImage carries its own libraries, fonts, and emoji set:
+The x86-64 AppImage bundles glibc, the app's libraries, fonts, and emoji. It still uses your system's Linux kernel, display drivers, and desktop services.
 
 ```sh
 chmod +x WhiteNoise-*-x86_64.AppImage
 ./WhiteNoise-*-x86_64.AppImage
 ```
 
-Japanese and Korean text are the one exception. Noto Sans CJK is tens of megabytes, so it is not bundled and comes from your system instead: `noto-fonts-cjk` on Arch, `fonts-noto-cjk` on Debian and Ubuntu.
+For Japanese and Korean text, install Noto Sans CJK from your system packages: `noto-fonts-cjk` on Arch or `fonts-noto-cjk` on Debian and Ubuntu.
 
 ## Flatpak through Orchard, or as a bare bundle
 
