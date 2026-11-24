@@ -9,7 +9,7 @@
 # scripts/build.sh then produces wn-webview and webxdc apps run inside the
 # sandbox. The freedesktop runtime has no WebKitGTK, and building it as
 # a module here would cost an hour of CI per release. The 25.08 base
-# keeps the rust-stable and llvm21 SDK extensions below valid.
+# provides the llvm21 SDK extension below.
 #
 # The SDK ships SDL 3.2; GPU render states require SDL 3.4 or newer,
 # built below. It also ships libarchive, curl, cairo, glib and ffmpeg.
@@ -33,7 +33,6 @@ runtime: org.gnome.Platform
 runtime-version: "50"
 sdk: org.gnome.Sdk
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.rust-stable
   - org.freedesktop.Sdk.Extension.llvm21
 command: whitenoise
 
@@ -164,22 +163,23 @@ modules:
     build-options:
       build-args:
         - --share=network
-      append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/llvm21/bin:/app/odin
+      prepend-path: /run/build/whitenoise-linux/build/cargo-home/bin
+      append-path: /usr/lib/sdk/llvm21/bin:/app/odin
       # Passed privately from the build host, never written into the manifest.
       secret-env:
         - WN_METRICS_WRITE_TOKEN
         - WN_AUDIT_WRITE_TOKEN
       env:
-        CARGO_HOME: /run/build/whitenoise-linux/cargo
+        CARGO_HOME: /run/build/whitenoise-linux/build/cargo-home
+        RUSTUP_HOME: /run/build/whitenoise-linux/build/rustup
         # Odin's `foreign import "system:…"` ignores LDFLAGS; this is how
         # the linker finds SDL3, libmpv and poppler built above.
         # scripts/build.sh passes it as -L so SDL 3.4 wins over the SDK's.
         LIBRARY_PATH: /app/lib
     build-commands:
-      # Fetch sources before restoring outputs: build.sh must create the MDK
-      # checkout, and pin changes must not delete a freshly restored bundle.
-      - trap 'rm -f build/observability-tokens.toml' EXIT; scripts/build.sh sources
-      - if [ -d .flatpak-cache ]; then cp -a .flatpak-cache/. .; fi
+      # The build runs cargo inside vendor/mdk, which selects MDK's pinned
+      # toolchain and llvm-tools-preview. Install neither into /app.
+      - chmod +x rustup-init && ./rustup-init -y --no-modify-path --default-toolchain none
       # Do not let Flatpak's debug/source export retain the generated TOML.
       - trap 'rm -f build/observability-tokens.toml' EXIT; scripts/build.sh
       - scripts/install-tree.sh /app dev.ipf.whitenoise
@@ -190,3 +190,6 @@ modules:
           - build
           - vendor
           - .git
+      - type: file
+        url: https://static.rust-lang.org/rustup/archive/1.29.0/x86_64-unknown-linux-gnu/rustup-init
+        sha256: 4acc9acc76d5079515b46346a485974457b5a79893cfb01112423c89aeb5aa10

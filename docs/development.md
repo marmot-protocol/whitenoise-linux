@@ -116,25 +116,18 @@ Keep `build/cargo/native` and `build/cross/<target>/cargo` between builds. Cargo
 
 </details>
 
-## Five CI jobs, two runner slots, two warm caches
+## Where the build checks run
 
-<picture>
-  <source media="(max-width: 600px) and (prefers-color-scheme: dark)" srcset="../assets/docs/development-ci-narrow-dark.svg">
-  <source media="(max-width: 600px)" srcset="../assets/docs/development-ci-narrow-light.svg">
-  <source media="(prefers-color-scheme: dark)" srcset="../assets/docs/development-ci-dark.svg">
-  <img alt="The build-server workflow queues five jobs on two isolated runner slots, six build threads per job. Native and Linux jobs use the wn-cache-2 cache: native Linux runs the C/Odin suite, and Linux amd64 and arm64 run packaged startup tests. Windows and OpenBSD jobs use wn-cache-1: Windows amd64 runs packaged startup tests, and OpenBSD amd64 runs filesystem, helper and startup tests. macOS is not included and default-branch runner routing is unchanged." src="../assets/docs/development-ci-light.svg" width="880">
-</picture>
-
-The build-server workflow builds native Linux, Linux amd64/arm64, Windows amd64, and OpenBSD amd64 once each. It runs the native C/Odin suite, packaged Linux and Windows startup tests, and OpenBSD's filesystem, helper, and startup tests.
+The [GitHub build matrix](building.md#where-ci-builds-run) runs the native
+C and Odin suite, the Linux and Windows package boots, and the OpenBSD
+filesystem, helper, and startup tests.
 
 <details>
-<summary><b>Slots, signing keys, and the math helper's own cache</b></summary>
+<summary><b>Test signing keys and build cache keys</b></summary>
 
-- **Scheduling.** The workflow queues these five jobs together on two isolated runner slots, with six build threads per job and shared CPU/memory limits. Native and Linux jobs use `wn-cache-2`; Windows and OpenBSD use `wn-cache-1`. This keeps targets on warmed caches while both slots can build concurrently.
 - **Signing keys.** The native runner signs temporary Git fixtures with a dedicated CI test key. The MDK patch-staging test generates its own temporary SSH signing key.
-- **Bragi.** Bragi's math-helper object is cached per target and slot, including its sources, font, toolchain, and build flags. Unrelated application edits do not rebuild it.
+- **Bragi.** Bragi's math-helper object is cached per target, including its sources, font, toolchain, and build flags. Unrelated application edits do not rebuild it in a warm build tree.
 - **SDK tracking.** Native SDL, Odin overlay, and Odin object keys track SDK headers and versions separately from shared-library contents. OpenBSD's boot-time library reordering invalidates linked executables, not these compiled outputs.
-- **Scope.** The workflow does not change the default-branch runner routing or include macOS.
 
 </details>
 

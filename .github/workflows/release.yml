@@ -24,6 +24,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/release.yml
+      - scripts/ci-boat.sh
       - scripts/ci-container.sh
       - packaging/ci/**
       - packaging/flatpak/**
@@ -60,26 +61,30 @@ jobs:
   appimage:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     name: AppImage (x86_64)
-    runs-on: [self-hosted, Linux, X64, wn-build-server, arch, wn-cache-1]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    environment: wn-boat-build
+    env:
+      BOAT_CI_KEY: ${{ secrets.BOAT_CI_KEY }}
     defaults:
       run:
-        shell: bash scripts/ci-container.sh run {0}
+        shell: bash scripts/ci-boat.sh run {0}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
 
-      - name: Start native build container
+      - name: Start native build guest
+        id: start
         shell: bash
-        run: bash scripts/ci-container.sh start native
+        run: bash scripts/ci-boat.sh start native
 
       - name: Check release version
         run: bash scripts/version.sh "$GITHUB_REF_NAME"
 
-      - name: Remove stale package outputs
-        run: |
-          rm -rf AppDir
-          rm -f WhiteNoise-*.AppImage WhiteNoise-*.AppImage.zsync build/wn-appimage-update
+      - name: Set AppImage filename
+        shell: bash
+        run: echo "APPIMAGE_NAME=WhiteNoise-${GITHUB_REF_NAME}-x86_64.AppImage" >> "$GITHUB_ENV"
 
       - name: Build
         env:
@@ -127,9 +132,7 @@ jobs:
             --deploy-deps-only AppDir/usr/lib/whitenoise-linux \
             --desktop-file AppDir/usr/share/applications/whitenoise.desktop \
             --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/whitenoise.png
-          out="WhiteNoise-${GITHUB_REF_NAME}-x86_64.AppImage"
-          bash scripts/sign-appimage.sh ./appimagetool AppDir "$out"
-          echo "APPIMAGE_NAME=$out" >> "$GITHUB_ENV"
+          bash scripts/sign-appimage.sh ./appimagetool AppDir "$APPIMAGE_NAME"
 
       # A smoke test of the packaged artifact, not of the app: SDL's dummy
       # video driver lets it boot with no display, and WN_SHOT exits after a
@@ -142,6 +145,10 @@ jobs:
           SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke \
             ./"$APPIMAGE_NAME" "$(mktemp -d)"
 
+      - name: Retrieve AppImage and update metadata
+        shell: bash
+        run: bash scripts/ci-boat.sh pull "$APPIMAGE_NAME" "$APPIMAGE_NAME.zsync"
+
       - uses: actions/upload-artifact@v4
         with:
           name: appimage
@@ -151,38 +158,39 @@ jobs:
           if-no-files-found: error
 
       - name: Remove generated observability credentials
-        if: always()
+        if: always() && steps.start.outcome == 'success'
         run: rm -f build/observability-tokens.toml
 
-      - name: Stop build container
+      - name: Stop build guest
         if: always()
         shell: bash
-        run: bash scripts/ci-container.sh stop
+        run: bash scripts/ci-boat.sh stop
 
   orchard-publisher:
     name: Orchard publisher (x86_64)
-    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-24.04"' || '["self-hosted","Linux","X64","wn-build-server","arch","wn-cache-1"]') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    environment: ${{ github.event_name == 'pull_request' && 'wn-github-pr' || 'wn-boat-build' }}
+    env:
+      BOAT_CI_KEY: ${{ github.event_name != 'pull_request' && secrets.BOAT_CI_KEY || '' }}
     defaults:
       run:
-        shell: bash scripts/ci-container.sh run {0}
+        shell: bash scripts/ci-boat.sh run {0}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
 
-      - name: Start native build container
+      - name: Start native build guest
         shell: bash
-        run: |
-          if ! command -v podman >/dev/null; then
-            sudo apt-get update
-            sudo apt-get install -y podman
-          fi
-          bash scripts/ci-container.sh start native
+        run: bash scripts/ci-boat.sh start native
 
       - name: Build pinned publisher only
-        run: |
-          rm -f build/orchard-publish
-          scripts/build-orchard.sh
+        run: scripts/build-orchard.sh
+
+      - name: Retrieve Orchard publisher
+        shell: bash
+        run: bash scripts/ci-boat.sh pull build/orchard-publish
 
       - uses: actions/upload-artifact@v4
         with:
@@ -190,122 +198,104 @@ jobs:
           path: build/orchard-publish
           if-no-files-found: error
 
-      - name: Remove generated observability credentials
-        if: always()
-        run: rm -f build/observability-tokens.toml
-
-      - name: Stop build container
+      - name: Stop build guest
         if: always()
         shell: bash
-        run: bash scripts/ci-container.sh stop
+        run: bash scripts/ci-boat.sh stop
 
   flatpak:
     name: Flatpak (x86_64)
     needs: orchard-publisher
-    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-24.04"' || '["self-hosted","Linux","X64","wn-build-server","arch","wn-cache-2"]') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    environment: ${{ github.event_name == 'pull_request' && 'wn-github-pr' || 'wn-boat-build' }}
     defaults:
       run:
-        shell: bash scripts/ci-container.sh run {0}
+        shell: bash scripts/ci-boat.sh run {0}
     env:
-      # Tagged module state contains the token-bearing final app. Never reuse
-      # it for master/dispatch, and delete it before the container stops.
-      FLATPAK_STATE_DIR: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && 'build/flatpak-tag-state' || 'build/flatpak-state' }}
+      BOAT_CI_KEY: ${{ github.event_name != 'pull_request' && secrets.BOAT_CI_KEY || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
 
-      - name: Start Flatpak build container
+      - name: Start Flatpak build guest
         shell: bash
-        run: |
-          if ! command -v podman >/dev/null; then
-            sudo apt-get update
-            sudo apt-get install -y podman
-          fi
-          bash scripts/ci-container.sh start flatpak
+        run: bash scripts/ci-boat.sh start flatpak
 
       - name: Check release version
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         run: bash scripts/version.sh "$GITHUB_REF_NAME"
 
-      - name: Prepare fresh outputs and persistent dependency cache
+      - name: Set Flatpak filename
+        shell: bash
+        # Branch and PR refs can contain slashes.
+        run: echo "WN_FLATPAK_BUNDLE=WhiteNoise-${GITHUB_REF_NAME//\//-}-x86_64.flatpak" >> "$GITHUB_ENV"
+
+      - name: Restore Flatpak module cache
+        if: github.event_name != 'pull_request'
+        id: flatpak-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: build/flatpak-module-cache.tar.gz
+          key: flatpak-modules-v1-${{ hashFiles('packaging/flatpak/dev.ipf.whitenoise.yml', '.github/workflows/release.yml') }}
+
+      - name: Send Flatpak module cache to guest
+        if: steps.flatpak-cache.outputs.cache-hit == 'true'
+        shell: bash
+        run: bash scripts/ci-boat.sh push build/flatpak-module-cache.tar.gz
+
+      - name: Prepare Flatpak builder
         run: |
-          set -euo pipefail
-          # PR refs and branch names can contain '/', unlike release tags.
-          echo "WN_FLATPAK_BUNDLE=WhiteNoise-${GITHUB_REF_NAME//\//-}-x86_64.flatpak" >> "$GITHUB_ENV"
-          rm -rf build/flatpak build/flatpak-repo build/orchard-release build/flatpak-tag-state .flatpak-cache
-          rm -f WhiteNoise-*.flatpak build/orchard-publish
-          # --keep-build-dirs adds a 15-18G build/<module>-N tree per run and
-          # never removes old ones. Collect copies what it needs from the latest
-          # into build/flatpak-deps, so each run can start without them.
-          rm -rf "$FLATPAK_STATE_DIR/build"
-          mkdir -p .flatpak-cache
-          if [ -d build/flatpak-deps ]; then
-            cp -a build/flatpak-deps/. .flatpak-cache/
+          if [ -f build/flatpak-module-cache.tar.gz ]; then
+            mkdir -p build/flatpak-state
+            tar -xzf build/flatpak-module-cache.tar.gz -C build/flatpak-state
           fi
           flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-
-      # Preserve the action's builder flags, SDK dependency installation and
-      # bundle runtime origin, without running a JavaScript action on the host.
-      - name: Build Flatpak and bundle
-        env:
-          WN_METRICS_WRITE_TOKEN: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && secrets.WN_METRICS_WRITE_TOKEN || '' }}
-          WN_AUDIT_WRITE_TOKEN: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
-        run: |
-          set -euo pipefail
           # The SDK sandbox does not inherit the outer container's build limits.
           # Keep this resolved manifest beside the original for relative sources.
           flatpak-builder --show-manifest "packaging/flatpak/$FLATPAK_ID.yml" \
             | jq '."build-options".env += {"CARGO_BUILD_JOBS":"6","WN_BUILD_JOBS":"6","CMAKE_BUILD_PARALLEL_LEVEL":"6"}' \
             > packaging/flatpak/ci-manifest.json
-          args=()
-          if [[ "$FLATPAK_STATE_DIR" == build/flatpak-state ]]; then args+=(--ccache); fi
+
+      # Only master writes this cache, before any app module runs. Save just
+      # the installed module snapshots, not the SDK, sources, or build trees.
+      - name: Build tokenless Flatpak modules
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.flatpak-cache.outputs.cache-hit != 'true'
+        run: |
+          xvfb-run --auto-servernum flatpak-builder \
+            --user --install-deps-from=flathub --disable-rofiles-fuse --force-clean \
+            --jobs=6 --default-branch=master --arch=x86_64 --state-dir=build/flatpak-state \
+            --stop-at=whitenoise-linux build/flatpak packaging/flatpak/ci-manifest.json
+          tar -czf build/flatpak-module-cache.tar.gz -C build/flatpak-state cache
+
+      - name: Retrieve tokenless Flatpak module cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.flatpak-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: bash scripts/ci-boat.sh pull build/flatpak-module-cache.tar.gz
+
+      - name: Save tokenless Flatpak module cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.flatpak-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: build/flatpak-module-cache.tar.gz
+          key: ${{ steps.flatpak-cache.outputs.cache-primary-key }}
+
+      - name: Build Flatpak and bundle
+        env:
+          WN_METRICS_WRITE_TOKEN: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && secrets.WN_METRICS_WRITE_TOKEN || '' }}
+          WN_AUDIT_WRITE_TOKEN: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
+        run: |
           xvfb-run --auto-servernum flatpak-builder \
             --user --install-deps-from=flathub --repo=build/flatpak-repo \
-            --disable-rofiles-fuse --force-clean --keep-build-dirs --jobs=6 \
+            --disable-rofiles-fuse --force-clean --jobs=6 \
             --default-branch=master --arch=x86_64 --subject="Built from $GITHUB_SHA" \
-            --state-dir="$FLATPAK_STATE_DIR" "${args[@]}" \
+            --state-dir=build/flatpak-state \
             build/flatpak packaging/flatpak/ci-manifest.json
           flatpak build-bundle build/flatpak-repo \
             "$WN_FLATPAK_BUNDLE" \
             --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo \
             --arch=x86_64 "$FLATPAK_ID" master
-
-      # The manifest copies .flatpak-cache into the app module before building;
-      # its CARGO_HOME is cargo/, and native targets live in build/cargo/native.
-      # Keep completed dependencies even if a later app compile fails.
-      - name: Collect Flatpak dependency outputs
-        if: always()
-        run: |
-          set -euo pipefail
-          # Only dependencies cross the tagged/tokenless state boundary.
-          if [ -d "$FLATPAK_STATE_DIR/build" ]; then
-            find "$FLATPAK_STATE_DIR/build" -name observability-tokens.toml -delete
-          fi
-          source="$FLATPAK_STATE_DIR/build/whitenoise-linux"
-          cache=build/flatpak-deps
-          # A disk-full build leaves empty .rlib/.rmeta files that cargo's
-          # fingerprints still trust. Keep the previous target instead.
-          native="$source/build/cargo/native"
-          if [ -d "$native" ]; then
-            truncated="$(find "$native" -type f -size 0 \( -name '*.rlib' -o -name '*.rmeta' \) -print -quit)"
-            if [ -n "$truncated" ]; then
-              echo "::warning::Not caching the cargo target: $truncated is empty."
-            else
-              mkdir -p "$cache/build/cargo"
-              cp -a "$native" "$cache/build/cargo/"
-            fi
-          fi
-          for state in registry git; do
-            if [ -d "$source/cargo/$state" ]; then
-              mkdir -p "$cache/cargo"
-              cp -a "$source/cargo/$state" "$cache/cargo/"
-            fi
-          done
-          if [ -f "$source/build/fbx/ufbx.stamp" ]; then
-            mkdir -p "$cache/build/fbx"
-            cp -a "$source/build/fbx/ufbx.o" "$source/build/fbx/ufbx.stamp" "$cache/build/fbx/"
-          fi
 
       # Same smoke test as the AppImage: install the bundle and boot it
       # against SDL's dummy driver.
@@ -321,6 +311,10 @@ jobs:
         with:
           name: orchard-publisher
           path: build
+
+      - name: Send Orchard publisher to guest
+        shell: bash
+        run: bash scripts/ci-boat.sh push build/orchard-publish
 
       - name: Prepare unsigned Orchard components
         run: |
@@ -351,6 +345,10 @@ jobs:
           flatpak run --user --env=SDL_VIDEODRIVER=dummy --env=WN_SHOT=1 \
             --env=WN_VAULT_PW=ci-smoke "$FLATPAK_ID//stable" "$(mktemp -d)"
 
+      - name: Retrieve Flatpak and Orchard artifacts
+        shell: bash
+        run: bash scripts/ci-boat.sh pull "$WN_FLATPAK_BUNDLE" build/orchard-release
+
       - uses: actions/upload-artifact@v4
         with:
           name: orchard
@@ -363,23 +361,10 @@ jobs:
           path: ${{ env.WN_FLATPAK_BUNDLE }}
           if-no-files-found: error
 
-      - name: Remove generated credentials and tagged module outputs
-        if: always()
-        run: |
-          set -euo pipefail
-          rm -f build/observability-tokens.toml packaging/flatpak/ci-manifest.json
-          if [ -d "$FLATPAK_STATE_DIR/build" ]; then
-            find "$FLATPAK_STATE_DIR/build" -name observability-tokens.toml -delete
-          fi
-          rm -rf build/flatpak-tag-state
-          if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/tags/* ]]; then
-            rm -rf build/flatpak build/flatpak-repo build/orchard-release
-          fi
-
-      - name: Stop build container
+      - name: Stop build guest
         if: always()
         shell: bash
-        run: bash scripts/ci-container.sh stop
+        run: bash scripts/ci-boat.sh stop
 
   cross:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
@@ -393,23 +378,26 @@ jobs:
   archlinux:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
     name: Arch Linux (x86_64)
-    runs-on: [self-hosted, Linux, X64, wn-build-server, arch, wn-cache-1]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    environment: wn-boat-build
+    env:
+      BOAT_CI_KEY: ${{ secrets.BOAT_CI_KEY }}
     defaults:
       run:
-        shell: bash scripts/ci-container.sh run {0}
+        shell: bash scripts/ci-boat.sh run {0}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
 
-      - name: Start Arch build container
+      - name: Start Arch build guest
+        id: start
         shell: bash
-        run: bash scripts/ci-container.sh start arch
+        run: bash scripts/ci-boat.sh start arch
 
-      - name: Install git and remove stale package outputs
-        run: |
-          pacman -Syu --noconfirm --needed git
-          rm -rf dist build/arch
+      - name: Install git
+        run: pacman -Syu --noconfirm --needed git
 
       - name: Check release version
         if: github.event_name == 'push'
@@ -432,7 +420,6 @@ jobs:
           echo "${sha256sums[1]}  /tmp/odin.tar.gz" | sha256sum -c -
           mkdir -p /opt/odin
           tar -xzf /tmp/odin.tar.gz -C /opt/odin --strip-components=1
-          echo /opt/odin >> "$GITHUB_PATH"
 
       - name: Build
         env:
@@ -441,6 +428,10 @@ jobs:
           WN_AUDIT_WRITE_TOKEN: ${{ github.event_name == 'push' && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
         run: scripts/arch-package.sh
 
+      - name: Retrieve Arch package
+        shell: bash
+        run: bash scripts/ci-boat.sh pull dist
+
       - uses: actions/upload-artifact@v4
         with:
           name: archlinux
@@ -448,13 +439,13 @@ jobs:
           if-no-files-found: error
 
       - name: Remove generated observability credentials
-        if: always()
+        if: always() && steps.start.outcome == 'success'
         run: rm -f build/observability-tokens.toml
 
-      - name: Stop build container
+      - name: Stop build guest
         if: always()
         shell: bash
-        run: bash scripts/ci-container.sh stop
+        run: bash scripts/ci-boat.sh stop
 
   publish:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
@@ -534,28 +525,35 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     name: AUR packages
     needs: [archlinux, publish]
-    runs-on: [self-hosted, Linux, X64, wn-build-server, arch, wn-cache-1]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    environment: wn-boat-build
+    env:
+      BOAT_CI_KEY: ${{ secrets.BOAT_CI_KEY }}
     defaults:
       run:
-        shell: bash scripts/ci-container.sh run {0}
+        shell: bash scripts/ci-boat.sh run {0}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
 
-      - name: Start Arch build container
+      - name: Start Arch build guest
+        id: start
         shell: bash
-        run: bash scripts/ci-container.sh start arch
+        run: bash scripts/ci-boat.sh start arch
 
       - name: Install tools
-        run: |
-          pacman -Syu --noconfirm --needed git openssh namcap
-          rm -rf dist build/aur build/aur-git
+        run: pacman -Syu --noconfirm --needed git openssh namcap
 
       - uses: actions/download-artifact@v4
         with:
           name: archlinux
           path: dist
+
+      - name: Send Arch package to guest
+        shell: bash
+        run: bash scripts/ci-boat.sh push "dist/WhiteNoise-$GITHUB_REF_NAME-archlinux-x86_64.tar.zst"
 
       # makepkg refuses to run as root.
       - name: Render the packages
@@ -588,6 +586,7 @@ jobs:
 
       - name: Check for the AUR key
         id: key
+        shell: bash
         env:
           AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
         run: |
@@ -621,12 +620,12 @@ jobs:
           rm -rf "$ssh_dir"
 
       - name: Remove AUR credentials
-        if: always()
+        if: always() && steps.start.outcome == 'success'
         run: |
           rm -rf "$RUNNER_TEMP/aur-ssh" build/aur-git
           rm -f build/observability-tokens.toml
 
-      - name: Stop build container
+      - name: Stop build guest
         if: always()
         shell: bash
-        run: bash scripts/ci-container.sh stop
+        run: bash scripts/ci-boat.sh stop

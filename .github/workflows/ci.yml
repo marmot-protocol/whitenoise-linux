@@ -27,27 +27,25 @@ env:
 jobs:
   build:
     name: build + test
-    # Fork code must not enter a persistent runner or its caches.
-    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-24.04"' || '["self-hosted","Linux","X64","wn-build-server","arch","wn-cache-2"]') }}
+    runs-on: ubuntu-24.04
+    environment: ${{ github.event_name == 'pull_request' && 'wn-github-pr' || 'wn-boat-build' }}
+    env:
+      BOAT_CI_KEY: ${{ github.event_name != 'pull_request' && secrets.BOAT_CI_KEY || '' }}
     timeout-minutes: 90
     defaults:
       run:
-        shell: bash scripts/ci-container.sh run {0}
+        shell: bash scripts/ci-boat.sh run {0}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
 
       - name: Start Ubuntu build environment
+        id: start
         shell: bash
-        run: |
-          if ! command -v podman >/dev/null; then
-            sudo apt-get update
-            sudo apt-get install -y podman
-          fi
-          bash scripts/ci-container.sh start native
+        run: bash scripts/ci-boat.sh start native
 
-      # Fail a hung test instead of occupying a persistent slot indefinitely.
+      # Fail a hung test before the job deadline.
       - name: Build and test
         timeout-minutes: 60
         env:
@@ -56,8 +54,14 @@ jobs:
         run: scripts/build.sh test
 
       - name: Remove generated observability credentials
-        if: always()
+        if: always() && steps.start.outcome == 'success'
         run: rm -f build/observability-tokens.toml
+
+      - name: Name staging AppImage
+        shell: bash
+        run: |
+          version=$(bash scripts/version.sh)
+          echo "APPIMAGE_NAME=WhiteNoise-$version-staging-${GITHUB_SHA:0:8}-x86_64.AppImage" >> "$GITHUB_ENV"
 
       # Staging packages must not point AppImageUpdate at the release channel.
       - name: Build staging AppImage
@@ -77,14 +81,16 @@ jobs:
             --deploy-deps-only AppDir/usr/lib/whitenoise-linux \
             --desktop-file AppDir/usr/share/applications/whitenoise.desktop \
             --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/whitenoise.png
-          out="WhiteNoise-$(bash scripts/version.sh)-staging-${GITHUB_SHA:0:8}-x86_64.AppImage"
-          ./appimagetool AppDir "$out"
-          echo "APPIMAGE_NAME=$out" >> "$GITHUB_ENV"
+          ./appimagetool AppDir "$APPIMAGE_NAME"
 
       - name: Run the AppImage headless
         run: |
           chmod +x "$APPIMAGE_NAME"
           SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke ./"$APPIMAGE_NAME" "$(mktemp -d)"
+
+      - name: Retrieve staging AppImage
+        shell: bash
+        run: bash scripts/ci-boat.sh pull "$APPIMAGE_NAME"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -95,7 +101,7 @@ jobs:
       - name: Stop build environment
         if: always()
         shell: bash
-        run: bash scripts/ci-container.sh stop
+        run: bash scripts/ci-boat.sh stop
 
   cross:
     uses: ./.github/workflows/cross.yml

@@ -1,21 +1,27 @@
 #!/usr/bin/env bash
-# Keep build environments in Podman and validated dependency state per runner slot.
+# Keep build environments in job-local Podman containers.
 set -euo pipefail
 
 name="wn-ci-${GITHUB_RUN_ID:?}-${GITHUB_RUN_ATTEMPT:?}-${GITHUB_JOB:?}"
+reserve=$((8 * 1024 * 1024))
+available_kib() { awk '/^MemAvailable:/ {print $2}' /proc/meminfo; }
 case "${1:-}" in
   start)
     kind="${2:?Expected native, cross, flatpak, or arch}"
-    cache="$HOME/.cache/wn-github/$kind"
     args=()
+    if ! command -v podman >/dev/null; then
+      sudo apt-get update
+      sudo apt-get install -y --no-install-recommends podman catatonit uidmap slirp4netns fuse-overlayfs
+    fi
     quota=$(($(getconf _NPROCESSORS_ONLN) * 80000))
     if ((quota > 640000)); then quota=640000; fi
-    available=$(</proc/meminfo)
-    available=${available#*MemAvailable:}
-    available=${available%%kB*}
-    memory=$((available * 1024 * 80 / 100))
-    if ((memory > 24 * 1024 * 1024 * 1024)); then memory=$((24 * 1024 * 1024 * 1024)); fi
-    limits=(--cpu-period 100000 --cpu-quota "$quota" --memory "${memory}b" --memory-swap "${memory}b")
+    memory=$((($(available_kib) - reserve - 512 * 1024) * 1024))
+    if ((memory <= 0)); then
+      echo 'Cannot keep an 8 GiB RAM reserve on this runner.' >&2
+      exit 1
+    fi
+    swap=$(awk '/^SwapFree:/ {printf "%.0f\n", $2 * 1024}' /proc/meminfo)
+    limits=(--cpu-period 100000 --cpu-quota "$quota" --memory "${memory}b" --memory-swap "$((memory + swap))b")
     case "$kind" in
       native | cross)
         definition="packaging/ci/Containerfile"
@@ -26,9 +32,6 @@ case "${1:-}" in
         if ! podman image exists "$image"; then
           podman build --layers "${limits[@]}" -f "$definition" -t "$image" "$(dirname "$definition")"
         fi
-        rustup="wn-ci-rustup-$kind-$key"
-        if [ "$kind" = cross ]; then rustup="wn-rustup-$key"; fi
-        args+=(-v "$rustup:/root/.rustup")
         if [ "$kind" = native ]; then
           args+=(--cap-drop=DAC_OVERRIDE --cap-drop=DAC_READ_SEARCH)
         fi
@@ -47,38 +50,28 @@ case "${1:-}" in
         ;;
     esac
 
-    # Checkout cleans the links, not these persistent targets. Build stamps and
-    # Cargo still verify inputs; release archives and smoke evidence are not reused.
-    for dir in build vendor; do
-      mkdir -p "$cache/$dir"
-      ln -s "$cache/$dir" "$dir"
-    done
-    mkdir -p "$cache/registry" "$cache/git" "$cache/vcpkg"
     podman run --detach --name "$name" --init "${limits[@]}" \
-      -v "$GITHUB_WORKSPACE:/work" -v "$cache:$cache" \
-      -v "$RUNNER_TEMP:$RUNNER_TEMP" \
-      -v "$cache/registry:/root/.cargo/registry" -v "$cache/git:/root/.cargo/git" \
-      -v "$cache/vcpkg:/root/.cache/vcpkg" \
+      -v "$GITHUB_WORKSPACE:/work" -v "$RUNNER_TEMP:$RUNNER_TEMP" \
       --workdir /work --entrypoint sleep "${args[@]}" "$image" infinity
     ;;
   run)
+    . scripts/ci-job-vars.sh
     args=()
-    for var in \
-      GITHUB_ACTIONS GITHUB_ACTION GITHUB_ENV GITHUB_OUTPUT GITHUB_PATH GITHUB_STEP_SUMMARY \
-      GITHUB_EVENT_NAME GITHUB_EVENT_PATH GITHUB_REF GITHUB_REF_NAME GITHUB_REF_TYPE \
-      GITHUB_SHA GITHUB_REPOSITORY GITHUB_REPOSITORY_OWNER GITHUB_RUN_ID GITHUB_RUN_ATTEMPT \
-      GITHUB_JOB GITHUB_TOKEN RUNNER_TEMP \
-      CARGO_BUILD_JOBS WN_BUILD_JOBS CMAKE_BUILD_PARALLEL_LEVEL \
-      WN_RELEASE_VERSION WN_METRICS_WRITE_TOKEN WN_AUDIT_WRITE_TOKEN \
-      WN_PACKAGE_APPIMAGE WN_APPIMAGE_SIGNING_KEY WN_VELOPACK_REPO \
-      FLATPAK_STATE_DIR WN_FLATPAK_BUNDLE \
-      JSIGN_STORETYPE JSIGN_ALIAS JSIGN_KEYSTORE JSIGN_KEYSTORE_SECRET \
-      JSIGN_KEYSTORE_BASE64 JSIGN_STOREPASS RELEASE AUR_SSH_PRIVATE_KEY \
-      ODIN_VERSION SDL_VERSION FLATPAK_ID APPIMAGE_EXTRACT_AND_RUN APPIMAGE_NAME \
-      LINUXDEPLOY_VERSION LINUXDEPLOY_SHA256 APPIMAGETOOL_VERSION APPIMAGETOOL_SHA256; do
+    for var in "${ci_job_vars[@]}"; do
       if [[ -v $var ]]; then args+=(--env "$var"); fi
     done
-    exec podman exec "${args[@]}" --env CI=true --env GITHUB_WORKSPACE=/work \
+    if (($(available_kib) < reserve)); then
+      echo 'Cannot keep an 8 GiB RAM reserve on this runner.' >&2
+      exit 1
+    fi
+    (
+      while (($(available_kib) >= reserve)); do sleep 1; done
+      echo 'Stopping the build to preserve 8 GiB of available RAM.' >&2
+      podman kill "$name"
+    ) &
+    guard=$!
+    trap 'kill "$guard" 2>/dev/null || true; wait "$guard" 2>/dev/null || true' EXIT
+    podman exec "${args[@]}" --env CI=true --env GITHUB_WORKSPACE=/work \
       "$name" bash -c 'export PATH="/opt/odin:$PATH"; exec bash --noprofile --norc -eo pipefail "$1"' \
       -- "${2:?Expected the workflow script path}"
     ;;
