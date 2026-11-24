@@ -1401,175 +1401,160 @@ EndScissorMode :: proc() {
 	sdl.SetRenderClipRect(state.renderer, prev.enabled ? &prev.rect : nil)
 }
 
-// Filled rounded rectangle.
+@(private = "file")
+CURVE_STEPS :: 64
+
+@(private = "file")
+curve_sampling :: proc(radius, sweep: f32) -> (steps: int, half_fringe: f32) {
+	scale: f32
+	sdl.GetRenderScale(state.renderer, &scale, nil)
+	// SDL's CPU renderer truncates vertex positions to whole pixels.
+	// A 1.5-pixel ramp keeps the two edges of a diagonal fringe apart.
+	return clamp(int(radius * sweep * scale / 4), 8, CURVE_STEPS), 0.75 / scale
+}
+
+// Filled rounded rectangle with an alpha fringe around each corner.
 DrawRectangleRoundedPx :: proc(x, y, w, h, corner_radius: f32, color: Color) {
 	if ChalkDrawn {
 		chalk_surface(x, y, w, h, corner_radius, color)
 		return
 	}
+	if w <= 0 || h <= 0 || color.a == 0 {return}
+	radius := min(corner_radius, min(w, h) / 2)
+	if radius <= 0 {
+		DrawRectangleRec(x, y, w, h, color)
+		return
+	}
+
 	fcolor := sdl.FColor {
 		f32(color.r) / 255,
 		f32(color.g) / 255,
 		f32(color.b) / 255,
 		f32(color.a) / 255,
 	}
-	radius := min(corner_radius, min(w, h) / 2)
-	segments := max(16, int(radius * 0.5))
-
-	STACK_SEGMENTS :: 64
-	vertex_buffer: [16 + 4 * STACK_SEGMENTS]sdl.Vertex
-	index_buffer: [30 + 12 * STACK_SEGMENTS]c.int
-	vertices := vertex_buffer[:]
-	indices := index_buffer[:]
-	if segments > STACK_SEGMENTS {
-		vertices = make([]sdl.Vertex, 16 + 4 * segments, context.temp_allocator)
-		indices = make([]c.int, 30 + 12 * segments, context.temp_allocator)
+	clear := fcolor
+	clear.a = 0
+	centers := [4]sdl.FPoint {
+		{x + radius, y + radius},
+		{x + w - radius, y + radius},
+		{x + w - radius, y + h - radius},
+		{x + radius, y + h - radius},
 	}
-	vertices = vertices[:16 + 4 * segments]
-	indices = indices[:30 + 12 * segments]
-	vertex_used, index_used: int
-	push :: proc(vertices: []sdl.Vertex, count: ^int, px, py: f32, fcolor: sdl.FColor) -> c.int {
-		index := count^
-		vertices[index] = sdl.Vertex {
-			position = {px, py},
-			color    = fcolor,
+	steps, half_fringe := curve_sampling(radius, math.PI / 2)
+	stride := steps + 1
+	count := 4 * stride
+	step := (math.PI / 2) / f32(steps)
+	vertices: [1 + 8 * (CURVE_STEPS + 1)]sdl.Vertex = ---
+	indices: [4 * (CURVE_STEPS + 1)][9]c.int = ---
+	vertices[0] = {
+		position = {x + w / 2, y + h / 2},
+		color    = fcolor,
+	}
+	for i in 0 ..= steps {
+		sin, cos: f32
+		switch i {
+		case 0:
+			sin, cos = 0, 1
+		case steps:
+			sin, cos = 1, 0
+		case:
+			sin, cos = math.sincos(f32(i) * step)
 		}
-		count^ += 1
-		return c.int(index)
-	}
-	tri :: proc(indices: []c.int, count: ^int, a, b, cc: c.int) {
-		indices[count^] = a
-		indices[count^ + 1] = b
-		indices[count^ + 2] = cc
-		count^ += 3
-	}
-
-	// center quad
-	tl := push(vertices, &vertex_used, x + radius, y + radius, fcolor)
-	tr := push(vertices, &vertex_used, x + w - radius, y + radius, fcolor)
-	br := push(vertices, &vertex_used, x + w - radius, y + h - radius, fcolor)
-	bl := push(vertices, &vertex_used, x + radius, y + h - radius, fcolor)
-	tri(indices, &index_used, tl, tr, bl)
-	tri(indices, &index_used, tr, br, bl)
-
-	// corner fans
-	step := (math.PI / 2) / f32(segments)
-	corners := [4]struct {
-		cx, cy, sx, sy: f32,
-		center:         c.int,
-	} {
-		{x + radius, y + radius, -1, -1, tl},
-		{x + w - radius, y + radius, 1, -1, tr},
-		{x + w - radius, y + h - radius, 1, 1, br},
-		{x + radius, y + h - radius, -1, 1, bl},
-	}
-	for corner in corners {
-		v1 := push(vertices, &vertex_used, corner.cx + radius * corner.sx, corner.cy, fcolor)
-		for i in 0 ..< segments {
-			a2 := f32(i + 1) * step
-			v2 := push(
-				vertices,
-				&vertex_used,
-				corner.cx + math.cos(a2) * radius * corner.sx,
-				corner.cy + math.sin(a2) * radius * corner.sy,
-				fcolor,
-			)
-			tri(indices, &index_used, corner.center, v1, v2)
-			v1 = v2
+		// Taper to zero at the tangents so straight edges stay sharp.
+		fringe := min(half_fringe, radius * min(sin, cos))
+		directions := [4]sdl.FPoint{{-cos, -sin}, {sin, -cos}, {cos, sin}, {-sin, cos}}
+		for dir, corner in directions {
+			cx, cy := centers[corner].x, centers[corner].y
+			p := corner * stride + i
+			a := c.int(1 + p * 2)
+			b := c.int(1 + (p + 1) % count * 2)
+			vertices[a] = {
+				position = {cx + dir.x * (radius - fringe), cy + dir.y * (radius - fringe)},
+				color    = fcolor,
+			}
+			vertices[a + 1] = {
+				position = {cx + dir.x * (radius + fringe), cy + dir.y * (radius + fringe)},
+				color    = clear,
+			}
+			indices[p] = {0, a, b, a, a + 1, b, b, a + 1, b + 1}
 		}
 	}
-
-	// edge quads
-	et1 := push(vertices, &vertex_used, x + radius, y, fcolor)
-	et2 := push(vertices, &vertex_used, x + w - radius, y, fcolor)
-	tri(indices, &index_used, tl, et1, et2)
-	tri(indices, &index_used, tr, tl, et2)
-	er1 := push(vertices, &vertex_used, x + w, y + radius, fcolor)
-	er2 := push(vertices, &vertex_used, x + w, y + h - radius, fcolor)
-	tri(indices, &index_used, tr, er1, er2)
-	tri(indices, &index_used, br, tr, er2)
-	eb1 := push(vertices, &vertex_used, x + w - radius, y + h, fcolor)
-	eb2 := push(vertices, &vertex_used, x + radius, y + h, fcolor)
-	tri(indices, &index_used, br, eb1, eb2)
-	tri(indices, &index_used, bl, br, eb2)
-	el1 := push(vertices, &vertex_used, x, y + h - radius, fcolor)
-	el2 := push(vertices, &vertex_used, x, y + radius, fcolor)
-	tri(indices, &index_used, bl, el1, el2)
-	tri(indices, &index_used, tl, bl, el2)
-
 	sdl.RenderGeometry(
 		state.renderer,
 		nil,
-		raw_data(vertices),
-		c.int(len(vertices)),
-		raw_data(indices),
-		c.int(len(indices)),
+		&vertices[0],
+		c.int(1 + count * 2),
+		&indices[0][0],
+		c.int(count * 9),
 	)
 }
 
-// Border corner arc as a filled annular sector (triangle strip), so
-// it stays solid at any render scale.
+// Border corner arc with coverage at both curved edges.
 DrawArc :: proc(cx, cy, radius, start_deg, end_deg, thickness: f32, color: Color) {
 	if ChalkDrawn {
 		chalk_arc(cx, cy, radius, start_deg, end_deg, thickness, color)
 		return
 	}
+	if radius <= 0 || color.a == 0 || start_deg == end_deg {return}
 	fcolor := sdl.FColor {
 		f32(color.r) / 255,
 		f32(color.g) / 255,
 		f32(color.b) / 255,
 		f32(color.a) / 255,
 	}
-	outer := radius
 	inner := max(radius - max(thickness, 1), 0)
-	rad_start := start_deg * math.PI / 180
-	rad_end := end_deg * math.PI / 180
-	segments := max(16, int(radius * 1.5))
-	angle_step := (rad_end - rad_start) / f32(segments)
-
-	STACK_SEGMENTS :: 64
-	vertex_buffer: [2 * (STACK_SEGMENTS + 1)]sdl.Vertex
-	index_buffer: [6 * STACK_SEGMENTS]c.int
-	vertices := vertex_buffer[:]
-	indices := index_buffer[:]
-	if segments > STACK_SEGMENTS {
-		vertices = make([]sdl.Vertex, 2 * (segments + 1), context.temp_allocator)
-		indices = make([]c.int, 6 * segments, context.temp_allocator)
-	}
-	vertices = vertices[:2 * (segments + 1)]
-	indices = indices[:6 * segments]
-	for i in 0 ..= segments {
-		angle := rad_start + f32(i) * angle_step
-		cos := math.cos(angle)
-		sin := math.sin(angle)
-		vertices[i * 2] = {
-			position = {cx + cos * outer, cy + sin * outer},
-			color    = fcolor,
+	sweep := end_deg - start_deg
+	steps, half_fringe := curve_sampling(radius, abs(sweep) * math.PI / 180)
+	step := sweep / f32(steps)
+	vertices: [4 * (CURVE_STEPS + 1)]sdl.Vertex = ---
+	indices: [CURVE_STEPS][3][6]c.int = ---
+	for i in 0 ..= steps {
+		angle := i == steps ? end_deg : start_deg + f32(i) * step
+		sin, cos: f32
+		switch angle {
+		case 0, 360:
+			sin, cos = 0, 1
+		case 90:
+			sin, cos = 1, 0
+		case 180:
+			sin, cos = 0, -1
+		case 270:
+			sin, cos = -1, 0
+		case:
+			sin, cos = math.sincos(angle * math.PI / 180)
 		}
-		vertices[i * 2 + 1] = {
-			position = {cx + cos * inner, cy + sin * inner},
-			color    = fcolor,
+		fringe := min(half_fringe, radius * abs(step) * (math.PI / 180) * f32(min(i, steps - i)))
+		outer_band := radius - fringe
+		inner_band := inner > 0 ? inner + fringe : 0
+		peak := fcolor.a
+		// For a stroke thinner than the ramp, preserve its area instead of drawing two overlapping ramps.
+		if outer_band < inner_band {
+			peak *= (radius - inner) / (2 * fringe)
+			outer_band, inner_band = inner_band, outer_band
 		}
-	}
-	for i in 0 ..< segments {
-		o0 := c.int(i * 2)
-		i0 := o0 + 1
-		o1 := o0 + 2
-		i1 := o0 + 3
-		indices[i * 6] = o0
-		indices[i * 6 + 1] = i0
-		indices[i * 6 + 2] = o1
-		indices[i * 6 + 3] = i0
-		indices[i * 6 + 4] = i1
-		indices[i * 6 + 5] = o1
+		radii := [4]f32{radius + fringe, outer_band, inner_band, max(inner - fringe, 0)}
+		alphas := [4]f32{0, peak, peak, inner > 0 ? 0 : peak}
+		for r, j in radii {
+			fc := fcolor
+			fc.a = alphas[j]
+			vertices[i * 4 + j] = {
+				position = {cx + cos * r, cy + sin * r},
+				color    = fc,
+			}
+		}
+		if i == steps {break}
+		for j in 0 ..< 3 {
+			a := c.int(i * 4 + j)
+			indices[i][j] = {a, a + 1, a + 4, a + 4, a + 1, a + 5}
+		}
 	}
 	sdl.RenderGeometry(
 		state.renderer,
 		nil,
-		raw_data(vertices),
-		c.int(len(vertices)),
-		raw_data(indices),
-		c.int(len(indices)),
+		&vertices[0],
+		c.int(4 * (steps + 1)),
+		&indices[0][0][0],
+		c.int(18 * steps),
 	)
 }
 
