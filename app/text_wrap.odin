@@ -22,6 +22,7 @@ Wrap_Mode :: enum {
 	Cards,
 	Links, // web cards, but event references stay wrapped text inside an event card
 	Compose,
+	Plain,
 }
 @(private)
 Wrap_Line :: struct {
@@ -64,7 +65,10 @@ wrapped_lines :: proc(
 ) -> []Wrap_Line {
 	key := Wrap_Key{text, width, UI_SCALE, size, mode, fonts, tile_px}
 	if lines, hit := wrap_cache[key]; hit && !wrap_flush {return lines}
-	tile_px := tile_px > 0 ? tile_px : (mode == .Compose ? f32(18) : body_tile_size(text, size))
+	tile_px := tile_px
+	if mode != .Plain && tile_px <= 0 {
+		tile_px = mode == .Compose ? 18 : body_tile_size(text, size)
+	}
 	lines := make([dynamic]Wrap_Line, context.temp_allocator)
 	start := 0
 	i: u32

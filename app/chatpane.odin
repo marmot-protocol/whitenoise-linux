@@ -776,7 +776,7 @@ members_panel :: proc(ui: ^Ui_State) {
 					if selected_chat_is_dm(ui) {
 						info_settings_page(ui, col_w)
 					} else {
-						info_members_page(ui)
+						info_members_page(ui, col_w)
 					}
 				}
 			}
@@ -1046,6 +1046,8 @@ MEMBER_HEIGHT :: 48
 MEMBER_GAP :: 6
 @(private = "file")
 MEMBER_NICK_HEIGHT :: 28
+@(private = "file")
+MEMBER_CARD_PAD :: 8
 
 // Only admins can invite, so the member list decides whether you see the
 // invite box. False while the list is still loading.
@@ -1061,7 +1063,7 @@ self_is_admin :: proc(ui: ^Ui_State) -> bool {
 
 // Members: inviting someone (admins only), then everyone in the group.
 @(private = "file")
-info_members_page :: proc(ui: ^Ui_State) {
+info_members_page :: proc(ui: ^Ui_State, col_w: f32) {
 	if selected_chat_is_dm(ui) {return}
 	if self_is_admin(ui) {
 		if nendo.box(nendo.id("InfoInviteCard"))(info_card()) {
@@ -1080,7 +1082,7 @@ info_members_page :: proc(ui: ^Ui_State) {
 
 	// Rows carry their own inset and hover fill, so the list card hugs them.
 	list_card := info_card()
-	list_card.padding = nendo.pad(8)
+	list_card.padding = nendo.pad(MEMBER_CARD_PAD)
 	if nendo.box(nendo.id("InfoMembersCard"))(list_card) {
 		if members_job != nil && len(ui.members) == 0 {
 			nendo.text(tr("Loading…"), {font = FONT_BODY, size = 13, color = TEXT_DIM})
@@ -1088,128 +1090,142 @@ info_members_page :: proc(ui: ^Ui_State) {
 		if nendo.box(nendo.id("MembersList"))(
 		{width = nendo.grow(), direction = .Column, gap = MEMBER_GAP},
 		) {
-			member_rows(ui)
+			member_rows(ui, max(1, col_w - 2 * MEMBER_CARD_PAD))
 		}
 	}
 }
 
-// The member list. Rows keep their geometry off screen, but only rows
-// near the viewport build names and queue avatars.
 @(private = "file")
-member_rows :: proc(ui: ^Ui_State) {
-	nick_height := tap_size() ? tap_min() : MEMBER_NICK_HEIGHT
-	data := nendo.scroll(nendo.id("MembersScroll"))
-	view := nendo.element(nendo.id("MembersScroll"))
-	first := nendo.element(nendo.id("MemberRow", 0))
-	y := first.rect.y
-	if data.found {
-		y += data.position.y - ui.members_scroll_y
-		ui.members_scroll_y = data.position.y
+member_rows :: proc(ui: ^Ui_State, width: f32) {
+	count := len(ui.members)
+	nick := ui.member_nick
+	if nick < 0 || nick >= count {
+		member_run(ui.members[:], 0, count)
+		return
 	}
-	for member, i in ui.members {
-		visible :=
-			!data.found ||
-			!first.found ||
-			ui.member_nick == i ||
-			y + MEMBER_HEIGHT >= view.rect.y - 2 * (MEMBER_HEIGHT + MEMBER_GAP) &&
-				y <= view.rect.y + view.rect.height + 2 * (MEMBER_HEIGHT + MEMBER_GAP)
-		y += f32(
-			MEMBER_HEIGHT +
-			MEMBER_GAP +
-			(ui.member_nick == i ? nick_height + MEMBER_GAP + (tap_size() ? tap_min() : 28) + 30 : 0),
+
+	// Keep the focused field mounted and size its prompt before windowing the rows below it.
+	member_run(ui.members[:], 0, nick)
+	member_row(&ui.members[nick], u32(nick))
+	PROMPT_SIZE :: u16(12)
+	prompt := fmt.tprintf(tr("Nickname for %s"), ui.members[nick].name)
+	if nendo.box(nendo.id("MemberNickPrompt"))({width = nendo.grow(), direction = .Column}) {
+		for line in wrapped_lines(prompt, width, PROMPT_SIZE, .Plain) {
+			text := prompt[line.start:line.end]
+			if strings.trim_space(text) == "" {
+				if nendo.box(nendo.id_local("Blank", line.index))(
+				{height = nendo.fixed(f32(PROMPT_SIZE) * rl.TextScale)},
+				) {}
+				continue
+			}
+			nendo.text(
+				text,
+				{font = FONT_BODY, size = PROMPT_SIZE, color = TEXT_DIM, wrap = .None},
+			)
+		}
+	}
+	if nendo.box(nendo.id("MemberNickBox"))(
+	{
+		width = nendo.grow(),
+		height = nendo.fixed(tap_size() ? tap_min() : MEMBER_NICK_HEIGHT),
+		padding = {left = 8, right = 8},
+		align = {y = .Center},
+		color = ROW_BG,
+		radius = rr(6),
+		border = nendo.Border{color = ACCENT, width = bw()},
+	},
+	) {
+		field_text(
+			ui,
+			"MemberNickBox",
+			&ui.nick_input,
+			tr("Nickname"),
+			ui.focus == .Nick,
+			12,
+			TEXT_LO,
 		)
-		if nendo.box(nendo.id("MemberRow", u32(i)))(
-		{
-			width = nendo.grow(),
-			height = nendo.fixed(MEMBER_HEIGHT),
-			padding = {left = 8, right = 6},
-			gap = 10,
-			align = {y = .Center},
-			color = hovered() ? HOVER : {},
-			radius = rr(8),
-		},
+	}
+	if nendo.box(nendo.id("MemberNickActions", u32(nick)))({gap = 8}) {
+		folder_action("MemberNickSave", tr("Save"), true)
+		micro_button("MemberNickCancel", tr("Cancel"))
+	}
+	member_run(ui.members[:], nick + 1, count)
+}
+
+@(private = "file")
+member_run :: proc(members: []Member_Ui, start, end: int) {
+	if start == end {
+		return
+	}
+	window := nendo.virtual_rows(
+		nendo.id("MemberRows", u32(start)),
+		end - start,
+		MEMBER_HEIGHT,
+		gap = MEMBER_GAP,
+	)
+	for i in start + window.first ..< start + window.end {
+		member_row(&members[i], u32(i))
+	}
+}
+
+@(private = "file")
+member_row :: proc(member: ^Member_Ui, index: u32) {
+	if nendo.box(nendo.id("MemberRow", index))(
+	{
+		width = nendo.grow(),
+		height = nendo.fixed(MEMBER_HEIGHT),
+		padding = {left = 8, right = 6},
+		gap = 10,
+		align = {y = .Center},
+		color = hovered() ? HOVER : {},
+		radius = rr(8),
+	},
+	) {
+		avatar("MemberAvatar", index, member.id_hex, member.name, 36, url_pic(member.pic_url))
+		if nendo.box(nendo.id("MemberCol", index))(
+		{width = nendo.grow(), direction = .Column, gap = 1, clip = {x = true}},
 		) {
-			if !visible {continue}
-			avatar("MemberAvatar", u32(i), member.id_hex, member.name, 36, url_pic(member.pic_url))
-			if nendo.box(nendo.id("MemberCol", u32(i)))(
-			{width = nendo.grow(), direction = .Column, gap = 1, clip = {x = true}},
+			if nendo.box(nendo.id("MemberName", index))(
+			{width = nendo.grow(), gap = 6, align = {y = .Center}},
 			) {
-				if nendo.box(nendo.id("MemberName", u32(i)))(
-				{width = nendo.grow(), gap = 6, align = {y = .Center}},
-				) {
-					nendo.text(member.name, {font = FONT_TITLE, size = 13, color = TEXT})
-					if member.is_self {
-						if nendo.box(nendo.id("MemberYou", u32(i)))(
-						{
-							padding = {left = 6, right = 6, top = 1, bottom = 1},
-							color = SELECTED,
-							radius = rr(5),
-						},
-						) {
-							nendo.text(
-								tr("YOU"),
-								{font = FONT_MONO, size = 9, color = ACCENT, spacing = 1},
-							)
-						}
+				nendo.text(member.name, {font = FONT_TITLE, size = 13, color = TEXT})
+				if member.is_self {
+					if nendo.box(nendo.id("MemberYou", index))(
+					{
+						padding = {left = 6, right = 6, top = 1, bottom = 1},
+						color = SELECTED,
+						radius = rr(5),
+					},
+					) {
+						nendo.text(
+							tr("YOU"),
+							{font = FONT_MONO, size = 9, color = ACCENT, spacing = 1},
+						)
 					}
 				}
-				// Admin marker rides the subline, so the name stays quiet.
-				nendo.text(
-					member.is_admin ? tr("Admin") : npub_tail(member.npub),
-					{
-						font = member.is_admin ? FONT_TITLE : FONT_MONO,
-						size = 10,
-						color = member.is_admin ? ACCENT : TEXT_LO,
-					},
-				)
 			}
-			// A non-admin self row has no action to offer.
-			if !member.is_self || member.is_admin {
-				if nendo.box(nendo.id("MemberMenuBtn", u32(i)))(
-				{
-					width = nendo.fixed(tap_size() ? tap_min() : 26),
-					height = nendo.fixed(tap_size() ? tap_min() : 26),
-					align = {x = .Center, y = .Center},
-					color = hovered() ? SELECTED : {},
-					radius = rr(6),
-				},
-				) {
-					nendo.text("...", {font = FONT_TITLE, size = 13, color = TEXT_DIM})
-				}
-			}
-		}
-		// The nickname editor takes the row's place below it.
-		if ui.member_nick == i {
+			// Admin marker rides the subline, so the name stays quiet.
 			nendo.text(
-				fmt.tprintf(tr("Nickname for %s"), member.name),
-				{font = FONT_BODY, size = 12, color = TEXT_DIM},
+				member.is_admin ? tr("Admin") : npub_tail(member.npub),
+				{
+					font = member.is_admin ? FONT_TITLE : FONT_MONO,
+					size = 10,
+					color = member.is_admin ? ACCENT : TEXT_LO,
+				},
 			)
-			// Only one editor is open. Keep index zero for the box so its
-			// text child's index one cannot collide with a member index.
-			if nendo.box(nendo.id("MemberNickBox"))(
+		}
+		// A non-admin self row has no action to offer.
+		if !member.is_self || member.is_admin {
+			if nendo.box(nendo.id("MemberMenuBtn", index))(
 			{
-				width = nendo.grow(),
-				height = nendo.fixed(f32(nick_height)),
-				padding = {left = 8, right = 8},
-				align = {y = .Center},
-				color = ROW_BG,
+				width = nendo.fixed(tap_size() ? tap_min() : 26),
+				height = nendo.fixed(tap_size() ? tap_min() : 26),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? SELECTED : {},
 				radius = rr(6),
-				border = nendo.Border{color = ACCENT, width = bw()},
 			},
 			) {
-				field_text(
-					ui,
-					"MemberNickBox",
-					&ui.nick_input,
-					tr("Nickname"),
-					ui.focus == .Nick,
-					12,
-					TEXT_LO,
-				)
-			}
-			if nendo.box(nendo.id("MemberNickActions", u32(i)))({gap = 8}) {
-				folder_action("MemberNickSave", tr("Save"), true)
-				micro_button("MemberNickCancel", tr("Cancel"))
+				nendo.text("...", {font = FONT_TITLE, size = 13, color = TEXT_DIM})
 			}
 		}
 	}

@@ -703,7 +703,6 @@ Ui_State :: struct {
 	group_files_menu:                    Group_File_Menu,
 	group_files_option:                  int,
 	members:                             [dynamic]Member_Ui,
-	members_scroll_y:                    f32, // scroll offset used by the previous layout
 	member_nick:                         int, // member-row nickname editor, -1 = closed
 	member_menu:                         int, // member-row "⋯" action menu, -1 = closed
 	member_menu_x:                       f32, // its anchor, layout coords

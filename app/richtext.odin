@@ -1684,7 +1684,7 @@ rune_fit :: proc(
 			if i > at && wrap_cjk_break(previous, r) {cjk_cut^ = i}
 			previous = r
 		}
-		literal := text_literal(fonts, i)
+		literal := mode == .Plain || text_literal(fonts, i)
 		// Chips are atoms; composer segments sit flush, bodies 2px apart.
 		next, atom_width := 0, f32(0)
 		switch {

@@ -204,6 +204,8 @@ The sidebar uses fixed rows for recent chats and one measured row per folder in 
 
 In short windows, `RailContent` scrolls both the chat list and its controls. If filtering puts that offset past the new end, `build_layout` clamps it and lays out the frame again before drawing. An offset still in range stays put.
 
+Group Members uses fixed rows. The edited member and nickname field stay mounted between two virtual runs. The prompt wraps at the current card width before nendo chooses the lower run's rows.
+
 | Path | What's there |
 | --- | --- |
 | `app/` | The whole app: panes, layout, state, workers, vault, media viewers |
