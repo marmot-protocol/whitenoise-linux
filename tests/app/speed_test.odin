@@ -23,11 +23,14 @@ contacts_layout :: proc(t: ^testing.T) {
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1
 	init_fonts()
+	load_themes()
+	apply_theme(0, 0)
 	memory: []u8
 	init_layout(&memory, 32768, {1200, 800})
 	defer delete(memory)
 	ui := Ui_State {
 		page             = .Contacts,
+		selected         = -1,
 		row_menu         = -1,
 		member_menu      = -1,
 		selected_contact = -1,
@@ -60,6 +63,7 @@ contacts_layout :: proc(t: ^testing.T) {
 	data := nendo.scroll(nendo.id("ContactList"))
 	testing.expect(t, data.found)
 	full_height := data.content.height
+	testing.expect_value(t, full_height, 1000 * f32(50) + 25 * (22 + 6) + 999 * 6)
 	for fraction in ([]f32{0, 0.5, 1}) {
 		data.position.y = -fraction * (full_height - data.viewport.height)
 		commands := build_layout(&ui, 0)
@@ -99,7 +103,7 @@ contacts_layout :: proc(t: ^testing.T) {
 	for c in "0999" {rl.PushChar(c)}
 	handle_pages(&ui, &client)
 	testing.expect_value(t, string(ui.sidebar_filter[:]), "0999")
-	for _ in 0 ..< 3 {build_layout(&ui, 0)}
+	build_layout(&ui, 0)
 	testing.expect(
 		t,
 		nendo.element(nendo.id("ContactRow", 999)).found,
@@ -108,6 +112,8 @@ contacts_layout :: proc(t: ^testing.T) {
 	row := nendo.element(nendo.id("ContactRow", 999)).rect
 	list := nendo.element(nendo.id("ContactList")).rect
 	testing.expect(t, row.y >= list.y && row.y + row.height <= list.y + list.height)
+	letter := nendo.element(nendo.id("ContactLetter", 999))
+	testing.expect(t, letter.found && letter.rect.y == list.y && row.y == letter.rect.y + 28)
 	append(&ui.sidebar_filter, "no match")
 	build_layout(&ui, 0)
 	for _, i in ui.contacts {testing.expect(t, !nendo.element(nendo.id("ContactRow", u32(i))).found)}
@@ -310,6 +316,8 @@ performance_sidebar :: proc(t: ^testing.T) {
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1
 	init_fonts()
+	load_themes()
+	apply_theme(0, 0)
 	memory: []u8
 	init_layout(&memory, 32768, {1200, 800})
 	defer delete(memory)
@@ -375,12 +383,107 @@ performance_sidebar :: proc(t: ^testing.T) {
 		testing.expect(t, mounted > 0 && mounted < 30)
 	}
 	testing.expect(t, nendo.element(nendo.id("ChatRow", 999)).found)
-	nendo.update_scroll(.Off, {}, 0)
-	commands := build_layout(&ui, 0)
-	rl.BeginDrawing()
-	draw_frame(commands)
-	rl.TakeScreenshot("/tmp/wn-sidebar-regression.png")
-	rl.EndDrawing()
+
+	append(&ui.prefs.folders, "Work", "Closed", "Empty")
+	for i in 0 ..< 500 {
+		ui.prefs.folder_of[ui.chats[i].group_id] = "Work"
+	}
+	ui.prefs.folder_of[ui.chats[500].group_id] = "Closed"
+	ui.prefs.collapsed_folders["Closed"] = true
+	ui.prefs.reduce_motion = true
+	edit.init(&ui.ed, context.allocator, context.allocator)
+	defer edit.destroy(&ui.ed)
+	defer {
+		delete(ui.prefs.folders)
+		delete(ui.prefs.folder_of)
+		delete(ui.prefs.collapsed_folders)
+		delete(ui.prefs.last_chat)
+	}
+	for height in ([2]i32{800, 420}) {
+		rl.SetWindowSize(1200, height)
+		nendo.set_dimensions({1200, f32(height)})
+		build_layout(&ui, 0)
+		nendo.update_scroll(.Off, {}, 0)
+		owner := nendo.id(height == 800 ? "ChatList" : "RailContent")
+		data = nendo.scroll(owner)
+		if !testing.expect(t, data.found) {return}
+		data.position.y = 0
+		build_layout(&ui, 0)
+		first, last := nendo.id("ChatRow", 0), nendo.id("ChatRow", 999)
+		testing.expect(t, nendo.element(first).found && !nendo.element(last).found)
+		testing.expect_value(t, len(ui.rail_rows), 999)
+		rows := nendo.element(nendo.id("InboxRows"))
+		testing.expect_value(t, rows.rect.height, 3 * f32(34) + 999 * chat_row_height() + 1001 * 2)
+
+		// Cycling backwards from the first conversation wraps to an unmounted row.
+		inbox_cycle(&ui, nil, -1)
+		testing.expect_value(t, ui.selected, 999)
+		commands := build_layout(&ui, 0)
+		view := nendo.element(owner).rect
+		row := nendo.element(last)
+		testing.expect(
+			t,
+			row.found &&
+			row.rect.y >= view.y &&
+			row.rect.y + row.rect.height <= view.y + view.height + 0.01,
+		)
+		mounted := 0
+		for _, i in ui.chats {
+			if nendo.element(nendo.id("ChatRow", u32(i))).found {mounted += 1}
+		}
+		testing.expect(t, mounted > 0 && mounted < 30)
+		if height == 420 {
+			rl.BeginDrawing()
+			draw_frame(commands)
+			rl.TakeScreenshot("/tmp/wn-sidebar-regression.png")
+			rl.EndDrawing()
+		}
+
+		inbox_cycle(&ui, nil, 1)
+		testing.expect_value(t, ui.selected, 0)
+		build_layout(&ui, 0)
+		row = nendo.element(first)
+		testing.expect(
+			t,
+			row.found &&
+			row.rect.y >= view.y &&
+			row.rect.y + row.rect.height <= view.y + view.height + 0.01,
+		)
+		if height == 800 {
+			data = nendo.scroll(owner)
+			data.position.y = -(36 + 500 * (chat_row_height() + 2))
+			build_layout(&ui, 0)
+			closed := nendo.element(nendo.id("FolderHeader", 1))
+			unfiled := nendo.element(nendo.id("FolderHeader", 3))
+			testing.expect(t, closed.found && closed.rect.y == view.y)
+			testing.expect(t, unfiled.found && unfiled.rect.y == closed.rect.y + 36)
+			testing.expect(t, !nendo.element(nendo.id("ChatRow", 500)).found)
+		}
+	}
+
+	// Two one-chat folders fit on screen; the second moves when the first closes.
+	rl.SetWindowSize(1200, 800)
+	ui.chat_filter = .Unread
+	ui.chats[0].unread, ui.chats[500].unread = 1, 1
+	ui.prefs.collapsed_folders["Closed"] = false
+	ui.prefs.motion_override, ui.prefs.reduce_motion = true, false
+	step := TRANSITION_DUR / 2000
+	for _ in 0 ..< 2 {
+		nendo.set_dimensions({1200, 800})
+		build_layout(&ui, step)
+	}
+	header_id, row_id := nendo.id("FolderHeader", 1), nendo.id("ChatRow", 500)
+	header, row := nendo.element(header_id), nendo.element(row_id)
+	testing.expect(t, header.found && row.found)
+	ui.prefs.collapsed_folders["Work"] = true
+	for _ in 0 ..< 2 {build_layout(&ui, step)}
+	moved := nendo.element(header_id).rect.y
+	settled := header.rect.y - chat_row_height() - 2
+	testing.expect(t, settled < moved && moved < header.rect.y, "the second header must glide")
+	testing.expect_value(t, nendo.element(row_id).rect.y - moved, row.rect.y - header.rect.y)
+	build_layout(&ui, step)
+	testing.expect_value(t, nendo.element(header_id).rect.y, settled)
+
 	ui.page = .Archived
 	ui.archived = ui.chats
 	for width in ([2]i32{1200, 400}) {

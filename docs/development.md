@@ -200,6 +200,8 @@ For unequal heights, pass cumulative heights instead of a count and a row height
 
 The timeline measures messages with their preceding markers and passes measured stretches to `nendo.virtual_rows`. Unmeasured rows, jump targets, and deletion animations stay outside those stretches so they can lay out even offscreen. The timeline still owns the reading anchor and pending sends. It passes one viewport of `overscan` in each direction. When a growing clip has not resolved its height, nendo uses the current canvas or the declared height cap rather than the previous viewport height.
 
+The sidebar uses fixed rows for recent chats and one measured row per folder in the grouped view. An expanded folder contains its own fixed run and inherits the sidebar's scroll position. Keyboard cycling keeps the full order of expanded chats, including rows nendo did not build. The contacts list counts a letter heading as part of its first contact's row.
+
 | Path | What's there |
 | --- | --- |
 | `app/` | The whole app: panes, layout, state, workers, vault, media viewers |

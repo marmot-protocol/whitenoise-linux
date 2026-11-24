@@ -672,7 +672,7 @@ Ui_State :: struct {
 	theme:                               int, // index into theme_packs
 	accent:                              int,
 	selected:                            int, // index into chats, -1 = none
-	rail_rows:                           [dynamic]Inbox_Row, // rendered conversations for Ctrl+Tab
+	rail_rows:                           [dynamic]Inbox_Row, // expanded conversations for Ctrl+Tab, even if unmounted
 	rail_peek:                           bool, // chat list opened by hand in a window too narrow for it; see toggle_rail
 	messages:                            [dynamic]Msg_Ui, // selected chat's timeline
 	reading_places:                      map[string]Reading_Place, // account and group -> message anchor

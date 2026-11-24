@@ -299,127 +299,12 @@ rail_content :: proc(ui: ^Ui_State, page: Page) {
 			if nendo.box(nendo.id("ContactList"))(
 			{
 				width = nendo.grow(),
-				height = nendo.grow(min = single_pane() ? 50 : 0),
+				height = nendo.grow(min = single_pane() ? CONTACT_ROW_H : 0),
 				direction = .Column,
-				gap = 6,
 				clip = {y = true, scroll = true},
 			},
 			) {
-				// Alphabetical with letter section headers and a name
-				// filter. Rows keep their
-				// ui.contacts index in the nendo ID so clicks stay stable.
-				last_letter: u8 = 0
-				Contact_Item :: struct {
-					idx:    int,
-					letter: u8,
-					y, end: f32,
-				}
-				rows := make([dynamic]Contact_Item, 0, len(contact_rows), context.temp_allocator)
-				ROW_H :: f32(50)
-				HEADER_H :: f32(22)
-				GAP :: f32(6)
-				y: f32
-				for order in contact_rows {
-					letter: u8 = '#'
-					if !order.unnamed &&
-					   len(order.key) > 0 &&
-					   order.key[0] >= 'a' &&
-					   order.key[0] <= 'z' {
-						letter = order.key[0] - 32
-					}
-					header := letter != last_letter
-					end := y + ROW_H + GAP + (header ? HEADER_H + GAP : 0)
-					append(&rows, Contact_Item{order.idx, header ? letter : 0, y, end})
-					y, last_letter = end, letter
-				}
-				// Keep full scroll geometry, but build only the viewport and two spare rows.
-				data := nendo.scroll(nendo.id("ContactList"))
-				height := data.found ? data.viewport.height : f32(rl.GetScreenHeight()) / UI_ZOOM
-				offset := data.found ? clamp(-data.position.y, 0, max(0, y - GAP - height)) : 0
-				if data.found {data.position.y = -offset}
-				first, last := 0, len(rows)
-				for first < last && rows[first].end < offset - 2 * (ROW_H + GAP) {first += 1}
-				for last > first &&
-				    rows[last - 1].y > offset + height + 2 * (ROW_H + GAP) {last -= 1}
-				if first > 0 {
-					if nendo.box(nendo.id("ContactsBefore"))(
-					{height = nendo.fixed(rows[first].y - GAP)},
-					) {}
-				}
-				for order in rows[first:last] {
-					contact := ui.contacts[order.idx]
-					if order.letter != 0 {
-						if nendo.box(nendo.id("ContactLetter", u32(order.idx)))(
-						{
-							height = nendo.fixed(HEADER_H),
-							padding = {left = 10, top = 6, bottom = 2},
-						},
-						) {
-							nendo.text(
-								fmt.tprintf("%c", order.letter),
-								{font = FONT_MONO, size = 11, color = TEXT_LO, spacing = 2},
-							)
-						}
-					}
-
-					selected := ui.selected_contact == order.idx
-					if nendo.box(nendo.id("ContactRow", u32(order.idx)))(
-					{
-						width = nendo.grow(),
-						height = nendo.fixed(ROW_H),
-						padding = nendo.pad(10),
-						gap = 10,
-						align = {y = .Center},
-						color = selected ? SELECTED : (hovered() ? HOVER : {}),
-						radius = rr(12),
-					},
-					) {
-						if selected {
-							if nendo.box(nendo.id("ContactRowBar", u32(order.idx)))(
-							{
-								width = nendo.fixed(3),
-								height = nendo.fixed(18),
-								color = ACCENT,
-								radius = rr(2),
-							},
-							) {}
-						}
-						photo := contact_picture(contact)
-						avatar(
-							"ContactAvatar",
-							u32(order.idx),
-							photo == nil ? contact.npub : contact.id_hex,
-							contact.name,
-							30,
-							photo,
-						)
-						if nendo.box(nendo.id("ContactNameClip", u32(order.idx)))(
-						{width = nendo.grow(), clip = {x = true}},
-						) {
-							name_w :=
-								nendo.element(nendo.id("ContactNameClip", u32(order.idx))).rect.width
-							if name_w <= 0 {name_w = max(1, rail_width(ui) - 80)}
-							nendo.text(
-								text_ellipsis(contact_label(ui, contact), name_w, FONT_TITLE, 14),
-								{font = FONT_TITLE, size = 14, color = TEXT, wrap = .None},
-							)
-						}
-						if selected && len(contact.npub) > 0 && !single_pane() {
-							if nendo.box(nendo.id("ContactRowGap", u32(order.idx)))(
-							{width = nendo.grow()},
-							) {}
-							nendo.text(
-								npub_tail(contact.npub),
-								{font = FONT_MONO, size = 10, color = TEXT_LO},
-							)
-						}
-					}
-				}
-				if last < len(rows) {
-					if nendo.box(nendo.id("ContactsAfter"))(
-					{height = nendo.fixed(y - rows[last].y - GAP)},
-					) {}
-				}
+				contact_rail_rows(ui, contact_rows)
 			}
 			scrollbar(nendo.id("ContactList"))
 			if len(ui.contacts) > 0 {
@@ -443,7 +328,7 @@ rail_content :: proc(ui: ^Ui_State, page: Page) {
 				width = nendo.grow(),
 				height = pinned ? nendo.grow(min = chat_row_height()) : nendo.fit(),
 				direction = .Column,
-				gap = 2,
+				gap = INBOX_GAP,
 				clip = {y = pinned, scroll = true},
 			},
 			) {
@@ -454,4 +339,104 @@ rail_content :: proc(ui: ^Ui_State, page: Page) {
 
 	}
 	if page_scroll {scrollbar(nendo.id("RailContent"))}
+}
+
+@(private = "file")
+CONTACT_ROW_H :: f32(50)
+
+@(private = "file")
+contact_rail_rows :: proc(ui: ^Ui_State, contacts: []Contact_Order) {
+	HEADER_H :: f32(22)
+	GAP :: u16(6)
+	HEADED_H :: HEADER_H + f32(GAP) + CONTACT_ROW_H
+	headings := make([]u8, len(contacts), context.temp_allocator)
+	offsets := make([]f32, len(contacts) + 1, context.temp_allocator)
+	last_letter: u8
+	for order, i in contacts {
+		letter: u8 = '#'
+		if !order.unnamed && len(order.key) > 0 && 'a' <= order.key[0] && order.key[0] <= 'z' {
+			letter = order.key[0] - 'a' + 'A'
+		}
+		height := CONTACT_ROW_H
+		if letter != last_letter {
+			headings[i] = letter
+			last_letter = letter
+			height = HEADED_H
+		}
+		offsets[i + 1] = offsets[i] + height
+	}
+	window := nendo.virtual_rows(
+		nendo.id("ContactRows"),
+		offsets,
+		GAP,
+		2 * (CONTACT_ROW_H + f32(GAP)),
+	)
+	for i in window.first ..< window.end {
+		index := contacts[i].idx
+		if headings[i] == 0 {
+			contact_rail_row(ui, index)
+			continue
+		}
+		if nendo.box(nendo.id("ContactEntry", u32(index)))(
+		{width = nendo.grow(), height = nendo.fixed(HEADED_H), direction = .Column, gap = GAP},
+		) {
+			if nendo.box(nendo.id("ContactLetter", u32(index)))(
+			{height = nendo.fixed(HEADER_H), padding = {left = 10, top = 6, bottom = 2}},
+			) {
+				nendo.text(
+					fmt.tprintf("%c", headings[i]),
+					{font = FONT_MONO, size = 11, color = TEXT_LO, spacing = 2},
+				)
+			}
+			contact_rail_row(ui, index)
+		}
+	}
+}
+
+@(private = "file")
+contact_rail_row :: proc(ui: ^Ui_State, index: int) {
+	contact := ui.contacts[index]
+	id := u32(index)
+	selected := ui.selected_contact == index
+	if nendo.box(nendo.id("ContactRow", id))(
+	{
+		width = nendo.grow(),
+		height = nendo.fixed(CONTACT_ROW_H),
+		padding = nendo.pad(10),
+		gap = 10,
+		align = {y = .Center},
+		color = selected ? SELECTED : (hovered() ? HOVER : {}),
+		radius = rr(12),
+	},
+	) {
+		if selected {
+			if nendo.box(nendo.id("ContactRowBar", id))(
+			{width = nendo.fixed(3), height = nendo.fixed(18), color = ACCENT, radius = rr(2)},
+			) {}
+		}
+		photo := contact_picture(contact)
+		avatar(
+			"ContactAvatar",
+			id,
+			photo == nil ? contact.npub : contact.id_hex,
+			contact.name,
+			30,
+			photo,
+		)
+		name_clip := nendo.id("ContactNameClip", id)
+		if nendo.box(name_clip)({width = nendo.grow(), clip = {x = true}}) {
+			name_w := nendo.element(name_clip).rect.width
+			if name_w <= 0 {
+				name_w = max(1, rail_width(ui) - 80)
+			}
+			nendo.text(
+				text_ellipsis(contact_label(ui, contact), name_w, FONT_TITLE, 14),
+				{font = FONT_TITLE, size = 14, color = TEXT, wrap = .None},
+			)
+		}
+		if selected && len(contact.npub) > 0 && !single_pane() {
+			if nendo.box(nendo.id("ContactRowGap", id))({width = nendo.grow()}) {}
+			nendo.text(npub_tail(contact.npub), {font = FONT_MONO, size = 10, color = TEXT_LO})
+		}
+	}
 }
