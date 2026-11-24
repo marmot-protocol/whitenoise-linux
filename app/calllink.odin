@@ -29,6 +29,7 @@ import "core:thread"
 
 import "nendo"
 
+_ :: os
 _ :: windows
 
 @(private)
