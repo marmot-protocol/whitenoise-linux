@@ -3,6 +3,9 @@
 # Docs: https://gh.io/actions-lockfile
 version: 'v0.0.3'
 workflows:
+    '.github/workflows/boat-arch-pilot.yml':
+        - 'actions/checkout@v4'
+        - 'actions/upload-artifact@v4'
     '.github/workflows/ci.yml':
         - 'actions/checkout@v4'
         - 'actions/upload-artifact@v4'
