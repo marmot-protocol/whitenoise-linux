@@ -2170,6 +2170,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 		if ui.poll_ticket != 0 {
 			nendo.text(tr("Sending..."), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 			busy_bar("PollBusy")
+			if single_pane() && short_conversation(ui) {return}
 		}
 		if poll_suspended {return}
 		// A capped scrollable list keeps every removal control reachable

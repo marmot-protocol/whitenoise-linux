@@ -169,7 +169,16 @@ composer_plan :: proc(
 	}
 	pitch := p.size + f32(p.gap)
 	// More and Send always fit; any additional shortcuts spill back into More.
-	remaining := max(0, int(width / pitch) - 2)
+	tools_width := width
+	if surface == .Chat &&
+	   config.layout == .Automatic &&
+	   !ui.poll_open &&
+	   single_pane() &&
+	   short_conversation(ui) &&
+	   width >= COMPOSER_TEXT_MIN + 2 * pitch {
+		tools_width -= COMPOSER_TEXT_MIN
+	}
+	remaining := max(0, int(tools_width / pitch) - 2)
 	p.pinned = {.More}
 	count := 1
 	for action in p.config.order[:COMPOSER_SHORTCUT_COUNT] {

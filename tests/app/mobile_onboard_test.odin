@@ -230,6 +230,58 @@ mobile_onboard_viewport :: proc(t: ^testing.T) {
 		}
 	}
 
+	rl.SetWindowSize(1024, 700)
+	ui.prefs.zoom_pct = 200
+	apply_zoom(&ui)
+	refresh_ui_scale()
+	nendo.set_dimensions({1024 / UI_ZOOM, 700 / UI_ZOOM})
+	for _ in 0 ..< 3 {mobile_onboard_frame(&ui, .Gate_Unlock)}
+	card := nendo.element(nendo.id("GateCard")).rect
+	password := nendo.element(nendo.id("GatePwBox")).rect
+	unlock_id := nendo.id("GateGo")
+	unlock := nendo.element(unlock_id)
+	testing.expectf(
+		t,
+		unlock.found &&
+		password.y >= card.y &&
+		unlock.rect.y + unlock.rect.height <= card.y + card.height,
+		"password %v and Unlock %v must fit in %v at 200%% zoom",
+		password,
+		unlock.rect,
+		card,
+	)
+	// A shorter window still has to expose the button to a mouse, not just Enter.
+	rl.SetWindowSize(1024, 550)
+	nendo.set_dimensions({1024 / UI_ZOOM, 550 / UI_ZOOM})
+	for _ in 0 ..< 3 {mobile_onboard_frame(&ui, .Gate_Unlock)}
+	card = nendo.element(nendo.id("GateCard")).rect
+	nendo.set_pointer({card.x + card.width / 2, card.y + card.height / 2}, .Up)
+	for _ in 0 ..< 8 {
+		nendo.update_scroll(.Off, {0, -3}, 1.0 / 60)
+		gate_layout(&ui)
+	}
+	scroll := nendo.scroll(nendo.id("GateCard"))
+	if !testing.expect(t, scroll.found && scroll.position.y < 0, "wheel moves the unlock card") {
+		return
+	}
+	button := nendo.element(unlock_id).rect
+	point := nendo.Vector2{button.x + button.width / 2, button.y + button.height / 2}
+	edit.init(&ui.ed, context.allocator, context.allocator)
+	defer edit.destroy(&ui.ed)
+	defer editor_forget(&ui)
+	rl.PushChar('x')
+	nendo.set_pointer(point, .Down)
+	rl.PushMouseButton(.LEFT, true)
+	gate_input(&ui)
+	nendo.set_pointer(point, .Up)
+	rl.PushMouseButton(.LEFT, false)
+	testing.expect(t, gate_submit(&ui), "mouse click unlocks after wheel scroll")
+	vault_relock()
+	_ = rl.WindowShouldClose()
+	text_field_live = false
+	UI_ZOOM = 1
+	refresh_ui_scale()
+
 	gate_reset = .Review
 	defer {gate_reset = .Closed; set_locale("en")}
 	for locale in ([]string{"en", "de", "it", "ja"}) {
