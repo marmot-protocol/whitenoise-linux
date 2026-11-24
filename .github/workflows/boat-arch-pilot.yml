@@ -28,8 +28,7 @@ jobs:
           printf '%s  %s\n' 9f2fb5529ad7ca58e4d724bb6bfcd6ff94cb3077a7c12a0941e501aa0e9335ec "$boat" | sha256sum -c -
           chmod 700 "$boat"
           "$boat" --version
-          printf '%s\n' "$BOAT_API_KEY" | "$boat" login --key-stdin --json >/dev/null
-          unset BOAT_API_KEY
+          : "${BOAT_API_KEY:?Missing scoped Boat pilot key}"
 
           receipt="$RUNNER_TEMP/sandbox.jsonl"
           : > "$receipt"
