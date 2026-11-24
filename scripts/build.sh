@@ -845,6 +845,7 @@ if [ "${1:-}" = test ]; then
     backup_password_dispatch invite_input_dispatch recent_folder_filters nerd_font_fallback \
     chat_timestamp_hover export_password_dispatch relay_input_dispatch settings_viewport \
     theme_gallery_interactions test_emoji_save_dispatch wallpaper_proportions \
+    test_inline_custom_emoji \
     devices_visibility devices_post_link_review devices_pairing_projection devices_roster_repair \
     devices_account_fence devices_sign_in_review devices_chat_activation devices_chat_sync \
     thread_reply_previews agent_item_timeline_visibility thread_offline_retry_preflights_destination \
