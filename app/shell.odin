@@ -1141,28 +1141,25 @@ splash_frame :: proc(step: int) {
 
 // ── Tray ────────────────────────────────────────────────────────────
 
-// Create the tray (once) and point the window-close route at it. Both
-// tray prefs need the icon: one to start hidden, one to hide on close.
-apply_tray :: proc(ui: ^Ui_State) {
+@(private = "file")
+tray_unread: u64 = max(u64)
+
+apply_tray :: proc(ui: ^Ui_State, start := rl.Tray_Startup.Visible) {
 	when ODIN_PLATFORM_SUBTARGET == .Android {return}
+	rl.SetHideOnClose(ui.prefs.minimize_tray)
 	if !ui.prefs.start_in_tray && !ui.prefs.minimize_tray {
-		rl.SetHideOnClose(false)
+		rl.CloseTray()
+		tray_unread = max(u64)
 		return
 	}
-	// Accent square with Show/Quit; a missing StatusNotifier host means
-	// no icon appears, so closing must still quit.
-	abgr := u32(0xff) << 24 | u32(ACCENT[2]) << 16 | u32(ACCENT[1]) << 8 | u32(ACCENT[0])
 	rl.InitTray(
+		LOGO_PNG,
 		"White Noise",
-		abgr,
 		strings.clone_to_cstring(tr("Show"), context.temp_allocator),
 		strings.clone_to_cstring(tr("Quit"), context.temp_allocator),
+		start,
 	)
-	rl.SetHideOnClose(ui.prefs.minimize_tray)
 }
-
-@(private = "file")
-tray_unread: u64 = max(u64) // forces the first tooltip write
 
 // Unread total in the tray tooltip, rewritten only when it moves.
 tray_tick :: proc(ui: ^Ui_State) {

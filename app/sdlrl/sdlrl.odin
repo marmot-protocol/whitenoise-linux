@@ -280,6 +280,8 @@ InitWindow :: proc(
 		fmt.eprintfln("sdl: window failed: %s", sdl.GetError())
 		os.exit(1)
 	}
+	// The window close request and an explicit app quit are different actions.
+	sdl.SetHintWithPriority("SDL_QUIT_ON_LAST_WINDOW_CLOSE", "0", .OVERRIDE)
 	// SDL inhibits the screensaver by default, as games want, which keeps
 	// a laptop from dimming, locking or suspending while the app is open.
 	sdl.EnableScreenSaver()
@@ -608,68 +610,133 @@ FontSpecimen :: proc(
 }
 
 // ── Tray ────────────────────────────────────────────────────────────
-// Minimal status icon for "Start minimized to tray": a solid accent
-// square with Show/Quit entries. Show raises the window; Quit pushes
-// a QUIT event so the normal loop exit runs.
 
 @(private)
 tray: ^sdl.Tray
 @(private)
-tray_surface: ^sdl.Surface
+hide_on_close: bool
 @(private)
-tray_px: [22 * 22]u32 // must outlive the tray; the surface borrows it
+tray_hidden: bool
+@(private)
+tray_start: Tray_Startup
+
+Tray_Startup :: enum {
+	Visible,
+	Hidden,
+}
+
+@(private)
+Tray_Status :: enum c.int {
+	Pending,
+	Unavailable,
+	Ready,
+}
 
 @(private)
 tray_show_cb :: proc "c" (userdata: rawptr, entry: ^sdl.TrayEntry) {
-	_ = sdl.ShowWindow(state.window)
-	_ = sdl.RaiseWindow(state.window)
+	context = runtime.default_context()
+	ShowWindow()
 }
 
 @(private)
 tray_quit_cb :: proc "c" (userdata: rawptr, entry: ^sdl.TrayEntry) {
-	event: sdl.Event
-	event.type = .QUIT
-	_ = sdl.PushEvent(&event)
+	state.quit = true
 }
 
-// abgr is the icon color as 0xAABBGGRR (RGBA32 little-endian).
-// Missing tray host (no StatusNotifier): the tray silently doesn't
-// appear; the window stays the only surface.
-InitTray :: proc(tooltip: cstring, abgr: u32, show_label, quit_label: cstring) {
+InitTray :: proc(icon: []u8, tooltip, show_label, quit_label: cstring, start: Tray_Startup) {
+	when NATIVE_TRAY {
+		if native_tray_running {return}
+	}
 	if tray != nil {
 		return
 	}
-	for &px in tray_px {
-		px = abgr
-	}
-	tray_surface = sdl.CreateSurfaceFrom(22, 22, .RGBA32, raw_data(tray_px[:]), 22 * 4)
-	tray = sdl.CreateTray(tray_surface, tooltip)
-	if tray == nil {
-		sdl.DestroySurface(tray_surface)
-		tray_surface = nil
+	// This PNG is embedded in the app, not received from a chat.
+	w, h: c.int
+	pixels := stbi.load_from_memory(raw_data(icon), c.int(len(icon)), &w, &h, nil, 4)
+	if pixels == nil {return}
+	defer stbi.image_free(pixels)
+	tray_start = start
+	when NATIVE_TRAY {
+		wn_tray_start(pixels, w, h, tooltip, show_label, quit_label, tray_wake)
+		native_tray_running = true
 		return
 	}
+	surface := sdl.CreateSurfaceFrom(w, h, .RGBA32, pixels, w * 4)
+	if surface == nil {return}
+	defer sdl.DestroySurface(surface)
+	tray = sdl.CreateTray(surface, tooltip)
+	if tray == nil {return}
 	menu := sdl.CreateTrayMenu(tray)
+	if menu == nil {
+		CloseTray()
+		return
+	}
 	show := sdl.InsertTrayEntryAt(menu, -1, show_label, sdl.TRAYENTRY_BUTTON)
-	sdl.SetTrayEntryCallback(show, tray_show_cb, nil)
 	quit := sdl.InsertTrayEntryAt(menu, -1, quit_label, sdl.TRAYENTRY_BUTTON)
+	if show == nil || quit == nil {
+		CloseTray()
+		return
+	}
+	sdl.SetTrayEntryCallback(show, tray_show_cb, nil)
 	sdl.SetTrayEntryCallback(quit, tray_quit_cb, nil)
 }
 
 SetTrayTooltip :: proc(tooltip: cstring) {
+	when NATIVE_TRAY {
+		if native_tray_running {wn_tray_tooltip(tooltip)}
+		return
+	}
 	if tray != nil {
 		sdl.SetTrayTooltip(tray, tooltip)
 	}
 }
 
-// "Minimize to tray on close": a window-close request hides the window
-// instead of quitting. SDL follows that request with a QUIT for the last
-// window, so the swallow flag eats exactly that one; the tray's Quit
-// entry pushes a QUIT with no close request and still exits.
+CloseTray :: proc() {
+	when NATIVE_TRAY {
+		if native_tray_running {
+			wn_tray_stop()
+			native_tray_running = false
+		}
+	}
+	if tray != nil {
+		sdl.DestroyTray(tray)
+		tray = nil
+	}
+	tray_start = .Visible
+	if tray_hidden && !state.quit {ShowWindow()}
+	tray_hidden = false
+}
+
 @(private)
-hide_on_close: bool
+tray_status :: proc() -> Tray_Status {
+	when NATIVE_TRAY {
+		if native_tray_running {return wn_tray_status()}
+	}
+	return tray != nil ? .Ready : .Unavailable
+}
+
 @(private)
-swallow_quit: bool
+pump_tray :: proc() {
+	when NATIVE_TRAY {
+		if native_tray_running {
+			token: cstring
+			actions := wn_tray_actions(&token)
+			defer {if token != nil {g_free(rawptr(token))}}
+			if .Quit in actions {
+				state.quit = true
+				return
+			}
+			if .Show in actions {ShowWindow(token)}
+		}
+	}
+	status := tray_status()
+	if status == .Pending {return}
+	if tray_start == .Hidden {
+		tray_start = .Visible
+		if status == .Ready {tray_hidden = sdl.HideWindow(state.window)}
+	}
+	if tray_hidden && status == .Unavailable {ShowWindow()}
+}
 
 SetHideOnClose :: proc(on: bool) {
 	hide_on_close = on
@@ -684,12 +751,24 @@ SetWindowSize :: proc(w, h: i32) {
 	_ = sdl.SetWindowSize(state.window, c.int(w), c.int(h))
 }
 
-HideWindow :: proc() {
-	_ = sdl.HideWindow(state.window)
-}
-
-ShowWindow :: proc() {
+ShowWindow :: proc(token: cstring = nil) {
+	tray_hidden = false
+	tray_start = .Visible
+	when NATIVE_TRAY {
+		// SDL's Wayland backend consumes XDG_ACTIVATION_TOKEN on show, not raise.
+		if token != nil &&
+		   string(sdl.GetCurrentVideoDriver()) == "wayland" &&
+		   .HIDDEN in sdl.GetWindowFlags(state.window) {
+			env := sdl.GetEnvironment()
+			if sdl.SetEnvironmentVariable(env, "XDG_ACTIVATION_TOKEN", token, false) {
+				shown := sdl.ShowWindow(state.window)
+				_ = sdl.UnsetEnvironmentVariable(env, "XDG_ACTIVATION_TOKEN")
+				if shown {return}
+			}
+		}
+	}
 	_ = sdl.ShowWindow(state.window)
+	if .MINIMIZED in sdl.GetWindowFlags(state.window) {_ = sdl.RestoreWindow(state.window)}
 	_ = sdl.RaiseWindow(state.window)
 }
 
@@ -702,8 +781,8 @@ CloseWindow :: proc() {
 	delete(state.image_helper)
 	state.image_helper = nil
 	_ = sdl.StopTextInput(state.window)
-	if tray != nil {sdl.DestroyTray(tray); tray = nil}
-	if tray_surface != nil {sdl.DestroySurface(tray_surface); tray_surface = nil}
+	CloseTray()
+	hide_on_close = false
 	for cursor in cursors {if cursor != nil {sdl.DestroyCursor(cursor)}}
 	close_saturation()
 	when #config(WN_RELOAD, false) {
@@ -781,15 +860,15 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 	// content stops matching the window.
 	state.density = max(sdl.GetWindowPixelDensity(state.window), 1)
 
+	pump_tray()
 	event: sdl.Event
 	for sdl.PollEvent(&event) {
 		if changed != nil {changed^ = true}
 		#partial switch event.type {
 		case .WINDOW_CLOSE_REQUESTED:
-			if hide_on_close {
-				HideWindow()
-				swallow_quit = true
-			}
+			if event.window.windowID != sdl.GetWindowID(state.window) {continue}
+			tray_hidden = hide_on_close && tray_status() == .Ready && sdl.HideWindow(state.window)
+			if !tray_hidden {state.quit = true}
 		case .WINDOW_RESIZED:
 			if state.touch_active {state.touch_lifted = true}
 			// Tiled Wayland: a later state-only configure (a focus swap
@@ -800,11 +879,7 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 			// flaps between the old and new size for a couple of frames.
 			_ = sdl.SetWindowSize(state.window, event.window.data1, event.window.data2)
 		case .QUIT:
-			if swallow_quit {
-				swallow_quit = false
-			} else {
-				state.quit = true
-			}
+			state.quit = true
 		case .KEY_DOWN:
 			for key in KeyboardKey {
 				if SCANCODES[key] != event.key.scancode {

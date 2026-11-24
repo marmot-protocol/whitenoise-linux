@@ -27,8 +27,8 @@ Prefs :: struct {
 	translation_auto:      bool,
 	translation_source:    string, // empty detects the message language locally
 	translation_target:    string, // empty follows supported interface locale, otherwise English
-	start_in_tray:         bool, // honored at boot (SDL tray icon + hidden window)
-	minimize_tray:         bool, // closing the window hides it to the tray
+	start_in_tray:         bool, // hide after unlock if the tray is available
+	minimize_tray:         bool, // hide on close if the tray is available
 	restore_last_chat:     bool,
 	last_chat:             string, // group id to reopen on launch
 	last_account:          string, // account hex chosen last; boot opens on it

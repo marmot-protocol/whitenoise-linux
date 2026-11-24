@@ -124,7 +124,7 @@ native_env() {
       inputs+=("$dir/usr/lib/$file.tbd")
     done
   fi
-  for module in libcurl cairo libwebp libarchive poppler-glib fontconfig freetype2 sdl3 glib-2.0 libavformat libavcodec libavutil libswresample libcrypto webkit2gtk-4.1 mpv; do
+  for module in libcurl cairo libwebp libarchive poppler-glib fontconfig freetype2 sdl3 gio-2.0 glib-2.0 libavformat libavcodec libavutil libswresample libcrypto webkit2gtk-4.1 mpv; do
     if pkg-config --exists "$module"; then
       flags+=("$module $(pkg-config --modversion "$module"): $(pkg-config --cflags --libs "$module")")
       dir="$(pkg-config --variable=includedir "$module")"
@@ -376,6 +376,15 @@ if [ "${1:-}" != sources ]; then
     rm -f "$HERE/build/libwnws.a"
     ar rcs "$HERE/build/libwnws.a" "$HERE/build/ws/ws_shim.o"
     build_cache_store "$WS_KEY" "$HERE/build/ws/stamp" "$HERE/build/libwnws.a"
+  fi
+  if [ "$(uname -s)" = Linux ]; then
+    TRAY_KEY="$(native_key 'StatusNotifier O2 PIC' "$HERE/app/tray.c")"
+    if ! build_cache_fresh "$TRAY_KEY" "$HERE/build/tray.stamp" "$HERE/build/libwntray.a"; then
+      rm -f "$HERE/build/tray.stamp"
+      cc -c -O2 -fPIC -Wall -Wextra $(pkg-config --cflags gio-2.0) "$HERE/app/tray.c" -o "$HERE/build/tray.o"
+      ar rcs "$HERE/build/libwntray.a" "$HERE/build/tray.o"
+      build_cache_store "$TRAY_KEY" "$HERE/build/tray.stamp" "$HERE/build/libwntray.a"
+    fi
   fi
 fi
 
@@ -760,7 +769,7 @@ native_odin_build smoke "$HERE/tests/smoke" "$SMOKE_ODIN" default "$SMOKE_OBJECT
 # -o:minimal vs 3.4ms; 60fps budget is 16.6ms).
 APP_LIBS=("$BUNDLE/lib/libmarmot_c.a" "$HERE/build/libwnipc.a" "$HERE/build/libwndecoder.a" "$HERE/build/libwntimestamp.a" "$HERE/build/libwnws.a")
 case "$(uname -s)" in
-Linux) APP_LIBS+=("$HERE/build/libwnappimage.a") ;;
+Linux) APP_LIBS+=("$HERE/build/libwnappimage.a" "$HERE/build/libwntray.a") ;;
 Darwin) APP_LIBS+=("$HERE/build/libwnsparkle.a") ;;
 OpenBSD) APP_LIBS+=("$HERE/build/libwnsandbox.a" "$HERE/build/sdl/lib/libSDL3.a") ;;
 esac
