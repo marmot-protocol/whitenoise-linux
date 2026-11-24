@@ -717,7 +717,7 @@ end :: proc(delta_time: f32) -> []Render_Command {
 		add_render_command(command)
 	} else {
 		if ctx.transition_datas.length > 0 {
-			calculate_final_layout(delta_time, false, false)
+			calculate_final_layout(.Target)
 
 			for i: i32 = 0; i < ctx.transition_datas.length; i += 1 {
 				transition_data := array_get(&ctx.transition_datas, i)
@@ -902,10 +902,10 @@ end :: proc(delta_time: f32) -> []Render_Command {
 				}
 			}
 
-			calculate_final_layout(delta_time, true, true)
+			calculate_final_layout(.Animated)
 			clone_elements_with_exit_transition()
 		} else {
-			calculate_final_layout(delta_time, false, true)
+			calculate_final_layout(.Static)
 		}
 	}
 

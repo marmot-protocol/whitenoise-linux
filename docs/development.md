@@ -174,6 +174,8 @@ It reads flat by intent. The layout is immediate-mode: every frame rebuilds the 
 
 For an auto-fit grid, set `width = nendo.grow()`, `gap`, and `grid = {min_cell_width = 120, row_height = 80}` on a box. Declare the tiles as direct children without setting their width or height. Nendo uses the allocated inner width to choose the column count and size the tiles. The gap applies on both axes, and a partial row keeps the same column widths as the full rows.
 
+For buttons or chips of different widths, set `direction = .Wrap_Row`. Nendo keeps children in declaration order and starts a new line when the next child would exceed the allocated inner width. `gap` applies between items and between lines. `align.x` aligns each line, and `align.y` aligns items within their line. Items do not grow to absorb gaps in a line. Use a fixed-height or aspect-ratio container for items with percentage heights.
+
 | Path | What's there |
 | --- | --- |
 | `app/` | The whole app: panes, layout, state, workers, vault, media viewers |

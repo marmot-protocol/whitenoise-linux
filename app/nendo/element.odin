@@ -535,6 +535,8 @@ close_element :: proc() {
 
 	// Attach children to the current open element
 	open_layout_element.children.elements = &ctx.layout_element_children.items[ctx.layout_element_children.length]
+	wrap := layout_config.direction == .Wrap_Row && layout_config.grid.min_cell_width <= 0
+	open_layout_element.wrap_subtree ||= wrap
 	if layout_config.grid.min_cell_width > 0 {
 		// Prefer one column until the width pass can see the parent allocation.
 		open_layout_element.dimensions = {left_right_padding, top_bottom_padding}
@@ -550,9 +552,13 @@ close_element :: proc() {
 				array_get_value(&ctx.layout_element_children_buffer, i),
 			)
 		}
-	} else if layout_config.direction == .Row {
+	} else if layout_config.direction == .Row || wrap {
 		open_layout_element.dimensions.width = left_right_padding
 		open_layout_element.min_dimensions.width = left_right_padding
+		if wrap {
+			open_layout_element.dimensions.height = top_bottom_padding
+			open_layout_element.min_dimensions.height = top_bottom_padding
+		}
 		for i: i32 = 0; i < i32(open_layout_element.children.length); i += 1 {
 			child_index := array_get_value(
 				&ctx.layout_element_children_buffer,
@@ -568,7 +574,14 @@ close_element :: proc() {
 			)
 			// Minimum size of child elements doesn't matter to clip containers as they can shrink and hide their contents
 			if !element_has_clip_horizontal {
-				open_layout_element.min_dimensions.width += child.min_dimensions.width
+				if wrap {
+					open_layout_element.min_dimensions.width = cmax(
+						open_layout_element.min_dimensions.width,
+						left_right_padding + child.min_dimensions.width,
+					)
+				} else {
+					open_layout_element.min_dimensions.width += child.min_dimensions.width
+				}
 			}
 			if !element_has_clip_vertical {
 				open_layout_element.min_dimensions.height = cmax(
@@ -582,7 +595,7 @@ close_element :: proc() {
 			cmax(i32(open_layout_element.children.length) - 1, 0) * i32(layout_config.gap),
 		)
 		open_layout_element.dimensions.width += child_gap
-		if !element_has_clip_horizontal {
+		if !element_has_clip_horizontal && !wrap {
 			open_layout_element.min_dimensions.width += child_gap
 		}
 	} else if layout_config.direction == .Column {
@@ -661,6 +674,7 @@ close_element :: proc() {
 	update_aspect_ratio_box(open_layout_element)
 
 	element_is_floating := open_layout_element.config.floating.attach_to != .None
+	wrap_subtree := open_layout_element.wrap_subtree
 
 	// Close the currently open element
 	closing_element_index := array_remove_swapback(
@@ -676,6 +690,7 @@ close_element :: proc() {
 			open_layout_element.floating_children_count += 1
 			return
 		}
+		open_layout_element.wrap_subtree ||= wrap_subtree
 		open_layout_element.children.length += 1
 		array_add(&ctx.layout_element_children_buffer, closing_element_index)
 	}

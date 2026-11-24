@@ -329,7 +329,7 @@ settings_account :: proc(ui: ^Ui_State) {
 		if nendo.box(nendo.id("NpubRow"))(npub_row) {
 			row_labels(tr("Public key (npub)"), tr("Safe to share. This is how people find you."))
 			if nendo.box(nendo.id_local("Actions"))(
-			{direction = body_width < 260 ? .Column : .Row, gap = 6, align = {x = .Right}},
+			{direction = .Wrap_Row, gap = 6, align = {x = .Right}},
 			) {
 				settings_nav_button("SettingsCopyNpub", tr("Copy"))
 				settings_nav_button(
@@ -409,7 +409,7 @@ settings_account :: proc(ui: ^Ui_State) {
 				),
 			)
 			if nendo.box(nendo.id("KpStatusActions"))(
-			{direction = body_width < 260 ? .Column : .Row, gap = 6, align = {x = .Right}},
+			{direction = .Wrap_Row, gap = 6, align = {x = .Right}},
 			) {
 				settings_button("KpPublish", tr("Publish"), ACCENT, account_action_state)
 				settings_button("KpRefresh", tr("Refresh"), state = account_action_state)
@@ -461,7 +461,7 @@ settings_account :: proc(ui: ^Ui_State) {
 			row_labels(tr("Reveal secret key (nsec)"), tr("Never share it. It is your identity."))
 			if len(ui.keys_nsec) > 0 {
 				if nendo.box(nendo.id("NsecActions"))(
-				{direction = body_width < 260 ? .Column : .Row, gap = 6, align = {x = .Right}},
+				{direction = .Wrap_Row, gap = 6, align = {x = .Right}},
 				) {
 					settings_button("NsecShow", ui.keys_nsec_show ? tr("Hide") : tr("Show"))
 					settings_button("NsecCopy", tr("Copy"))

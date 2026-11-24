@@ -331,3 +331,177 @@ layout_grid_animates_contents :: proc(t: ^testing.T) {
 	testing.expect_value(t, nendo.element(child).rect.width, 127.5)
 	testing.expect_value(t, nendo.element(next).rect.x, 145)
 }
+
+@(test)
+layout_wrap_row_reflows :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	nendo.set_context(nil)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.init(memory, {800, 600})
+	row, first, last := nendo.id("Choices"), nendo.id("First"), nendo.id("Last")
+
+	for trial in ([3]struct {
+			width, first_y, content_h: f32,
+			last_position:             nendo.Vector2,
+		}{{198, 10, 38, {132, 8}}, {124, 10, 66, {58, 40}}, {123, 4, 90, {57, 64}}}) {
+		nendo.begin()
+		if nendo.box(nendo.id("NarrowParent"))(
+		{width = nendo.fixed(trial.width), direction = .Column},
+		) {
+			if nendo.box(row)(
+			{
+				width = nendo.grow(),
+				height = nendo.fit(max = 70),
+				direction = .Wrap_Row,
+				padding = nendo.pad(4),
+				gap = 6,
+				align = {x = .Right, y = .Center},
+				clip = {y = true, scroll = true},
+			},
+			) {
+				if nendo.box(first)({width = nendo.fixed(60), height = nendo.fixed(18)}) {}
+				if nendo.box(nendo.id("Tall"))(
+				{width = nendo.fixed(50), height = nendo.fixed(30)},
+				) {}
+				if nendo.box(last)({width = nendo.fixed(62), height = nendo.fixed(22)}) {}
+			}
+			if nendo.box(nendo.id("AfterChoices"))({height = nendo.fixed(8)}) {}
+		}
+		nendo.end(0)
+		box := nendo.element(last).rect
+		testing.expect_value(t, nendo.Vector2{box.x, box.y}, trial.last_position)
+		testing.expect_value(t, nendo.element(first).rect.y, trial.first_y)
+		testing.expect_value(t, nendo.scroll(row).content.height, trial.content_h)
+		testing.expect_value(
+			t,
+			nendo.element(nendo.id("AfterChoices")).rect.y,
+			min(70, trial.content_h),
+		)
+		nendo.set_pointer({box.x + 1, box.y + 1}, .Up)
+		testing.expect(t, nendo.pointer_over(last))
+	}
+}
+
+@(test)
+layout_wrap_row_animates :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	nendo.set_context(nil)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.init(memory, {800, 600})
+	nendo.set_measure_text(fixed_width_text, nil)
+	row, item, last := nendo.id("WrapAnim"), nendo.id("FitLabel"), nendo.id("Exit")
+	outer := nendo.id("AnimatedColumn")
+	LABEL :: "first one"
+	resize: nendo.Transition = {
+		properties = {.Width},
+		handler = proc(args: nendo.Transition_Args) -> bool {
+			args.current.rect.width = 100
+			return false
+		},
+	}
+	for frame in 0 ..< 3 {
+		nendo.begin()
+		if nendo.box(outer)(
+		{width = nendo.fixed(frame == 0 ? 140 : 60), direction = .Column, transition = resize},
+		) {
+			if nendo.box()({direction = .Column}) {
+				if nendo.box(row)(
+				{height = nendo.fixed(80), direction = .Wrap_Row, clip = {x = true}},
+				) {
+					if nendo.box(item)({}) {nendo.text(LABEL, {size = 16})}
+					if frame < 2 {
+						if nendo.box(last)(
+						{
+							width = nendo.fixed(20),
+							height = nendo.fixed(20),
+							color = {255, 255, 255, 255},
+							transition = {
+								properties = {.Color},
+								handler = proc(args: nendo.Transition_Args) -> bool {return false},
+								exit = {
+									order = .Natural_Order,
+									final = proc(
+										initial: nendo.Transition_Data,
+										properties: nendo.Transition_Properties,
+									) -> nendo.Transition_Data {
+										final := initial
+										final.color.a = 0
+										return final
+									},
+								},
+							},
+						},
+						) {}
+					}
+				}
+			}
+		}
+		commands := nendo.end(1.0 / 60)
+		if frame == 0 {continue}
+		testing.expect_value(t, nendo.element(outer).rect.width, 100)
+		testing.expect_value(t, nendo.element(row).rect.width, frame == 1 ? f32(100) : 90)
+		testing.expect_value(t, nendo.element(item).rect, nendo.Rect{0, 0, 90, 16})
+		testing.expect_value(t, nendo.element(last).rect, nendo.Rect{0, 16, 20, 20})
+		lines := 0
+		for command in commands {
+			if command.kind != .Text {continue}
+			testing.expect_value(t, command.data.text.text, LABEL)
+			lines += 1
+		}
+		testing.expect_value(t, lines, 1)
+	}
+
+	outer = nendo.id("AnimatedRow")
+	for frame in 0 ..< 2 {
+		nendo.begin()
+		if nendo.box(outer)({width = nendo.fixed(frame == 0 ? 140 : 60), transition = resize}) {
+			if nendo.box(row)({direction = .Wrap_Row}) {
+				if nendo.box(item)({width = nendo.fixed(40), height = nendo.fixed(20)}) {}
+				if nendo.box(last)({width = nendo.fixed(40), height = nendo.fixed(20)}) {}
+			}
+			nendo.text("a a a aa", {size = 16})
+		}
+		nendo.end(1.0 / 60)
+	}
+	testing.expect_value(t, nendo.element(row).rect.width, 50)
+	testing.expect_value(t, nendo.element(last).rect, nendo.Rect{0, 20, 40, 20})
+}
+
+@(test)
+layout_wrap_row_aspect :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	nendo.set_context(nil)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.init(memory, {800, 600})
+	row, first, last := nendo.id("AspectRow"), nendo.id("First"), nendo.id("Last")
+	nendo.begin()
+	if nendo.box()({width = nendo.fixed(200), height = nendo.fixed(50), direction = .Column}) {
+		if nendo.box(row)(
+		{
+			width = nendo.fixed(200),
+			aspect = 2,
+			direction = .Wrap_Row,
+			padding = nendo.pad(10),
+			gap = 6,
+			align = {y = .Bottom},
+			clip = {y = true},
+		},
+		) {
+			if nendo.box(first)({width = nendo.fixed(80), height = nendo.percent(0.5)}) {}
+			if nendo.box(last)({width = nendo.fixed(80), height = nendo.fixed(20)}) {}
+		}
+	}
+	nendo.end(0)
+	testing.expect_value(t, nendo.element(row).rect, nendo.Rect{0, 0, 200, 100})
+	testing.expect_value(t, nendo.element(first).rect, nendo.Rect{10, 10, 80, 40})
+	testing.expect_value(t, nendo.element(last).rect, nendo.Rect{96, 30, 80, 20})
+}

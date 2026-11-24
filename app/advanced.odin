@@ -91,7 +91,7 @@ settings_link_prefs :: proc(ui: ^Ui_State) {
 				),
 			)
 			if nendo.box(nendo.id("MapBrowserChoices"))(
-			{width = nendo.grow(), direction = single_pane() ? .Column : .Row, gap = 6},
+			{width = nendo.grow(), direction = .Wrap_Row, gap = 6},
 			) {
 				for name, browser in MAP_BROWSER_NAMES {
 					settings_option(

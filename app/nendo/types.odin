@@ -77,6 +77,8 @@ Size :: struct {
 Direction :: enum u8 {
 	Row,
 	Column,
+	// Pack intrinsic-width items in order. Gap applies on both axes.
+	Wrap_Row,
 }
 
 Align_X :: enum u8 {

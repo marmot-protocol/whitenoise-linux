@@ -107,6 +107,11 @@ Layout_Element :: struct {
 	grid_columns, grid_count: u16,
 	grid_cell_width:          f32,
 	animated_size:            Transition_Properties,
+	in_wrap_flow:             bool,
+	wrap_subtree:             bool,
+	wrap_first:               i32,
+	wrap_intrinsic:           Dimensions,
+	wrap_exit_position:       Vector2,
 }
 
 @(private)
@@ -180,6 +185,12 @@ Layout_Element_Tree_Node :: struct {
 }
 
 @(private)
+Wrapped_Row :: struct {
+	end:        i32,
+	dimensions: Dimensions,
+}
+
+@(private)
 Layout_Element_Tree_Root :: struct {
 	layout_element_index: i32,
 	parent_id:            u32, // zero for the root layout tree
@@ -210,6 +221,7 @@ Context :: struct {
 	layout_element_clip_element_ids:          Array(i32),
 	// Misc data structures
 	wrapped_text_lines:                       Array(Wrapped_Text_Line),
+	wrapped_rows:                             Array(Wrapped_Row),
 	layout_element_tree_node_array1:          Array(Layout_Element_Tree_Node),
 	layout_element_tree_roots:                Array(Layout_Element_Tree_Root),
 	layout_elements_hash_map_internal:        Array(Layout_Element_Hash_Map_Item),
@@ -436,6 +448,7 @@ initialize_ephemeral_memory :: proc(ctx: ^Context) {
 	ctx.layout_element_children_buffer = array_allocate(i32, max_element_count, arena)
 	ctx.layout_elements = array_allocate(Layout_Element, max_element_count, arena)
 	ctx.wrapped_text_lines = array_allocate(Wrapped_Text_Line, max_element_count, arena)
+	ctx.wrapped_rows = array_allocate(Wrapped_Row, max_element_count, arena)
 	ctx.layout_element_tree_node_array1 = array_allocate(
 		Layout_Element_Tree_Node,
 		max_element_count,
