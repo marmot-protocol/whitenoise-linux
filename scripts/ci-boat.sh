@@ -17,12 +17,13 @@ export BOAT_NO_UPDATE=1 BOAT_API_KEY="${BOAT_CI_KEY:?Missing the scoped Boat key
 
 if [[ $op == start ]]; then
   kind=${1:?Expected a build environment}
+  size=${2:-large}
   mkdir -p "$state"
   curl -fsSL 'https://github.com/ariana-dot-dev/agent-server/releases/download/boat-cli-v1.0.105/boat-linux-x64' -o "$cli"
   printf '%s  %s\n' 9f2fb5529ad7ca58e4d724bb6bfcd6ff94cb3077a7c12a0941e501aa0e9335ec "$cli" | sha256sum -c -
   chmod 700 "$cli"
   printf '%s\n' "$kind" >"$state/kind"
-  "$cli" new --type large --name "wn-gh-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$GITHUB_JOB-$(hostname -s)" \
+  "$cli" new --type "$size" --name "wn-gh-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$GITHUB_JOB-$(hostname -s)" \
     --environment wn-github-build --no-snapshots --ttl 11400 --json | tee "$receipt"
 fi
 

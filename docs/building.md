@@ -102,7 +102,7 @@ Maintainers regenerate the bundle with `bash scripts/emoji-bundle.sh`, using lib
 | Builds | Where |
 | --- | --- |
 | ngit checks and staging packages | Boat, dispatched by the exe.dev coordinator |
-| GitHub Linux CI and release builds | GitHub-hosted Ubuntu dispatches disposable Boat workers |
+| GitHub Linux CI and release builds | GitHub-hosted Ubuntu dispatches disposable Boat workers (32 GiB for Linux ARM64) |
 | OpenBSD | KVM guest inside a Boat worker |
 | GitHub pull requests | GitHub-hosted runners, no Boat credentials |
 | macOS | GitHub-hosted `macos-15` |

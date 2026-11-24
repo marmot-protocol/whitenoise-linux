@@ -59,7 +59,7 @@ jobs:
       - name: Start cross build environment
         id: start
         shell: bash
-        run: bash scripts/ci-boat.sh start cross
+        run: bash scripts/ci-boat.sh start cross '${{ matrix.target == 'linux-arm64' && 'xlarge' || 'large' }}'
       - name: Clear previous packages and smoke evidence
         run: rm -rf dist build/cross-smoke build/cross-evidence
       - name: Cross compile and package
