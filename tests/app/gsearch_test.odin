@@ -404,6 +404,30 @@ gs_jump_leaves_settings :: proc(t: ^testing.T) {
 gs_viewport :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "gs_viewport" {return}
 	context.allocator = runtime.default_context().allocator
+	dir, err := os.make_directory_temp("", "wn-search-viewport-*", context.temp_allocator)
+	if !testing.expect_value(t, err, nil) {return}
+	defer os.remove_all(dir)
+	deployment: ^marmot.Deployment
+	if !testing.expect_value(
+		t,
+		marmot.deployment_white_noise(&deployment),
+		marmot.Status.OK,
+	) {return}
+	defer marmot.deployment_free(deployment)
+	client: ^marmot.Client
+	if !testing.expect_value(
+		t,
+		marmot.client_new(
+			strings.clone_to_cstring(dir, context.temp_allocator),
+			nil,
+			0,
+			deployment,
+			&client,
+		),
+		marmot.Status.OK,
+	) {return}
+	defer marmot.client_free(client)
+
 	rl.InitWindow(740, 700, "Global search")
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1
@@ -442,7 +466,7 @@ gs_viewport :: proc(t: ^testing.T) {
 		delete(ui.gs_chats); delete(ui.gs_hits)
 		gs_layout_free(&ui.gs_layout)
 	}
-	for size in ([][2]i32{{740, 700}, {390, 420}, {740, 500}}) {
+	for size in ([][2]i32{{740, 700}, {390, 420}, {740, 500}, {800, 180}, {180, 300}}) {
 		rl.SetWindowSize(size[0], size[1])
 		nendo.set_dimensions({f32(size[0]), f32(size[1])})
 		for _ in 0 ..< 3 {gs_test_frame(&ui)}
@@ -458,32 +482,84 @@ gs_viewport :: proc(t: ^testing.T) {
 		)
 		testing.expect(
 			t,
-			body.height >= 44 && body.y + body.height <= modal.y + modal.height,
+			body.height >= (size[1] == 180 ? 16 : 44) &&
+			body.y + body.height <= modal.y + modal.height,
 			"Short windows must retain a scrollable search body",
 		)
 		nendo.set_pointer({body.x + body.width / 2, body.y + body.height / 2}, .Up)
 		gs_test_frame(&ui, {0, -10000})
 		for _ in 0 ..< 2 {gs_test_frame(&ui)}
-		more := nendo.element(nendo.id("GsMore")).rect
-		testing.expect(
+		thumb_id := nendo.id("ScrollThumb", nendo.id("GsBody").id)
+		prior_thumb := nendo.element(thumb_id)
+		more := nendo.element(nendo.id("GsMore"))
+		if !testing.expect(
 			t,
-			more.y >= body.y && more.y + more.height <= body.y + body.height + 1,
-			"Scrolling must reveal the complete paging action",
+			more.found &&
+			(more.rect.y >= body.y || more.rect.height > body.height) &&
+			more.rect.y + more.rect.height > body.y &&
+			more.rect.y + more.rect.height <= body.y + body.height + 1,
+			"Scrolling must bring the paging action into reach",
+		) {continue}
+		nendo.set_pointer(
+			{
+				more.rect.x + more.rect.width / 2,
+				(max(body.y, more.rect.y) + more.rect.y + more.rect.height) / 2,
+			},
+			.Up,
 		)
-		ui.gs_loading = true
-		for _ in 0 ..< 3 {gs_test_frame(&ui)}
-		body = nendo.element(nendo.id("GsBody")).rect
-		busy := nendo.element(nendo.id("GsBusy"))
-		testing.expect(
-			t,
-			busy.found && busy.rect.y >= modal.y && busy.rect.y + busy.rect.height <= body.y,
-			"Pending feedback must stay visible above the scrolled controls",
-		)
+		forced_release = true
+		handle_gsearch(&ui, client)
+		forced_release = false
+
+		// Leave the page queued so it cannot finish between frames.
+		wheel: nendo.Vector2
+		for frame in 0 ..< 3 {
+			commands := gs_test_frame(&ui, wheel)
+			pending_body := nendo.element(nendo.id("GsBody")).rect
+			busy := nendo.element(nendo.id("GsBusy"))
+			label_visible := false
+			for cmd in commands {
+				if cmd.kind == .Text &&
+				   cmd.text.text == tr("Searching local history…") &&
+				   cmd.rect.y >= modal.y &&
+				   cmd.rect.y + cmd.rect.height <= pending_body.y {
+					label_visible = true
+					break
+				}
+			}
+			testing.expect(
+				t,
+				label_visible &&
+				busy.found &&
+				busy.rect.y >= modal.y &&
+				busy.rect.y + busy.rect.height <= pending_body.y,
+				"Pending feedback must stay visible above the scrolled controls",
+			)
+			testing.expect(
+				t,
+				busy.rect.x >= modal.x && busy.rect.x + busy.rect.width <= modal.x + modal.width,
+				"The progress track must fit in the modal",
+			)
+			testing.expect_value(t, pending_body, body)
+			if frame == 0 {
+				thumb := nendo.element(thumb_id)
+				testing.expect_value(t, thumb.found, prior_thumb.found)
+				testing.expect_value(t, thumb.rect, prior_thumb.rect)
+				rl.BeginDrawing(); render_nendo(commands)
+				rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-gsearch-%d-%d.png", size[0], size[1]))
+				rl.EndDrawing()
+			}
+			nendo.set_pointer({body.x + body.width / 2, body.y + body.height / 2}, .Up)
+			wheel = {0, 20}
+		}
+		search_stop()
 		ui.gs_loading = false
-		commands := gs_test_frame(&ui)
-		rl.BeginDrawing(); render_nendo(commands)
-		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-gsearch-%d-%d.png", size[0], size[1]))
-		rl.EndDrawing()
+		gs_test_frame(&ui)
+		testing.expect(
+			t,
+			!nendo.element(nendo.id("GsBusy")).found,
+			"Completed searches hide progress",
+		)
 	}
 }
 

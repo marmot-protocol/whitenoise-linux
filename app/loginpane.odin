@@ -99,20 +99,20 @@ progress_dots :: proc(id_str: string) {
 // work with no measurable fraction (a key derivation, the runtime
 // start). It never implies a percentage. Reduced motion parks it.
 @(private)
-busy_bar :: proc(id_str: string) {
-	TRACK :: 180
-	SEGMENT :: 48
+busy_bar :: proc(id_str: string, max_width: f32 = 180) {
+	track := clamp(max_width, 0, 180)
+	segment := min(48, track * 0.5)
 	sweep := f32(0.5)
 	if motion_on() {
 		sweep = f32(0.5 * (1 + math.sin(rl.GetTime() * 3)))
 		anim_moving += 1
 	}
 	if nendo.box(nendo.id(id_str))(
-	{width = nendo.fixed(TRACK), height = nendo.fixed(4), color = ROW_BG, radius = rr(2)},
+	{width = nendo.fixed(track), height = nendo.fixed(4), color = ROW_BG, radius = rr(2)},
 	) {
-		if nendo.box(nendo.id(id_str, 1))({width = nendo.fixed(sweep * (TRACK - SEGMENT))}) {}
+		if nendo.box(nendo.id(id_str, 1))({width = nendo.fixed(sweep * (track - segment))}) {}
 		if nendo.box(nendo.id(id_str, 2))(
-		{width = nendo.fixed(SEGMENT), height = nendo.fixed(4), color = ACCENT, radius = rr(2)},
+		{width = nendo.fixed(segment), height = nendo.fixed(4), color = ACCENT, radius = rr(2)},
 		) {}
 	}
 }

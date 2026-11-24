@@ -207,6 +207,7 @@ In short windows, `RailContent` scrolls both the chat list and its controls. If 
 Group Members uses fixed rows. The edited member and nickname field stay mounted between two virtual runs. The prompt wraps at the current card width before nendo chooses the lower run's rows.
 
 Global search keeps the line breaks and cumulative heights for its result cards. Appending a page adds to the plan without measuring earlier pages again. Width, font, or timestamp changes rebuild the plan. Nendo uses the heights to mount only the cards near the viewport.
+The loading message and progress bar stay above the scrollable filters and results.
 
 | Path | What's there |
 | --- | --- |

@@ -718,12 +718,31 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 
-		nendo.text(
-			tr(
-				"Searches only history stored on this device. Older or unsynced messages may be missing.",
-			),
-			{font = FONT_BODY, size = 11, color = TEXT_LO},
-		)
+		if nendo.box(nendo.id("GsNotice"))({width = nendo.grow(), direction = .Column}) {
+			// Keep the wrapped notice's height while progress takes its place.
+			nendo.text(
+				tr(
+					"Searches only history stored on this device. Older or unsynced messages may be missing.",
+				),
+				{font = FONT_BODY, size = 11, color = ui.gs_loading ? {} : TEXT_LO},
+			)
+			if ui.gs_loading {
+				if nendo.box(nendo.id("GsProgress"))(
+				{
+					width = nendo.percent(1),
+					direction = .Column,
+					gap = 2,
+					floating = {attach_to = .Parent, pointer = .Passthrough},
+				},
+				) {
+					nendo.text(
+						tr("Searching local history…"),
+						{font = FONT_BODY, size = 11, color = TEXT_DIM},
+					)
+					busy_bar("GsBusy", modal_width - 2 * GS_MODAL_PAD)
+				}
+			}
+		}
 		if nendo.box(nendo.id("GsBody"))(
 		{
 			width = nendo.grow(),
@@ -847,13 +866,7 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 					}
 				}
 			}
-			if ui.gs_loading {
-				nendo.text(
-					tr("Searching local history…"),
-					{font = FONT_BODY, size = 13, color = TEXT_DIM},
-				)
-				busy_bar("GsBusy")
-			} else if ui.gs_error != "" && sender_valid && dates_valid {
+			if !ui.gs_loading && ui.gs_error != "" && sender_valid && dates_valid {
 				nendo.text(ui.gs_error, {font = FONT_BODY, size = 12, color = DANGER})
 				settings_button("GsRetry", tr("Search again"))
 			}
@@ -891,9 +904,10 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 			}
 
 			gs_results(ui, modal_width)
-			if ui.gs_more &&
-			   !ui.gs_loading &&
-			   ui.gs_error == "" {settings_button("GsMore", tr("More results"))}
+			if ui.gs_more && ui.gs_error == "" {
+				state: Settings_Control_State = ui.gs_loading ? .Disabled : .Enabled
+				settings_button("GsMore", tr("More results"), state = state)
+			}
 		}
 		scrollbar(nendo.id("GsBody"), 14)
 		gs_filter_options(ui)
