@@ -159,6 +159,12 @@ elif [ "$SYSTEM" = Linux ]; then
       bash "$HERE/scripts/build-appimage-updater.sh" bridge "$OUT"
     cross_store appimage "$KEY" "$OUT/appimage_update_client.o" "$OUT/libwnappimage.a"
   fi
+  KEY="$(cross_key "tray $(cross_pkg_key gio-2.0)" "$HERE/app/tray.c")"
+  if ! cross_fresh tray "$KEY" "$OUT/tray.o" "$OUT/libwntray.a"; then
+    "$CC" "${CFLAGS[@]}" $(pkg-config --cflags gio-2.0) -c "$HERE/app/tray.c" -o "$OUT/tray.o"
+    "$AR" rcs "$OUT/libwntray.a" "$OUT/tray.o"
+    cross_store tray "$KEY" "$OUT/tray.o" "$OUT/libwntray.a"
+  fi
 fi
 
 # Always let Cargo check source/configuration changes, never trust a final
@@ -465,7 +471,7 @@ if [ "$SYSTEM" = Windows ]; then
   APP_LINK_ARGS=("${WINDOWS_RUNTIME[@]}" "$OUT/velopack/libvelopack_libc.dll.a")
 elif [ "$SYSTEM" = Linux ]; then
   # System libssl must not resolve crypto calls to Marmot's bundled OpenSSL.
-  APP_LINK_ARGS=(-Wl,--exclude-libs=libmarmot_c.a "$OUT/libwnappimage.a")
+  APP_LINK_ARGS=(-Wl,--exclude-libs=libmarmot_c.a "$OUT/libwnappimage.a" "$OUT/libwntray.a")
   APP_PKGS+=(gio-2.0)
 elif [ "$SYSTEM" = Darwin ]; then
   APP_LINK_ARGS=("$OUT/libwnsparkle.a")
@@ -474,7 +480,7 @@ APP_LINK_INPUTS=("$OUT/app.o" "$OUT/libwnws.a" "$OUT/libwnipc.a" "$OUT/libwndeco
   "$OUT/stb/stb.a" "$OUT/libmarmot_c.a")
 case "$SYSTEM" in
 Windows) APP_LINK_INPUTS+=("${WINDOWS_RUNTIME[@]}" "$OUT/velopack/libvelopack_libc.dll.a") ;;
-Linux) APP_LINK_INPUTS+=("$OUT/libwnappimage.a") ;;
+Linux) APP_LINK_INPUTS+=("$OUT/libwnappimage.a" "$OUT/libwntray.a") ;;
 Darwin) APP_LINK_INPUTS+=("$OUT/libwnsparkle.a") ;;
 esac
 APP_PKG_KEY="$(cross_pkg_key "${APP_PKGS[@]}")"

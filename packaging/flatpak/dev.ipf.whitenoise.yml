@@ -49,6 +49,7 @@ finish-args:
   # Desktop alerts go through notify-send; links and the data folder
   # through xdg-open, which the runtime routes to the portal.
   - --talk-name=org.freedesktop.Notifications
+  - --talk-name=org.kde.StatusNotifierWatcher
   - --filesystem=xdg-download
   - --filesystem=~/.local/state/omarchy/current:ro
   - --filesystem=xdg-config/omarchy:ro

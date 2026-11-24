@@ -635,14 +635,8 @@ app_main :: proc() {
 			start_pic_worker()
 			start_gimg_worker()
 		}
-		// Tray icon for either tray pref; start-in-tray also hides the
-		// window, honored at boot only, after the unlock.
-		apply_tray(&ui)
-		when ODIN_PLATFORM_SUBTARGET != .Android {
-			if first_session && ui.prefs.start_in_tray && reload_generation == 0 {
-				rl.HideWindow()
-			}
-		}
+		start_hidden := first_session && ui.prefs.start_in_tray && reload_generation == 0
+		apply_tray(&ui, start_hidden ? .Hidden : .Visible)
 
 		ready_started := time.tick_now()
 		startup_ready := ready_started

@@ -2044,6 +2044,7 @@ settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 		}
 	case "TgTray":
 		flip(ui, &ui.prefs.start_in_tray)
+		apply_tray(ui)
 	case "TgMinTray":
 		flip(ui, &ui.prefs.minimize_tray)
 		apply_tray(ui)

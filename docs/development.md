@@ -41,6 +41,8 @@ All tests live under `tests/`; `just test` runs the same checks as CI. For a foc
 
 End-to-end testing (a QEMU VM harness, a headless control daemon, and multi-VM messaging scenarios) lives in the separate [`darkmatter-automated-testing`](https://github.com/marmot-protocol/darkmatter-automated-testing) repo, which builds this checkout.
 
+On Linux, the tray needs a StatusNotifier host. Without one, the app starts with its window visible and closing it quits. To check the tray, enable **Close to tray**, close the window, then use the icon to reopen it. Close the window again and choose **Quit** from the tray menu.
+
 ## Fixture rules that keep the suite from stalling
 
 - **Release the vault before the home lock.** Vault fixtures must release `g_vault` with `vault_lock()` or `vault_delete()` before releasing `test_home_lock`. The test allocator resets after each test; strings left in the vault let a later worker free them with the wrong allocator.
