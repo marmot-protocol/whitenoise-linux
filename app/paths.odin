@@ -11,6 +11,9 @@ package main
 import "core:os"
 import "core:path/filepath"
 import "core:strings"
+import "core:sys/linux"
+
+_ :: linux
 
 when ODIN_OS == .Windows {
 	foreign import bundle_crt "system:ucrt"
@@ -157,6 +160,15 @@ curl_path :: proc() -> string {
 
 @(private)
 configure_bundle_environment :: proc() {
+	when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
+		audio_root := os.get_env("WN_APPIMAGE_AUDIO_ROOT", context.temp_allocator)
+		if strings.has_prefix(audio_root, "/proc/") {
+			// AppRun opens fd 9 for bundle names containing a colon.
+			FD_CLOEXEC :: linux.Fd(1)
+			err := linux.fcntl_setfd(9, .SETFD, FD_CLOEXEC)
+			assert(err == .NONE)
+		}
+	}
 	when ODIN_OS == .Windows || ODIN_OS == .Darwin {
 		fonts, err := filepath.join({res_dir(), "fonts.conf"}, context.temp_allocator)
 		if err == nil &&

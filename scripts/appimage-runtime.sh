@@ -41,6 +41,43 @@ if [ "${APPDIR-}" != "$appdir" ] && [ ! "${APPDIR-}" -ef "$appdir" ]; then
 fi
 APPDIR=$appdir
 export APPDIR
+if [ -n "${WN_APPIMAGE_AUDIO_ROOT-}" ]; then
+  [ "${PIPEWIRE_MODULE_DIR-}" != "$WN_APPIMAGE_AUDIO_ROOT/usr/lib" ] || unset PIPEWIRE_MODULE_DIR
+  [ "${SPA_PLUGIN_DIR-}" != "$WN_APPIMAGE_AUDIO_ROOT/usr/lib/spa-0.2" ] || unset SPA_PLUGIN_DIR
+  PATH=${PATH#"$WN_APPIMAGE_AUDIO_ROOT/usr/libexec/host-tools:"}
+fi
+if [ -n "${WN_APPIMAGE_AUDIO_CONF-}" ]; then
+  [ "${PIPEWIRE_CONFIG_NAME-}" != "$WN_APPIMAGE_AUDIO_CONF" ] || unset PIPEWIRE_CONFIG_NAME
+  unset WN_APPIMAGE_AUDIO_CONF
+fi
+WN_APPIMAGE_AUDIO_ROOT=$APPDIR
+case "$APPDIR" in
+  *:*)
+    exec 9< "$APPDIR" || exit 1
+    WN_APPIMAGE_AUDIO_ROOT=/proc/$$/fd/9
+    ;;
+esac
+export WN_APPIMAGE_AUDIO_ROOT
+export PIPEWIRE_MODULE_DIR="${PIPEWIRE_MODULE_DIR:-$WN_APPIMAGE_AUDIO_ROOT/usr/lib}"
+export SPA_PLUGIN_DIR="${SPA_PLUGIN_DIR:-$WN_APPIMAGE_AUDIO_ROOT/usr/lib/spa-0.2}"
+if [ -z "${PIPEWIRE_CONFIG_NAME+x}${PIPEWIRE_CONFIG_DIR+x}${PIPEWIRE_CONFIG_PREFIX+x}" ]; then
+  have_pipewire_conf() {
+    [ -r "${XDG_CONFIG_HOME:-$HOME/.config}/pipewire/$1" ] ||
+      [ -r "$HOME/.config/pipewire/$1" ] || [ -r "/etc/pipewire/$1" ] ||
+      [ -r "/usr/share/pipewire/$1" ]
+  }
+  if ! have_pipewire_conf client-rt.conf; then
+    WN_APPIMAGE_AUDIO_CONF=client.conf
+    if ! have_pipewire_conf client.conf; then
+      WN_APPIMAGE_AUDIO_CONF=$APPDIR/usr/share/pipewire/client.conf
+    fi
+    PIPEWIRE_CONFIG_NAME=$WN_APPIMAGE_AUDIO_CONF
+    export WN_APPIMAGE_AUDIO_CONF PIPEWIRE_CONFIG_NAME
+  fi
+fi
+if command -v zenity >/dev/null 2>&1; then
+  PATH=$WN_APPIMAGE_AUDIO_ROOT/usr/libexec/host-tools:$PATH
+fi
 EOF
   fi
   # The loader splits on ':' and ';' before expanding $ORIGIN.

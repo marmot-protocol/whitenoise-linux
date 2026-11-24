@@ -3,6 +3,7 @@ package main
 import "base:runtime"
 import "core:fmt"
 import "core:os"
+import "core:strings"
 
 // Encode bytes, not runes: SOCKS5 credentials are UTF-8 byte strings.
 @(private)
@@ -15,6 +16,54 @@ proxy_uri_component :: proc(value: string) -> string {
 		encoded[i * 3 + 2] = hex[value[i] & 15]
 	}
 	return string(encoded)
+}
+
+@(private)
+host_process_exec :: proc(
+	desc: os.Process_Desc,
+	allocator: runtime.Allocator,
+) -> (
+	state: os.Process_State,
+	stdout: []u8,
+	stderr: []u8,
+	err: os.Error,
+) {
+	desc := desc
+	when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
+		if root := os.get_env("WN_APPIMAGE_AUDIO_ROOT", context.temp_allocator); root != "" {
+			entries := desc.env
+			env := entries
+			if entries == nil {
+				entries, err = os.environ(context.temp_allocator)
+				if err != nil {return}
+				env = entries
+			} else {
+				env = make([]string, len(entries), context.temp_allocator)
+			}
+			modules := fmt.tprintf("PIPEWIRE_MODULE_DIR=%s/usr/lib", root)
+			plugins := fmt.tprintf("SPA_PLUGIN_DIR=%s/usr/lib/spa-0.2", root)
+			conf := os.get_env("WN_APPIMAGE_AUDIO_CONF", context.temp_allocator)
+			config := fmt.tprintf("PIPEWIRE_CONFIG_NAME=%s", conf)
+			tools := fmt.tprintf("PATH=%s/usr/libexec/host-tools:", root)
+			n := 0
+			for entry in entries {
+				if entry == modules ||
+				   entry == plugins ||
+				   (conf != "" && entry == config) ||
+				   strings.has_prefix(entry, "WN_APPIMAGE_AUDIO_ROOT=") ||
+				   strings.has_prefix(entry, "WN_APPIMAGE_AUDIO_CONF=") {
+					continue
+				}
+				env[n] = entry
+				if strings.has_prefix(entry, tools) {
+					env[n] = fmt.tprintf("PATH=%s", entry[len(tools):])
+				}
+				n += 1
+			}
+			desc.env = env[:n]
+		}
+	}
+	return os.process_exec(desc, allocator)
 }
 
 // HTTP workers use the same process result contract on every platform. On
@@ -76,6 +125,6 @@ tool_exec :: proc(
 		}
 		return sandbox_tool_exec(1, desc.command[1:], allocator, credential_proxy)
 	} else {
-		return os.process_exec(desc, allocator)
+		return host_process_exec(desc, allocator)
 	}
 }
