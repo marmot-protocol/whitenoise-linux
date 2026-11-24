@@ -99,24 +99,21 @@ Maintainers regenerate the bundle with `bash scripts/emoji-bundle.sh`, using lib
 
 ## Where CI builds run
 
-Trusted Linux CI and release builds run on the two `wn-build-server` slots.
-
 | Builds | Where |
 | --- | --- |
-| Ubuntu 24.04 native/cross, GNOME 50 Flatpak, Arch | separate Podman environments on `wn-build-server` |
-| OpenBSD | a persistent KVM guest |
-| Fork PRs | ephemeral GitHub-hosted Linux runners |
-| macOS | Apple runners |
-| Release publication, pre-commit gate | GitHub-hosted |
+| ngit checks and staging packages | Boat, dispatched by the exe.dev coordinator |
+| GitHub Linux CI and release builds | GitHub-hosted Ubuntu dispatches disposable Boat workers |
+| OpenBSD | KVM guest inside a Boat worker |
+| GitHub pull requests | GitHub-hosted runners, no Boat credentials |
+| macOS | GitHub-hosted `macos-15` |
+| GitHub Release publication and pre-commit gate | GitHub-hosted Ubuntu |
 
-<details>
-<summary><b>What the build server caches and how it is capped</b></summary>
-
-Each slot retains stamped build outputs, Cargo targets and downloads, and vcpkg archives under `~/.cache/wn-github/`, separated by build environment. The build scripts still validate their inputs, run tests, and boot freshly packaged binaries. Flatpak builds on `master` retain tokenless module state; tagged module state is isolated and deleted after upload. Only dependency outputs pass between those Flatpak builds. Only tag pushes publish releases.
-
-The server's shared build slice caps the two slots at 80% of its 16 CPUs and 50 GiB RAM. A five-second host guard stops CI if available RAM falls below 8 GiB. Individual job containers also have CPU and memory limits.
-
-</details>
+`wn-boat-build` is a GitHub environment restricted to `master` and `v*`
+tags. Its `BOAT_CI_KEY` can start, access, and delete its own workers in
+the `wn-github-build` Boat environment. Rotate the key before it expires.
+The key stays on GitHub; the sandbox starts without injected credentials.
+Each job sends only the settings it needs and copies its artifacts back
+for upload. Only tag pushes publish releases.
 
 ## Cross releases for other platforms
 

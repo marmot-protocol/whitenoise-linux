@@ -14,10 +14,13 @@ watches the repo over Nostr and runs `act/workflows/` using the
 | `act/workflows/release-cross.yml` | ngit-ci | Linux ARM64 cross-build and packaged-app smoke run. |
 | `act/workflows/release-windows.yml` | ngit-ci | Windows AMD64 cross-build and packaged-app smoke run under Wine. |
 | `act/workflows/release-android.yml` | ngit-ci | Builds and verifies a debug-signed ARM64 APK on every `master` push. Publishes it to Blossom. |
-| `.github/workflows/ci.yml` + `_build.yml` | GitHub | Linux release-profile builds. Quality gates come from the mirrored `pr-precommit.yml`. |
-| `.github/workflows/release.yml` | GitHub | Tag-triggered (`v*`) GitHub Release of the build tarballs. |
+| `.github/workflows/ci.yml` and `cross.yml` | GitHub Actions | Dispatch trusted Linux builds to Boat. macOS and pull requests use GitHub-hosted runners. |
+| `.github/workflows/release.yml` | GitHub Actions | Dispatch Linux release builds to Boat. GitHub publishes tagged releases. |
 
-## wn-build-server
+The ngit coordinators run on exe.dev and dispatch to Boat. Their deployment
+files are on the `ci/boat-cutover` branch.
+
+## Former wn-build-server setup
 
 Two independent coordinator/adapter pairs share the host's enforced CI resource
 budget. Each pair runs one disposable KVM guest at a time. Two pairs allow
