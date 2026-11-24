@@ -324,6 +324,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		pointer.x /= UI_ZOOM
 		pointer.y /= UI_ZOOM
 		nendo.set_pointer(pointer, (rl.IsMouseButtonDown(.LEFT)) ? .Down : .Up)
+		scroll_thumb_tick()
 		scroll_residual += transmute(nendo.Vector2)rl.GetMouseWheelMoveV()
 		step := scroll_residual * anim_drain(SCROLL_DRAIN)
 		scroll_residual -= step
@@ -626,7 +627,10 @@ gate_layout :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
 	// form this is until the job ends.
 	busy := gate_job.worker != nil
 	creating := busy ? gate_job.creating : !vault_exists()
-	compact := single_pane() || modal_h(1200) < 500
+	card_h := clamp(f32(rl.GetScreenHeight()) / UI_ZOOM - 12, 1, 1200)
+	compact := single_pane() || card_h < 500
+	short := card_h < 240
+	pad_y := u16(short ? 8 : compact ? 16 : 28)
 	arrived := stagger(nendo.id("GateContentArrival").id, 0)
 
 	if nendo.box(nendo.id("Root"))(
@@ -646,15 +650,15 @@ gate_layout :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
 			if nendo.box(nendo.id("GateCard"))(
 			{
 				width = nendo.fixed(fit_w(420)),
-				height = nendo.fit(max = modal_h(1200)),
+				height = nendo.fit(max = card_h),
 				direction = .Column,
 				padding = {
 					left = compact ? 20 : 28,
 					right = compact ? 20 : 28,
-					top = compact ? 16 : 28,
-					bottom = compact ? 16 : 28,
+					top = pad_y,
+					bottom = pad_y,
 				},
-				gap = 16,
+				gap = short ? 6 : 16,
 				align = {x = .Left},
 				color = CARD,
 				radius = rr(16),

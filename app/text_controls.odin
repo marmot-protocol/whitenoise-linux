@@ -55,6 +55,15 @@ Scroll_Drag :: struct {
 }
 scroll_drag: Scroll_Drag
 
+@(private)
+scroll_thumb_tick :: proc() {
+	// Keep the drag through its release so it cannot click another control.
+	if rl.IsMouseButtonPressed(.LEFT) ||
+	   (!rl.IsMouseButtonDown(.LEFT) && !rl.IsMouseButtonReleased(.LEFT)) {
+		scroll_drag = {}
+	}
+}
+
 // Scrollbar for a nendo scroll container, floated on its right edge
 // from the previous frame's scroll data. Wheel scrolls; the thumb is
 // also hand-draggable (grab it, scroll follows the pointer).

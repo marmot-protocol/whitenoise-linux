@@ -1058,11 +1058,7 @@ app_main :: proc() {
 			pointer.y /= UI_ZOOM
 			nendo.set_pointer(pointer, (rl.IsMouseButtonDown(.LEFT)) ? .Down : .Up)
 
-			// End a thumb drag one frame AFTER release so mouse_released()
-			// can still see it and swallow the ending click.
-			if !rl.IsMouseButtonDown(.LEFT) && !rl.IsMouseButtonReleased(.LEFT) {
-				scroll_drag = {}
-			}
+			scroll_thumb_tick()
 			// A drag-selection ending with text selected feeds the primary
 			// selection (select-to-copy), except from the masked nsec field.
 			if !photo_captured &&

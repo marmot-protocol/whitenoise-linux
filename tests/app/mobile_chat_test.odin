@@ -164,6 +164,47 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 		ui.focus = .Compose
 	}
 
+	rl.SetWindowSize(1024, 700)
+	for zoom in ([]int{50, 100, 150, 175, 200}) {
+		ui.prefs.zoom_pct = zoom
+		apply_zoom(&ui)
+		refresh_ui_scale()
+		viewport := nendo.Rect{0, 0, 1024 / UI_ZOOM, 700 / UI_ZOOM}
+		nendo.set_dimensions({viewport.width, viewport.height})
+		for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+		timeline := nendo.element(nendo.id("Timeline")).rect
+		message := nendo.element(nendo.id("MsgRow", 0))
+		send := nendo.element(nendo.id("SendBtn"))
+		testing.expectf(
+			t,
+			message.found && message.rect.height > 0 && inside(message.rect, timeline),
+			"at %d%% zoom, message %v must fit in the timeline %v",
+			zoom,
+			message.rect,
+			timeline,
+		)
+		testing.expect(t, send.found && inside(send.rect, viewport))
+		testing.expect(t, timeline.y + timeline.height <= send.rect.y)
+	}
+	ui.compose_more = true
+	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+	draft := nendo.element(nendo.id("ComposeClip")).rect
+	tools := nendo.element(nendo.id("ComposeTools")).rect
+	testing.expect(
+		t,
+		draft.height > 0 && inside(draft, tools),
+		"short draft fits beside the tools",
+	)
+	testing.expect(
+		t,
+		nendo.element(nendo.id("ComposeTimestampBtn")).found,
+		"More tools keeps the unpinned shortcut",
+	)
+	ui.compose_more = false
+	ui.prefs.zoom_pct = 100
+	UI_ZOOM = 1
+	refresh_ui_scale()
+
 	// The overflow menu opens on a tap, stays on screen, and closes on a
 	// tap elsewhere.
 	rl.SetWindowSize(360, 640)
@@ -219,6 +260,8 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 		"Back from search resumes the poll draft",
 	)
 
+	rl.SetWindowSize(360, 300)
+	nendo.set_dimensions({360, 300})
 	ui.poll_ticket = 1
 	phone_back_action(&ui)
 	build_layout(&ui, 0)
@@ -227,9 +270,16 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 		nendo.element(nendo.id("PollBusy")).found && ui.poll_ticket == 1,
 		"Back keeps an in-flight publish visible",
 	)
+	testing.expect(
+		t,
+		nendo.element(nendo.id("PhoneNavigation")).found,
+		"you can switch pages while publishing",
+	)
 	ui.poll_ticket = 0
 	phone_back_action(&ui)
 	testing.expect(t, !ui.poll_open, "Back closes a poll that is not sending")
+	rl.SetWindowSize(360, 640)
+	nendo.set_dimensions({360, 640})
 
 	job := Timeline_Work {
 		account = "offline-fixture",

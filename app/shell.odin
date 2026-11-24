@@ -237,8 +237,22 @@ shell_navigation :: proc(ui: ^Ui_State) {
 }
 
 @(private)
+short_conversation :: proc(ui: ^Ui_State) -> bool {
+	return(
+		f32(rl.GetScreenHeight()) / UI_ZOOM < 320 &&
+		ui.page == .Chats &&
+		ui.selected >= 0 &&
+		!ui.new_chat_open &&
+		!ui.add_account_open &&
+		!ui.group_files_open &&
+		!ui.show_members \
+	)
+}
+
+@(private)
 phone_navigation :: proc(ui: ^Ui_State) {
-	if !single_pane() {return}
+	// Back cannot leave a poll that is publishing.
+	if !single_pane() || (short_conversation(ui) && ui.poll_ticket == 0) {return}
 	if rl.HasTouch() && touch_field.id != 0 {return}
 	if rl.HasTouch() && ui.add_account_open && ui.login_method != .Menu {return}
 	// Short windows (a landscape phone, an open keyboard) keep the icons
@@ -645,12 +659,7 @@ status_bar :: proc(ui: ^Ui_State) {
 	if len(ui.banner) > 0 {
 		banner_bar(ui)
 	}
-	if single_pane() &&
-	   f32(rl.GetScreenHeight()) / UI_ZOOM < 320 &&
-	   ui.page == .Chats &&
-	   ui.selected >= 0 &&
-	   !ui.new_chat_open &&
-	   !ui.show_members {return}
+	if single_pane() && short_conversation(ui) {return}
 	state := net_state(ui)
 	// Reserve the same strip online and offline, so the composer stays put.
 	if nendo.box(nendo.id("StatusBar"))(

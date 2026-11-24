@@ -564,8 +564,8 @@ Narrow windows show one view at a time, with full-width chat and contact lists. 
 - Rotating a phone keeps the text size; landscape gains room and the navigation drops its labels.
 - Drag overflowing toolbars and choice rows sideways and page content vertically.
 - Reduce motion keeps direct finger scrolling but disables the fling.
-- On short screens, navigation gives the active view more room; Back restores it.
-- Short conversations also hide the status readout, but retain progress and error banners.
+- In short, single-pane chats, the bottom navigation and status readout hide to leave more room for messages. Back returns to the chat list and restores navigation. Progress and error banners stay visible.
+- The automatic composer keeps short drafts on one line when they fit. On short screens, extra shortcuts move into **More tools** to make room.
 - The compositor supplies the on-screen keyboard through SDL's platform text-input support.
 
 </details>
@@ -573,7 +573,7 @@ Narrow windows show one view at a time, with full-width chat and contact lists. 
 ## Privacy & data
 
 - **One password-encrypted vault holds every secret.** The [security model](security.md) explains it.
-- **Lock now closes the runtime without closing the window.** It clears the vault key and session state and returns to the password gate; unlock with your vault password to reconnect.
+- **Lock now closes the runtime without closing the window.** It clears the vault key and session state and returns to the password gate. If the card does not fit, scroll inside it to reach **Unlock** and reconnect.
 - **Backups cover settings, drafts, custom emoji, and themes.** They are encrypted; account keys and message history are not included.
 - **Metrics and audit logs are opt-in.** OTLP metrics and audit logging stay off until you turn them on in Settings.
 
