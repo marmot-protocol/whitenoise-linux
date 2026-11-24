@@ -221,3 +221,113 @@ layout_motion_glides_reordered_rows :: proc(t: ^testing.T) {
 	testing.expect_value(t, nendo.element(nendo.id("Move", 2)).rect.y, 60)
 	testing.expect_value(t, errors, 0)
 }
+
+@(test)
+layout_grid_reflows_cells :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	nendo.set_context(nil)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.init(memory, {800, 600})
+	nendo.set_measure_text(fixed_width_text, nil)
+	grid := nendo.id("AutoFit")
+	LABEL :: "This text stays on one line"
+	WORD :: "UnbreakableWord"
+	SHORT :: "OK"
+
+	for trial in ([4]struct {
+			width:   f32,
+			last:    nendo.Rect,
+			bottom:  f32,
+			short_x: f32,
+		}{{217, {14, 134, 189, 30}, 168, 98.5}, {218, {114, 54, 90, 30}, 88, 149}, {318, {14, 54, 90, 30}, 88, 149}, {98, {14, 134, 70, 30}, 168, 39}}) {
+		label := trial.width < 100 ? WORD : LABEL
+		nendo.begin()
+		if nendo.box(nendo.id("GridParent"))(
+		{width = nendo.fixed(trial.width), direction = .Column, padding = nendo.pad(10)},
+		) {
+			if nendo.box(grid)(
+			{
+				width = nendo.grow(),
+				padding = nendo.pad(4),
+				gap = 10,
+				grid = {min_cell_width = 90, row_height = 30},
+				clip = {x = true, y = true, scroll = true},
+			},
+			) {
+				nendo.text(label, {wrap = label == WORD ? .Words : .None})
+				nendo.text(SHORT, {align = .Center, line_height = 24})
+				for i in 2 ..< 4 {
+					if nendo.box(nendo.id("Cell", u32(i)))({padding = nendo.pad(2)}) {
+						if nendo.box(nendo.id("CellContent", u32(i)))({width = nendo.grow()}) {}
+					}
+				}
+			}
+			if nendo.box(nendo.id("AfterGrid"))({height = nendo.fixed(10)}) {}
+		}
+		lines := 0
+		for command in nendo.end(0) {
+			if command.kind != .Text {continue}
+			if command.data.text.text == SHORT {
+				testing.expect_value(t, command.rect.x, trial.short_x)
+				testing.expect_value(t, command.rect.height, 24)
+			} else {
+				testing.expect_value(t, command.data.text.text, label)
+			}
+			lines += 1
+		}
+		testing.expect_value(t, lines, 2)
+		testing.expect_value(t, nendo.element(nendo.id("Cell", 3)).rect, trial.last)
+		testing.expect_value(
+			t,
+			nendo.element(nendo.id("CellContent", 3)).rect.width,
+			trial.last.width - 4,
+		)
+		testing.expect_value(t, nendo.element(nendo.id("AfterGrid")).rect.y, trial.bottom)
+		content := nendo.scroll(grid).content
+		testing.expect_value(t, content.height, trial.bottom - 10)
+		testing.expect_value(t, content.width, max(trial.width - 20, f32(len(label) * 10 + 8)))
+	}
+}
+
+@(test)
+layout_grid_animates_contents :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	nendo.set_context(nil)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.init(memory, {800, 600})
+	tile, child, next := nendo.id("Tile"), nendo.id("TileContent"), nendo.id("NextTile")
+
+	for width in ([2]f32{250, 280}) {
+		nendo.begin()
+		if nendo.box(nendo.id("Grid"))(
+		{width = nendo.fixed(width), gap = 10, grid = {min_cell_width = 100, row_height = 30}},
+		) {
+			if nendo.box(tile)(
+			{
+				transition = {
+					properties = {.Width},
+					duration = 1,
+					handler = proc(args: nendo.Transition_Args) -> bool {
+						args.current.rect.width =
+							(args.initial.rect.width + args.target.rect.width) / 2
+						return false
+					},
+				},
+			},
+			) {
+				if nendo.box(child)({width = nendo.grow()}) {}
+			}
+			if nendo.box(next)({}) {}
+		}
+		nendo.end(1.0 / 60)
+	}
+	testing.expect_value(t, nendo.element(tile).rect.width, 127.5)
+	testing.expect_value(t, nendo.element(child).rect.width, 127.5)
+	testing.expect_value(t, nendo.element(next).rect.x, 145)
+}

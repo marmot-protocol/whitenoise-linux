@@ -94,16 +94,19 @@ Layout_Element_Data :: struct #raw_union {
 
 @(private)
 Layout_Element :: struct {
-	children:                Layout_Element_Children,
-	dimensions:              Dimensions,
-	min_dimensions:          Dimensions,
-	using data:              Layout_Element_Data,
-	id:                      u32,
-	floating_children_count: u16,
-	is_text_element:         bool,
+	children:                 Layout_Element_Children,
+	dimensions:               Dimensions,
+	min_dimensions:           Dimensions,
+	using data:               Layout_Element_Data,
+	id:                       u32,
+	floating_children_count:  u16,
+	is_text_element:          bool,
 	// True while the element is exit transitioning: a synthetic copy
 	// retained from earlier frames.
-	exiting:                 bool,
+	exiting:                  bool,
+	grid_columns, grid_count: u16,
+	grid_cell_width:          f32,
+	animated_size:            Transition_Properties,
 }
 
 @(private)

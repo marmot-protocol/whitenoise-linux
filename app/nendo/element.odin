@@ -535,7 +535,22 @@ close_element :: proc() {
 
 	// Attach children to the current open element
 	open_layout_element.children.elements = &ctx.layout_element_children.items[ctx.layout_element_children.length]
-	if layout_config.direction == .Row {
+	if layout_config.grid.min_cell_width > 0 {
+		// Prefer one column until the width pass can see the parent allocation.
+		open_layout_element.dimensions = {left_right_padding, top_bottom_padding}
+		open_layout_element.min_dimensions = open_layout_element.dimensions
+		count := i32(open_layout_element.children.length)
+		if count > 0 {
+			open_layout_element.dimensions.width += layout_config.grid.min_cell_width
+		}
+		first := ctx.layout_element_children_buffer.length - count
+		for i in first ..< first + count {
+			array_add(
+				&ctx.layout_element_children,
+				array_get_value(&ctx.layout_element_children_buffer, i),
+			)
+		}
+	} else if layout_config.direction == .Row {
 		open_layout_element.dimensions.width = left_right_padding
 		open_layout_element.min_dimensions.width = left_right_padding
 		for i: i32 = 0; i < i32(open_layout_element.children.length); i += 1 {

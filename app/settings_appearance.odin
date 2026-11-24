@@ -50,7 +50,7 @@ APPEARANCE_CONTROLS := []struct {
 @(private)
 settings_appearance :: proc(ui: ^Ui_State) {
 	if ui.settings_gallery {
-		settings_theme_gallery(ui, settings_body_width(ui))
+		settings_theme_gallery(ui)
 		settings_conversation_preview(ui)
 		return
 	}

@@ -436,6 +436,9 @@ apply_transitioned_properties_to_element :: proc(
 	bounding_box: ^Rect,
 	reparented: bool,
 ) {
+	if !reparented {
+		current_element.animated_size = properties & TRANSITION_DIMENSIONS
+	}
 	if .Width in properties {
 		if !reparented {
 			current_element.dimensions.width = current_transition_data.rect.width

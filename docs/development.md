@@ -172,6 +172,8 @@ See [timing and observability configuration](timings.md).
 
 It reads flat by intent. The layout is immediate-mode: every frame rebuilds the nendo tree by reading one `Ui_State` struct, so there is no retained view tree, no widget objects, and no observer graph to trace. Panes are plain procs.
 
+For an auto-fit grid, set `width = nendo.grow()`, `gap`, and `grid = {min_cell_width = 120, row_height = 80}` on a box. Declare the tiles as direct children without setting their width or height. Nendo uses the allocated inner width to choose the column count and size the tiles. The gap applies on both axes, and a partial row keeps the same column widths as the full rows.
+
 | Path | What's there |
 | --- | --- |
 | `app/` | The whole app: panes, layout, state, workers, vault, media viewers |

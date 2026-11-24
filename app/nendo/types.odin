@@ -276,6 +276,11 @@ Box :: struct {
 	// no hover and take no clicks. For static samples of live UI.
 	inert:         bool,
 	user_data:     rawptr,
+	// A positive minimum lays out tiles in equal-width cells with fixed row
+	// heights. The grid owns tile box dimensions and uses gap on both axes.
+	grid:          struct {
+		min_cell_width, row_height: f32,
+	},
 }
 
 Command_Kind :: enum u8 {
