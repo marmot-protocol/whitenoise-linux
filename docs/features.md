@@ -42,7 +42,7 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 - **A thread stays readable when you can't reply.** You can reply to a parent outside the visible page if this device still has it and can place the reply in the thread. If not, the existing replies and your draft stay in place.
 - **Enter sends; Shift+Enter starts a new line.** You can also click **Send** at the right end of the toolbar. Click the checkmark to save an edit.
 - **Type `/` in an empty draft to open commands.** Keep typing to filter. Use the arrow keys and Enter or Tab, or click a command. Escape closes the menu without changing your draft. `/shrug` inserts a shrug without sending it.
-- **Choose what appears beside your draft.** Open **+ > Customize composer** or **Settings > General > Composer**. Drag shortcuts in the preview to reorder them, or drag between **Left**, **Right**, and **+ menu**. Select a shortcut for placement and reorder buttons.
+- **Choose what appears beside your draft.** Open **+ > Customize composer** or go to **Settings > Chats** and select **Customize** under **Composer**. Drag shortcuts in the preview to reorder them, or drag between **Left**, **Right**, and **+ menu**. Select a shortcut for placement and reorder buttons.
 - **Messages written offline are not lost.** A durable on-disk send queue sends them when you reconnect.
 - **Write polls in the composer.** Type `/poll` or pick it from the command menu. Add a question and at least two options, then click the paper plane. Before sending, Escape or × returns you to your message draft. Chat search hides the poll form without discarding it.
 - **Forwards show their progress until they finish.** A status strip names the destination through preparation and sending, even if you switch chats.
@@ -173,7 +173,7 @@ Export:
 - **Emoji search accepts names and shortcodes.** `100` finds hundred points and `thumbsup` finds thumbs up, with or without surrounding colons.
 - **Thirteen custom emoji are built in.** `:marmot:` is the pixel face, `:marmot_classic:` is the classic marmot, and `:wn:` is the White Noise logo. The expressions are `:marmot_wave:`, `:marmot_yes:`, `:marmot_laugh:`, `:marmot_love:`, `:marmot_party:`, `:marmot_fire:`, `:marmot_wow:`, `:marmot_smirk:`, `:marmot_cry:`, and `:marmot_angry:`. They appear in picker search, reactions, and inline text. Messages and reactions send the bundled PNG bytes unchanged, matching iOS. Imported sets cannot replace built-in shortcodes.
 - **Recent emoji survive restarts.** The picker keeps your eight most recent choices, newest first.
-- **Custom emoji sets come from Nostr.** Settings > General > Messaging > Custom emoji browses recent [NIP-51 kind-30030 emoji sets](https://github.com/nostr-protocol/nips/blob/master/51.md) from your event-fetch relays.
+- **Custom emoji sets come from Nostr.** Under **Settings > Chats > Custom emoji**, you can browse recent [NIP-51 kind-30030 emoji sets](https://github.com/nostr-protocol/nips/blob/master/51.md) from your event-fetch relays.
 - **Custom `:shortcode:` emoji use NIP-30.** The image goes out as an encrypted attachment, not a public link.
 
 <details>
@@ -186,6 +186,7 @@ Export:
 - To open a specific set, paste its `naddr` into the search field and choose Refresh. The lookup uses its relay hints before your event-fetch relays and opens the matching set's preview.
 - Import the whole set, or use the + button beside one emoji.
 - Imported emoji keep their set title and verified author after a restart.
+- In **Uploaded emoji**, shortcodes appear first. Thumbnails load as you scroll them into view.
 - Imports preserve existing shortcodes and report skipped entries and failed downloads.
 - Browsing previews and importing contact HTTPS image hosts. PNG, JPEG, GIF, and WebP are supported when the image decoder accepts them.
 
@@ -205,7 +206,7 @@ Export:
 
 Native Linux builds translate messages and audio transcriptions locally with [TranslateGemma 4B](https://huggingface.co/mradermacher/translategemma-4b-it-GGUF). The model download uses about 2.5 GB. Once downloaded, translations work offline.
 
-1. Enable it in Settings > General > Language > Message translation.
+1. Enable it in **Settings > Language & speech > Message translation**.
 2. Choose the target language.
 3. Use Translate in a message's context menu. For audio, finish a transcription and use Translate below its expanded text.
 
@@ -247,12 +248,12 @@ Each folder matches all of its rules or any one of them.
 
 - **Hand placement wins over rules.** Choosing "Follow folder rules" in the move dialog hands the chat back to the rules.
 - **Deleting a folder asks first.** This applies from both Settings and its context menu; only the folder is removed and its chats stay in your chat list.
-- **Settings > Folders lists every chat under the folder it files into.** Drag a chat onto a folder (Unfiled included) to keep it there, or drag a folder header to reorder folders.
+- **Settings > Chats > Folders** lists every chat under its folder. Drag a chat onto a folder (including **Unfiled**) to keep it there, or drag a folder header to reorder folders.
 
 <details>
 <summary><b>Checked boxes, sidebar modes and when member lists are read</b></summary>
 
-- In Settings > Folders, chats placed by hand show a checked box. Clearing it hands the chat back to the rules.
+- In **Settings > Chats > Folders**, chats placed by hand show a checked box. Clearing it hands the chat back to the rules.
 - In Recent mode, every folder appears beside Chats, Unread, and Groups as a filter, keeping recent activity order within the selected folder.
 - In Grouped mode, empty folders stay out of the chat list sidebar.
 - Member rules read each group's member list on every chat-list refresh, and only while such a rule exists.
@@ -269,7 +270,7 @@ Attachments travel over Marmot's encrypted MIP-04 path. Profile pictures are the
 - **Most files open in place.** Image albums, inline video (libmpv), voice messages, and a preview modal cover the common formats.
 - **Preview from Group Files.** Click a file card to preview it, or use the download icon to save it. Files without a preview can still be saved.
 - **Stickers have their own guide.** [Personal stickers and Sonar sticker packs](stickers.md) come from MDK and sync across your devices, with pack previews from received stickers.
-- **Audio can be transcribed locally.** Enable Speech to text in Settings, then use the Transcribe button on an audio card.
+- **Audio can be transcribed locally.** Enable **Speech to text** in **Settings > Language & speech**, then select **Transcribe** on an audio card.
 
 | The preview modal reads | Through |
 | --- | --- |
@@ -309,7 +310,7 @@ GLB attachments open as static 3D scenes with orbit, zoom, and the model inspect
 - **YouTube links play in White Noise.** On Linux with WebKitGTK and GStreamer media codecs, choose Play YouTube video. Watch URLs, `youtu.be` links, Shorts, and livestream links work. Choose Open in browser if the video does not allow embedding.
 - **Map links become an OpenStreetMap card.** Android location shares and pasted map links get a card you can pan and zoom.
 - **Call links become a call card.** Signal call links and Jitsi Meet room links show a join button and a line saying the call runs outside White Noise.
-- **Link previews are on by default.** Turn them off in Settings > Advanced > Security & privacy to stop new automatic preview requests, including supported-site cards; attachment downloads are unaffected.
+- **Link previews are on by default.** Turn them off in **Settings > Connection > Link previews** to stop new automatic preview requests, including supported-site cards. This does not affect attachment downloads.
 
 Some cards contact third parties. This is who learns what:
 
@@ -339,8 +340,8 @@ Some cards contact third parties. This is who learns what:
 - Google's country domains such as google.it are not recognized.
 - Drag the map to pan, scroll or use the zoom buttons to zoom, and Recenter to return to the pin.
 - The card names the town and country and offers Copy coordinates and an Open in link.
-- Settings > Advanced > Open locations in picks the site that link opens: OpenStreetMap (the default), Apple Maps, Kagi Maps, or Google Maps. The map on the card always comes from OpenStreetMap.
-- The first card asks before loading anything. Settings > Advanced > Location maps changes the answer later, and turning off link previews hides the cards.
+- Under **Settings > Connection > Location maps**, use **Open locations in** to pick OpenStreetMap (the default), Apple Maps, Kagi Maps, or Google Maps. The map on the card always comes from OpenStreetMap.
+- The first card asks before loading anything. Change your answer under **Location maps**. Turning off link previews hides the cards.
 - Tiles are cached in the encrypted media cache under keyed file names, up to 1 GB with the oldest fetches removed first, and are fetched again after a week.
 
 </details>
@@ -422,7 +423,7 @@ Contacts:
 ### Linked devices
 
 Sign in with the same profile on both devices. On the new device, open
-**Settings > Devices** and choose **Link to another device**. On the existing
+**Settings > Account & devices > Linked devices** and choose **Link to another device**. On the existing
 device, find the request above **Your devices**. Confirm on both devices only
 if all seven numbered emoji match.
 If the request hasn't appeared, open **Add a new device** on the existing
@@ -442,7 +443,7 @@ to keep the device separate, choose **This was me, don't link**. Only this
 installation remembers the answer. It does not link the device or change
 what other devices see.
 
-If **Settings > Devices** shows a count of chats that can't add linked devices,
+If **Linked devices** shows a count of chats that can't add linked devices,
 choose **Review chats** to see what's blocking each chat. Selecting a chat
 opens its settings without changing them.
 
@@ -462,7 +463,7 @@ can turn on linked devices.
 
 ### Setup prompts for AI agents
 
-Settings > AI agents offers setup prompts for Hermes, OpenClaw, OpenCode, Codex, and Claude Code. White Noise does not install anything or share your private key.
+**Settings > Advanced > AI agents** offers setup prompts for Hermes, OpenClaw, OpenCode, Codex, and Claude Code. White Noise does not install anything or share your private key.
 
 1. Review and copy a prompt containing your active account's full public npub. Copy prompt is the main action.
 2. Paste it into an agent you run and trust.
@@ -478,6 +479,19 @@ Thirty-five bundled themes and five accent colors, all data-driven from `themes/
 - **The keyboard reaches everything.** Native desktop notifications, a command palette, and full keyboard navigation are built in.
 - **The conversation can sit in a column.** Settings > Appearance > Center the conversation keeps the timeline and composer at most 720px wide.
 - **Reduce motion hides animated backdrops.** Synth, dust, scan, and wave backdrops go, including the vault gate's synth backdrop; static decorations remain visible.
+
+On large windows, Settings opens in a dialog over your current view. On smaller windows, it fills the window. Select **Close** or **Back to White Noise** to return to the view you left, including an open conversation and its draft.
+
+When the sidebar is visible, search results replace the category list without closing the current page. Choose a result to jump to its control without changing the setting. On narrow windows, **All settings** returns to the category list.
+
+In **Appearance**, the sample conversation reflects your theme and message text size. **Interface zoom** scales the whole app.
+**Crop circle shape** sets generated user and group avatars to **Circle**, **Rounded**, or **Square**.
+
+In **Account & devices**, use **Copy** to copy your full public key without displaying it. **Show key** displays it on the page.
+
+In **Help & about**, select **Reach out to support** to open a private chat with White Noise support.
+
+Under **Notifications**, turning off desktop alerts disables their sound, preview, and test controls without resetting them. **Message tones** controls the sounds inside White Noise separately.
 
 Some themes change more than colors:
 
@@ -502,12 +516,8 @@ Some themes change more than colors:
 <details>
 <summary><b>The Appearance page, gallery and theme quirks</b></summary>
 
-Appearance layout:
-
-- Wide windows put controls, the theme gallery, and a live conversation preview side by side.
-- Medium windows put controls beside stacked themes and preview; all three panels scroll independently.
-- Narrow windows stack them on one page.
-- The preview uses the normal chat renderer with a fictional marmot conversation, not your messages or draft. It is static: its header and messages do not react to the pointer, and it has no composer.
+- **Interface zoom** changes the whole app. **Message text size** changes only message bodies and the composer.
+- **Browse themes** opens the full gallery. Its sample conversation uses fictional messages and has no working controls.
 
 Centered conversation:
 
@@ -517,7 +527,7 @@ Centered conversation:
 Theme gallery:
 
 - The gallery has separate Dark and Light views and collection headings. Collection headings have no links.
-- Settings search finds the picker by any loaded theme's displayed name, including custom packs, without changing your theme.
+- Settings search finds **Browse themes** by the name of any loaded theme, including custom packs. Following the result does not change your theme.
 - Selecting a Sidecar theme shows its source credit on the page and the selected tile.
 - On DinOS, **System** follows the current Din theme, including custom and
   profile colors. It appears at the top of both the Dark and Light galleries.
@@ -573,9 +583,9 @@ Narrow windows show one view at a time, with full-width chat and contact lists. 
 ## Privacy & data
 
 - **One password-encrypted vault holds every secret.** The [security model](security.md) explains it.
-- **Lock now closes the runtime without closing the window.** It clears the vault key and session state and returns to the password gate. If the card does not fit, scroll inside it to reach **Unlock** and reconnect.
-- **Backups cover settings, drafts, custom emoji, and themes.** They are encrypted; account keys and message history are not included.
-- **Metrics and audit logs are opt-in.** OTLP metrics and audit logging stay off until you turn them on in Settings.
+- **Lock now closes the runtime without closing the window.** It clears the vault key and session state and returns to the password gate. If the card does not fit, scroll inside it to reach **Unlock**. Use your vault password to reconnect.
+- **Backups cover settings, drafts, custom emoji, and themes.** Create or import an encrypted backup in **Settings > Privacy & storage**. Backups do not include account keys or message history.
+- **Metrics and audit logs are opt-in.** To send metrics, turn on **Share usage and diagnostics** in **Settings > Privacy & storage**. To record audit logs on this device, turn on **Audit logs** in **Settings > Advanced**.
 
 Lock now lives in the status bar (the Chats menu on phones) and in the command palette.
 

@@ -351,6 +351,9 @@ msgstr "1 Stimme"
 msgid "1 voter"
 msgstr "1 abstimmende Person"
 
+msgid "2. In Settings, open Account & devices, then Linked devices. Choose Link to another device."
+msgstr "2. Öffne in den Einstellungen Konto & Geräte und dann Verknüpfte Geräte. Wähle Weiteres Gerät verknüpfen."
+
 msgid "2.5 GB"
 msgstr "2,5 GB"
 
@@ -386,9 +389,6 @@ msgstr "Ein Schlüsselpaket ermöglicht anderen, dich zu verschlüsselten Chats 
 
 msgid "A line about you"
 msgstr "Eine Zeile über dich"
-
-msgid "A message at this size."
-msgstr "Eine Nachricht in dieser Größe."
 
 msgid "A separate secret key or signer lets you use an identity again. It does not restore chats, pending sends or saved collections."
 msgstr "Mit einem separat gespeicherten geheimen Schlüssel oder Signer kannst du eine Identität wieder verwenden. Chats, ausstehende Nachrichten oder gespeicherte Sammlungen werden dadurch nicht wiederhergestellt."
@@ -442,8 +442,14 @@ msgstr "Annehmen"
 msgid "Accepting your invitation"
 msgstr "Deine Einladung wird angenommen"
 
+msgid "Accessibility"
+msgstr "Barrierefreiheit"
+
 msgid "Account"
 msgstr "Konto"
+
+msgid "Account & devices"
+msgstr "Konto & Geräte"
 
 msgid "Account access"
 msgstr "Kontozugriff"
@@ -460,6 +466,10 @@ msgstr "Konten"
 #, c-format
 msgid "Action failed: %s"
 msgstr "Aktion fehlgeschlagen: %s"
+
+#, c-format
+msgid "Active theme: %s"
+msgstr "Aktives Design: %s"
 
 msgid "Add"
 msgstr "Hinzufügen"
@@ -530,6 +540,9 @@ msgstr "Admins können Mitglieder hinzufügen und entfernen sowie Gruppendetails
 msgid "Advanced"
 msgstr "Erweitert"
 
+msgid "After signing in, open Account & devices in Settings to link another device."
+msgstr "Öffne nach der Anmeldung Konto & Geräte in den Einstellungen, um ein weiteres Gerät zu verknüpfen."
+
 msgid "Agent connector documentation"
 msgstr "Dokumentation der Agenten-Konnektoren"
 
@@ -550,6 +563,9 @@ msgstr "Alle Chats"
 
 msgid "All senders"
 msgstr "Alle Absender"
+
+msgid "All settings"
+msgstr "Alle Einstellungen"
 
 msgid "All types"
 msgstr "Alle Typen"
@@ -726,6 +742,9 @@ msgstr "BUNKER-LINK"
 msgid "Back"
 msgstr "Zurück"
 
+msgid "Back to White Noise"
+msgstr "Zurück zu White Noise"
+
 msgid "Back to account options"
 msgstr "Zurück zu den Kontooptionen"
 
@@ -816,6 +835,9 @@ msgstr "Beschriftungen in Klammern"
 
 msgid "Browse emoji sets"
 msgstr "Emoji-Sets durchsuchen"
+
+msgid "Browse themes"
+msgstr "Designs durchsuchen"
 
 msgid "Bubble radius"
 msgstr "Blasenradius"
@@ -942,6 +964,9 @@ msgstr "Tresor-Passwort ändern"
 
 msgid "Change..."
 msgstr "Ändern..."
+
+msgid "Changes the whole app."
+msgstr "Ändert die Größe der gesamten App."
 
 msgid "Chat details"
 msgstr "Chatdetails"
@@ -1128,6 +1153,9 @@ msgstr "Wähle, wo die Sicherung gespeichert wird."
 msgid "Choose where you publish"
 msgstr "Wähle, wo du veröffentlichst"
 
+msgid "Choose which shortcuts appear beside your draft."
+msgstr "Wähle, welche Schnellaktionen neben deinem Entwurf angezeigt werden."
+
 msgid "Choose your account"
 msgstr "Wähle dein Konto"
 
@@ -1209,6 +1237,9 @@ msgstr "Logs für einen Fehlerbericht sammeln"
 msgid "Collector and retention"
 msgstr "Erfassungsdienst und Aufbewahrung"
 
+msgid "Color mode"
+msgstr "Farbmodus"
+
 msgid "Command palette"
 msgstr "Befehlspalette"
 
@@ -1289,6 +1320,9 @@ msgstr "Dein Signer wird über seine Relays verbunden."
 
 msgid "Connecting your remote signer. Approve the connection there before using this account."
 msgstr "Dein Remote-Signer wird verbunden. Genehmige dort die Verbindung, bevor du dieses Konto verwendest."
+
+msgid "Connection"
+msgstr "Verbindung"
 
 msgid "Connection cancelled."
 msgstr "Verbindung abgebrochen."
@@ -1826,6 +1860,9 @@ msgstr "Die Signer-Anfrage konnte nicht gesendet werden. Warte einen Moment und 
 msgid "Couldn't send the sticker. Switch back to your account and try again."
 msgstr "Der Sticker konnte nicht gesendet werden. Wechsle zurück zu deinem Konto und versuche es erneut."
 
+msgid "Couldn't send the test notification. Check your system notification settings and try again."
+msgstr "Die Testbenachrichtigung konnte nicht gesendet werden. Prüfe die Benachrichtigungseinstellungen deines Systems und versuche es erneut."
+
 msgid "Couldn't serialize the key packages. Please try again."
 msgstr "Die Schlüsselpakete konnten nicht serialisiert werden. Bitte versuche es erneut."
 
@@ -1992,6 +2029,9 @@ msgstr "Eigene Farbe"
 msgid "Custom emoji"
 msgstr "Benutzerdefinierte Emojis"
 
+msgid "Customize"
+msgstr "Anpassen"
+
 msgid "Customize composer"
 msgstr "Nachrichtenfeld anpassen"
 
@@ -2138,6 +2178,12 @@ msgstr "Beschreibung"
 
 msgid "Design"
 msgstr "Design"
+
+msgid "Desktop alert sound"
+msgstr "Ton für Desktop-Benachrichtigungen"
+
+msgid "Desktop alerts"
+msgstr "Desktop-Benachrichtigungen"
 
 msgid "Desktop notifications"
 msgstr "Desktop-Benachrichtigungen"
@@ -2373,6 +2419,9 @@ msgstr "Für diese Gruppe aktiviert."
 
 msgid "Encrypt with NIP-44"
 msgstr "Mit NIP-44 verschlüsseln"
+
+msgid "Encrypted backups"
+msgstr "Verschlüsselte Sicherungen"
 
 msgid "Encrypted key copied"
 msgstr "Verschlüsselter Schlüssel kopiert"
@@ -2859,6 +2908,9 @@ msgstr "Hebräisch"
 msgid "Help"
 msgstr "Hilfe"
 
+msgid "Help & about"
+msgstr "Hilfe & Info"
+
 msgid "Hidden"
 msgstr "Ausgeblendet"
 
@@ -2870,6 +2922,9 @@ msgstr "Emoji-Sets ausblenden"
 
 msgid "Hide hidden message"
 msgstr "Versteckte Nachricht ausblenden"
+
+msgid "Hide key"
+msgstr "Schlüssel ausblenden"
 
 msgid "Hide passwords"
 msgstr "Passwörter verbergen"
@@ -2989,6 +3044,9 @@ msgstr "Emoji werden importiert..."
 #, c-format
 msgid "In use: %s."
 msgstr "Aktiv: %s."
+
+msgid "In-app sounds"
+msgstr "Töne in der App"
 
 msgid "Incoming messages"
 msgstr "Eingehende Nachrichten"
@@ -3223,6 +3281,12 @@ msgstr "Labels, durch Kommas getrennt"
 msgid "Language"
 msgstr "Sprache"
 
+msgid "Language & speech"
+msgstr "Sprache & Sprachausgabe"
+
+msgid "Language and formats"
+msgstr "Sprache und Formate"
+
 msgid "Language, startup, and everyday preferences."
 msgstr "Passe Sprache, Startverhalten und Einstellungen für den Alltag an."
 
@@ -3439,6 +3503,9 @@ msgstr "Kontakte verwalten"
 msgid "Manage local files and encrypted backups."
 msgstr "Verwalte lokale Dateien und verschlüsselte Backups."
 
+msgid "Manage the devices linked to this account."
+msgstr "Verwalte die Geräte, die mit diesem Konto verknüpft sind."
+
 msgid "Mar"
 msgstr "März"
 
@@ -3505,11 +3572,17 @@ msgstr "Nachrichtenmenü"
 msgid "Message notifications"
 msgstr "Nachrichtenbenachrichtigungen"
 
+msgid "Message previews"
+msgstr "Nachrichtenvorschau"
+
 msgid "Message text copied"
 msgstr "Nachrichtentext kopiert"
 
 msgid "Message text size"
 msgstr "Textgröße von Nachrichten"
+
+msgid "Message tones"
+msgstr "Nachrichtentöne"
 
 msgid "Message translation"
 msgstr "Nachrichtenübersetzung"
@@ -3588,6 +3661,9 @@ msgstr "Musik"
 
 msgid "Mute"
 msgstr "Stummschalten"
+
+msgid "Mute a conversation"
+msgstr "Einen Chat stummschalten"
 
 msgid "NES game"
 msgstr "NES-Spiel"
@@ -3811,6 +3887,10 @@ msgstr "Keine Ergebnisse. Versuche eine andere Suche."
 msgid "No rules"
 msgstr "Keine Regeln"
 
+#, c-format
+msgid "No settings match ‘%s’."
+msgstr "Keine Einstellungen für „%s“ gefunden."
+
 msgid "No stickers here yet."
 msgstr "Hier sind noch keine Sticker."
 
@@ -3871,8 +3951,8 @@ msgstr "Nichts wird vorgelesen"
 msgid "Nothing is saved until you continue."
 msgstr "Bis du fortfährst, wird nichts gespeichert."
 
-msgid "Nothing loads until you accept. You can change this in Settings > Advanced."
-msgstr "Nichts wird geladen, bevor du zustimmst. Du kannst das unter Einstellungen > Erweitert ändern."
+msgid "Nothing loads until you accept. You can change this in Settings > Connection."
+msgstr "Bis zur Zustimmung wird nichts geladen. Du kannst dies unter Einstellungen > Verbindung ändern."
 
 msgid "Notifications"
 msgstr "Benachrichtigungen"
@@ -4341,6 +4421,9 @@ msgstr "Vorheriger Chat"
 msgid "Privacy"
 msgstr "Datenschutz"
 
+msgid "Privacy & storage"
+msgstr "Datenschutz & Speicher"
+
 msgid "Privacy, diagnostics, and developer tools."
 msgstr "Verwalte Datenschutz, Diagnose und Entwicklerwerkzeuge."
 
@@ -4352,6 +4435,9 @@ msgstr "Privater Gruppenchat über Nostr"
 
 msgid "Profile"
 msgstr "Profil"
+
+msgid "Profile & devices"
+msgstr "Profil & Geräte"
 
 msgid "Progress is indeterminate."
 msgstr "Der Fortschritt ist unbestimmt."
@@ -4534,6 +4620,9 @@ msgstr "Relay-Listen erneut veröffentlicht."
 msgid "Relay names are resolved by your proxy. Media host checks still use your local DNS."
 msgstr "Dein Proxy löst Relay-Namen auf. Die Prüfung von Medien-Hosts verwendet weiterhin dein lokales DNS."
 
+msgid "Relay status"
+msgstr "Relay-Status"
+
 msgid "Relay status unavailable"
 msgstr "Relay-Status nicht verfügbar"
 
@@ -4714,6 +4803,9 @@ msgstr "Rechts"
 
 msgid "Right click"
 msgstr "Rechtsklick"
+
+msgid "Right-click or press and hold a conversation in Chats, then select Mute. To turn its alerts back on, open the same menu and select Unmute."
+msgstr "Klicke unter Chats mit der rechten Maustaste auf einen Chat oder halte ihn gedrückt. Wähle Stummschalten. Im selben Menü kannst du die Stummschaltung aufheben."
 
 msgid "Rocket"
 msgstr "Rakete"
@@ -4952,6 +5044,9 @@ msgstr "Suchergebnisse"
 msgid "Search set title, author, or shortcode"
 msgstr "Set-Titel, Autor oder Shortcode suchen"
 
+msgid "Search settings"
+msgstr "Einstellungen durchsuchen"
+
 msgid "Search stickers"
 msgstr "Sticker suchen"
 
@@ -5088,11 +5183,8 @@ msgstr "Einstellungen"
 msgid "Settings backups do not include these stores and cannot restore them."
 msgstr "Einstellungssicherungen enthalten diese Speicher nicht und können sie nicht wiederherstellen."
 
-msgid "Settings: AI agents"
-msgstr "Einstellungen: KI-Agenten"
-
-msgid "Settings: about"
-msgstr "Einstellungen: Über"
+msgid "Settings: account and devices"
+msgstr "Einstellungen: Konto und Geräte"
 
 msgid "Settings: advanced"
 msgstr "Einstellungen: Erweitert"
@@ -5100,29 +5192,23 @@ msgstr "Einstellungen: Erweitert"
 msgid "Settings: appearance"
 msgstr "Einstellungen: Erscheinungsbild"
 
-msgid "Settings: devices"
-msgstr "Einstellungen: Geräte"
+msgid "Settings: chats"
+msgstr "Einstellungen: Chats"
 
-msgid "Settings: folders"
-msgstr "Einstellungen: Ordner"
+msgid "Settings: connection"
+msgstr "Einstellungen: Verbindung"
 
-msgid "Settings: general"
-msgstr "Einstellungen: Allgemein"
+msgid "Settings: help and about"
+msgstr "Einstellungen: Hilfe und Info"
 
-msgid "Settings: keys and identity"
-msgstr "Einstellungen: Schlüssel und Identität"
-
-msgid "Settings: network and relays"
-msgstr "Einstellungen: Netzwerk und Relays"
+msgid "Settings: language and speech"
+msgstr "Einstellungen: Sprache und Sprachausgabe"
 
 msgid "Settings: notifications"
 msgstr "Einstellungen: Benachrichtigungen"
 
-msgid "Settings: speech"
-msgstr "Einstellungen: Sprache & Stimme"
-
-msgid "Settings: storage"
-msgstr "Einstellungen: Speicher"
+msgid "Settings: privacy and storage"
+msgstr "Einstellungen: Datenschutz und Speicher"
 
 msgid "Setup prompts for connecting an AI agent to White Noise."
 msgstr "Einrichtungsanweisungen zum Verbinden eines KI-Agenten mit White Noise."
@@ -5211,6 +5297,9 @@ msgstr "Hinweis anzeigen"
 msgid "Show in folder"
 msgstr "Im Ordner zeigen"
 
+msgid "Show key"
+msgstr "Schlüssel anzeigen"
+
 msgid "Show less"
 msgstr "Weniger anzeigen"
 
@@ -5297,9 +5386,6 @@ msgstr "Größe"
 #, c-format
 msgid "Size: %s"
 msgstr "Größe: %s"
-
-msgid "Slanted"
-msgstr "Schräg"
 
 msgid "Slovak"
 msgstr "Slowakisch"
@@ -5552,6 +5638,9 @@ msgstr "Testbenachrichtigung gesendet."
 msgid "Text"
 msgstr "Text"
 
+msgid "Text & size"
+msgstr "Text und Größe"
+
 msgid "Text is hard to read"
 msgstr "Text ist schwer zu lesen"
 
@@ -5619,6 +5708,9 @@ msgstr "Das neue Passwort verschlüsselt die Schlüssel dieses Geräts neu. Eine
 
 msgid "The ngit web client a patch card opens. That site receives the patch link."
 msgstr "Der ngit-Webclient, in dem eine Patch-Karte geöffnet wird. Diese Seite erhält den Patch-Link."
+
+msgid "The notification service accepted the test. Check your system notifications."
+msgstr "Der Benachrichtigungsdienst hat den Test angenommen. Prüfe deine Systembenachrichtigungen."
 
 msgid "The original message isn't loaded in this view."
 msgstr "Die ursprüngliche Nachricht ist in dieser Ansicht nicht geladen."
@@ -5893,6 +5985,9 @@ msgstr "Trophäe"
 msgid "Troubleshooters"
 msgstr "Problembehandlung"
 
+msgid "Troubleshooting"
+msgstr "Problemlösung"
+
 msgid "Trusted link sites"
 msgstr "Vertrauenswürdige Websites"
 
@@ -5913,6 +6008,9 @@ msgstr "Türkisch"
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "Schalte animierte Übergänge, Flugbewegungen und Effekte aus. Zustände ändern sich weiterhin, nichts bewegt sich."
+
+msgid "Turn on desktop notifications to change these options or send a test."
+msgstr "Aktiviere Desktop-Benachrichtigungen, um diese Optionen zu ändern oder einen Test zu senden."
 
 msgid "Turn on developer mode"
 msgstr "Entwicklermodus einschalten"
@@ -6014,6 +6112,9 @@ msgstr "Bild wird hochgeladen"
 msgid "Urdu"
 msgstr "Urdu"
 
+msgid "Usage reporting"
+msgstr "Nutzungsberichte"
+
 msgid "Use"
 msgstr "Verwenden"
 
@@ -6070,6 +6171,9 @@ msgstr "Wird für Profilbilder ohne veröffentlichte Form verwendet."
 
 msgid "Username"
 msgstr "Benutzername"
+
+msgid "Uses your current sound and preview settings."
+msgstr "Verwendet deine aktuellen Ton- und Vorschaueinstellungen."
 
 msgid "VERIFIED ADDRESS"
 msgstr "VERIFIZIERTE ADRESSE"
@@ -6350,6 +6454,9 @@ msgstr "Dein Gerät fragt nach deiner Erlaubnis. Erst wenn du „Standort senden
 msgid "Your disk is filling up"
 msgstr "Dein Speicher wird voll"
 
+msgid "Your display name and profile are public."
+msgstr "Dein Anzeigename und dein Profil sind öffentlich."
+
 msgid "Your existing and new notes are deleted after this time."
 msgstr "Deine vorhandenen und neuen Notizen werden nach dieser Zeit gelöscht."
 
@@ -6462,6 +6569,9 @@ msgstr "Zulu"
 msgid "aka %s"
 msgstr "alias %s"
 
+msgid "alerts incoming messages"
+msgstr "hinweise eingehende nachrichten"
+
 #, c-format
 msgid "and %d more blocks"
 msgstr "und %d weitere Blöcke"
@@ -6478,11 +6588,20 @@ msgstr "und %d weitere Zeilen"
 msgid "and %s more"
 msgstr "und %s mehr"
 
+msgid "audio notifications mute"
+msgstr "ton stumm lautlos benachrichtigungen"
+
+msgid "display name username avatar picture bio"
+msgstr "Anzeigename Benutzername Avatar Bild Biografie"
+
 msgid "edited"
 msgstr "bearbeitet"
 
 msgid "failed · tap to retry"
 msgstr "fehlgeschlagen · tippen zum Wiederholen"
+
+msgid "font accessibility"
+msgstr "schrift schriftgröße barrierefreiheit"
 
 #, c-format
 msgid "in %d day"
@@ -6532,6 +6651,9 @@ msgstr "in %d Jahr"
 msgid "in %d years"
 msgstr "in %d Jahren"
 
+msgid "in-app sounds audio sent received mute"
+msgstr "app ton senden empfangen stumm lautlos"
+
 msgid "inbox"
 msgstr "Empfang"
 
@@ -6556,8 +6678,17 @@ msgstr "oder wähle eine Seite"
 msgid "people"
 msgstr "Personen"
 
+msgid "privacy notifications"
+msgstr "datenschutz benachrichtigungen"
+
 msgid "relay"
 msgstr "Relay"
+
+msgid "scale size accessibility"
+msgstr "skalierung vergrößern verkleinern größe barrierefreiheit"
+
+msgid "silence quiet chat notifications"
+msgstr "stumm lautlos Chat Benachrichtigungen"
 
 msgid "you"
 msgstr "du"

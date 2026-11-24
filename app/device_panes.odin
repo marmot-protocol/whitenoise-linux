@@ -858,7 +858,7 @@ device_choice :: proc(id, toggle_id, label: string, on: bool, hint: string = "")
 			device_copy(label, TEXT)
 			if hint != "" {device_copy(hint)}
 		}
-		toggle(toggle_id, on)
+		toggle(nendo.id(toggle_id), on)
 	}
 }
 
@@ -1704,7 +1704,7 @@ devices_modal :: proc(ui: ^Ui_State) {
 						)
 						device_copy(
 							tr(
-								"2. Open Settings → Devices there and choose Link to another device.",
+								"2. In Settings, open Account & devices, then Linked devices. Choose Link to another device.",
 							),
 							TEXT,
 						)
@@ -1788,7 +1788,7 @@ handle_device_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			profile.dirty += {.Link}
 		} else if account_local(ui) && clicked("DeviceShowKeys") {
 			devices_put_away(ui)
-			settings_open(ui, client, .Keys, anchor = "RowReveal")
+			settings_open(ui, client, .Account, anchor = "RowReveal")
 		} else if close || escape {devices_put_away(ui)}
 	case .New:
 		attempt := device_panel_attempt(profile)

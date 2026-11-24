@@ -125,7 +125,7 @@ Run the app as your normal user. Running as root or directly from an unprivilege
 Later launches unlock the same vault. A wrong password cannot decrypt it. **Use another key** deletes the vault and its sealed data and returns to account setup.
 
 - **The get-started card looks before it publishes.** It checks for an existing key package before offering to publish one. A key package lets other people invite you to encrypted chats.
-- **Key packages are counted once.** Settings > Keys & identity > Key packages counts each package once and lists where it is stored. A package can be on this device and on several relays; the relay count describes copies of that package, not additional packages.
+- **Key packages are counted once.** **Settings > Account & devices** lists each package and where it is stored. A package can be on this device and on several relays. The relay count describes copies, not additional packages.
 - **Export encrypted key opens on the first click.** Its password dialog appears immediately.
 
 <details>

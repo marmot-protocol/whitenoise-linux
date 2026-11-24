@@ -407,7 +407,7 @@ folder_board :: proc(ui: ^Ui_State) {
 			board_spacer(id + 3, BOARD_GAP)
 		}
 	}
-	if !phone {scrollbar(nendo.id("FolderBoard"))}
+	if !phone {scrollbar(nendo.id("FolderBoard"), settings_float_z(ui))}
 	if dragging {
 		board_ghost(ui, board.grouped)
 	}

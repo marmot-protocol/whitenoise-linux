@@ -197,8 +197,8 @@ DrawTargetBlurred :: proc(slot: int, alpha: f32) {
 		src = blur_chain[i]
 	}
 	sdl.SetRenderTarget(state.renderer, saved.target)
-	if src.tex == t.tex {
-		return // no scratch texture: leave the sharp frame alone
+	if src.tex == t.tex && alpha < 1 {
+		return // no scratch texture; the caller already drew the sharp frame
 	}
 	sdl.SetTextureAlphaMod(src.tex, u8(clamp(alpha, 0, 1) * 255))
 	dest := sdl.FRect{0, 0, f32(t.w), f32(t.h)}

@@ -1,6 +1,4 @@
-// Settings → Advanced: relay telemetry, audit-log recording plus the
-// files it leaves on disk, the trusted-link-sites allowlist, and the
-// developer-mode flag.
+// Link preferences, usage reporting, and Advanced settings.
 //
 // Both observability switches read and write marmot's own settings, so
 // the runtime stays the single source of truth. Where the data would go
@@ -32,225 +30,226 @@ Audit_File :: struct {
 
 // ── Page ────────────────────────────────────────────────────────────
 
-settings_advanced :: proc(ui: ^Ui_State) {
-	switch ui.settings_tab {
-	case 0:
-		if nendo.box(nendo.id("AdvancedPrivacyGroup"))(settings_box()) {
-			settings_group(tr("Security & privacy"))
-			if nendo.box(nendo.id("RowLinkPreviews"))(settings_row()) {
-				settings_check(
-					"TgLinkPreviews",
-					!ui.prefs.disable_link_previews,
-					tr("Link previews"),
-					tr(
-						"Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads.",
-					),
-				)
-			}
-			if nendo.box(nendo.id("RowMaps"))(settings_row()) {
-				settings_check(
-					"TgMaps",
-					ui.prefs.map_consent,
-					tr("Location maps"),
-					tr(GEO_DISCLOSURE),
-				)
-			}
-			// Always stacked: four product names don't fit beside the text.
-			if nendo.box(nendo.id("RowMapBrowser"))(
-			{width = nendo.grow(), direction = .Column, padding = {top = 4, bottom = 4}, gap = 8},
-			) {
-				row_labels(
-					tr("Open locations in"),
-					tr(
-						"Where a shared location opens from its card. That site receives the location. Map images on the card always load from OpenStreetMap.",
-					),
-				)
-				if nendo.box(nendo.id("MapBrowserChoices"))(
-				{width = nendo.grow(), direction = single_pane() ? .Column : .Row, gap = 6},
-				) {
-					for name, browser in MAP_BROWSER_NAMES {
-						settings_option(
-							"MapBrowserChip",
-							u32(browser),
-							name,
-							ui.prefs.map_browser == browser,
-						)
-					}
-				}
-			}
-			if nendo.box(nendo.id("RowTelemetry"))(settings_row()) {
-				settings_check(
-					"TgTelemetry",
-					ui.telemetry_enabled,
-					tr("Share usage and diagnostics"),
-					tr(
-						"Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off.",
-					),
-				)
-			}
-			if nendo.box(nendo.id("TelemetryDisclosure"))(
-			{width = nendo.grow(), direction = .Column, padding = {left = 25, top = 4}, gap = 8},
-			) {
-				nendo.text(tr("What is shared"), {font = FONT_TITLE, size = 12, color = TEXT})
-				nendo.text(
-					tr(
-						"Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate.",
-					),
-					{font = FONT_BODY, size = 12, color = TEXT_DIM},
-				)
-				nendo.text(
-					tr("Collector and retention"),
-					{font = FONT_TITLE, size = 12, color = TEXT},
-				)
-				nendo.text(
-					tr(
-						"Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured.",
-					),
-					{font = FONT_BODY, size = 12, color = TEXT_DIM},
-				)
-			}
+settings_link_prefs :: proc(ui: ^Ui_State) {
+	if nendo.box(nendo.id("AdvancedPrivacyGroup"))(settings_box()) {
+		if nendo.box(nendo.id("RowLinkPreviews"))({width = nendo.grow()}) {
+			settings_check(
+				"TgLinkPreviews",
+				!ui.prefs.disable_link_previews,
+				tr("Link previews"),
+				tr(
+					"Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads.",
+				),
+			)
 		}
+	}
 
-		when ODIN_OS != .OpenBSD {
-			if nendo.box(nendo.id("AdvancedTrustedGroup"))(settings_box()) {
-				settings_group(tr("Trusted link sites"))
-				nendo.text(
-					tr("Links to these exact sites open without confirmation."),
-					{font = FONT_BODY, size = 12, color = TEXT_DIM},
-				)
-				if len(ui.prefs.trusted_sites) == 0 {
-					if nendo.box(nendo.id("RowNoTrusted"))({padding = {top = 4, bottom = 4}}) {
-						nendo.text(
-							tr("No trusted sites."),
-							{font = FONT_BODY, size = 12, color = TEXT_DIM},
-						)
-					}
-				}
-				for site, i in ui.prefs.trusted_sites {
-					relay_row("TrustRow", "TrustRemove", u32(i), site)
-				}
-				if len(ui.prefs.trusted_sites) > 0 {
-					if nendo.box(nendo.id("TrustActions"))(
-						settings_choices(nendo.id("TrustActions")),
-					) {
-						label :=
-							ui.keys_confirm == "TrustForgetAll" ? tr("Confirm forget all") : tr("Forget all")
-						settings_button("TrustForgetAll", label, DANGER)
-					}
-				}
-			}
-		}
-
-	case 1:
-		if nendo.box(nendo.id("AdvancedAuditGroup"))(settings_box()) {
-			settings_group(tr("Audit logs"))
-			if nendo.box(nendo.id("RowAudit"))(settings_row()) {
-				settings_check(
-					"TgAudit",
-					ui.audit_enabled,
-					tr("Audit logs"),
-					tr("Record group audit log files on this device. Identifiers are hashed."),
-				)
-			}
-			if nendo.box(nendo.id("AuditRefreshRow"))(
-			{
-				direction = single_pane() ? .Column : .Row,
-				padding = {top = 8},
-				gap = 12,
-				align = {y = .Center},
-			},
-			) {
-				nendo.text(tr("Audit log files"), {font = FONT_TITLE, size = 12, color = TEXT})
-				settings_button("AuditRefresh", tr("Refresh"))
-			}
-			if len(ui.audit_files) == 0 {
-				if nendo.box(nendo.id("RowNoAudit"))({padding = {top = 4, bottom = 4}}) {
+	when ODIN_OS != .OpenBSD {
+		settings_group(tr("Trusted link sites"))
+		if nendo.box(nendo.id("AdvancedTrustedGroup"))(settings_box()) {
+			nendo.text(
+				tr("Links to these exact sites open without confirmation."),
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
+			)
+			if len(ui.prefs.trusted_sites) == 0 {
+				if nendo.box(nendo.id("RowNoTrusted"))({padding = {top = 4, bottom = 4}}) {
 					nendo.text(
-						tr("No audit log files."),
+						tr("No trusted sites."),
 						{font = FONT_BODY, size = 12, color = TEXT_DIM},
 					)
 				}
 			}
-			for file, i in ui.audit_files {
-				if nendo.box(nendo.id("AuditRow", u32(i)))(settings_row(true)) {
-					if nendo.box(nendo.id("AuditRowCol", u32(i)))(
-					{width = nendo.grow(), direction = .Column, gap = 4},
-					) {
-						if nendo.box(nendo.id("AuditFileName", u32(i)))(
-						{width = nendo.grow(), clip = {x = true}},
-						) {
-							nendo.text(
-								text_ellipsis(
-									file.name,
-									settings_body_width(ui) - 48,
-									FONT_TITLE,
-									12,
-								),
-								{font = FONT_TITLE, size = 12, color = TEXT, wrap = .None},
-							)
-						}
-						nendo.text(file.label, {font = FONT_BODY, size = 12, color = TEXT_DIM})
-					}
-					if nendo.box(nendo.id("AuditDeleteAction", u32(i)))({}) {
-						id := audit_delete_id(file.path)
-						settings_button(
-							id,
-							ui.keys_confirm == id ? tr("Confirm delete") : tr("Delete"),
-							DANGER,
-						)
-					}
+			for site, i in ui.prefs.trusted_sites {
+				relay_row("TrustRow", "TrustRemove", u32(i), site)
+			}
+			if len(ui.prefs.trusted_sites) > 0 {
+				if nendo.box(nendo.id("TrustActions"))(
+					settings_choices(nendo.id("TrustActions")),
+				) {
+					label :=
+						ui.keys_confirm == "TrustForgetAll" ? tr("Confirm forget all") : tr("Forget all")
+					settings_button("TrustForgetAll", label, DANGER)
 				}
 			}
-			if len(ui.audit_files) > 0 {
+		}
+	}
+
+	settings_group(tr("Location maps"))
+	if nendo.box(nendo.id("ConnectionLocationGroup"))(settings_box()) {
+		if nendo.box(nendo.id("RowMaps"))({width = nendo.grow()}) {
+			settings_check("TgMaps", ui.prefs.map_consent, tr("Location maps"), tr(GEO_DISCLOSURE))
+		}
+		settings_divider()
+		// Always stacked: four product names don't fit beside the text.
+		if nendo.box(nendo.id("RowMapBrowser"))(
+		{width = nendo.grow(), direction = .Column, padding = {top = 4, bottom = 4}, gap = 8},
+		) {
+			row_labels(
+				tr("Open locations in"),
+				tr(
+					"Where a shared location opens from its card. That site receives the location. Map images on the card always load from OpenStreetMap.",
+				),
+			)
+			if nendo.box(nendo.id("MapBrowserChoices"))(
+			{width = nendo.grow(), direction = single_pane() ? .Column : .Row, gap = 6},
+			) {
+				for name, browser in MAP_BROWSER_NAMES {
+					settings_option(
+						"MapBrowserChip",
+						u32(browser),
+						name,
+						ui.prefs.map_browser == browser,
+					)
+				}
+			}
+		}
+	}
+}
+
+settings_usage :: proc(ui: ^Ui_State) {
+	settings_group(tr("Usage reporting"))
+	if nendo.box(nendo.id("PrivacyUsageGroup"))(settings_box()) {
+		if nendo.box(nendo.id("RowTelemetry"))({width = nendo.grow()}) {
+			settings_check(
+				"TgTelemetry",
+				ui.telemetry_enabled,
+				tr("Share usage and diagnostics"),
+				tr(
+					"Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off.",
+				),
+			)
+		}
+		settings_divider()
+		if nendo.box(nendo.id("TelemetryDisclosure"))(
+		{width = nendo.grow(), direction = .Column, padding = {top = 4}, gap = 8},
+		) {
+			nendo.text(tr("What is shared"), {font = FONT_TITLE, size = 12, color = TEXT})
+			nendo.text(
+				tr(
+					"Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate.",
+				),
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
+			)
+			nendo.text(tr("Collector and retention"), {font = FONT_TITLE, size = 12, color = TEXT})
+			nendo.text(
+				tr(
+					"Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured.",
+				),
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
+			)
+		}
+	}
+}
+
+settings_advanced :: proc(ui: ^Ui_State) {
+	settings_group(tr("Audit logs"))
+	if nendo.box(nendo.id("AdvancedAuditGroup"))(settings_box()) {
+		if nendo.box(nendo.id("RowAudit"))({width = nendo.grow()}) {
+			settings_check(
+				"TgAudit",
+				ui.audit_enabled,
+				tr("Audit logs"),
+				tr("Record group audit log files on this device. Identifiers are hashed."),
+			)
+		}
+		settings_divider()
+		refresh_row := settings_line()
+		if settings_body_width(ui) < 260 {refresh_row = settings_row(true)}
+		if nendo.box(nendo.id("AuditRefreshRow"))(refresh_row) {
+			row_labels(tr("Audit log files"), "")
+			settings_button("AuditRefresh", tr("Refresh"))
+		}
+		if len(ui.audit_files) == 0 {
+			if nendo.box(nendo.id("RowNoAudit"))({padding = {top = 4, bottom = 4}}) {
 				nendo.text(
-					tr(
-						"Deleting the file being recorded rotates it. Recording continues in a fresh file.",
-					),
+					tr("No audit log files."),
 					{font = FONT_BODY, size = 12, color = TEXT_DIM},
 				)
 			}
 		}
-
-	case 2:
-		if nendo.box(nendo.id("AdvancedGraphicsGroup"))(settings_box()) {
-			settings_group(tr("Graphics"))
-			if nendo.box(nendo.id("RowRenderer"))(settings_row(true)) {
-				row_labels(
-					tr("Renderer"),
-					tr(
-						"Try OpenGL or CPU if the window draws incorrectly. CPU draws without the graphics card and uses more processor time. Restart White Noise to apply a change.",
-					),
-				)
-				if nendo.box(nendo.id("RendererChoices"))(
-					settings_choices(nendo.id("RendererChoices")),
+		for file, i in ui.audit_files {
+			if nendo.box(nendo.id("AuditRow", u32(i)))(settings_row(true)) {
+				if nendo.box(nendo.id("AuditRowCol", u32(i)))(
+				{width = nendo.grow(), direction = .Column, gap = 4},
 				) {
-					for label, driver in RENDERER_LABELS {
-						settings_option(
-							"RendererChip",
-							u32(driver),
-							label,
-							ui.prefs.renderer == driver,
+					if nendo.box(nendo.id("AuditFileName", u32(i)))(
+					{width = nendo.grow(), clip = {x = true}},
+					) {
+						nendo.text(
+							text_ellipsis(file.name, settings_body_width(ui) - 48, FONT_TITLE, 12),
+							{font = FONT_TITLE, size = 12, color = TEXT, wrap = .None},
 						)
 					}
+					nendo.text(file.label, {font = FONT_BODY, size = 12, color = TEXT_DIM})
+				}
+				if nendo.box(nendo.id("AuditDeleteAction", u32(i)))({}) {
+					id := audit_delete_id(file.path)
+					settings_button(
+						id,
+						ui.keys_confirm == id ? tr("Confirm delete") : tr("Delete"),
+						DANGER,
+					)
 				}
 			}
+		}
+		if len(ui.audit_files) > 0 {
 			nendo.text(
-				fmt.tprintf(tr("In use: %s."), rl.RendererInUse()),
+				tr(
+					"Deleting the file being recorded rotates it. Recording continues in a fresh file.",
+				),
 				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
 		}
-		if nendo.box(nendo.id("AdvancedDeveloperGroup"))(settings_box()) {
-			settings_group(tr("Developer"))
-			if nendo.box(nendo.id("RowDevMode"))(settings_row()) {
-				settings_check(
-					"TgDevMode",
-					ui.prefs.dev_mode,
-					tr("Developer mode"),
-					tr(
-						"Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state.",
-					),
-				)
+	}
+
+	settings_group(tr("Graphics"))
+	if nendo.box(nendo.id("AdvancedGraphicsGroup"))(settings_box()) {
+		if nendo.box(nendo.id("RowRenderer"))(settings_row(true)) {
+			row_labels(
+				tr("Renderer"),
+				tr(
+					"Try OpenGL or CPU if the window draws incorrectly. CPU draws without the graphics card and uses more processor time. Restart White Noise to apply a change.",
+				),
+			)
+			if nendo.box(nendo.id("RendererChoices"))(
+				settings_choices(nendo.id("RendererChoices")),
+			) {
+				for label, driver in RENDERER_LABELS {
+					settings_option(
+						"RendererChip",
+						u32(driver),
+						label,
+						ui.prefs.renderer == driver,
+					)
+				}
 			}
+		}
+		nendo.text(
+			fmt.tprintf(tr("In use: %s."), rl.RendererInUse()),
+			{font = FONT_BODY, size = 12, color = TEXT_DIM},
+		)
+	}
+	settings_startup(ui)
+	if nendo.box(nendo.id("AdvancedAgentsGroup"))(settings_box()) {
+		settings_nav_row("SettingsAgents", tr("AI agents"), "")
+	}
+	settings_group(tr("Developer"))
+	if nendo.box(nendo.id("AdvancedDeveloperGroup"))(settings_box()) {
+		if nendo.box(nendo.id("RowDevMode"))({width = nendo.grow()}) {
+			settings_check(
+				"TgDevMode",
+				ui.prefs.dev_mode,
+				tr("Developer mode"),
+				tr(
+					"Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state.",
+				),
+			)
+		}
+		if ui.prefs.dev_mode {
+			settings_divider()
+			settings_nav_row("SettingsDebug", tr("Debug"), "")
+			settings_divider()
+			settings_nav_row("SettingsKP", tr("KP inspector"), "")
 		}
 	}
 }
@@ -273,13 +272,38 @@ RENDERER_LABELS := [rl.Render_Driver]string {
 
 // ── Interactions ────────────────────────────────────────────────────
 
-handle_advanced :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+@(private = "file")
+handle_link_prefs :: proc(ui: ^Ui_State) {
 	for _, browser in MAP_BROWSER_NAMES {
 		if nendo.pointer_over(nendo.id("MapBrowserChip", u32(browser))) {
 			ui.prefs.map_browser = browser
 			save_settings(ui)
 			return
 		}
+	}
+	for site, i in ui.prefs.trusted_sites {
+		if nendo.pointer_over(nendo.id("TrustRemove", u32(i))) {
+			delete(site)
+			ordered_remove(&ui.prefs.trusted_sites, i)
+			save_settings(ui)
+			return
+		}
+	}
+	if clicked("TrustForgetAll") {
+		if armed(ui, "TrustForgetAll") {
+			for site in ui.prefs.trusted_sites {
+				delete(site)
+			}
+			clear(&ui.prefs.trusted_sites)
+			save_settings(ui)
+		}
+	}
+}
+
+handle_advanced :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if ui.settings_section == .Connection {
+		handle_link_prefs(ui)
+		return
 	}
 	for _, driver in RENDERER_LABELS {
 		if nendo.pointer_over(nendo.id("RendererChip", u32(driver))) {
@@ -301,25 +325,6 @@ handle_advanced :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 	}
-	for site, i in ui.prefs.trusted_sites {
-		if nendo.pointer_over(nendo.id("TrustRemove", u32(i))) {
-			delete(site)
-			ordered_remove(&ui.prefs.trusted_sites, i)
-			save_settings(ui)
-			return
-		}
-	}
-	if clicked("TrustForgetAll") {
-		if armed(ui, "TrustForgetAll") {
-			for site in ui.prefs.trusted_sites {
-				delete(site)
-			}
-			clear(&ui.prefs.trusted_sites)
-			save_settings(ui)
-		}
-		return
-	}
-	keys_disarm(ui) // a click anywhere else disarms
 }
 
 // ── Telemetry and audit settings ────────────────────────────────────

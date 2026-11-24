@@ -34,9 +34,7 @@ Prefs :: struct {
 	last_account:          string, // account hex chosen last; boot opens on it
 	sign_ins_recognized:   map[string]map[string]u64, // account and slot → first seen time
 	page:                  Page,
-	settings_section:      Settings_Section,
-	settings_tab:          int,
-	settings_level:        Settings_Level,
+	settings_category:     Settings_Section,
 	chat_filter:           Chat_Filter,
 	window_w, window_h:    i32, // window points, not renderer pixels
 	notes_group:           string, // group id of the solo "Notes to self" chat
@@ -122,6 +120,7 @@ default_prefs :: proc() -> Prefs {
 		notify_sound      = true,
 		ui_sounds         = true,
 		notify_preview    = true,
+		crop_avatar_shape = .Circle,
 		zoom_pct          = 100,
 		scroll_speed      = 200,
 		message_lines     = DEFAULT_MESSAGE_LINES,
@@ -266,6 +265,9 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 		delete(ui.prefs.fetch_relays)
 		ui.prefs = settings.prefs
 		settings.prefs.sign_ins_recognized = nil
+		if ui.prefs.settings_category == .Home {
+			ui.prefs.settings_category = migrate_legacy_settings_category(data, ui.prefs.dev_mode)
+		}
 	}
 	if ui.prefs.composer.order[0] != .None && !composer_config_load(&ui.prefs.composer) {
 		ui.prefs.composer = {}
@@ -274,19 +276,11 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	if ui.prefs.window_w <= 0 {ui.prefs.window_w = 1024}
 	if ui.prefs.window_h <= 0 {ui.prefs.window_h = 700}
 	if int(ui.prefs.page) < 0 || ui.prefs.page > max(Page) {ui.prefs.page = .Chats}
-	if int(ui.prefs.settings_section) < 0 ||
-	   ui.prefs.settings_section > max(Settings_Section) ||
-	   (ui.prefs.settings_section != .Devices &&
-			   !settings_available(ui, ui.prefs.settings_section)) {
-		ui.prefs.settings_section = .Home
-	}
-	ui.prefs.settings_tab = clamp(
-		ui.prefs.settings_tab,
-		0,
-		max(len(settings_tabs(ui.prefs.settings_section)) - 1, 0),
-	)
-	if int(ui.prefs.settings_level) < 0 || ui.prefs.settings_level > max(Settings_Level) {
-		ui.prefs.settings_level = .Menu
+	if category := ui.prefs.settings_category;
+	   int(category) < 0 || category > max(Settings_Section) {
+		ui.prefs.settings_category = .Home
+	} else {
+		ui.prefs.settings_category = settings_category(category)
 	}
 	// Saved archive-filter workspaces open the dedicated Archive page.
 	if ui.prefs.page == .Chats && int(ui.prefs.chat_filter) == 3 {
@@ -306,9 +300,7 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 		}
 	}
 	ui.page = ui.prefs.page
-	ui.settings_section = ui.prefs.settings_section
-	ui.settings_tab = ui.prefs.settings_tab
-	ui.settings_level = ui.prefs.settings_level
+	ui.settings_section = ui.prefs.settings_category
 	ui.chat_filter = ui.prefs.chat_filter
 	// Fields added after prefs shipped: 0 means an older settings.json.
 	if ui.prefs.scroll_speed == 0 {
@@ -323,9 +315,7 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	ui.prefs.avatar_shape = Avatar_Shape(
 		clamp(int(ui.prefs.avatar_shape), 0, int(Avatar_Shape.Square)),
 	)
-	ui.prefs.crop_avatar_shape = Crop_Shape(
-		clamp(int(ui.prefs.crop_avatar_shape), 0, int(Crop_Shape.Rounded)),
-	)
+	ui.prefs.crop_avatar_shape = normalized_crop_shape(ui.prefs.crop_avatar_shape)
 	ui.prefs.emoji_set = Emoji_Set(clamp(int(ui.prefs.emoji_set), 0, int(max(Emoji_Set))))
 	ui.prefs.map_browser = Map_Browser(clamp(int(ui.prefs.map_browser), 0, int(max(Map_Browser))))
 	ui.prefs.git_client = Git_Client(clamp(int(ui.prefs.git_client), 0, int(max(Git_Client))))
@@ -342,6 +332,55 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	}
 	if len(ui.prefs.event_client) == 0 {
 		ui.prefs.event_client = strings.clone(DEFAULT_EVENT_CLIENT)
+	}
+}
+
+@(private = "file")
+migrate_legacy_settings_category :: proc(data: []byte, dev_mode: bool) -> Settings_Section {
+	// Legacy IDs are independent of the current Settings_Section order.
+	legacy: struct {
+		prefs: struct {
+			settings_category:                              Maybe(Settings_Section),
+			settings_section, settings_tab, settings_level: int,
+		},
+	}
+	if json.unmarshal(data, &legacy, allocator = context.temp_allocator) != nil ||
+	   legacy.prefs.settings_category != nil {return .Home}
+	switch legacy.prefs.settings_section {
+	case 1:
+		switch legacy.prefs.settings_tab {
+		case 1:
+			return .Language
+		case 2, 3:
+			return .Chats
+		case:
+			return .Advanced
+		}
+	case 2:
+		return .Chats
+	case 3:
+		return .Language
+	case 4:
+		return .Connection
+	case 5, 14:
+		return .Account
+	case 6:
+		return .Appearance
+	case 7:
+		return .Notifications
+	case 8:
+		return .Privacy
+	case 9:
+		if legacy.prefs.settings_level == 1 && legacy.prefs.settings_tab == 0 {return .Privacy}
+		return .Advanced
+	case 10:
+		return .Help
+	case 11, 12:
+		return dev_mode ? .Advanced : .Home
+	case 13:
+		return .Advanced
+	case:
+		return .Home
 	}
 }
 
@@ -405,6 +444,7 @@ save_settings :: proc(ui: ^Ui_State, background := false) {
 	timing_start := time.tick_now()
 	defer local_timing_end(.settings_save, timing_start)
 	remember_workspace(ui)
+	ui.prefs.crop_avatar_shape = normalized_crop_shape(ui.prefs.crop_avatar_shape)
 	ui.settings_dirty = false
 
 	blocked := make([dynamic]string, context.temp_allocator)
@@ -449,15 +489,13 @@ Settings_Work :: struct {
 // Snapshot at frame end so every navigation path uses the same writer.
 @(private)
 remember_workspace :: proc(ui: ^Ui_State) {
+	category := settings_category(ui.settings_section)
+	if category == .Home {category = ui.prefs.settings_category}
 	if ui.prefs.page == ui.page &&
-	   ui.prefs.settings_section == ui.settings_section &&
-	   ui.prefs.settings_tab == ui.settings_tab &&
-	   ui.prefs.settings_level == ui.settings_level &&
+	   ui.prefs.settings_category == category &&
 	   ui.prefs.chat_filter == ui.chat_filter {return}
 	ui.prefs.page = ui.page
-	ui.prefs.settings_section = ui.settings_section
-	ui.prefs.settings_tab = ui.settings_tab
-	ui.prefs.settings_level = ui.settings_level
+	ui.prefs.settings_category = category
 	ui.prefs.chat_filter = ui.chat_filter
 	ui.settings_dirty = true
 }

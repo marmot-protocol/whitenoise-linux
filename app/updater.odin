@@ -285,7 +285,7 @@ update_bar :: proc() {
 			nendo.text(update_status(phase), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 			update_feedback("UpdateBarProgress", phase)
 		} else {
-			micro_button("UpdateRestart", tr("Restart now"), ACCENT)
+			micro_button("UpdateBarRestart", tr("Restart now"), ACCENT)
 			micro_button("UpdateLater", tr("Later"))
 			nendo.text(
 				fmt.tprintf(tr("White Noise %s is ready to install."), update_version()),
@@ -345,7 +345,7 @@ update_feedback :: proc(id: string, phase: Update_Phase) {
 	nendo.text(fmt.tprintf("%d%%", progress), {font = FONT_BODY, size = 11, color = TEXT_LO})
 }
 
-// Settings → About row: current state plus a manual check.
+// Updates under Help & about: current state and a manual check.
 update_settings_row :: proc() {
 	phase := update_phase()
 	if phase == .Off {
@@ -393,14 +393,19 @@ update_settings_row :: proc() {
 	}
 }
 
-update_handle :: proc() {
-	if clicked("UpdateRestart") {
+@(private)
+// The shell calls this after accepting a mouse release.
+update_handle :: proc() -> bool {
+	if nendo.pointer_over(nendo.id("UpdateRestart")) ||
+	   nendo.pointer_over(nendo.id("UpdateBarRestart")) {
 		update_apply()
+		return true
 	}
-	if clicked("UpdateLater") {
+	if nendo.pointer_over(nendo.id("UpdateLater")) {
 		updater.dismissed = true
+		return true
 	}
-	if clicked("UpdateCheck") {
+	if nendo.pointer_over(nendo.id("UpdateCheck")) {
 		updater.dismissed = false
 		when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
 			appimage_update_check()
@@ -410,5 +415,7 @@ update_handle :: proc() {
 			sync.atomic_store(&updater.phase, .Checking)
 			sync.sema_post(&updater.wake)
 		}
+		return true
 	}
+	return false
 }

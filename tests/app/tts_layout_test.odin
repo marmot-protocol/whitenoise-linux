@@ -36,8 +36,6 @@ tts_layout :: proc(t: ^testing.T) {
 	testing.expect(t, ui.stt.file != nil)
 	if ui.stt.file == nil {return}
 	defer wn_ipc_close(ui.stt.file)
-	ui.page = .Settings
-	ui.settings_section = .Speech
 	ui.tts.status, ui.tts.model, ui.tts.percent = 'D', 0, 42
 	ui.tts.ready[2] = true
 	g_ui, g_prefs = &ui, &ui.prefs
@@ -45,17 +43,10 @@ tts_layout :: proc(t: ^testing.T) {
 	for width in ([]f32{420, 720}) {
 		rl.SetWindowSize(i32(width), 1100)
 		nendo.set_dimensions({width, 1100})
-		for tab in 0 ..< 2 {
-			ui.settings_tab = tab
-			nendo.update_scroll(.Off, {}, 0)
-			nendo.begin()
-			if nendo.box(nendo.id("VoiceTest"))(
-			{width = nendo.grow(), height = nendo.grow(), direction = .Column, color = BG},
-			) {
-				settings_pane(&ui)
-			}
-			commands := nendo.end(0)
-			if tab == 0 {
+		for anchor, i in ([]string{"TranscriptionGroup", "TtsVoices"}) {
+			settings_open(&ui, nil, .Language, anchor)
+			commands := settings_test_frame(&ui)
+			if anchor == "TranscriptionGroup" {
 				for _, i in STT_MODELS {
 					box := nendo.element(nendo.id("SttModel", u32(i)))
 					testing.expect(
@@ -81,7 +72,7 @@ tts_layout :: proc(t: ^testing.T) {
 			}
 			rl.BeginDrawing()
 			draw_frame(commands)
-			rl.TakeScreenshot(fmt.ctprintf("/tmp/tts-rows-%d-%d.png", int(width), tab))
+			rl.TakeScreenshot(fmt.ctprintf("/tmp/tts-rows-%d-%d.png", int(width), i))
 			rl.EndDrawing()
 		}
 	}

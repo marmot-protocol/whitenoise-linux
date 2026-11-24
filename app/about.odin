@@ -1,18 +1,37 @@
-// Settings → About: application identity, updates, credits and local storage.
 package main
 
 import "nendo"
 
-settings_about :: proc(ui: ^Ui_State) {
-	if nendo.box(nendo.id("AboutIdentity"))(
-	{
-		width = nendo.grow(),
-		direction = .Column,
-		padding = {top = 16, bottom = 28},
-		gap = 20,
-		border = {color = DIVIDER, width = {bottom = BORDER_W}},
-	},
-	) {
+@(private)
+settings_help :: proc(ui: ^Ui_State) {
+	settings_group(tr("Support"))
+	if nendo.box(nendo.id("SettingsSupport"))(settings_box()) {
+		support_detail := tr(
+			"Ask a question, report a problem, or share a suggestion in a private chat with White Noise support.",
+		)
+		if ui.account_ref != "" {
+			settings_nav_row("SupportChat", tr("Reach out to support"), support_detail)
+		} else {
+			nendo.text(support_detail, {font = FONT_BODY, size = 12, color = TEXT_DIM})
+			settings_nav_button("SupportChat", tr("Reach out to support"), .Disabled)
+		}
+		if !tap_size() {
+			settings_divider()
+			if nendo.box(nendo.id("RowShortcuts"))({width = nendo.grow()}) {
+				settings_nav_row("ShortcutsView", tr("Keyboard shortcuts"), "")
+			}
+		}
+	}
+	settings_group(tr("Troubleshooting"))
+	if nendo.box(nendo.id("SettingsTroubleshooting"))(settings_box()) {
+		settings_nav_row("SettingsMuteHelp", tr("Mute a conversation"), "")
+		for link in SETTINGS_TROUBLESHOOTERS {
+			if !settings_task_matches(ui, link, "") {continue}
+			settings_divider()
+			settings_nav_row(link.label, tr(link.label), "")
+		}
+	}
+	if nendo.box(nendo.id("AboutIdentity"))(settings_box()) {
 		if nendo.box(nendo.id("AboutBrand"))(
 		{width = nendo.grow(), gap = 16, align = {y = .Center}},
 		) {
@@ -47,38 +66,28 @@ settings_about :: proc(ui: ^Ui_State) {
 
 	update_settings_row()
 
-	columns := settings_body_width(ui) >= 520
-	if nendo.box(nendo.id("AboutDetails"))(
-	{width = nendo.grow(), direction = columns ? .Row : .Column, gap = 24},
-	) {
-		if nendo.box(nendo.id("AboutCredits"))(
-		{width = nendo.grow(), direction = .Column, padding = {top = 6}, gap = 10},
-		) {
-			nendo.text(tr("Built with"), {font = FONT_TITLE, size = 14, color = TEXT})
-			nendo.text("Marmot · MLS · Nostr", {font = FONT_BODY, size = 13, color = TEXT_DIM})
-			nendo.text(
-				"Odin · nendo · SDL3 · stb · mpv",
-				{font = FONT_BODY, size = 13, color = TEXT_DIM},
-			)
-			nendo.text(
-				"Noto Emoji · Twemoji · OpenMoji",
-				{font = FONT_BODY, size = 13, color = TEXT_DIM},
-			)
-		}
-		if nendo.box(nendo.id("AboutStorage"))(
-		{width = nendo.grow(), direction = .Column, padding = {top = 6}, gap = 10},
-		) {
-			nendo.text(tr("Data folder"), {font = FONT_TITLE, size = 14, color = TEXT})
-			// Break long paths at grapheme boundaries instead of widening the page.
-			width := columns ? (settings_body_width(ui) - 24) / 2 : settings_body_width(ui)
-			for at := 0; at < len(data_home); {
-				end := wrap_break(data_home, at, len(data_home), width, 12)
-				nendo.text(
-					data_home[at:end],
-					{font = FONT_BODY, size = 12, color = TEXT_DIM, wrap = .None},
-				)
-				at = end
-			}
-		}
+	settings_group(tr("Built with"))
+	if nendo.box(nendo.id("AboutCredits"))(settings_box()) {
+		nendo.text("Marmot · MLS · Nostr", {font = FONT_BODY, size = 13, color = TEXT_DIM})
+		nendo.text(
+			"Odin · nendo · SDL3 · stb · mpv",
+			{font = FONT_BODY, size = 13, color = TEXT_DIM},
+		)
+		nendo.text(
+			"Noto Emoji · Twemoji · OpenMoji",
+			{font = FONT_BODY, size = 13, color = TEXT_DIM},
+		)
+	}
+}
+
+@(private)
+settings_mute :: proc() {
+	if nendo.box(nendo.id("MuteHelp"))(settings_box()) {
+		nendo.text(
+			tr(
+				"Right-click or press and hold a conversation in Chats, then select Mute. To turn its alerts back on, open the same menu and select Unmute.",
+			),
+			{font = FONT_BODY, size = 13, color = TEXT},
+		)
 	}
 }

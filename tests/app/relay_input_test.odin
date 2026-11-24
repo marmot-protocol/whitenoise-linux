@@ -30,8 +30,7 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		page                    = .Settings,
-		settings_section        = .Network,
-		settings_level          = .Sheet,
+		settings_section        = .Connection,
 		settings_anchor         = "AddRelayRow",
 		settings_scroll_pending = true,
 		account_ref             = "offline-relay-fixture",
@@ -68,7 +67,9 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 		nendo.set_pointer({-100, -100}, .Up)
 		anim_tick(1.0 / 60)
 		banner_tick(ui)
-		return build_layout(ui, 0)
+		commands := build_layout(ui, 0)
+		if settings_resolve_scroll(ui) {commands = build_layout(ui, 0)}
+		return commands
 	}
 	click :: proc(t: ^testing.T, ui: ^Ui_State, client: ^marmot.Client, id: string) -> bool {
 		data := nendo.element(nendo.id(id))
@@ -128,7 +129,6 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 		anchors := [3]string{"AddRelayRow", "AddInboxRow", "AddFetchRow"}
 		focuses := [3]Focus{.Relay, .Inbox, .Fetch}
 		field := fields[kind]
-		ui.settings_tab = kind == 2 ? 1 : 0
 		ui.settings_anchor = anchors[kind]
 		ui.settings_scroll_pending = true
 		fetch_count := len(ui.prefs.fetch_relays)
@@ -169,7 +169,6 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 		if previous_config ==
 		   "" {os.unset_env("XDG_CONFIG_HOME")} else {os.set_env("XDG_CONFIG_HOME", previous_config)}
 	}
-	ui.settings_tab = 1
 	ui.settings_anchor = "AddFetchRow"
 	ui.settings_scroll_pending = true
 	initial := len(ui.prefs.fetch_relays)

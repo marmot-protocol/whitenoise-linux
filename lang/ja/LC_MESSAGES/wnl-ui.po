@@ -351,6 +351,9 @@ msgstr "1票"
 msgid "1 voter"
 msgstr "投票者1人"
 
+msgid "2. In Settings, open Account & devices, then Linked devices. Choose Link to another device."
+msgstr "2. 設定で「アカウントと端末」を開き、「連携済みの端末」に進みます。「別の端末と連携」を選びます。"
+
 msgid "2.5 GB"
 msgstr "2.5 GB"
 
@@ -386,9 +389,6 @@ msgstr "キーパッケージがあると、ほかの人があなたを暗号化
 
 msgid "A line about you"
 msgstr "ひとこと自己紹介"
-
-msgid "A message at this size."
-msgstr "このサイズのメッセージです。"
 
 msgid "A separate secret key or signer lets you use an identity again. It does not restore chats, pending sends or saved collections."
 msgstr "別に保存した秘密鍵または署名ツールがあれば、同じIDを再び使えます。ただし、チャット、送信待ちのメッセージ、保存したライブラリは復元されません。"
@@ -442,8 +442,14 @@ msgstr "承諾"
 msgid "Accepting your invitation"
 msgstr "招待を承認しています"
 
+msgid "Accessibility"
+msgstr "アクセシビリティ"
+
 msgid "Account"
 msgstr "アカウント"
+
+msgid "Account & devices"
+msgstr "アカウントと端末"
 
 msgid "Account access"
 msgstr "アカウントへのアクセス"
@@ -460,6 +466,10 @@ msgstr "アカウント"
 #, c-format
 msgid "Action failed: %s"
 msgstr "操作に失敗しました: %s"
+
+#, c-format
+msgid "Active theme: %s"
+msgstr "使用中のテーマ：%s"
 
 msgid "Add"
 msgstr "追加"
@@ -530,6 +540,9 @@ msgstr "管理者はメンバーの追加や削除、グループ情報の変更
 msgid "Advanced"
 msgstr "詳細"
 
+msgid "After signing in, open Account & devices in Settings to link another device."
+msgstr "サインイン後、別の端末と連携するには設定の「アカウントと端末」を開きます。"
+
 msgid "Agent connector documentation"
 msgstr "エージェントコネクターのドキュメント"
 
@@ -550,6 +563,9 @@ msgstr "すべてのチャット"
 
 msgid "All senders"
 msgstr "すべての送信者"
+
+msgid "All settings"
+msgstr "すべての設定"
 
 msgid "All types"
 msgstr "すべての種類"
@@ -726,6 +742,9 @@ msgstr "BUNKER リンク"
 msgid "Back"
 msgstr "戻る"
 
+msgid "Back to White Noise"
+msgstr "White Noise に戻る"
+
 msgid "Back to account options"
 msgstr "アカウントの選択に戻る"
 
@@ -816,6 +835,9 @@ msgstr "角かっこのラベル"
 
 msgid "Browse emoji sets"
 msgstr "絵文字セットを探す"
+
+msgid "Browse themes"
+msgstr "テーマを探す"
 
 msgid "Bubble radius"
 msgstr "吹き出しの角の半径"
@@ -942,6 +964,9 @@ msgstr "保管庫のパスワードを変更"
 
 msgid "Change..."
 msgstr "変更..."
+
+msgid "Changes the whole app."
+msgstr "アプリ全体の表示サイズを変更します。"
 
 msgid "Chat details"
 msgstr "チャットの詳細"
@@ -1128,6 +1153,9 @@ msgstr "バックアップの保存先を選んでください。"
 msgid "Choose where you publish"
 msgstr "公開先を選択"
 
+msgid "Choose which shortcuts appear beside your draft."
+msgstr "下書きの横に表示するショートカットを選べます。"
+
 msgid "Choose your account"
 msgstr "アカウントを選択"
 
@@ -1209,6 +1237,9 @@ msgstr "不具合報告用のログを集める"
 msgid "Collector and retention"
 msgstr "送信先と保存期間"
 
+msgid "Color mode"
+msgstr "カラーモード"
+
 msgid "Command palette"
 msgstr "コマンドパレット"
 
@@ -1289,6 +1320,9 @@ msgstr "署名者のリレーを通じて接続しています。"
 
 msgid "Connecting your remote signer. Approve the connection there before using this account."
 msgstr "リモート署名者に接続しています。このアカウントを使う前に、署名者で接続を承認してください。"
+
+msgid "Connection"
+msgstr "接続"
 
 msgid "Connection cancelled."
 msgstr "接続をキャンセルしました。"
@@ -1826,6 +1860,9 @@ msgstr "署名者への要求を送信できませんでした。しばらく待
 msgid "Couldn't send the sticker. Switch back to your account and try again."
 msgstr "ステッカーを送信できませんでした。元のアカウントに戻って、もう一度お試しください。"
 
+msgid "Couldn't send the test notification. Check your system notification settings and try again."
+msgstr "テスト通知を送信できませんでした。システムの通知設定を確認して、もう一度お試しください。"
+
 msgid "Couldn't serialize the key packages. Please try again."
 msgstr "キーパッケージをシリアライズできませんでした。もう一度お試しください。"
 
@@ -1992,6 +2029,9 @@ msgstr "カスタムカラー"
 msgid "Custom emoji"
 msgstr "カスタム絵文字"
 
+msgid "Customize"
+msgstr "カスタマイズ"
+
 msgid "Customize composer"
 msgstr "入力欄をカスタマイズ"
 
@@ -2138,6 +2178,12 @@ msgstr "説明"
 
 msgid "Design"
 msgstr "デザイン"
+
+msgid "Desktop alert sound"
+msgstr "デスクトップ通知音"
+
+msgid "Desktop alerts"
+msgstr "デスクトップの通知"
 
 msgid "Desktop notifications"
 msgstr "デスクトップ通知"
@@ -2373,6 +2419,9 @@ msgstr "このグループでは有効です。"
 
 msgid "Encrypt with NIP-44"
 msgstr "NIP-44 で暗号化"
+
+msgid "Encrypted backups"
+msgstr "暗号化バックアップ"
 
 msgid "Encrypted key copied"
 msgstr "暗号化された鍵をコピーしました"
@@ -2859,6 +2908,9 @@ msgstr "ヘブライ語"
 msgid "Help"
 msgstr "ヘルプ"
 
+msgid "Help & about"
+msgstr "ヘルプとアプリ情報"
+
 msgid "Hidden"
 msgstr "非表示"
 
@@ -2870,6 +2922,9 @@ msgstr "絵文字セットを隠す"
 
 msgid "Hide hidden message"
 msgstr "隠されたメッセージを非表示"
+
+msgid "Hide key"
+msgstr "鍵を非表示"
 
 msgid "Hide passwords"
 msgstr "パスワードを隠す"
@@ -2989,6 +3044,9 @@ msgstr "絵文字をインポートしています..."
 #, c-format
 msgid "In use: %s."
 msgstr "使用中: %s"
+
+msgid "In-app sounds"
+msgstr "アプリ内の音"
 
 msgid "Incoming messages"
 msgstr "受信メッセージ"
@@ -3223,6 +3281,12 @@ msgstr "ラベル（カンマ区切り）"
 msgid "Language"
 msgstr "言語"
 
+msgid "Language & speech"
+msgstr "言語と音声"
+
+msgid "Language and formats"
+msgstr "言語と表示形式"
+
 msgid "Language, startup, and everyday preferences."
 msgstr "言語、起動時の動作、日常的に使う機能を設定します。"
 
@@ -3439,6 +3503,9 @@ msgstr "連絡先を管理"
 msgid "Manage local files and encrypted backups."
 msgstr "ローカルファイルと暗号化バックアップを管理します。"
 
+msgid "Manage the devices linked to this account."
+msgstr "このアカウントに連携した端末を管理できます。"
+
 msgid "Mar"
 msgstr "3月"
 
@@ -3505,11 +3572,17 @@ msgstr "メッセージメニュー"
 msgid "Message notifications"
 msgstr "メッセージ通知"
 
+msgid "Message previews"
+msgstr "メッセージのプレビュー"
+
 msgid "Message text copied"
 msgstr "メッセージのテキストをコピーしました"
 
 msgid "Message text size"
 msgstr "メッセージの文字サイズ"
+
+msgid "Message tones"
+msgstr "メッセージ音"
 
 msgid "Message translation"
 msgstr "メッセージの翻訳"
@@ -3588,6 +3661,9 @@ msgstr "音楽"
 
 msgid "Mute"
 msgstr "ミュート"
+
+msgid "Mute a conversation"
+msgstr "チャットをミュートする"
 
 msgid "NES game"
 msgstr "NESゲーム"
@@ -3811,6 +3887,10 @@ msgstr "結果がありません。別の検索をお試しください。"
 msgid "No rules"
 msgstr "ルールなし"
 
+#, c-format
+msgid "No settings match ‘%s’."
+msgstr "「%s」に一致する設定はありません。"
+
 msgid "No stickers here yet."
 msgstr "まだステッカーがありません。"
 
@@ -3871,8 +3951,8 @@ msgstr "読み上げられません"
 msgid "Nothing is saved until you continue."
 msgstr "続行するまで何も保存されません。"
 
-msgid "Nothing loads until you accept. You can change this in Settings > Advanced."
-msgstr "同意するまで何も読み込まれません。設定 > 詳細 で変更できます。"
+msgid "Nothing loads until you accept. You can change this in Settings > Connection."
+msgstr "同意するまで何も読み込みません。設定の「接続」で変更できます。"
 
 msgid "Notifications"
 msgstr "通知"
@@ -4341,6 +4421,9 @@ msgstr "前のチャット"
 msgid "Privacy"
 msgstr "プライバシー"
 
+msgid "Privacy & storage"
+msgstr "プライバシーとストレージ"
+
 msgid "Privacy, diagnostics, and developer tools."
 msgstr "プライバシー、診断情報、開発者向けツールを設定します。"
 
@@ -4352,6 +4435,9 @@ msgstr "Nostr を使ったプライベートグループチャット"
 
 msgid "Profile"
 msgstr "プロフィール"
+
+msgid "Profile & devices"
+msgstr "プロフィールと端末"
 
 msgid "Progress is indeterminate."
 msgstr "進捗率は未確定です。"
@@ -4534,6 +4620,9 @@ msgstr "リレーリストを再公開しました。"
 msgid "Relay names are resolved by your proxy. Media host checks still use your local DNS."
 msgstr "リレー名はプロキシが名前解決します。メディアのホスト確認には引き続きローカル DNS を使用します。"
 
+msgid "Relay status"
+msgstr "リレーの状態"
+
 msgid "Relay status unavailable"
 msgstr "リレーの状態を取得できません"
 
@@ -4714,6 +4803,9 @@ msgstr "右"
 
 msgid "Right click"
 msgstr "右クリック"
+
+msgid "Right-click or press and hold a conversation in Chats, then select Mute. To turn its alerts back on, open the same menu and select Unmute."
+msgstr "「チャット」で会話を右クリックまたは長押しし、「ミュート」を選びます。通知を再開するには、同じメニューで「ミュート解除」を選びます。"
 
 msgid "Rocket"
 msgstr "ロケット"
@@ -4952,6 +5044,9 @@ msgstr "検索結果"
 msgid "Search set title, author, or shortcode"
 msgstr "セット名、作者、ショートコードで検索"
 
+msgid "Search settings"
+msgstr "設定を検索"
+
 msgid "Search stickers"
 msgstr "ステッカーを検索"
 
@@ -5088,11 +5183,8 @@ msgstr "設定"
 msgid "Settings backups do not include these stores and cannot restore them."
 msgstr "設定のバックアップにはこれらのデータは含まれず、復元することはできません。"
 
-msgid "Settings: AI agents"
-msgstr "設定: AIエージェント"
-
-msgid "Settings: about"
-msgstr "設定: このアプリについて"
+msgid "Settings: account and devices"
+msgstr "設定：アカウントと端末"
 
 msgid "Settings: advanced"
 msgstr "設定: 詳細"
@@ -5100,29 +5192,23 @@ msgstr "設定: 詳細"
 msgid "Settings: appearance"
 msgstr "設定: 外観"
 
-msgid "Settings: devices"
-msgstr "設定: デバイス"
+msgid "Settings: chats"
+msgstr "設定：チャット"
 
-msgid "Settings: folders"
-msgstr "設定: フォルダ"
+msgid "Settings: connection"
+msgstr "設定：接続"
 
-msgid "Settings: general"
-msgstr "設定: 一般"
+msgid "Settings: help and about"
+msgstr "設定：ヘルプとアプリ情報"
 
-msgid "Settings: keys and identity"
-msgstr "設定: 鍵と ID"
-
-msgid "Settings: network and relays"
-msgstr "設定: ネットワークとリレー"
+msgid "Settings: language and speech"
+msgstr "設定：言語と音声"
 
 msgid "Settings: notifications"
 msgstr "設定: 通知"
 
-msgid "Settings: speech"
-msgstr "設定: 音声"
-
-msgid "Settings: storage"
-msgstr "設定: ストレージ"
+msgid "Settings: privacy and storage"
+msgstr "設定：プライバシーとストレージ"
 
 msgid "Setup prompts for connecting an AI agent to White Noise."
 msgstr "AIエージェントをWhite Noiseに接続するためのセットアップ用プロンプトです。"
@@ -5211,6 +5297,9 @@ msgstr "ヒントを表示"
 msgid "Show in folder"
 msgstr "フォルダに表示"
 
+msgid "Show key"
+msgstr "鍵を表示"
+
 msgid "Show less"
 msgstr "折りたたむ"
 
@@ -5297,9 +5386,6 @@ msgstr "サイズ"
 #, c-format
 msgid "Size: %s"
 msgstr "サイズ: %s"
-
-msgid "Slanted"
-msgstr "斜め"
 
 msgid "Slovak"
 msgstr "スロバキア語"
@@ -5552,6 +5638,9 @@ msgstr "テスト通知を送信しました。"
 msgid "Text"
 msgstr "テキスト"
 
+msgid "Text & size"
+msgstr "テキストとサイズ"
+
 msgid "Text is hard to read"
 msgstr "文字が読みにくいです"
 
@@ -5619,6 +5708,9 @@ msgstr "新しいパスワードでこの端末の鍵を再暗号化します。
 
 msgid "The ngit web client a patch card opens. That site receives the patch link."
 msgstr "パッチカードを開く ngit ウェブクライアントです。そのサイトにパッチのリンクが送信されます。"
+
+msgid "The notification service accepted the test. Check your system notifications."
+msgstr "通知サービスがテストを受け付けました。システムの通知を確認してください。"
 
 msgid "The original message isn't loaded in this view."
 msgstr "元のメッセージはこの画面に読み込まれていません。"
@@ -5893,6 +5985,9 @@ msgstr "トロフィー"
 msgid "Troubleshooters"
 msgstr "トラブルシューティング"
 
+msgid "Troubleshooting"
+msgstr "トラブルシューティング"
+
 msgid "Trusted link sites"
 msgstr "信頼済みのリンク先"
 
@@ -5913,6 +6008,9 @@ msgstr "トルコ語"
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "アニメーションによる切り替え、移動、エフェクトをオフにします。状態は変わりますが、何も動きません。"
+
+msgid "Turn on desktop notifications to change these options or send a test."
+msgstr "設定を変更したりテスト通知を送信したりするには、デスクトップ通知をオンにしてください。"
 
 msgid "Turn on developer mode"
 msgstr "開発者モードをオン"
@@ -6014,6 +6112,9 @@ msgstr "画像をアップロードしています"
 msgid "Urdu"
 msgstr "ウルドゥー語"
 
+msgid "Usage reporting"
+msgstr "使用状況の報告"
+
 msgid "Use"
 msgstr "使用"
 
@@ -6070,6 +6171,9 @@ msgstr "公開された形状がないプロフィール画像に使用します
 
 msgid "Username"
 msgstr "ユーザー名"
+
+msgid "Uses your current sound and preview settings."
+msgstr "現在の通知音とプレビューの設定を使います。"
 
 msgid "VERIFIED ADDRESS"
 msgstr "認証済みアドレス"
@@ -6350,6 +6454,9 @@ msgstr "端末が許可を求めます。「位置情報を送信」を選ぶま
 msgid "Your disk is filling up"
 msgstr "ディスクの空きが少なくなっています"
 
+msgid "Your display name and profile are public."
+msgstr "表示名とプロフィールは公開されます。"
+
 msgid "Your existing and new notes are deleted after this time."
 msgstr "既存のメモも新しいメモも、この時間が経つと削除されます。"
 
@@ -6462,6 +6569,9 @@ msgstr "ズールー語"
 msgid "aka %s"
 msgstr "別名 %s"
 
+msgid "alerts incoming messages"
+msgstr "通知 受信 メッセージ"
+
 #, c-format
 msgid "and %d more blocks"
 msgstr "ほか%dブロック"
@@ -6478,11 +6588,20 @@ msgstr "ほか%d行"
 msgid "and %s more"
 msgstr "ほか%s"
 
+msgid "audio notifications mute"
+msgstr "通知 音 ミュート 消音"
+
+msgid "display name username avatar picture bio"
+msgstr "表示名 ユーザー名 アバター 写真 自己紹介"
+
 msgid "edited"
 msgstr "編集済み"
 
 msgid "failed · tap to retry"
 msgstr "失敗 · タップして再試行"
+
+msgid "font accessibility"
+msgstr "文字サイズ フォント アクセシビリティ"
 
 #, c-format
 msgid "in %d day"
@@ -6532,6 +6651,9 @@ msgstr "%d年後"
 msgid "in %d years"
 msgstr "%d年後"
 
+msgid "in-app sounds audio sent received mute"
+msgstr "アプリ内 送信 受信 音 ミュート 消音"
+
 msgid "inbox"
 msgstr "受信"
 
@@ -6556,8 +6678,17 @@ msgstr "またはページを選んでください"
 msgid "people"
 msgstr "人"
 
+msgid "privacy notifications"
+msgstr "プライバシー 通知"
+
 msgid "relay"
 msgstr "リレー"
+
+msgid "scale size accessibility"
+msgstr "拡大 縮小 表示サイズ アクセシビリティ"
+
+msgid "silence quiet chat notifications"
+msgstr "ミュート 消音 チャット 通知"
 
 msgid "you"
 msgstr "あなた"

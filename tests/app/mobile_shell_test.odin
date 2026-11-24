@@ -126,31 +126,46 @@ mobile_shell_viewports :: proc(t: ^testing.T) {
 	}
 	rl.SetWindowSize(390, 740)
 	UI_ZOOM = zoom_for_width(390)
+	refresh_ui_scale()
 	nendo.set_dimensions({390 / UI_ZOOM, 740 / UI_ZOOM})
 	ui.selected, ui.page = 0, .Chats
 	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
 	forced_release = true
 	defer forced_release = false
-	box := nendo.element(nendo.id("Nav", u32(Page.Chats))).rect
-	nendo.set_pointer({box.x + 2, box.y + 2}, .Up)
-	// Current-destination taps return to the inbox instead of doing nothing.
 	client: marmot.Client
-	handle_pages(&ui, &client)
+	tap :: proc(t: ^testing.T, ui: ^Ui_State, client: ^marmot.Client, id: nendo.Id) {
+		button := nendo.element(id)
+		if !testing.expect(t, button.found, "tap target is visible") {return}
+		box := button.rect
+		nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
+		handle_pages(ui, client)
+	}
+	// Current-destination taps return to the inbox instead of doing nothing.
+	tap(t, &ui, &client, nendo.id("Nav", u32(Page.Chats)))
 	testing.expect_value(t, ui.selected, -1)
-	ui.page = .Settings
-	ui.settings_section = .Appearance
 	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
-	box = nendo.element(nendo.id("Nav", u32(Page.Settings))).rect
-	nendo.set_pointer({box.x + 2, box.y + 2}, .Up)
-	handle_pages(&ui, &client)
+	tap(t, &ui, &client, nendo.id("Nav", u32(Page.Settings)))
+	testing.expect_value(t, ui.page, Page.Settings)
 	testing.expect_value(t, ui.settings_section, Settings_Section.Home)
+	settings_open(&ui, nil, .Appearance)
+	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+	testing.expect(t, !nendo.element(nendo.id("PhoneNavigation")).found)
+	tap(t, &ui, &client, nendo.id("SettingsBack"))
+	testing.expect_value(t, ui.page, Page.Settings)
+	testing.expect_value(t, ui.settings_section, Settings_Section.Home)
+	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+	testing.expect(t, !nendo.element(nendo.id("PhoneNavigation")).found)
+	tap(t, &ui, &client, nendo.id("SettingsExit"))
+	testing.expect_value(t, ui.page, Page.Chats)
+	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+	testing.expect(t, nendo.element(nendo.id("PhoneNavigation")).found)
+	testing.expect(t, nendo.element(nendo.id("ChatList")).found)
 
 	// Inbox rows scrolled under the navigation bar sit outside the page's
 	// clip, so a tap on a destination reaches the bar, not the row.
 	for _ in 0 ..< 20 {append(&ui.chats, Chat_Row_Ui{group_id = "more", title = "More"})}
-	ui.page, ui.selected = .Chats, -1
 	for _ in 0 ..< 4 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
-	box = nendo.element(nendo.id("Nav", u32(Page.Contacts))).rect
+	box := nendo.element(nendo.id("Nav", u32(Page.Contacts))).rect
 	centre := nendo.Vector2{box.x + box.width / 2, box.y + box.height / 2}
 	nendo.set_pointer(centre, .Up)
 	under := false

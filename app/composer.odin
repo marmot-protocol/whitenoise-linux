@@ -234,20 +234,37 @@ composer_plan :: proc(
 COMPOSER_TEXT_MIN :: f32(96)
 
 @(private)
-composer_tools :: proc(ui: ^Ui_State, plan: Composer_Plan, side: Composer_Slot) {
+composer_action_id :: proc(action: Composer_Action, surface: Composer_Surface) -> nendo.Id {
+	return(
+		surface == .Preview ? nendo.id("ComposerPreviewAction", u32(action)) : nendo.id(COMPOSER_ACTIONS[action].id) \
+	)
+}
+
+@(private)
+composer_tools :: proc(
+	ui: ^Ui_State,
+	plan: Composer_Plan,
+	side: Composer_Slot,
+	surface: Composer_Surface = .Chat,
+) {
 	for action in plan.config.order[:COMPOSER_SHORTCUT_COUNT] {
 		if action in plan.pinned && plan.config.slots[action] == side {
-			composer_button(ui, action, plan.size)
+			composer_button(ui, action, plan.size, surface)
 		}
 	}
 }
 
 @(private = "file")
-composer_button :: proc(ui: ^Ui_State, action: Composer_Action, size: f32) {
+composer_button :: proc(
+	ui: ^Ui_State,
+	action: Composer_Action,
+	size: f32,
+	surface: Composer_Surface,
+) {
 	tool := COMPOSER_ACTIONS[action]
 	sent := action == .GM && gm_sent_today(ui)
-	selected := action == .More && ui.compose_more
-	if nendo.box(nendo.id(tool.id))(
+	selected := action == .More && surface == .Chat && ui.compose_more
+	if nendo.box(composer_action_id(action, surface))(
 	{
 		width = nendo.fixed(size),
 		height = nendo.fixed(size),
@@ -261,7 +278,7 @@ composer_button :: proc(ui: ^Ui_State, action: Composer_Action, size: f32) {
 		}
 		if action == .Effect && ui.fx_armed != 0 {
 			if tex := emoji_tex(effect_emoji(ui.fx_armed)); tex != nil {
-				if nendo.box(nendo.id("FxBtnArmed"))(
+				if nendo.box(nendo.id_local("FxBtnArmed"))(
 				{width = nendo.fixed(16), aspect = 1, image = tex},
 				) {}
 				return
@@ -293,12 +310,12 @@ composer_primary :: proc(ui: ^Ui_State, plan: Composer_Plan, surface: Composer_S
 	if !poll &&
 	   plan.config.slots[.Voice] == .Send &&
 	   (preview || (!plan.has_text && len(ui.staged) == 0 && !editing)) {
-		composer_button(ui, .Voice, size)
+		composer_button(ui, .Voice, size, surface)
 		return
 	}
 	ready :=
 		poll ? ui.poll_ticket == 0 && poll_input_error(ui) == .None : preview || stage_files_ready(ui) && (plan.has_text || len(ui.staged) > 0 && !editing)
-	if nendo.box(nendo.id("SendBtn"))(
+	if nendo.box(nendo.id(preview ? "ComposerPreviewSend" : "SendBtn"))(
 	{
 		width = nendo.fixed(plan.primary_width),
 		height = nendo.fixed(size),
@@ -399,7 +416,7 @@ handle_composer_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	ui.compose_more = false
 	if nendo.pointer_over(nendo.id("ComposeMoreMenu")) {
 		if composer_clicked("ComposeCustomize") {
-			settings_open(ui, client, .General, anchor = "ComposerSettings")
+			settings_open(ui, client, .Composer, anchor = "ComposerSettings")
 			ui.composer_settings_from_chat = true
 		} else {
 			handle_composer_action(ui)

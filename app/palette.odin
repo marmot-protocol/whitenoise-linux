@@ -24,18 +24,15 @@ Cmd :: enum {
 	Toggle_Unread,
 	Toggle_Rail,
 	Toggle_Members,
-	Set_General,
-	Set_Folders,
-	Set_Speech,
-	Set_Network,
-	Set_Keys,
+	Set_Chats,
+	Set_Language,
+	Set_Connection,
+	Set_Account,
 	Set_Appearance,
 	Set_Notifications,
-	Set_Storage,
+	Set_Privacy,
 	Set_Advanced,
-	Set_Agents,
-	Set_Devices,
-	Set_About,
+	Set_Help,
 	Next_Theme,
 	Next_Accent,
 	Toggle_Centered,
@@ -63,18 +60,15 @@ COMMANDS := [Cmd]struct {
 	.Toggle_Unread     = {N_("Filter unread chats"), N_("Chats")},
 	.Toggle_Rail       = {N_("Collapse the chat list"), N_("View")},
 	.Toggle_Members    = {N_("Show group members"), N_("View")},
-	.Set_General       = {N_("Settings: general"), N_("Settings")},
-	.Set_Folders       = {N_("Settings: folders"), N_("Settings")},
-	.Set_Speech        = {N_("Settings: speech"), N_("Settings")},
-	.Set_Network       = {N_("Settings: network and relays"), N_("Settings")},
-	.Set_Keys          = {N_("Settings: keys and identity"), N_("Settings")},
+	.Set_Chats         = {N_("Settings: chats"), N_("Settings")},
+	.Set_Language      = {N_("Settings: language and speech"), N_("Settings")},
+	.Set_Connection    = {N_("Settings: connection"), N_("Settings")},
+	.Set_Account       = {N_("Settings: account and devices"), N_("Settings")},
 	.Set_Appearance    = {N_("Settings: appearance"), N_("Settings")},
 	.Set_Notifications = {N_("Settings: notifications"), N_("Settings")},
-	.Set_Storage       = {N_("Settings: storage"), N_("Settings")},
+	.Set_Privacy       = {N_("Settings: privacy and storage"), N_("Settings")},
 	.Set_Advanced      = {N_("Settings: advanced"), N_("Settings")},
-	.Set_Agents        = {N_("Settings: AI agents"), N_("Settings")},
-	.Set_Devices       = {N_("Settings: devices"), N_("Settings")},
-	.Set_About         = {N_("Settings: about"), N_("Settings")},
+	.Set_Help          = {N_("Settings: help and about"), N_("Settings")},
 	.Next_Theme        = {N_("Next theme"), N_("Appearance")},
 	.Next_Accent       = {N_("Next accent color"), N_("Appearance")},
 	.Toggle_Centered   = {N_("Center the conversation"), N_("Appearance")},
@@ -103,6 +97,7 @@ pal_open_modal :: proc(ui: ^Ui_State) {
 	ui.mi_open = false
 	ui.pal_open = true
 	stagger_arm(nendo.id("PalModal").id)
+	ui.pal_source_focus = ui.focus
 	ui.focus = .Pal
 	ui.pal_sel = 0
 	clear(&ui.pal_input)
@@ -125,9 +120,9 @@ pal_refresh :: proc(ui: ^Ui_State) {
 	for tier in 0 ..< 2 {
 		for cmd in Cmd {
 			if single_pane() && (cmd == .Toggle_Rail || cmd == .Toggle_Centered) {continue}
+			if settings_workspace_visible(ui) && cmd == .Toggle_Rail {continue}
 			if cmd == .Toggle_Members &&
 			   (ui.selected < 0 || ui.page != .Chats || selected_chat_is_dm(ui)) {continue}
-			if cmd == .Set_Devices && !settings_available(ui, .Devices) {continue}
 			hay := gs_fold(fmt.tprintf("%s %s", COMMANDS[cmd].label, COMMANDS[cmd].hint))
 			exact := strings.contains(hay, needle)
 			if len(needle) == 0 {
@@ -306,9 +301,7 @@ handle_palette :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.pal_sel = (ui.pal_sel + len(ui.pal_hits) - 1) % len(ui.pal_hits)
 	}
 	if rl.IsKeyPressed(.ENTER) && len(ui.pal_hits) > 0 {
-		cmd := Cmd(ui.pal_hits[ui.pal_sel])
-		pal_close(ui)
-		run_command(ui, client, cmd)
+		run_command(ui, client, Cmd(ui.pal_hits[ui.pal_sel]))
 		return
 	}
 
@@ -328,9 +321,7 @@ handle_palette :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	for i in 0 ..< len(ui.pal_hits) {
 		if nendo.pointer_over(nendo.id("PalRow", u32(i))) {
-			cmd := Cmd(ui.pal_hits[i])
-			pal_close(ui)
-			run_command(ui, client, cmd)
+			run_command(ui, client, Cmd(ui.pal_hits[i]))
 			return
 		}
 	}
@@ -342,22 +333,27 @@ handle_palette :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // Every palette action, in one place. Page loads mirror what the nav
 // clicks do (handle_pages).
 run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
+	source_focus := ui.focus
+	if ui.pal_open {
+		source_focus = ui.pal_source_focus
+		pal_close(ui)
+	}
+	open_settings :: proc(
+		ui: ^Ui_State,
+		client: ^marmot.Client,
+		section: Settings_Section,
+		source_focus: Focus,
+	) {
+		ui.focus = source_focus
+		settings_open(ui, client, section)
+	}
 	goto_page :: proc(ui: ^Ui_State, client: ^marmot.Client, page: Page) {
 		ui.page = page
-		switch page {
-		case .Chats:
+		#partial switch page {
 		case .Contacts:
 			load_contacts(client, ui, .Details)
 		case .Archived:
 			load_archived(client, ui)
-		case .Settings:
-			settings_open(
-				ui,
-				client,
-				ui.settings_section,
-				tab = ui.settings_tab,
-				level = ui.settings_level,
-			)
 		case .Profile:
 			load_profile(client, ui)
 		}
@@ -371,7 +367,8 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 	case .Goto_Archive:
 		goto_page(ui, client, .Archived)
 	case .Goto_Settings:
-		goto_page(ui, client, .Settings)
+		ui.focus = source_focus
+		settings_enter(ui, client)
 	case .Goto_Profile:
 		goto_page(ui, client, .Profile)
 	case .New_Chat:
@@ -395,30 +392,24 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 				open_group_info(ui, client, .Members)
 			}
 		}
-	case .Set_General:
-		settings_open(ui, client, .General)
-	case .Set_Folders:
-		settings_open(ui, client, .Folders)
-	case .Set_Speech:
-		settings_open(ui, client, .Speech)
-	case .Set_Network:
-		settings_open(ui, client, .Network)
-	case .Set_Keys:
-		settings_open(ui, client, .Keys)
+	case .Set_Chats:
+		open_settings(ui, client, .Chats, source_focus)
+	case .Set_Language:
+		open_settings(ui, client, .Language, source_focus)
+	case .Set_Connection:
+		open_settings(ui, client, .Connection, source_focus)
+	case .Set_Account:
+		open_settings(ui, client, .Account, source_focus)
 	case .Set_Appearance:
-		settings_open(ui, client, .Appearance)
+		open_settings(ui, client, .Appearance, source_focus)
 	case .Set_Notifications:
-		settings_open(ui, client, .Notifications)
-	case .Set_Storage:
-		settings_open(ui, client, .Storage)
+		open_settings(ui, client, .Notifications, source_focus)
+	case .Set_Privacy:
+		open_settings(ui, client, .Privacy, source_focus)
 	case .Set_Advanced:
-		settings_open(ui, client, .Advanced)
-	case .Set_Agents:
-		settings_open(ui, client, .Agents)
-	case .Set_Devices:
-		settings_open(ui, client, .Devices)
-	case .Set_About:
-		settings_open(ui, client, .About)
+		open_settings(ui, client, .Advanced, source_focus)
+	case .Set_Help:
+		open_settings(ui, client, .Help, source_focus)
 	case .Next_Theme:
 		theme_switch(ui, (ui.theme + 1) % max(len(theme_packs), 1), ui.accent)
 		toast(ui, tr(theme_packs[ui.theme].name))
@@ -438,7 +429,13 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 	case .Shortcuts:
 		ui.shortcuts_open = true
 	case .Sign_Out:
-		confirm_ask(ui, .Sign_Out, ui.account_ref, account_label(ui, ui.account_ref), account_local(ui) ? 0 : 1)
+		confirm_ask(
+			ui,
+			.Sign_Out,
+			ui.account_ref,
+			account_label(ui, ui.account_ref),
+			account_local(ui) ? 0 : 1,
+		)
 	case .Lock_Now:
 		lock_now(ui)
 	}

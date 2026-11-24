@@ -80,8 +80,7 @@ test_emoji_save_io_dispatch :: proc(t: ^testing.T) {
 			saved_names, saved_sources, saved_scanned
 		forced_release, kb_focus = false, ""
 	}
-	settings_open(&ui, nil, .General, 2, level = .Sheet)
-	ui.settings_anchor = "CustomEmojiGroup"
+	settings_open(&ui, nil, .Chats, "CustomEmojiGroup")
 	source := fmt.tprintf("%s/party.png", home)
 	destination := fmt.tprintf("%s/party.png", fixture_dir)
 	for keyboard in ([]bool{false, true}) {

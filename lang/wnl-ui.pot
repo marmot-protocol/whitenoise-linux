@@ -370,7 +370,7 @@ msgstr ""
 msgid "1. Install White Noise on the other device and sign in to this profile."
 msgstr ""
 
-msgid "2. Open Settings → Devices there and choose Link to another device."
+msgid "2. In Settings, open Account & devices, then Linked devices. Choose Link to another device."
 msgstr ""
 
 msgid "2.5 GB"
@@ -421,9 +421,6 @@ msgid "A key package this device didn't make was found and replaced: %s."
 msgstr ""
 
 msgid "A line about you"
-msgstr ""
-
-msgid "A message at this size."
 msgstr ""
 
 msgid "A separate secret key or signer lets you use an identity again. It does not restore chats, pending sends or saved collections."
@@ -481,7 +478,13 @@ msgstr ""
 msgid "Accepting your invitation"
 msgstr ""
 
+msgid "Accessibility"
+msgstr ""
+
 msgid "Account"
+msgstr ""
+
+msgid "Account & devices"
 msgstr ""
 
 msgid "Account access"
@@ -501,6 +504,10 @@ msgid "Action failed: %s"
 msgstr ""
 
 msgid "Active"
+msgstr ""
+
+#, c-format
+msgid "Active theme: %s"
 msgstr ""
 
 msgid "Add"
@@ -575,7 +582,7 @@ msgstr ""
 msgid "Affected members may miss the change. Turning on linked devices now dismisses the relay refusals for those earlier changes."
 msgstr ""
 
-msgid "After signing in, open Devices in Settings to link another device."
+msgid "After signing in, open Account & devices in Settings to link another device."
 msgstr ""
 
 msgid "Agent connector documentation"
@@ -597,6 +604,9 @@ msgid "All chats"
 msgstr ""
 
 msgid "All senders"
+msgstr ""
+
+msgid "All settings"
 msgstr ""
 
 msgid "All types"
@@ -793,6 +803,9 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
+msgid "Back to White Noise"
+msgstr "Back to White Noise"
+
 msgid "Back to account options"
 msgstr ""
 
@@ -891,6 +904,9 @@ msgid "Bringing earlier messages from your other device…"
 msgstr ""
 
 msgid "Browse emoji sets"
+msgstr ""
+
+msgid "Browse themes"
 msgstr ""
 
 msgid "Bubble radius"
@@ -1023,6 +1039,9 @@ msgid "Change your vault password"
 msgstr ""
 
 msgid "Change..."
+msgstr ""
+
+msgid "Changes the whole app."
 msgstr ""
 
 msgid "Chat details"
@@ -1246,6 +1265,9 @@ msgstr ""
 msgid "Choose where you publish"
 msgstr ""
 
+msgid "Choose which shortcuts appear beside your draft."
+msgstr ""
+
 msgid "Choose your account"
 msgstr ""
 
@@ -1325,6 +1347,9 @@ msgid "Collecting logs for a bug report"
 msgstr ""
 
 msgid "Collector and retention"
+msgstr ""
+
+msgid "Color mode"
 msgstr ""
 
 msgid "Command palette"
@@ -1415,6 +1440,9 @@ msgid "Connecting to your signer through its relays."
 msgstr ""
 
 msgid "Connecting your remote signer. Approve the connection there before using this account."
+msgstr ""
+
+msgid "Connection"
 msgstr ""
 
 msgid "Connection cancelled."
@@ -2025,6 +2053,9 @@ msgstr ""
 msgid "Couldn't send the sticker. Switch back to your account and try again."
 msgstr ""
 
+msgid "Couldn't send the test notification. Check your system notification settings and try again."
+msgstr ""
+
 msgid "Couldn't serialize the key packages. Please try again."
 msgstr ""
 
@@ -2212,6 +2243,9 @@ msgstr ""
 msgid "Custom emoji"
 msgstr ""
 
+msgid "Customize"
+msgstr ""
+
 msgid "Customize composer"
 msgstr ""
 
@@ -2360,6 +2394,12 @@ msgid "Description"
 msgstr ""
 
 msgid "Design"
+msgstr ""
+
+msgid "Desktop alert sound"
+msgstr ""
+
+msgid "Desktop alerts"
 msgstr ""
 
 msgid "Desktop notifications"
@@ -2636,6 +2676,9 @@ msgid "Enabled for this group."
 msgstr ""
 
 msgid "Encrypt with NIP-44"
+msgstr ""
+
+msgid "Encrypted backups"
 msgstr ""
 
 msgid "Encrypted key copied"
@@ -3126,6 +3169,9 @@ msgstr ""
 msgid "Help"
 msgstr ""
 
+msgid "Help & about"
+msgstr ""
+
 msgid "Hidden"
 msgstr ""
 
@@ -3136,6 +3182,9 @@ msgid "Hide emoji sets"
 msgstr ""
 
 msgid "Hide hidden message"
+msgstr ""
+
+msgid "Hide key"
 msgstr ""
 
 msgid "Hide passwords"
@@ -3258,6 +3307,9 @@ msgstr ""
 
 #, c-format
 msgid "In use: %s."
+msgstr ""
+
+msgid "In-app sounds"
 msgstr ""
 
 msgid "Inactive"
@@ -3522,6 +3574,12 @@ msgid "Labels, separated by commas"
 msgstr ""
 
 msgid "Language"
+msgstr ""
+
+msgid "Language & speech"
+msgstr ""
+
+msgid "Language and formats"
 msgstr ""
 
 msgid "Language, startup, and everyday preferences."
@@ -3813,6 +3871,9 @@ msgstr ""
 msgid "Manage local files and encrypted backups."
 msgstr ""
 
+msgid "Manage the devices linked to this account."
+msgstr ""
+
 msgid "Mar"
 msgstr ""
 
@@ -3885,10 +3946,16 @@ msgstr ""
 msgid "Message notifications"
 msgstr ""
 
+msgid "Message previews"
+msgstr ""
+
 msgid "Message text copied"
 msgstr ""
 
 msgid "Message text size"
+msgstr ""
+
+msgid "Message tones"
 msgstr ""
 
 msgid "Message translation"
@@ -3986,6 +4053,9 @@ msgid "Music"
 msgstr ""
 
 msgid "Mute"
+msgstr ""
+
+msgid "Mute a conversation"
 msgstr ""
 
 msgid "NES game"
@@ -4231,6 +4301,10 @@ msgstr ""
 msgid "No rules"
 msgstr ""
 
+#, c-format
+msgid "No settings match ‘%s’."
+msgstr ""
+
 msgid "No sign-ins to review."
 msgstr ""
 
@@ -4300,7 +4374,7 @@ msgstr ""
 msgid "Nothing is saved until you continue."
 msgstr ""
 
-msgid "Nothing loads until you accept. You can change this in Settings > Advanced."
+msgid "Nothing loads until you accept. You can change this in Settings > Connection."
 msgstr ""
 
 msgid "Notifications"
@@ -4803,6 +4877,9 @@ msgstr ""
 msgid "Privacy"
 msgstr ""
 
+msgid "Privacy & storage"
+msgstr ""
+
 msgid "Privacy, diagnostics, and developer tools."
 msgstr ""
 
@@ -4814,6 +4891,9 @@ msgstr ""
 
 msgid "Profile"
 msgstr ""
+
+msgid "Profile & devices"
+msgstr "Profile & devices"
 
 #, c-format
 msgid "Profile: %s"
@@ -5004,6 +5084,9 @@ msgid "Relay lists republished."
 msgstr ""
 
 msgid "Relay names are resolved by your proxy. Media host checks still use your local DNS."
+msgstr ""
+
+msgid "Relay status"
 msgstr ""
 
 msgid "Relay status unavailable"
@@ -5239,6 +5322,9 @@ msgid "Right"
 msgstr ""
 
 msgid "Right click"
+msgstr ""
+
+msgid "Right-click or press and hold a conversation in Chats, then select Mute. To turn its alerts back on, open the same menu and select Unmute."
 msgstr ""
 
 msgid "Rocket"
@@ -5484,6 +5570,9 @@ msgstr ""
 msgid "Search set title, author, or shortcode"
 msgstr ""
 
+msgid "Search settings"
+msgstr ""
+
 msgid "Search stickers"
 msgstr ""
 
@@ -5620,10 +5709,7 @@ msgstr ""
 msgid "Settings backups do not include these stores and cannot restore them."
 msgstr ""
 
-msgid "Settings: AI agents"
-msgstr ""
-
-msgid "Settings: about"
+msgid "Settings: account and devices"
 msgstr ""
 
 msgid "Settings: advanced"
@@ -5632,28 +5718,22 @@ msgstr ""
 msgid "Settings: appearance"
 msgstr ""
 
-msgid "Settings: devices"
+msgid "Settings: chats"
 msgstr ""
 
-msgid "Settings: folders"
+msgid "Settings: connection"
 msgstr ""
 
-msgid "Settings: general"
+msgid "Settings: help and about"
 msgstr ""
 
-msgid "Settings: keys and identity"
-msgstr ""
-
-msgid "Settings: network and relays"
+msgid "Settings: language and speech"
 msgstr ""
 
 msgid "Settings: notifications"
 msgstr ""
 
-msgid "Settings: speech"
-msgstr ""
-
-msgid "Settings: storage"
+msgid "Settings: privacy and storage"
 msgstr ""
 
 msgid "Setup prompts for connecting an AI agent to White Noise."
@@ -5744,6 +5824,9 @@ msgid "Show hint"
 msgstr ""
 
 msgid "Show in folder"
+msgstr ""
+
+msgid "Show key"
 msgstr ""
 
 msgid "Show less"
@@ -5864,9 +5947,6 @@ msgstr ""
 
 #, c-format
 msgid "Size: %s"
-msgstr ""
-
-msgid "Slanted"
 msgstr ""
 
 msgid "Slovak"
@@ -6150,6 +6230,9 @@ msgstr ""
 msgid "Text"
 msgstr ""
 
+msgid "Text & size"
+msgstr ""
+
 msgid "Text is hard to read"
 msgstr ""
 
@@ -6234,6 +6317,9 @@ msgid "The new password re-encrypts this device's keys. There is still no recove
 msgstr ""
 
 msgid "The ngit web client a patch card opens. That site receives the patch link."
+msgstr ""
+
+msgid "The notification service accepted the test. Check your system notifications."
 msgstr ""
 
 msgid "The original message isn't loaded in this view."
@@ -6584,6 +6670,9 @@ msgstr ""
 msgid "Troubleshooters"
 msgstr ""
 
+msgid "Troubleshooting"
+msgstr ""
+
 msgid "Trusted link sites"
 msgstr ""
 
@@ -6610,6 +6699,9 @@ msgid "Turn off animated transitions, flights and effects. State still changes, 
 msgstr ""
 
 msgid "Turn on anyway"
+msgstr ""
+
+msgid "Turn on desktop notifications to change these options or send a test."
 msgstr ""
 
 msgid "Turn on developer mode"
@@ -6746,6 +6838,9 @@ msgstr ""
 msgid "Urdu"
 msgstr ""
 
+msgid "Usage reporting"
+msgstr ""
+
 msgid "Use"
 msgstr ""
 
@@ -6804,6 +6899,9 @@ msgid "Used for profile photos without a published shape."
 msgstr ""
 
 msgid "Username"
+msgstr ""
+
+msgid "Uses your current sound and preview settings."
 msgstr ""
 
 msgid "VERIFIED ADDRESS"
@@ -7127,6 +7225,9 @@ msgstr ""
 msgid "Your disk is filling up"
 msgstr ""
 
+msgid "Your display name and profile are public."
+msgstr ""
+
 msgid "Your existing and new notes are deleted after this time."
 msgstr ""
 
@@ -7245,6 +7346,9 @@ msgstr ""
 msgid "aka %s"
 msgstr ""
 
+msgid "alerts incoming messages"
+msgstr ""
+
 #, c-format
 msgid "and %d more blocks"
 msgstr ""
@@ -7264,10 +7368,19 @@ msgstr ""
 msgid "another device"
 msgstr ""
 
+msgid "audio notifications mute"
+msgstr ""
+
+msgid "display name username avatar picture bio"
+msgstr ""
+
 msgid "edited"
 msgstr ""
 
 msgid "failed · tap to retry"
+msgstr ""
+
+msgid "font accessibility"
 msgstr ""
 
 #, c-format
@@ -7318,6 +7431,9 @@ msgstr ""
 msgid "in %d years"
 msgstr ""
 
+msgid "in-app sounds audio sent received mute"
+msgstr ""
+
 msgid "inbox"
 msgstr ""
 
@@ -7342,7 +7458,16 @@ msgstr ""
 msgid "people"
 msgstr ""
 
+msgid "privacy notifications"
+msgstr ""
+
 msgid "relay"
+msgstr ""
+
+msgid "scale size accessibility"
+msgstr ""
+
+msgid "silence quiet chat notifications"
 msgstr ""
 
 msgid "you"

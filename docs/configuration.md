@@ -22,19 +22,19 @@ This page covers where White Noise keeps its files, which settings survive a res
 
 ## What comes back after a restart
 
-The app restores your last page, settings section and tab, the rail's Unread filter, and window size after a restart. Reopening Settings returns to the section you left.
+The app restores your last page, the last Settings category, the chat list's **Unread** filter, and the window size after a restart. Wide windows reopen Settings on the last category. Narrow windows open the category list when you enter Settings.
 
-General's "Restore last chat" toggle reopens the conversation you left, even if the chat list changes order after startup.
+The **Restore last selected chat on launch** toggle under **Startup** in **Settings > Advanced** applies only to the selected conversation. When enabled, it reopens the conversation you left even if the chat list changes order after startup.
 
 ## Relay fields refuse bad input without losing it
 
-- **Add fields start empty.** Relay add fields under Network & relays ask you to enter a relay URL. Choosing Add with an empty or whitespace-only field focuses it and shows a correction without changing your relay lists.
+- **Add fields start empty.** Relay fields under **Connection** ask for a relay URL. Choosing Add with an empty or whitespace-only field focuses it and shows a correction without changing your relay lists.
 - **Event fetch relays need a `ws://` or `wss://` URL with a host.** Local addresses, IPv6, ports, paths, and query strings are supported.
 - **Malformed input stays put.** It remains in the field with a correction message and is not saved.
 
 ## Routing through a SOCKS5 proxy
 
-1. Open Settings > Network & relays > Relays and enable the proxy.
+1. Open **Settings > Connection** and enable the SOCKS5 proxy.
 2. Enter a numeric address such as `127.0.0.1:9050` or `[::1]:9050`. The field starts empty unless you have saved a proxy.
 3. For authentication, enable Use username and password and fill both fields. Each accepts 1 to 255 UTF-8 bytes. Leave that switch off for an unauthenticated proxy.
 4. Choose Save, then restart White Noise. Restart guidance appears after saving succeeds.
@@ -61,7 +61,7 @@ External browsers and other apps do not use this setting. AppImage and macOS upd
 
 ## Telemetry endpoints, if you want your own
 
-Telemetry and audit logs use built-in endpoints. To override them, create `$XDG_CONFIG_HOME/whitenoise/observability.toml` (or `~/.config/whitenoise/observability.toml` when `XDG_CONFIG_HOME` is unset). Nothing is sent until you enable the corresponding toggles under **Settings**, in the **Advanced** section.
+Telemetry and audit logs use built-in endpoints. To override them, create `$XDG_CONFIG_HOME/whitenoise/observability.toml` (or `~/.config/whitenoise/observability.toml` when `XDG_CONFIG_HOME` is unset). Usage sharing is in **Privacy & storage**. Audit logging is in **Advanced**. Both are opt-in.
 
 ## Environment variables for automation
 

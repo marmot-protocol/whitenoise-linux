@@ -242,7 +242,7 @@ PAGE_SETTLE :: 0.4 // grace after a switch: arrivals inside it are "already ther
 // What counts as a different view: the page, the selected chat, the
 // new-chat pane. Anything that swaps the whole main card.
 page_view_key :: proc(ui: ^Ui_State) -> u32 {
-	key := u32(ui.page) * 131 + nendo.id(ui.account_ref).id
+	key := u32(shell_page(ui)) * 131 + nendo.id(ui.account_ref).id
 	if ui.selected >= 0 {
 		// Activity reorders rows without changing the open conversation.
 		key = nendo.id(ui.chats[ui.selected].group_id, key).id
@@ -270,22 +270,24 @@ page_was_chat: bool
 
 // Called once per frame, at the top of the layout.
 page_advance :: proc(ui: ^Ui_State) {
+	page := shell_page(ui)
 	chat_view :=
-		ui.page == .Chats &&
+		page == .Chats &&
 		ui.selected >= 0 &&
 		!ui.new_chat_open &&
 		!ui.show_members &&
 		!ui.group_files_open &&
 		!ui.add_account_open
 	if key := page_view_key(ui); key != page_shown {
-		page_tab_push = page_shown != 0 && ui.page != page_last
+		animate := motion_on() && page != .Settings && page_last != .Settings
+		page_tab_push = animate && page_shown != 0 && page != page_last
 		page_shown = key
-		page_push = page_tab_push || (chat_view && page_was_chat)
-		page_at = rl.GetTime()
-		page_held = motion_on()
+		page_push = page_tab_push || (animate && chat_view && page_was_chat)
+		page_at = rl.GetTime() - (animate ? 0 : PAGE_SECS)
+		page_held = animate
 	}
 	page_was_chat = chat_view
-	page_last = ui.page
+	page_last = page
 	seconds := page_push ? PUSH_SECS : PAGE_SECS
 	page_t = motion_on() ? ease_out(f32(clamp((rl.GetTime() - page_at) / seconds, 0, 1))) : 1
 	if page_t < 1 {

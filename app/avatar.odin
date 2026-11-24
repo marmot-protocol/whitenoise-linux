@@ -95,7 +95,7 @@ avatar :: proc(
 	radius := size / 2
 	crop := tex == nil && (len(key) == 64 || len(key) == 32)
 	if crop {
-		shape := g_ui != nil ? g_ui.prefs.crop_avatar_shape : Crop_Shape.Slanted
+		shape := g_ui != nil ? normalized_crop_shape(g_ui.prefs.crop_avatar_shape) : .Circle
 		tex = url_pic(fmt.tprintf("%s:%s", CROP_SHAPE_PREFIX[shape], key))
 		if shape == .Square {radius = 0}
 		if shape == .Rounded {radius = size * 0.2}

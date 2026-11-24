@@ -1,5 +1,4 @@
-// Native desktop notifications for incoming messages. Notification helpers
-// are fire-and-forget; message text is quoted as data, never shell code.
+// Native desktop notifications for incoming messages and settings tests.
 package main
 
 import "core:fmt"
@@ -71,22 +70,8 @@ notify_mark :: proc(group_id: string, msg_id: string) {
 	notify_seen[strings.clone(group_id)] = strings.clone(msg_id)
 }
 
-// The test button fires past the master toggle, so the user can see
-// and hear what they'd be enabling.
-Notify_Force :: enum {
-	Respect_Toggle,
-	Always,
-}
-
-do_notify :: proc(
-	ui: ^Ui_State,
-	title: string,
-	body: string,
-	force := Notify_Force.Respect_Toggle,
-) {
-	if !ui.prefs.notify_desktop && force == .Respect_Toggle {
-		return
-	}
+do_notify :: proc(ui: ^Ui_State, title, body: string) -> bool {
+	if !ui.prefs.notify_desktop {return false}
 	shown := ui.prefs.notify_preview ? body : tr("New message")
 	when ODIN_OS == .Windows {
 		// A transient tray icon works for unpacked releases without requiring
@@ -113,11 +98,13 @@ end run`
 		   error != 0 {
 			toast(ui, tr("Couldn't send the notification. Please try again."))
 			fmt.eprintfln("OpenBSD notification: error %d", error)
+			return false
 		}
 	} else {
 		spawn_argv({"notify-send", "-a", "White Noise", "--", title, shown})
 		if ui.prefs.notify_sound {spawn_cmd(NOTIFY_SOUND)}
 	}
+	return true
 }
 
 // A test must report the native helper's result, not only start a process.
@@ -125,14 +112,23 @@ end run`
 notify_test_pending: bool
 @(private)
 Notify_Test_Result :: enum {
+	Idle,
 	Pending,
 	Accepted,
 	Failed,
+	Unconfirmed,
 }
 @(private)
 notify_test_result: Notify_Test_Result
 @(private)
 notify_test_title, notify_test_body: string
+@(private = "file")
+notify_test_sound: bool
+
+@(private)
+notify_test_enabled :: proc(ui: ^Ui_State) -> bool {
+	return ui.prefs.notify_desktop && !notify_test_pending
+}
 
 @(private)
 notify_test_worker :: proc() {
@@ -153,55 +149,43 @@ notify_test_worker :: proc() {
 	)
 	delete(out)
 	delete(errors)
-	sync.atomic_store(
-		&notify_test_result,
-		err == nil && state.exit_code == 0 ? .Accepted : .Failed,
-	)
+	accepted := err == nil && state.exit_code == 0
+	if accepted && notify_test_sound {spawn_cmd(NOTIFY_SOUND)}
+	sync.atomic_store(&notify_test_result, accepted ? .Accepted : .Failed)
 }
 
 @(private)
 notify_test_start :: proc(ui: ^Ui_State) {
-	if notify_test_pending {return}
+	if !notify_test_enabled(ui) {return}
+	title := tr("Test notification")
+	body := tr("This is what a message alert looks like.")
 	when ODIN_OS == .Linux {
-		notify_test_title = strings.clone(tr("Test notification"))
-		notify_test_body = strings.clone(
-			ui.prefs.notify_preview ? tr("This is what a message alert looks like.") : tr("New message"),
-		)
+		notify_test_title = strings.clone(title)
+		notify_test_body = strings.clone(ui.prefs.notify_preview ? body : tr("New message"))
+		notify_test_sound = ui.prefs.notify_sound
 		notify_test_pending = true
 		sync.atomic_store(&notify_test_result, .Pending)
 		// drain_sends reaps this worker and the reload gate waits for it.
-		append(&send_threads, thread.create_and_start(notify_test_worker))
-		set_status(ui, tr("Sending a test notification..."), .Info)
+		if worker := thread.create_and_start(notify_test_worker); worker != nil {
+			append(&send_threads, worker)
+		} else {
+			sync.atomic_store(&notify_test_result, .Failed)
+		}
 	} else {
-		do_notify(
-			ui,
-			tr("Test notification"),
-			tr("This is what a message alert looks like."),
-			.Always,
-		)
-		set_status(ui, tr("Check your system notifications for the test alert."), .Info)
+		result := Notify_Test_Result.Unconfirmed
+		when ODIN_OS == .OpenBSD {
+			result = .Accepted
+		}
+		notify_test_result = do_notify(ui, title, body) ? result : .Failed
 	}
 }
 
 @(private)
-notify_test_tick :: proc(ui: ^Ui_State) {
+notify_test_tick :: proc(_: ^Ui_State) {
 	if !notify_test_pending {return}
-	result := sync.atomic_load(&notify_test_result)
-	if result == .Pending {return}
+	if sync.atomic_load(&notify_test_result) == .Pending {return}
 	notify_test_pending = false
 	delete(notify_test_title)
 	delete(notify_test_body)
 	notify_test_title, notify_test_body = "", ""
-	if result == .Failed {
-		set_status(
-			ui,
-			tr(
-				"Couldn't show a notification. Check your system notification settings and try again.",
-			),
-			.Error,
-		)
-		return
-	}
-	if ui.prefs.notify_sound {spawn_cmd(NOTIFY_SOUND)}
-	set_status(ui, tr("Test notification sent."), .Info)
 }

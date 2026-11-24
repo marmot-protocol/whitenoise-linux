@@ -10,14 +10,24 @@ APPEARANCE_CONTROLS := []struct {
 	key, id: string,
 	index:   u32,
 } {
-	{"ZoomMinus", "ZoomMinus", 0},
-	{"ZoomPlus", "ZoomPlus", 0},
-	{"ZoomReset", "ZoomReset", 0},
-	{"TgHandDrawn", "TgHandDrawn", 0},
-	{"TgThemeFont", "TgThemeFont", 0},
+	{"ThemeQuickSystem", "ThemeQuickSystem", 0},
+	{"ThemeQuickLight", "ThemeQuickLight", 0},
+	{"ThemeQuickDark", "ThemeQuickDark", 0},
+	{"BrowseThemes", "BrowseThemes", 0},
 	{"BodyFontChip0", "BodyFontChip", 0},
 	{"BodyFontChip1", "BodyFontChip", 1},
 	{"BodyFontChip2", "BodyFontChip", 2},
+	{"ZoomMinus", "ZoomMinus", 0},
+	{"ZoomPlus", "ZoomPlus", 0},
+	{"ZoomReset", "ZoomReset", 0},
+	{"Motion0", "Motion", 0},
+	{"Motion1", "Motion", 1},
+	{"Motion2", "Motion", 2},
+	{"Contrast0", "Contrast", 0},
+	{"Contrast1", "Contrast", 1},
+	{"Contrast2", "Contrast", 2},
+	{"TgHandDrawn", "TgHandDrawn", 0},
+	{"TgThemeFont", "TgThemeFont", 0},
 	{"EmojiSetChip0", "EmojiSetChip", 0},
 	{"EmojiSetChip1", "EmojiSetChip", 1},
 	{"EmojiSetChip2", "EmojiSetChip", 2},
@@ -25,12 +35,6 @@ APPEARANCE_CONTROLS := []struct {
 	{"ScrollChip1", "ScrollChip", 1},
 	{"ScrollChip2", "ScrollChip", 2},
 	{"ScrollChip3", "ScrollChip", 3},
-	{"Motion0", "Motion", 0},
-	{"Motion1", "Motion", 1},
-	{"Motion2", "Motion", 2},
-	{"Contrast0", "Contrast", 0},
-	{"Contrast1", "Contrast", 1},
-	{"Contrast2", "Contrast", 2},
 	{"TgCentered", "TgCentered", 0},
 	{"MessageLinesMinus", "MessageLinesMinus", 0},
 	{"MessageLinesPlus", "MessageLinesPlus", 0},
@@ -41,95 +45,26 @@ APPEARANCE_CONTROLS := []struct {
 	{"CropShapeChip0", "CropShapeChip", 0},
 	{"CropShapeChip1", "CropShapeChip", 1},
 	{"CropShapeChip2", "CropShapeChip", 2},
-	{"CropShapeChip3", "CropShapeChip", 3},
-}
-
-@(private)
-Appearance_Layout :: struct {
-	controls, themes, preview: f32,
-	columns:                   int,
-}
-
-// Measure in logical pixels so zoom follows the same breakpoints as resizing.
-@(private)
-appearance_layout :: proc(ui: ^Ui_State) -> Appearance_Layout {
-	width := max(120, settings_content_width(ui) - (settings_main_w(ui) < 560 ? 16 : 32))
-	if width < 720 {
-		return {width, width, width, 1}
-	}
-	if width < 1180 {
-		controls := clamp(width * 0.4, 300, 420)
-		remaining := width - controls - 16
-		return {controls, remaining, remaining, 2}
-	}
-	controls := clamp(width * 0.22, 340, 420)
-	remaining := width - controls - 32
-	return {controls, remaining * 0.5, remaining * 0.5, 3}
 }
 
 @(private)
 settings_appearance :: proc(ui: ^Ui_State) {
-	layout := appearance_layout(ui)
-	split := layout.columns > 1
-	clear(&theme_control_order)
-	if nendo.box(nendo.id("AppearanceWorkbench"))(
-	{
-		width = nendo.grow(),
-		height = split ? nendo.grow() : nendo.fit(),
-		direction = split ? .Row : .Column,
-		gap = 16,
-	},
-	) {
-		if nendo.box(nendo.id("AppearanceControls"))(
-		{
-			width = nendo.fixed(layout.controls),
-			height = split ? nendo.grow() : nendo.fit(),
-			direction = .Column,
-			gap = 18,
-			padding = {top = 8, bottom = 8},
-			clip = {y = split, scroll = true},
-		},
-		) {
-			settings_appearance_controls(ui)
-		}
-		if split {scrollbar(nendo.id("AppearanceControls"))}
-		// On narrow screens the preview stays near the controls it illustrates.
-		if nendo.box(nendo.id("AppearanceSamples"))(
-		{
-			width = nendo.grow(),
-			height = split ? nendo.grow() : nendo.fit(),
-			direction = layout.columns == 3 ? .Row : .Column,
-			gap = 16,
-		},
-		) {
-			for panel in 0 ..< 2 {
-				preview := split ? panel == 1 : panel == 0
-				if preview {
-					if nendo.box(nendo.id("AppearancePreview"))(
-					{
-						width = nendo.fixed(layout.preview),
-						height = split ? nendo.grow() : nendo.fit(),
-						clip = {y = split, scroll = true},
-					},
-					) {
-						settings_conversation_preview(ui)
-					}
-					if split {scrollbar(nendo.id("AppearancePreview"))}
-				} else {
-					if nendo.box(nendo.id("AppearanceThemes"))(
-					{
-						width = nendo.fixed(layout.themes),
-						height = split ? nendo.grow() : nendo.fit(),
-						clip = {y = split, scroll = true},
-					},
-					) {
-						settings_theme_gallery(ui, layout.themes)
-					}
-					if split {scrollbar(nendo.id("AppearanceThemes"))}
-				}
-			}
-		}
+	if ui.settings_gallery {
+		settings_theme_gallery(ui, settings_body_width(ui))
+		settings_conversation_preview(ui)
+		return
 	}
+	settings_appearance_controls(ui)
+}
+
+@(private)
+settings_gallery_open :: proc(ui: ^Ui_State) {
+	settings_theme_preview_reset(ui)
+	ui.theme_tone = active_pack(ui).tone
+	ui.settings_gallery = true
+	ui.settings_anchor = ""
+	ui.settings_scroll_pending = true
+	kb_focus = ""
 }
 
 @(private)
@@ -187,22 +122,18 @@ appearance_hold: struct {
 	repeated: bool,
 }
 
-// Deep links and keyboard focus scroll their own column, never its neighbours.
-@(private)
-appearance_scroll :: proc(ui: ^Ui_State, field: nendo.Id) -> nendo.Id {
-	if appearance_layout(ui).columns == 1 {return nendo.id("SettingsPage")}
-	box := nendo.element(field).rect
-	for id in ([2]string{"AppearanceThemes", "AppearancePreview"}) {
-		panel := nendo.element(nendo.id(id)).rect
-		if box.x >= panel.x && box.x < panel.x + panel.width {
-			return nendo.id(id)
-		}
-	}
-	return nendo.id("AppearanceControls")
-}
-
 @(private)
 appearance_activate :: proc(ui: ^Ui_State, control: nendo.Id) {
+	if control == nendo.id("BrowseThemes") {
+		settings_gallery_open(ui)
+		return
+	}
+	for id, i in THEME_QUICK_IDS {
+		if control != nendo.id(id) {continue}
+		index := [3]int{system_theme_index, 1, 0}[i]
+		if index >= 0 && index < len(theme_packs) {theme_switch(ui, index, ui.accent)}
+		return
+	}
 	for i in 0 ..< 3 {
 		if control == nendo.id("Motion", u32(i)) {
 			ui.prefs.motion_override, ui.prefs.reduce_motion = i != 0, i == 1
@@ -239,9 +170,9 @@ appearance_activate :: proc(ui: ^Ui_State, control: nendo.Id) {
 			return
 		}
 	}
-	for _, shape in CROP_SHAPE_NAMES {
-		if control == nendo.id("CropShapeChip", u32(shape)) {
-			ui.prefs.crop_avatar_shape = shape
+	for crop, index in CROP_SHAPE_CHOICES {
+		if control == nendo.id("CropShapeChip", u32(index)) {
+			ui.prefs.crop_avatar_shape = crop
 			save_settings(ui)
 			return
 		}
@@ -279,16 +210,183 @@ appearance_activate :: proc(ui: ^Ui_State, control: nendo.Id) {
 		return
 	}
 	apply_zoom(ui)
-	// Resolve against the resized page, including a switch between columns.
+	// Resolve against the resized page, including a switch to the compact header.
 	ui.settings_anchor = "ZoomChoices"
 	ui.settings_scroll_pending = true
-	save_settings(ui)
+	ui.settings_dirty = true
 }
 
+@(private)
+THEME_QUICK_IDS :: [3]string{"ThemeQuickSystem", "ThemeQuickLight", "ThemeQuickDark"}
+
+@(private)
+appearance_row :: proc(wide: bool) -> nendo.Box {
+	row := settings_row(true)
+	row.direction = wide ? .Row : .Column
+	row.gap = 8
+	return row
+}
+
+@(private)
+appearance_segments :: proc() -> nendo.Box {
+	return {
+		padding = nendo.pad(2),
+		gap = 2,
+		align = {y = .Center},
+		color = CARD,
+		border = {color = FIELD_BORDER, width = bw()},
+		radius = rr(7),
+	}
+}
+
+@(private)
+appearance_size_choices :: proc(
+	available: f32,
+	wide: bool,
+) -> (
+	group: nendo.Box,
+	cell: nendo.Size,
+) {
+	group = appearance_segments()
+	if wide {
+		cell = nendo.fit(min = 60)
+	} else {
+		group.width = nendo.grow()
+		if available < 3 * settings_tap_size(30) + 8 {group.direction = .Column}
+		cell = nendo.grow(min = settings_tap_size(30))
+	}
+	return
+}
+
+@(private)
+appearance_segment :: proc(
+	id: nendo.Id,
+	label: string,
+	width: nendo.Size,
+	focused, selected: bool,
+) {
+	if nendo.box(id)(
+	{
+		width = width,
+		height = nendo.fit(min = settings_tap_size(30)),
+		padding = {left = 4, right = 4, top = 4, bottom = 4},
+		align = {x = .Center, y = .Center},
+		color = selected ? SELECTED : hovered() ? HOVER : {},
+		border = focused ? kb_ring(ACCENT) : selected ? nendo.Border{color = ACCENT, width = bw()} : {},
+		radius = rr(5),
+	},
+	) {
+		ink := TEXT
+		if MESSAGE_SURFACE_TEXT {
+			fill := selected ? SELECTED : hovered() ? HOVER : CARD
+			ink = readable_ink(
+				CARD_TEXT,
+				mix_color(PLATE, fill, fill.a / 255),
+				high_contrast_enabled(g_prefs) ? 7 : 4.5,
+			)
+		}
+		nendo.text(label, {font = FONT_BODY, size = 12, color = ink, align = .Center})
+	}
+}
+
+@(private)
+settings_quick_themes :: proc(
+	ui: ^Ui_State,
+	body_width: f32,
+	wide: bool,
+	choices: nendo.Box,
+	cell: nendo.Size,
+) {
+	settings_group(tr("Theme"))
+	if nendo.box(nendo.id("RowTheme"))(settings_box()) {
+		indices := [3]int{system_theme_index, 1, 0}
+		labels := [3]string{tr("System"), tr("Light"), tr("Dark")}
+		if nendo.box(nendo.id("ThemeModeRow"))(appearance_row(wide)) {
+			name := ""
+			if ui.theme != indices[0] && ui.theme != indices[1] && ui.theme != indices[2] {
+				pack := active_pack(ui)
+				name = fmt.tprintf(tr("Active theme: %s"), pack.custom ? pack.name : tr(pack.name))
+			}
+			row_labels(tr("Color mode"), name)
+			if nendo.box(nendo.id("ThemeQuickChoices"))(choices) {
+				for id, i in THEME_QUICK_IDS {
+					index := indices[i]
+					if index < 0 || index >= len(theme_packs) {continue}
+					appearance_segment(
+						nendo.id(id),
+						labels[i],
+						cell,
+						kb_focus == id,
+						ui.theme == index,
+					)
+				}
+			}
+		}
+		settings_appearance_preview(body_width)
+		settings_divider()
+		settings_nav_row("BrowseThemes", tr("Browse themes"), "")
+	}
+}
 
 @(private)
 settings_appearance_controls :: proc(ui: ^Ui_State) {
-	preview_theme := ui.theme_preview_active ? ui.theme_preview : active_theme(ui)
+	body_width := settings_body_width(ui)
+	available := body_width - 20
+	wide := available >= 416
+	choices, cell := appearance_size_choices(available, wide)
+	settings_quick_themes(ui, body_width, wide, choices, cell)
+	settings_group(tr("Text & size"))
+	if nendo.box(nendo.id("TextSizeGroup"))(settings_box()) {
+		if nendo.box(nendo.id("RowBodyFont"))(appearance_row(wide)) {
+			row_labels(tr("Message text size"), tr("Applies to message bodies and the composer."))
+			if nendo.box(nendo.id("BodyFontChoices"))(choices) {
+				for label, i in BODY_FONT_LABELS {
+					appearance_segment(
+						nendo.id("BodyFontChip", u32(i)),
+						tr(label),
+						cell,
+						kb_focus == fmt.tprintf("BodyFontChip%d", i),
+						ui.prefs.body_font == BODY_FONT_DELTAS[i],
+					)
+				}
+			}
+		}
+		settings_divider()
+		if nendo.box(nendo.id("RowZoom"))(appearance_row(wide)) {
+			row_labels(tr("Interface zoom"), tr("Changes the whole app."))
+			if nendo.box(nendo.id("ZoomChoices"))(
+			{direction = available < 220 ? .Column : .Row, gap = 8, align = {y = .Center}},
+			) {
+				if nendo.box(nendo.id("ZoomStepper"))(appearance_segments()) {
+					step := nendo.fit(min = settings_tap_size(30))
+					appearance_segment(
+						nendo.id("ZoomMinus"),
+						"−",
+						step,
+						kb_focus == "ZoomMinus",
+						false,
+					)
+					if nendo.box()({width = nendo.fit(min = 42), align = {x = .Center}}) {
+						nendo.text(
+							fmt.tprintf("%d%%", ui.prefs.zoom_pct),
+							{font = FONT_BODY, size = 12, color = TEXT},
+						)
+					}
+					appearance_segment(
+						nendo.id("ZoomPlus"),
+						"+",
+						step,
+						kb_focus == "ZoomPlus",
+						false,
+					)
+				}
+				settings_button("ZoomReset", tr("Reset"))
+			}
+		}
+	}
+	settings_accessibility(ui)
+
+	preview_theme := active_theme(ui)
 	has_accent_choices := false
 	if len(theme_packs) > 0 {
 		accents := theme_packs[preview_theme].accent_base[:]
@@ -301,40 +399,38 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 	}
 
 	if ui.theme != system_theme_index && has_accent_choices {
+		settings_group(tr("Accent color"))
 		if nendo.box(nendo.id("ThemeGroup"))(settings_box()) {
-			settings_group(tr("Theme"))
-			if ui.theme != system_theme_index && has_accent_choices {
-				if nendo.box(nendo.id("RowAccent"))(settings_row(true)) {
-					row_labels(tr("Accent color"), "")
-					nendo.text(
-						theme_packs[preview_theme].accent_names[ui.accent],
-						{font = FONT_BODY, size = 12, color = TEXT_DIM},
-					)
-					if nendo.box(nendo.id("AccentChoices"))({gap = single_pane() ? 4 : 10}) {
-						for name, i in theme_packs[preview_theme].accent_names {
-							append(&theme_control_order, THEME_ACCENT_KEYS[i])
-							if nendo.box(nendo.id("AccentDot", u32(i)))(
-							{
-								width = nendo.fixed(settings_tap_size(18)),
-								height = nendo.fixed(settings_tap_size(18)),
-								color = len(theme_packs) > 0 ? theme_packs[preview_theme].accent_base[i] : default_pack().accent_base[i],
-								radius = rr(2),
-								border = kb_focus == THEME_ACCENT_KEYS[i] || ui.accent == i ? nendo.Border{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
-							},
-							) {
-								if hovered() {tooltip(name)}
-							}
+			if nendo.box(nendo.id("RowAccent"))(settings_row(true)) {
+				nendo.text(
+					theme_packs[preview_theme].accent_names[ui.accent],
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
+				)
+				accent_id := nendo.id("AccentChoices")
+				accents := settings_choices(accent_id)
+				accents.gap = single_pane() ? 4 : 10
+				if nendo.box(accent_id)(accents) {
+					for name, i in theme_packs[preview_theme].accent_names {
+						if nendo.box(nendo.id("AccentDot", u32(i)))(
+						{
+							width = nendo.fixed(settings_tap_size(18)),
+							height = nendo.fixed(settings_tap_size(18)),
+							color = len(theme_packs) > 0 ? theme_packs[preview_theme].accent_base[i] : default_pack().accent_base[i],
+							radius = rr(2),
+							border = kb_focus == THEME_ACCENT_KEYS[i] || ui.accent == i ? nendo.Border{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
+						},
+						) {
+							if hovered() {tooltip(name)}
 						}
 					}
 				}
 			}
-
 		}
 	}
+	settings_group(tr("Interface"))
 	if nendo.box(nendo.id("InterfaceGroup"))(settings_box()) {
-		settings_group(tr("Interface"))
 		if len(theme_packs) > 0 && theme_packs[preview_theme].chalk_drawn {
-			if nendo.box(nendo.id("RowHandDrawn"))(settings_row()) {
+			if nendo.box(nendo.id("RowHandDrawn"))({width = nendo.grow()}) {
 				settings_check(
 					"TgHandDrawn",
 					!ui.prefs.hand_drawn_disabled,
@@ -342,11 +438,12 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 					tr("Textured strokes and sketched avatars. Shapes stay fixed."),
 				)
 			}
+			settings_divider()
 		}
 		// The committed theme decides, so hovering a gallery tile never
 		// inserts the row and pushes the tile out from under the pointer.
 		if len(theme_packs) > 0 && pack_ships_face(&theme_packs[active_theme(ui)]) {
-			if nendo.box(nendo.id("RowThemeFont"))(settings_row()) {
+			if nendo.box(nendo.id("RowThemeFont"))({width = nendo.grow()}) {
 				settings_check(
 					"TgThemeFont",
 					!ui.prefs.theme_font_disabled,
@@ -354,47 +451,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 					tr("Text uses the typeface this theme ships with."),
 				)
 			}
-		}
-		if nendo.box(nendo.id("RowZoom"))(settings_row(true)) {
-			row_labels(
-				tr("Interface zoom"),
-				tap_size() ? tr("Make everything larger or smaller.") : tr("Ctrl + + to zoom in, Ctrl + - to zoom out, Ctrl + 0 to reset."),
-			)
-			zoom_choices := settings_choices(nendo.id("ZoomChoices"))
-			zoom_choices.direction = .Row
-			zoom_choices.gap = 4
-			zoom_choices.clip = {}
-			if nendo.box(nendo.id("ZoomChoices"))(zoom_choices) {
-				nendo.text(
-					fmt.tprintf("%d%%", ui.prefs.zoom_pct),
-					{font = FONT_BODY, size = 12, color = TEXT_DIM},
-				)
-				settings_button("ZoomMinus", "-")
-				settings_button("ZoomPlus", "+")
-				if !single_pane() {settings_button("ZoomReset", tr("Reset"))}
-			}
-			if single_pane() {settings_button("ZoomReset", tr("Reset"))}
-		}
-		if nendo.box(nendo.id("RowBodyFont"))(settings_row(true)) {
-			row_labels(tr("Message text size"), tr("Applies to message bodies and the composer."))
-			if nendo.box(nendo.id("BodyFontChoices"))(
-				settings_choices(nendo.id("BodyFontChoices")),
-			) {
-				for label, i in BODY_FONT_LABELS {
-					settings_option(
-						"BodyFontChip",
-						u32(i),
-						tr(label),
-						ui.prefs.body_font == BODY_FONT_DELTAS[i],
-					)
-				}
-			}
-			if single_pane() {
-				nendo.text(
-					tr("A message at this size."),
-					{font = FONT_BODY, size = BODY_FS, color = TEXT},
-				)
-			}
+			settings_divider()
 		}
 		if nendo.box(nendo.id("RowEmojiSet"))(settings_row(true)) {
 			row_labels(
@@ -421,6 +478,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 			}
 		}
 		if !tap_size() {
+			settings_divider()
 			if nendo.box(nendo.id("RowScroll"))(settings_row(true)) {
 				row_labels(tr("Scroll speed"), tr("How far the mouse wheel moves the view."))
 				if nendo.box(nendo.id("ScrollChoices"))(
@@ -439,36 +497,9 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 		}
 	}
 
+	settings_group(tr("Layout"))
 	if nendo.box(nendo.id("LayoutGroup"))(settings_box()) {
-		settings_group(tr("Layout"))
-		for motion in ([2]bool{true, false}) {
-			if nendo.box(nendo.id(motion ? "RowMotion" : "RowContrast"))(settings_row(true)) {
-				row_labels(
-					motion ? tr("Reduce motion") : tr("Increase contrast"),
-					motion ? tr("Turn off animated transitions, flights and effects. State still changes, nothing moves.") : tr("Make text and borders easier to see."),
-					SIDEBAR_TEXT,
-					SIDEBAR_DIM,
-				)
-				using_system :=
-					motion ? !ui.prefs.motion_override && !ui.prefs.reduce_motion : !ui.prefs.contrast_override
-				on := motion ? reduce_motion_enabled(&ui.prefs) : high_contrast_enabled(&ui.prefs)
-				system_on := motion ? reduce_motion_enabled(nil) : high_contrast_enabled(nil)
-				if nendo.box(nendo.id(motion ? "MotionChoices" : "ContrastChoices"))(
-					settings_choices(nendo.id(motion ? "MotionChoices" : "ContrastChoices")),
-				) {
-					selected := using_system ? 0 : on ? 1 : 2
-					for label, i in ([3]string{system_on ? tr("System (on)") : tr("System (off)"), tr("On"), tr("Off")}) {
-						settings_option(
-							motion ? "Motion" : "Contrast",
-							u32(i),
-							label,
-							selected == i,
-						)
-					}
-				}
-			}
-		}
-		if nendo.box(nendo.id("RowCentered"))(settings_row()) {
+		if nendo.box(nendo.id("RowCentered"))({width = nendo.grow()}) {
 			settings_check(
 				"TgCentered",
 				ui.prefs.centered_chat,
@@ -478,6 +509,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 				),
 			)
 		}
+		settings_divider()
 		if nendo.box(nendo.id("RowMessageLines"))(settings_row(true)) {
 			row_labels(
 				tr("Message line limit"),
@@ -485,7 +517,13 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 					"Collapse messages and event cards after this many lines. Set to 0 to never collapse.",
 				),
 			)
-			if nendo.box(nendo.id("MessageLinesChoices"))({gap = 12, align = {y = .Center}}) {
+			if nendo.box(nendo.id("MessageLinesChoices"))(
+			{
+				direction = settings_body_width(ui) < 270 ? .Column : .Row,
+				gap = 12,
+				align = {y = .Center},
+			},
+			) {
 				if nendo.box(nendo.id("MessageLinesStepper"))(
 				{
 					padding = nendo.pad(2),
@@ -530,14 +568,22 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 	}
 	settings_avatar_choices(ui)
 	for control in APPEARANCE_CONTROLS {
+		if control.id == "ThemeQuickSystem" && system_theme_index < 0 {continue}
+		if tap_size() && control.id == "ScrollChip" {continue}
 		if control.id == "TgHandDrawn" &&
 		   (len(theme_packs) == 0 || !theme_packs[preview_theme].chalk_drawn) {continue}
 		if control.id == "TgThemeFont" &&
 		   (len(theme_packs) == 0 || !pack_ships_face(&theme_packs[active_theme(ui)])) {continue}
 		append(&theme_control_order, control.key)
+		if control.id == "Contrast" &&
+		   control.index == 2 &&
+		   ui.theme != system_theme_index &&
+		   has_accent_choices {
+			append(&theme_control_order, ..THEME_ACCENT_KEYS[:])
+		}
 	}
+	settings_group(tr("Sharing"))
 	if nendo.box(nendo.id("ThemeActionsGroup"))(settings_box()) {
-		settings_group(tr("Sharing"))
 		if nendo.box(nendo.id("RowThemeShare"))(settings_row(true)) {
 			row_labels(
 				tr("Share this theme"),
@@ -552,6 +598,38 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 				if active_pack(ui).custom {
 					append(&theme_control_order, "ThemeDeleteBtn")
 					settings_button("ThemeDeleteBtn", tr("Delete"), DANGER)
+				}
+			}
+		}
+	}
+}
+
+@(private)
+settings_accessibility :: proc(ui: ^Ui_State) {
+	settings_group(tr("Accessibility"))
+	if nendo.box(nendo.id("AccessibilityGroup"))(settings_box()) {
+		for motion in ([2]bool{true, false}) {
+			if !motion {settings_divider()}
+			if nendo.box(nendo.id(motion ? "RowMotion" : "RowContrast"))(settings_row(true)) {
+				row_labels(
+					motion ? tr("Reduce motion") : tr("Increase contrast"),
+					motion ? tr("Turn off animated transitions, flights and effects. State still changes, nothing moves.") : tr("Make text and borders easier to see."),
+				)
+				using_system :=
+					motion ? !ui.prefs.motion_override && !ui.prefs.reduce_motion : !ui.prefs.contrast_override
+				on := motion ? reduce_motion_enabled(&ui.prefs) : high_contrast_enabled(&ui.prefs)
+				system_on := motion ? reduce_motion_enabled(nil) : high_contrast_enabled(nil)
+				choices := nendo.id(motion ? "MotionChoices" : "ContrastChoices")
+				if nendo.box(choices)(settings_choices(choices)) {
+					selected := using_system ? 0 : on ? 1 : 2
+					for label, i in ([3]string{system_on ? tr("System (on)") : tr("System (off)"), tr("On"), tr("Off")}) {
+						settings_option(
+							motion ? "Motion" : "Contrast",
+							u32(i),
+							label,
+							selected == i,
+						)
+					}
 				}
 			}
 		}

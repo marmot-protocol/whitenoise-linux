@@ -51,7 +51,7 @@ export_password_dispatch :: proc(t: ^testing.T) {
 		close_export(&ui)
 		delete(ui.export_pw); delete(ui.accounts)
 	}
-	settings_open(&ui, nil, .Keys, 0, level = .Sheet)
+	settings_open(&ui, nil, .Account, "RowReveal")
 	frame :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
 		nendo.set_pointer({-100, -100}, .Up)
 		anim_tick(1.0 / 60)

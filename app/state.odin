@@ -631,7 +631,6 @@ Ui_State :: struct {
 	sticker_focus:                       int,
 	sticker_page:                        Sticker_Page,
 	timeline_metric:                     [4]f32,
-	chat_preview_w:                      f32, // isolated Appearance chat viewport; zero for real chats
 	messages_group, messages_account:    string,
 	account_ref:                         string, // active account's full hex; "" when logged out
 	accounts:                            [dynamic]Account_Row_Ui, // switcher rows; non-empty means signed in
@@ -848,16 +847,21 @@ Ui_State :: struct {
 	folder_rule_focus:                   int, // which rule box has the caret (focus == .FolderRule)
 	folder_rule_menu:                    int, // rule row whose type menu is open, -1 = none
 	folder_match:                        Folder_Match, // the editor's all/any toggle
-	board_drag:                          Board_Drag, // a chat or folder held on the Folders settings page
+	board_drag:                          Board_Drag, // a chat or folder held in Chats settings
 	folder_menu_open:                    bool,
 	folder_menu_name:                    string, // "" opens the Chats menu
 	folder_menu_x, folder_menu_y:        f32,
 	search_input:                        [dynamic]u8,
 	settings_section:                    Settings_Section,
-	settings_level:                      Settings_Level, // category menu or its property sheet
+	settings_return_page:                Maybe(Page),
+	settings_return_focus:               Focus,
 	settings_search:                     [dynamic]u8,
-	settings_tab:                        int,
+	settings_result:                     int, // selected search result plus one
+	settings_search_return:              Maybe(Settings_Section), // Back from this section returns to results
+	settings_gallery:                    bool,
+	settings_profile_return:             bool,
 	settings_anchor:                     string, // borrowed control ID for a task link
+	settings_target_focus:               string, // focus after an anchor is laid out
 	settings_scroll_pending:             bool,
 	composer_settings_from_chat:         bool,
 	composer_editor:                     Composer_Editor,
@@ -933,6 +937,7 @@ Ui_State :: struct {
 	kp_peer_json:                        string, // kp_peer serialized
 	keys_nsec:                           string, // revealed nsec; wiped when the page closes
 	keys_nsec_show:                      bool, // its unmask toggle
+	keys_npub_show:                      bool,
 	keys_confirm:                        string, // armed danger button id ("" = none)
 	audit_enabled:                       bool, // marmot audit_log_settings.enabled
 	telemetry_enabled:                   bool, // marmot diagnostics_settings.decision == .Granted
@@ -965,6 +970,7 @@ Ui_State :: struct {
 	toast_until:                         f64, // rl.GetTime() deadline; 0 = no toast
 	toast_reveal:                        string, // folder behind the toast's "Show in folder"; owned, "" = none
 	pal_open:                            bool, // command palette (Ctrl+P)
+	pal_source_focus:                    Focus,
 	pal_input:                           [dynamic]u8,
 	pal_sel:                             int, // highlighted row in pal_hits
 	pal_hits:                            [dynamic]int, // indices into COMMANDS

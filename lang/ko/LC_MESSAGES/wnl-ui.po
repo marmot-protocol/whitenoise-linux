@@ -351,6 +351,9 @@ msgstr "1표"
 msgid "1 voter"
 msgstr "투표자 1명"
 
+msgid "2. In Settings, open Account & devices, then Linked devices. Choose Link to another device."
+msgstr "2. 설정에서 계정 및 기기를 연 다음 연결된 기기로 이동합니다. 다른 기기에 연결을 선택합니다."
+
 msgid "2.5 GB"
 msgstr "2.5 GB"
 
@@ -377,9 +380,6 @@ msgstr "표시 이름을 입력해야 합니다."
 
 msgid "A key package lets people invite you to encrypted chats."
 msgstr "키 패키지가 있으면 다른 사람이 암호화된 채팅에 초대할 수 있습니다."
-
-msgid "A message at this size."
-msgstr "이 크기의 메시지입니다."
 
 msgid "ABOUT"
 msgstr "소개"
@@ -426,8 +426,14 @@ msgstr "수락"
 msgid "Accepting your invitation"
 msgstr "초대를 수락하는 중"
 
+msgid "Accessibility"
+msgstr "접근성"
+
 msgid "Account"
 msgstr "계정"
+
+msgid "Account & devices"
+msgstr "계정 및 기기"
 
 msgid "Accounts"
 msgstr "계정"
@@ -435,6 +441,10 @@ msgstr "계정"
 #, c-format
 msgid "Action failed: %s"
 msgstr "작업 실패: %s"
+
+#, c-format
+msgid "Active theme: %s"
+msgstr "사용 중인 테마: %s"
 
 msgid "Add"
 msgstr "추가"
@@ -499,6 +509,9 @@ msgstr "관리자는 멤버를 추가하거나 제거하고 그룹 정보를 변
 msgid "Advanced"
 msgstr "고급"
 
+msgid "After signing in, open Account & devices in Settings to link another device."
+msgstr "로그인한 후 다른 기기를 연결하려면 설정에서 계정 및 기기를 엽니다."
+
 msgid "Agent connector documentation"
 msgstr "에이전트 커넥터 문서"
 
@@ -519,6 +532,9 @@ msgstr "모든 채팅"
 
 msgid "All senders"
 msgstr "모든 보낸 사람"
+
+msgid "All settings"
+msgstr "모든 설정"
 
 msgid "All types"
 msgstr "모든 유형"
@@ -686,6 +702,9 @@ msgstr "bunker 링크"
 msgid "Back"
 msgstr "뒤로"
 
+msgid "Back to White Noise"
+msgstr "White Noise로 돌아가기"
+
 msgid "Back to account options"
 msgstr "계정 선택으로 돌아가기"
 
@@ -773,6 +792,9 @@ msgstr "대괄호 레이블"
 
 msgid "Browse emoji sets"
 msgstr "이모지 세트 둘러보기"
+
+msgid "Browse themes"
+msgstr "테마 찾아보기"
 
 msgid "Bubble radius"
 msgstr "말풍선 모서리 반경"
@@ -899,6 +921,9 @@ msgstr "금고 비밀번호 변경"
 
 msgid "Change..."
 msgstr "변경..."
+
+msgid "Changes the whole app."
+msgstr "앱 전체의 크기를 변경합니다."
 
 msgid "Chat details"
 msgstr "채팅 세부 정보"
@@ -1070,6 +1095,9 @@ msgstr "백업을 저장할 위치를 선택하세요."
 msgid "Choose where you publish"
 msgstr "게시할 위치 선택"
 
+msgid "Choose which shortcuts appear beside your draft."
+msgstr "초안 옆에 표시할 바로가기를 선택합니다."
+
 msgid "Circle"
 msgstr "원"
 
@@ -1145,6 +1173,9 @@ msgstr "버그 신고용 로그 수집"
 msgid "Collector and retention"
 msgstr "수집 서버 및 보존 기간"
 
+msgid "Color mode"
+msgstr "색상 모드"
+
 msgid "Command palette"
 msgstr "명령 팔레트"
 
@@ -1213,6 +1244,9 @@ msgstr "서명자에 연결 중"
 
 msgid "Connecting your remote signer. Approve the connection there before using this account."
 msgstr "원격 서명자에 연결하고 있습니다. 이 계정을 사용하기 전에 서명자에서 연결을 승인하세요."
+
+msgid "Connection"
+msgstr "연결"
 
 msgid "Connection cancelled."
 msgstr "연결을 취소했습니다."
@@ -1724,6 +1758,9 @@ msgstr "서명자 요청을 보낼 수 없습니다. 잠시 기다린 뒤 다시
 msgid "Couldn't send the sticker. Switch back to your account and try again."
 msgstr "스티커를 보낼 수 없습니다. 내 계정으로 다시 전환하고 다시 시도하세요."
 
+msgid "Couldn't send the test notification. Check your system notification settings and try again."
+msgstr "테스트 알림을 보내지 못했습니다. 시스템 알림 설정을 확인하고 다시 시도하세요."
+
 msgid "Couldn't serialize the key packages. Please try again."
 msgstr "키 패키지를 직렬화할 수 없습니다. 다시 시도하세요."
 
@@ -1878,6 +1915,9 @@ msgstr "사용자 지정 색상"
 msgid "Custom emoji"
 msgstr "사용자 지정 이모지"
 
+msgid "Customize"
+msgstr "맞춤 설정"
+
 msgid "Customize composer"
 msgstr "작성창 맞춤 설정"
 
@@ -2009,6 +2049,12 @@ msgstr "그룹 설명 입력"
 
 msgid "Design"
 msgstr "디자인"
+
+msgid "Desktop alert sound"
+msgstr "데스크톱 알림 소리"
+
+msgid "Desktop alerts"
+msgstr "데스크톱 알림"
 
 msgid "Desktop notifications"
 msgstr "데스크톱 알림"
@@ -2232,6 +2278,9 @@ msgstr "로컬 번역 사용"
 
 msgid "Encrypt with NIP-44"
 msgstr "NIP-44로 암호화"
+
+msgid "Encrypted backups"
+msgstr "암호화 백업"
 
 msgid "Encrypted key copied"
 msgstr "암호화된 키를 복사했습니다"
@@ -2685,6 +2734,9 @@ msgstr "히브리어"
 msgid "Help"
 msgstr "도움말"
 
+msgid "Help & about"
+msgstr "도움말 및 앱 정보"
+
 msgid "Hidden"
 msgstr "숨김"
 
@@ -2696,6 +2748,9 @@ msgstr "이모지 세트 숨기기"
 
 msgid "Hide hidden message"
 msgstr "숨긴 메시지 숨기기"
+
+msgid "Hide key"
+msgstr "키 숨기기"
 
 msgid "Hide passwords"
 msgstr "비밀번호 숨기기"
@@ -2806,6 +2861,9 @@ msgstr "이모지를 가져오는 중..."
 #, c-format
 msgid "In use: %s."
 msgstr "사용 중: %s."
+
+msgid "In-app sounds"
+msgstr "앱 내 소리"
 
 msgid "Incoming messages"
 msgstr "수신 메시지"
@@ -3012,6 +3070,12 @@ msgstr "위치"
 msgid "Language"
 msgstr "언어"
 
+msgid "Language & speech"
+msgstr "언어 및 음성"
+
+msgid "Language and formats"
+msgstr "언어 및 형식"
+
 msgid "Language, startup, and everyday preferences."
 msgstr "언어, 시작, 일상 환경설정."
 
@@ -3213,6 +3277,9 @@ msgstr "연락처 관리"
 msgid "Manage local files and encrypted backups."
 msgstr "로컬 파일과 암호화된 백업을 관리합니다."
 
+msgid "Manage the devices linked to this account."
+msgstr "이 계정에 연결된 기기를 관리합니다."
+
 msgid "Mar"
 msgstr "3월"
 
@@ -3279,11 +3346,17 @@ msgstr "메시지 메뉴"
 msgid "Message notifications"
 msgstr "메시지 알림"
 
+msgid "Message previews"
+msgstr "메시지 미리보기"
+
 msgid "Message text copied"
 msgstr "메시지 텍스트를 복사했습니다"
 
 msgid "Message text size"
 msgstr "메시지 글자 크기"
+
+msgid "Message tones"
+msgstr "메시지 소리"
 
 msgid "Message translation"
 msgstr "메시지 번역"
@@ -3356,6 +3429,9 @@ msgstr "음악"
 
 msgid "Mute"
 msgstr "알림 끄기"
+
+msgid "Mute a conversation"
+msgstr "대화 알림 끄기"
 
 msgid "NES game"
 msgstr "NES 게임"
@@ -3564,6 +3640,10 @@ msgstr "결과가 없습니다. 다른 검색어로 시도하세요."
 msgid "No rules"
 msgstr "규칙 없음"
 
+#, c-format
+msgid "No settings match ‘%s’."
+msgstr "‘%s’와 일치하는 설정이 없습니다."
+
 msgid "No stickers here yet. Choose Manage to add stickers or sticker packs."
 msgstr "아직 스티커가 없습니다. 관리를 선택해 스티커나 스티커 팩을 추가하세요."
 
@@ -3621,8 +3701,8 @@ msgstr "소리 내어 읽지 않음"
 msgid "Nothing is saved until you continue."
 msgstr "계속하기 전까지는 아무것도 저장되지 않습니다."
 
-msgid "Nothing loads until you accept. You can change this in Settings > Advanced."
-msgstr "수락하기 전까지는 아무것도 불러오지 않습니다. 설정 > 고급에서 변경할 수 있습니다."
+msgid "Nothing loads until you accept. You can change this in Settings > Connection."
+msgstr "동의하기 전에는 아무것도 불러오지 않습니다. 설정의 연결에서 변경할 수 있습니다."
 
 msgid "Notifications"
 msgstr "알림"
@@ -4061,6 +4141,9 @@ msgstr "이전 채팅"
 msgid "Privacy"
 msgstr "개인 정보 보호"
 
+msgid "Privacy & storage"
+msgstr "개인정보 및 저장 공간"
+
 msgid "Privacy, diagnostics, and developer tools."
 msgstr "개인 정보 보호, 진단, 개발자 도구."
 
@@ -4072,6 +4155,9 @@ msgstr "Nostr 기반 비공개 그룹 채팅"
 
 msgid "Profile"
 msgstr "프로필"
+
+msgid "Profile & devices"
+msgstr "프로필 및 기기"
 
 msgid "Progress is indeterminate."
 msgstr "진행률을 알 수 없습니다."
@@ -4251,6 +4337,9 @@ msgstr "릴레이 목록을 다시 게시했습니다."
 msgid "Relay names are resolved by your proxy. Media host checks still use your local DNS."
 msgstr "릴레이 이름은 프록시가 확인합니다. 미디어 호스트 확인에는 계속 로컬 DNS를 사용합니다."
 
+msgid "Relay status"
+msgstr "릴레이 상태"
+
 msgid "Relay status unavailable"
 msgstr "릴레이 상태를 사용할 수 없습니다"
 
@@ -4409,6 +4498,9 @@ msgstr "오른쪽"
 
 msgid "Right click"
 msgstr "오른쪽 클릭"
+
+msgid "Right-click or press and hold a conversation in Chats, then select Mute. To turn its alerts back on, open the same menu and select Unmute."
+msgstr "채팅에서 대화를 마우스 오른쪽 버튼으로 클릭하거나 길게 누른 다음 알림 끄기를 선택합니다. 알림을 다시 받으려면 같은 메뉴에서 알림 켜기를 선택합니다."
 
 msgid "Rocket"
 msgstr "로켓"
@@ -4629,6 +4721,9 @@ msgstr "검색 결과"
 msgid "Search set title, author, or shortcode"
 msgstr "세트 제목, 작성자, 단축 코드로 검색"
 
+msgid "Search settings"
+msgstr "설정 검색"
+
 msgid "Search stickers"
 msgstr "스티커 검색"
 
@@ -4744,11 +4839,8 @@ msgstr "세트: %s"
 msgid "Settings"
 msgstr "설정"
 
-msgid "Settings: AI agents"
-msgstr "설정: AI 에이전트"
-
-msgid "Settings: about"
-msgstr "설정: 정보"
+msgid "Settings: account and devices"
+msgstr "설정: 계정 및 기기"
 
 msgid "Settings: advanced"
 msgstr "설정: 고급"
@@ -4756,29 +4848,23 @@ msgstr "설정: 고급"
 msgid "Settings: appearance"
 msgstr "설정: 모양"
 
-msgid "Settings: devices"
-msgstr "설정: 기기"
+msgid "Settings: chats"
+msgstr "설정: 채팅"
 
-msgid "Settings: folders"
-msgstr "설정: 폴더"
+msgid "Settings: connection"
+msgstr "설정: 연결"
 
-msgid "Settings: general"
-msgstr "설정: 일반"
+msgid "Settings: help and about"
+msgstr "설정: 도움말 및 앱 정보"
 
-msgid "Settings: keys and identity"
-msgstr "설정: 키 및 신원"
-
-msgid "Settings: network and relays"
-msgstr "설정: 네트워크 및 릴레이"
+msgid "Settings: language and speech"
+msgstr "설정: 언어 및 음성"
 
 msgid "Settings: notifications"
 msgstr "설정: 알림"
 
-msgid "Settings: speech"
-msgstr "설정: 음성"
-
-msgid "Settings: storage"
-msgstr "설정: 저장 공간"
+msgid "Settings: privacy and storage"
+msgstr "설정: 개인정보 및 저장 공간"
 
 msgid "Setup prompts for connecting an AI agent to White Noise."
 msgstr "AI 에이전트를 White Noise에 연결하기 위한 설정 프롬프트입니다."
@@ -4860,6 +4946,9 @@ msgstr "힌트 표시"
 
 msgid "Show in folder"
 msgstr "폴더에서 보기"
+
+msgid "Show key"
+msgstr "키 표시"
 
 msgid "Show less"
 msgstr "간단히 보기"
@@ -4944,9 +5033,6 @@ msgstr "크기"
 #, c-format
 msgid "Size: %s"
 msgstr "크기: %s"
-
-msgid "Slanted"
-msgstr "기울임"
 
 msgid "Slovak"
 msgstr "슬로바키아어"
@@ -5196,6 +5282,9 @@ msgstr "테스트 알림을 보냈습니다."
 msgid "Text"
 msgstr "텍스트"
 
+msgid "Text & size"
+msgstr "텍스트 및 크기"
+
 msgid "Text is hard to read"
 msgstr "글자를 읽기 어려움"
 
@@ -5256,6 +5345,9 @@ msgstr "새 비밀번호로 이 기기의 금고를 다시 암호화합니다. W
 
 msgid "The ngit web client a patch card opens. That site receives the patch link."
 msgstr "패치 카드가 여는 ngit 웹 클라이언트입니다. 해당 사이트에 패치 링크가 전달됩니다."
+
+msgid "The notification service accepted the test. Check your system notifications."
+msgstr "알림 서비스가 테스트 요청을 받았습니다. 시스템 알림을 확인하세요."
 
 msgid "The original message isn't loaded in this view."
 msgstr "원본 메시지가 이 화면에 로드되지 않았습니다."
@@ -5509,6 +5601,9 @@ msgstr "여행"
 msgid "Trophy"
 msgstr "트로피"
 
+msgid "Troubleshooting"
+msgstr "문제 해결"
+
 msgid "Trusted link sites"
 msgstr "신뢰하는 링크 사이트"
 
@@ -5529,6 +5624,9 @@ msgstr "튀르키예어"
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "애니메이션 전환, 이동, 효과를 끕니다. 상태는 바뀌지만 아무것도 움직이지 않습니다."
+
+msgid "Turn on desktop notifications to change these options or send a test."
+msgstr "이 옵션을 변경하거나 테스트 알림을 보내려면 데스크톱 알림을 켜세요."
 
 msgid "Turn on developer mode"
 msgstr "개발자 모드 켜기"
@@ -5621,6 +5719,9 @@ msgstr "사진 업로드 중"
 msgid "Urdu"
 msgstr "우르두어"
 
+msgid "Usage reporting"
+msgstr "사용 정보 보고"
+
 msgid "Use"
 msgstr "사용"
 
@@ -5677,6 +5778,9 @@ msgstr "게시된 모양이 없는 프로필 사진에 사용됩니다."
 
 msgid "Username"
 msgstr "사용자 이름"
+
+msgid "Uses your current sound and preview settings."
+msgstr "현재 소리 및 미리보기 설정을 사용합니다."
 
 msgid "VERIFIED ADDRESS"
 msgstr "인증된 주소"
@@ -5951,6 +6055,9 @@ msgstr "기기에서 권한을 요청합니다. 위치 보내기를 선택하기
 msgid "Your disk is filling up"
 msgstr "디스크 공간이 부족해지고 있습니다"
 
+msgid "Your display name and profile are public."
+msgstr "표시 이름과 프로필은 공개됩니다."
+
 msgid "Your existing and new notes are deleted after this time."
 msgstr "기존 메모와 새 메모 모두 이 시간이 지나면 삭제됩니다."
 
@@ -6045,6 +6152,9 @@ msgstr "줄루어"
 msgid "aka %s"
 msgstr "별칭 %s"
 
+msgid "alerts incoming messages"
+msgstr "알림 수신 메시지"
+
 #, c-format
 msgid "and %d more blocks"
 msgstr "외 블록 %d개"
@@ -6061,14 +6171,23 @@ msgstr "외 %d줄"
 msgid "and %s more"
 msgstr "외 %s"
 
+msgid "audio notifications mute"
+msgstr "소리 알림 음소거"
+
 msgid "carries the blob"
 msgstr "암호화 데이터 전달"
+
+msgid "display name username avatar picture bio"
+msgstr "표시 이름 사용자 이름 아바타 사진 소개"
 
 msgid "edited"
 msgstr "수정됨"
 
 msgid "failed · tap to retry"
 msgstr "실패 · 탭하여 다시 시도"
+
+msgid "font accessibility"
+msgstr "글꼴 글자 크기 접근성"
 
 #, c-format
 msgid "in %d day"
@@ -6118,6 +6237,9 @@ msgstr "%d년 후"
 msgid "in %d years"
 msgstr "%d년 후"
 
+msgid "in-app sounds audio sent received mute"
+msgstr "앱 소리 발신 수신 음소거"
+
 msgid "inbox"
 msgstr "받은편지함"
 
@@ -6148,11 +6270,20 @@ msgstr "명"
 msgid "plaintext"
 msgstr "평문"
 
+msgid "privacy notifications"
+msgstr "개인 정보 알림"
+
 msgid "relay"
 msgstr "릴레이"
 
+msgid "scale size accessibility"
+msgstr "배율 확대 축소 크기 접근성"
+
 msgid "sealed here"
 msgstr "여기서 암호화"
+
+msgid "silence quiet chat notifications"
+msgstr "음소거 무음 채팅 알림"
 
 msgid "© OpenStreetMap contributors"
 msgstr "© OpenStreetMap 기여자"
