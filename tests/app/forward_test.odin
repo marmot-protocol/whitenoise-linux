@@ -3,6 +3,7 @@ package main
 import marmot "../marmot"
 import "base:runtime"
 import "core:fmt"
+import "core:slice"
 import "core:strings"
 import "core:sync"
 import "core:testing"
@@ -76,6 +77,90 @@ forward_picker_subject :: proc(t: ^testing.T) {
 }
 
 @(test)
+forward_picker_virtual_rows :: proc(t: ^testing.T) {
+	if !test_isolated("forward_picker_virtual_rows") {return}
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(390, 560, "Forward destination picker")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	init_fonts(); load_themes(); apply_theme(0, 0); set_locale("en")
+	previous := nendo.current_context()
+	memory: []u8
+	init_layout(&memory, 32768, {390, 560})
+	defer {nendo.set_context(previous); delete(memory)}
+
+	CHATS :: 256
+	TARGET :: 137
+	ui := Ui_State {
+		selected   = 0,
+		fwd_open   = true,
+		fwd_msg    = "wanted",
+		fwd_source = "source",
+		focus      = .Fwd,
+	}
+	ui.prefs.reduce_motion = true
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {
+		g_ui, g_prefs = nil, nil
+		for &p in ui.pending {free_pending(&p)}
+		delete(ui.pending); delete(ui.messages); delete(ui.chats); delete(ui.fwd_filter)
+	}
+	for i in 0 ..< CHATS {append(&ui.chats, Chat_Row_Ui{title = fmt.tprintf("Chat %03d", i)})}
+	ui.chats[0].group_id = "source"
+	ui.chats[TARGET] = {
+		title    = "Nord Öst",
+		group_id = "expected-target",
+	}
+	append(&ui.messages, Msg_Ui{id = "wanted", body = "Forward this"})
+	frame := proc(ui: ^Ui_State, wheel: f32 = 0) -> []nendo.Render_Command {
+		anim_tick(1.0 / 60)
+		open_now(nendo.id("FwdModal"), true)
+		nendo.update_scroll(.Off, {0, wheel}, 1.0 / 60)
+		nendo.begin()
+		forward_modal(ui)
+		return nendo.end(0)
+	}
+	frame(&ui)
+	list_id := nendo.id("FwdList")
+	list := nendo.element(list_id).rect
+	mounted := 0
+	for i in 0 ..< CHATS {if nendo.element(nendo.id("FwdRow", u32(i))).found {mounted += 1}}
+	testing.expect(
+		t,
+		mounted > 0 && mounted <= 10,
+		"Only rows near the viewport should be mounted",
+	)
+	nendo.set_pointer({list.x + 20, list.y + 20}, .Up)
+	frame(&ui, -100000)
+	last := nendo.element(nendo.id("FwdRow", CHATS - 1))
+	testing.expect(
+		t,
+		last.found && abs(last.rect.y + last.rect.height - (list.y + list.height)) < 1,
+	)
+
+	ed_set(&ui, &ui.fwd_filter, "ÖST")
+	commands := frame(&ui)
+	row := nendo.element(nendo.id("FwdRow", TARGET))
+	list = nendo.element(list_id).rect
+	if !testing.expect(
+		t,
+		row.found && abs(row.rect.y - list.y) < 1,
+		"The first filtered frame must show the match",
+	) {return}
+	rl.BeginDrawing(); draw_frame(commands)
+	rl.TakeScreenshot("/tmp/wn-forward-filtered.png")
+	rl.EndDrawing()
+	nendo.set_pointer({row.rect.x + row.rect.width / 2, row.rect.y + row.rect.height / 2}, .Up)
+	forced_release = true
+	handle_forward(&ui, nil)
+	forced_release = false
+	testing.expect(t, !ui.fwd_open)
+	if testing.expect_value(t, len(ui.pending), 1) {
+		testing.expect_value(t, ui.pending[0].group_id, "expected-target")
+	}
+}
+
+@(test)
 add_peer_destinations :: proc(t: ^testing.T) {
 	ui := Ui_State {
 		fwd_kind = .Add_Member,
@@ -89,18 +174,16 @@ add_peer_destinations :: proc(t: ^testing.T) {
 	)
 	defer {delete(ui.chats); delete(ui.fwd_filter)}
 	ui.selected = 0
-	for _, i in ui.chats {
-		testing.expect_value(t, fwd_visible(&ui, i), i == 1)
-	}
+	testing.expect(t, slice.equal(fwd_destinations(&ui), []int{1}))
 	append(&ui.fwd_filter, "PERSON GROUP")
-	testing.expect(
-		t,
-		fwd_visible(&ui, 1),
-		"the existing case-insensitive picker filter remains available",
-	)
+	testing.expect(t, slice.equal(fwd_destinations(&ui), []int{1}))
+	ed_set(&ui, &ui.fwd_filter, "other")
+	testing.expect_value(t, len(fwd_destinations(&ui)), 0)
 	clear(&ui.fwd_filter)
-	append(&ui.fwd_filter, "other")
-	testing.expect(t, !fwd_visible(&ui, 1))
+	ui.fwd_kind = .Message
+	testing.expect(t, slice.equal(fwd_destinations(&ui), []int{1, 3}))
+	ui.fwd_kind = .Theme
+	testing.expect(t, slice.equal(fwd_destinations(&ui), []int{0, 1, 3}))
 }
 
 @(test)
