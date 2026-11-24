@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 // Real signed AppImage boundary regressions. Usage:
-// bun tests/appimage-update-smoke.ts /path/to/appimagetool build/wn-appimage-update
+// bun tests/appimage-update-smoke.ts /path/to/appimagetool build/appimage-update-lib
 // Requires gpg, zsyncmake and mksquashfs; ephemeral signing keys never leave tmp.
 import { spawn } from "node:child_process";
 import {
@@ -55,18 +55,11 @@ type Spec = {
 async function worker(path: string) {
   const spec: Spec = JSON.parse(readFileSync(path, "utf8"));
   const stage = mkdtempSync(join(dirname(spec.source), ".wn-update-"));
-  const executable = join(stage, "wn-appimage-update");
-  copyFileSync(spec.helper, executable);
-  chmodSync(executable, 0o700);
-  cpSync(
-    join(dirname(spec.helper), "appimage-update-lib"),
-    join(stage, "lib"),
-    { recursive: true },
-  );
+  const bin = join(stage, "bin");
+  cpSync(spec.helper, bin, { recursive: true });
   const env = {
     ...process.env,
     WN_TEST_UPDATE_FEED: spec.feed,
-    LD_LIBRARY_PATH: join(stage, "lib"),
     APPIMAGE_EXTRACT_AND_RUN: "1",
     WN_APPIMAGE_TEST_LOG: spec.log,
     APPDIR: "/tmp/old-appimage-test-mount",
@@ -74,7 +67,7 @@ async function worker(path: string) {
     WN_SOCKS5_PROXY: spec.proxy ? "127.0.0.1:9" : "",
   };
   const child = spawn(
-    executable,
+    join(bin, "wn-appimage-update"),
     [
       spec.source,
       spec.home,
@@ -84,7 +77,7 @@ async function worker(path: string) {
       stage,
       "0",
     ],
-    { env, detached: true, stdio: ["pipe", "pipe", "pipe"] },
+    { cwd: stage, env, detached: true, stdio: ["pipe", "pipe", "pipe"] },
   );
   let errors = "",
     armed = false;
@@ -409,7 +402,7 @@ if (process.argv[2] === "--worker") {
 } else {
   check(
     process.argv.length === 4,
-    "Usage: bun tests/appimage-update-smoke.ts APPIMAGETOOL HELPER",
+    "Usage: bun tests/appimage-update-smoke.ts APPIMAGETOOL UPDATER_DIRECTORY",
   );
   await main(resolve(process.argv[2]), resolve(process.argv[3]));
 }

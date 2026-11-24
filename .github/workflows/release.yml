@@ -96,8 +96,6 @@ jobs:
         run: bash scripts/build-appimage-updater.sh
 
       - name: Assemble AppDir
-        env:
-          WN_PACKAGE_APPIMAGE: "1"
         run: |
           rm -rf AppDir
           scripts/install-tree.sh AppDir/usr whitenoise
@@ -114,40 +112,37 @@ jobs:
           chmod +x linuxdeploy appimagetool
 
       - name: Exercise signed AppImage upgrades
-        run: bun tests/appimage-update-smoke.ts ./appimagetool ./build/wn-appimage-update
+        run: bun tests/appimage-update-smoke.ts ./appimagetool ./build/appimage-update-lib
 
       - name: Build AppImage
         env:
           WN_APPIMAGE_SIGNING_KEY: ${{ secrets.WN_APPIMAGE_SIGNING_KEY }}
         run: |
           set -euo pipefail
-          # SDL3 lives outside the default search path, so point linuxdeploy
-          # at it or it bundles everything except the one library that is
-          # not installed system-wide.
-          export LD_LIBRARY_PATH="/usr/local/sdl3/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-          # --executable would copy each helper into usr/bin; --deploy-deps-only
-          # bundles their libraries and points their rpath at usr/lib in place.
-          ./linuxdeploy --appdir AppDir \
-            --executable AppDir/usr/bin/whitenoise \
-            --deploy-deps-only AppDir/usr/lib/whitenoise-linux \
-            --desktop-file AppDir/usr/share/applications/whitenoise.desktop \
-            --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/whitenoise.png
+          bash scripts/bundle-appimage.sh ./linuxdeploy AppDir build/appimage-update-lib
           bash scripts/sign-appimage.sh ./appimagetool AppDir "$APPIMAGE_NAME"
-
-      # A smoke test of the packaged artifact, not of the app: SDL's dummy
-      # video driver lets it boot with no display, and WN_SHOT exits after a
-      # few frames. Catches a missing bundled library or a res_dir that no
-      # longer finds its data.
-      - name: Run the AppImage headless
-        run: |
-          set -euo pipefail
-          chmod +x "$APPIMAGE_NAME"
-          SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke \
-            ./"$APPIMAGE_NAME" "$(mktemp -d)"
 
       - name: Retrieve AppImage and update metadata
         shell: bash
         run: bash scripts/ci-boat.sh pull "$APPIMAGE_NAME" "$APPIMAGE_NAME.zsync"
+
+      - name: Run the AppImage on Ubuntu 22.04
+        shell: bash
+        run: |
+          set -euo pipefail
+          podman run --rm -v "$PWD/$APPIMAGE_NAME:/release.AppImage:ro" \
+            docker.io/library/ubuntu:22.04 bash -ec '
+              apt-get update -qq
+              DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+                libgl1 libegl1 libgl1-mesa-dri libx11-6 libxext6 libxrender1 libnss3 \
+                libfontconfig1 libasound2 libfribidi0 libharfbuzz0b libjack-jackd2-0 \
+                libpipewire-0.3-0 libusb-1.0-0 xvfb xauth
+              getconf GNU_LIBC_VERSION
+              cd "$(mktemp -d)"
+              APPIMAGE_EXTRACT_AND_RUN=1 APPIMAGELAUNCHER_DISABLE=1 SDL_VIDEODRIVER=x11 \
+                WN_SHOT=1 WN_VAULT_PW=ci-smoke xvfb-run -a /release.AppImage "$PWD/data"
+              test -s wn-odin-shot.png
+            '
 
       - uses: actions/upload-artifact@v4
         with:

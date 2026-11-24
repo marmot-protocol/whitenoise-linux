@@ -269,7 +269,9 @@ Local builds sign when the same `JSIGN_*` variables are passed to the container.
 <details>
 <summary><b>AppImage: a GPG key and a separately built updater</b></summary>
 
-`scripts/sign-appimage.sh` embeds the identity of `WN_APPIMAGE_SIGNING_KEY` and the signature in the image. Build its isolated updater with `scripts/build-appimage-updater.sh` and stage with `WN_PACKAGE_APPIMAGE=1 scripts/install-tree.sh AppDir/usr whitenoise`. Ordinary Linux builds compile only the small process bridge and do not build or ship the delta updater. The updater closes its GPG context before removing the temporary keyring, including when an unsigned or invalid image is rejected.
+`bash scripts/bundle-appimage.sh ./linuxdeploy AppDir` adds a matched glibc and loader to the tree from `scripts/install-tree.sh`. Launchers pass the private library path to the loader without exporting it to host commands. The libc source package and version are recorded in `usr/lib/SOURCE.glibc`.
+
+For signed releases, build the updater with `scripts/build-appimage-updater.sh` and pass `build/appimage-update-lib` as the third argument to `scripts/bundle-appimage.sh`. The updater directory includes its own copy of the runtime so it can run after the AppImage unmounts. `scripts/sign-appimage.sh` embeds the identity of `WN_APPIMAGE_SIGNING_KEY` and the signature in the image.
 
 </details>
 

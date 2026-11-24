@@ -74,13 +74,40 @@ res_font :: proc(name: string) -> cstring {
 }
 
 @(private)
-executable_path :: proc(allocator := context.temp_allocator) -> string {
+Executable_Target :: enum {
+	Payload,
+	Launch,
+}
+
+@(private)
+executable_path :: proc(
+	allocator := context.temp_allocator,
+	target := Executable_Target.Payload,
+) -> string {
 	// OpenBSD has no API for this; see paths_openbsd.odin.
 	when ODIN_OS == .OpenBSD {
 		if path := argv0_path(allocator); path != "" {return path}
 	}
 	path, err := os.get_executable_path(allocator)
 	if err != nil {return ""}
+	when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
+		// With an explicit ELF interpreter, /proc/self/exe names the loader.
+		loader_suffix :: "/usr/lib/ld-linux-x86-64.so.2"
+		if strings.has_suffix(path, loader_suffix) {
+			dir := os.get_env("APPDIR", context.temp_allocator)
+			if dir != "" && path[:len(path) - len(loader_suffix)] == dir {
+				delete(path, allocator)
+				if target == .Launch {
+					image := os.get_env("APPIMAGE", context.temp_allocator)
+					if filepath.is_abs(image) {return strings.clone(image, allocator)}
+					entry, _ := filepath.join({dir, "usr", "bin", "whitenoise"}, allocator)
+					return entry
+				}
+				binary, _ := filepath.join({dir, "usr", "bin", "whitenoise.elf"}, allocator)
+				return binary
+			}
+		}
+	}
 	return path
 }
 

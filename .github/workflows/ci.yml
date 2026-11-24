@@ -75,12 +75,7 @@ jobs:
           echo "$LINUXDEPLOY_SHA256  linuxdeploy" | sha256sum -c -
           echo "$APPIMAGETOOL_SHA256  appimagetool" | sha256sum -c -
           chmod +x linuxdeploy appimagetool
-          export LD_LIBRARY_PATH="/usr/local/sdl3/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-          ./linuxdeploy --appdir AppDir \
-            --executable AppDir/usr/bin/whitenoise \
-            --deploy-deps-only AppDir/usr/lib/whitenoise-linux \
-            --desktop-file AppDir/usr/share/applications/whitenoise.desktop \
-            --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/whitenoise.png
+          bash scripts/bundle-appimage.sh ./linuxdeploy AppDir
           ./appimagetool AppDir "$APPIMAGE_NAME"
 
       - name: Run the AppImage headless

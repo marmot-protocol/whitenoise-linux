@@ -1880,7 +1880,7 @@ open_external :: proc(target: string) {
 // Use each desktop's user-level launch-at-login mechanism. Relocating an
 // unpacked app requires toggling this setting again.
 apply_autostart :: proc(on: bool) {
-	exe := executable_path()
+	exe := executable_path(target = .Launch)
 	if exe == "" {return}
 	when ODIN_OS == .Windows {
 		key := `HKCU:\Software\Microsoft\Windows\CurrentVersion\Run`

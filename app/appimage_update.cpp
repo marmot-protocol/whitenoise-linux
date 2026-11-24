@@ -187,7 +187,7 @@ int main(int argc, char **argv) {
                     "test feed is not explicitly authorized loopback/local URL");
         }
         require(gpgme_check_version("1.10.0") != nullptr, "GPGME initialization failed");
-        std::string gpg = stage + "/lib/gpg";
+        std::string gpg = stage + "/bin/gpg";
         require(gpgme_set_engine_info(GPGME_PROTOCOL_OpenPGP, gpg.c_str(), nullptr) ==
                     GPG_ERR_NO_ERROR,
                 "cannot configure bundled signature verifier");
