@@ -1392,8 +1392,8 @@ msgstr "Eckenskalierung"
 msgid "Couldn't add record %d. %s Check your relay settings and import again."
 msgstr "Datensatz %d konnte nicht hinzugefügt werden. %s Prüfe deine Relay-Einstellungen und importiere erneut."
 
-msgid "Couldn't add that relay. Double-check the address and try again."
-msgstr "Dieses Relay konnte nicht hinzugefügt werden. Überprüfe die Adresse und versuche es erneut."
+msgid "Couldn't add that relay. Enter an address that starts with wss:// and try again."
+msgstr "Dieses Relay konnte nicht hinzugefügt werden. Gib eine Adresse ein, die mit wss:// beginnt, und versuche es erneut."
 
 msgid "Couldn't add the pack. No supported stickers are available."
 msgstr "Das Paket konnte nicht hinzugefügt werden. Es sind keine unterstützten Sticker verfügbar."

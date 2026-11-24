@@ -1522,7 +1522,7 @@ msgstr ""
 msgid "Couldn't add record %d. %s Check your relay settings and import again."
 msgstr ""
 
-msgid "Couldn't add that relay. Double-check the address and try again."
+msgid "Couldn't add that relay. Enter an address that starts with wss:// and try again."
 msgstr ""
 
 msgid "Couldn't add the pack. No supported stickers are available."

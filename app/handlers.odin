@@ -2353,8 +2353,15 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		   (rl.IsKeyPressed(.ENTER) && ui.focus == .Invite)) &&
 	   admin {
 		if ui.nip05_ticket != 0 {return}
-		input := string(ui.invite_input[:])
-		if strings.trim_space(input) == "" {
+		input := strings.trim_space(string(ui.invite_input[:]))
+		if strings.contains(input, "@") {
+			ui.nip05_ticket = spawn_op(ui, client, .Lookup_Member, string(ui.invite_input[:]), "")
+			return
+		}
+		// Anything that isn't a key or link would reach MDK and come back as
+		// a raw parse error, after the field was already cleared.
+		member := nc_address_hex(ui, input)
+		if member == "" {
 			ui.focus = .Invite
 			ui.banner_seen = ""
 			set_status(
@@ -2368,11 +2375,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			)
 			return
 		}
-		if strings.contains(input, "@") {
-			ui.nip05_ticket = spawn_op(ui, client, .Lookup_Member, input, "")
-			return
-		}
-		admin_op(ui, client, "invite", input)
+		admin_op(ui, client, "invite", member)
 		clear(&ui.invite_input)
 	}
 	if admin && rl.IsKeyPressed(.ENTER) && ui.focus == .Rename {
