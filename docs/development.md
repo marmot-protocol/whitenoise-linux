@@ -209,7 +209,7 @@ Group Members uses fixed rows. The edited member and nickname field stay mounted
 Global search keeps the line breaks and cumulative heights for its result cards. Appending a page adds to the plan without measuring earlier pages again. Width, font, or timestamp changes rebuild the plan. Nendo uses the heights to mount only the cards near the viewport.
 The loading message and progress bar stay above the scrollable filters and results.
 
-The destination picker passes fixed-height rows to nendo for forwarding, theme sharing, and adding a peer to a group. Rows keep their original chat indices after filtering.
+The destination picker passes fixed-height rows to nendo for forwarding, theme sharing, and adding a peer to a group. It reads group IDs from the painted rows before rebuilding the list. A release acts only on the chat that was pressed, even if a live refresh changed its index.
 
 | Path | What's there |
 | --- | --- |

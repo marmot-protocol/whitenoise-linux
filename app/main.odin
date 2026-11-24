@@ -1115,6 +1115,7 @@ app_main :: proc() {
 			pointer.x /= UI_ZOOM
 			pointer.y /= UI_ZOOM
 			nendo.set_pointer(pointer, (rl.IsMouseButtonDown(.LEFT)) ? .Down : .Up)
+			fwd_sample_pointer(&ui)
 
 			scroll_thumb_tick()
 			// A drag-selection ending with text selected feeds the primary

@@ -31,9 +31,14 @@ forward_picker_subject :: proc(t: ^testing.T) {
 		fwd_msg    = "wanted",
 		fwd_source = "source",
 	}
-	append(&ui.chats, Chat_Row_Ui{group_id = "source"}, Chat_Row_Ui{title = "Destination"})
+	append(
+		&ui.chats,
+		Chat_Row_Ui{group_id = "source"},
+		Chat_Row_Ui{title = "Destination", group_id = "destination"},
+	)
 	append(&ui.messages, Msg_Ui{id = "neighbor", body = "Wrong message"}, Msg_Ui{id = "wanted"})
 	defer {delete(ui.chats); delete(ui.messages[1].attachments); delete(ui.messages)}
+	defer {delete(ui.fwd_hit_rows); delete(ui.fwd_hit_keys)}
 	old_ui, old_prefs := g_ui, g_prefs
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = old_ui, old_prefs}
@@ -91,6 +96,9 @@ forward_picker_virtual_rows :: proc(t: ^testing.T) {
 
 	CHATS :: 256
 	TARGET :: 137
+	OTHER :: 138
+	TARGET_GROUP :: "expected-target"
+	LAST_GROUP :: "d6b841e32d37fbc8d2fd229d1b87ac87"
 	ui := Ui_State {
 		selected   = 0,
 		fwd_open   = true,
@@ -102,15 +110,23 @@ forward_picker_virtual_rows :: proc(t: ^testing.T) {
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {
 		g_ui, g_prefs = nil, nil
+		delete(ui.fwd_hit_rows); delete(ui.fwd_hit_keys); delete(ui.fwd_pressed_key)
 		for &p in ui.pending {free_pending(&p)}
 		delete(ui.pending); delete(ui.messages); delete(ui.chats); delete(ui.fwd_filter)
 	}
-	for i in 0 ..< CHATS {append(&ui.chats, Chat_Row_Ui{title = fmt.tprintf("Chat %03d", i)})}
+	for i in 0 ..< CHATS {
+		label := fmt.tprintf("Chat %03d", i)
+		append(&ui.chats, Chat_Row_Ui{title = label, group_id = label})
+	}
 	ui.chats[0].group_id = "source"
+	// These distinct groups have the same 32-bit group-keyed row hash.
+	ui.chats[1].group_id = "d0c9e369bee256f4b0182a503babb685"
+	ui.chats[CHATS - 1].group_id = LAST_GROUP
 	ui.chats[TARGET] = {
 		title    = "Nord Öst",
-		group_id = "expected-target",
+		group_id = TARGET_GROUP,
 	}
+	ui.chats[OTHER].title = "Süd Öst"
 	append(&ui.messages, Msg_Ui{id = "wanted", body = "Forward this"})
 	frame := proc(ui: ^Ui_State, wheel: f32 = 0) -> []nendo.Render_Command {
 		anim_tick(1.0 / 60)
@@ -119,6 +135,11 @@ forward_picker_virtual_rows :: proc(t: ^testing.T) {
 		nendo.begin()
 		forward_modal(ui)
 		return nendo.end(0)
+	}
+	sample := proc(ui: ^Ui_State, point: nendo.Vector2) {
+		rl.WindowShouldClose()
+		nendo.set_pointer(point, rl.IsMouseButtonDown(.LEFT) ? .Down : .Up)
+		fwd_sample_pointer(ui)
 	}
 	frame(&ui)
 	list_id := nendo.id("FwdList")
@@ -133,10 +154,26 @@ forward_picker_virtual_rows :: proc(t: ^testing.T) {
 	nendo.set_pointer({list.x + 20, list.y + 20}, .Up)
 	frame(&ui, -100000)
 	last := nendo.element(nendo.id("FwdRow", CHATS - 1))
-	testing.expect(
+	if !testing.expect(
 		t,
 		last.found && abs(last.rect.y + last.rect.height - (list.y + list.height)) < 1,
-	)
+	) {return}
+
+	// SDL can deliver both edges after a refresh has moved the painted destination offscreen.
+	ui.chats[2], ui.chats[CHATS - 1] = ui.chats[CHATS - 1], ui.chats[2]
+	last_point := nendo.Vector2 {
+		last.rect.x + last.rect.width / 2,
+		last.rect.y + last.rect.height / 2,
+	}
+	rl.InjectFinger(.Down, last_point.x, last_point.y)
+	rl.InjectFinger(.Up, last_point.x, last_point.y)
+	sample(&ui, last_point)
+	frame(&ui)
+	handle_forward(&ui, nil)
+	if !testing.expect_value(t, len(ui.pending), 1) {return}
+	testing.expect_value(t, ui.pending[0].group_id, LAST_GROUP)
+	free_pending(&ui.pending[0]); clear(&ui.pending)
+	ui.fwd_open, ui.focus = true, .Fwd
 
 	ed_set(&ui, &ui.fwd_filter, "ÖST")
 	commands := frame(&ui)
@@ -150,13 +187,42 @@ forward_picker_virtual_rows :: proc(t: ^testing.T) {
 	rl.BeginDrawing(); draw_frame(commands)
 	rl.TakeScreenshot("/tmp/wn-forward-filtered.png")
 	rl.EndDrawing()
-	nendo.set_pointer({row.rect.x + row.rect.width / 2, row.rect.y + row.rect.height / 2}, .Up)
-	forced_release = true
-	handle_forward(&ui, nil)
-	forced_release = false
+
+	point := nendo.Vector2{row.rect.x + row.rect.width / 2, row.rect.y + row.rect.height / 2}
+	Gesture :: enum {
+		Repaint,
+		Repress,
+		Prior_Frame,
+	}
+	for gesture in Gesture {
+		rl.InjectFinger(.Down, point.x, point.y)
+		sample(&ui, point)
+		frame(&ui)
+
+		ui.chats[TARGET], ui.chats[OTHER] = ui.chats[OTHER], ui.chats[TARGET]
+		if gesture != .Prior_Frame {frame(&ui)}
+		rl.InjectFinger(.Up, point.x, point.y)
+		if gesture == .Repress {rl.InjectFinger(.Down, point.x, point.y)}
+		sample(&ui, point)
+		frame(&ui) // Production dispatches after layout, using hits from before it.
+		handle_forward(&ui, nil)
+		if gesture != .Prior_Frame {
+			if !testing.expect(
+				t,
+				ui.fwd_open && len(ui.pending) == 0,
+				"A different chat moved under the pointer",
+			) {return}
+			if gesture == .Repress {
+				rl.InjectFinger(.Up, point.x, point.y)
+				rl.WindowShouldClose()
+			}
+			ui.chats[TARGET], ui.chats[OTHER] = ui.chats[OTHER], ui.chats[TARGET]
+			frame(&ui)
+		}
+	}
 	testing.expect(t, !ui.fwd_open)
 	if testing.expect_value(t, len(ui.pending), 1) {
-		testing.expect_value(t, ui.pending[0].group_id, "expected-target")
+		testing.expect_value(t, ui.pending[0].group_id, TARGET_GROUP)
 	}
 }
 

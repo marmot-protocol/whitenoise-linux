@@ -740,6 +740,8 @@ Ui_State :: struct {
 	fwd_msg:                             string, // stable source message ID (.Message only)
 	fwd_source:                          string, // source group when the picker opened
 	fwd_filter:                          [dynamic]u8, // its chat filter box
+	fwd_hit_rows:                        [dynamic]Fwd_Row_Hit,
+	fwd_hit_keys, fwd_pressed_key:       [dynamic]u8,
 	poll_open:                           bool, // composer is in poll mode
 	poll_question:                       [dynamic]u8,
 	poll_inputs:                         [dynamic][dynamic]u8, // option drafts, blanks skipped

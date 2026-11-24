@@ -32,6 +32,11 @@ Fwd_Kind :: enum {
 @(private = "file")
 FWD_ROW_H :: f32(44)
 
+@(private)
+Fwd_Row_Hit :: struct {
+	index, key_end: int,
+}
+
 @(private = "file")
 fwd_visible :: proc(ui: ^Ui_State, index: int, filter: string, title: ^strings.Builder) -> bool {
 	chat := &ui.chats[index]
@@ -57,6 +62,8 @@ fwd_destinations :: proc(ui: ^Ui_State) -> []int {
 }
 
 forward_modal :: proc(ui: ^Ui_State) {
+	clear(&ui.fwd_hit_rows)
+	clear(&ui.fwd_hit_keys)
 	if nendo.box(nendo.id("FwdModal"))(
 	{
 		width = nendo.fixed(modal_w(nendo.id("FwdModal"), 440)),
@@ -176,6 +183,8 @@ forward_modal :: proc(ui: ^Ui_State) {
 			rows := nendo.virtual_rows(nendo.id("FwdRows"), len(destinations), FWD_ROW_H, gap = 2)
 			for i in destinations[rows.first:rows.end] {
 				chat := &ui.chats[i]
+				append(&ui.fwd_hit_keys, chat.group_id)
+				append(&ui.fwd_hit_rows, Fwd_Row_Hit{i, len(ui.fwd_hit_keys)})
 				if nendo.box(nendo.id("FwdRow", u32(i)))(
 				{
 					width = nendo.grow(),
@@ -188,7 +197,7 @@ forward_modal :: proc(ui: ^Ui_State) {
 				},
 				) {
 					avatar("FwdAvatar", u32(i), chat.avatar_key, chat.title, 30, chat_pic(chat^))
-					if nendo.box(nendo.id("FwdTitle", u32(i)))(
+					if nendo.box(nendo.id_local("FwdTitle"))(
 					{width = nendo.grow(), clip = {x = true}},
 					) {
 						nendo.text(
@@ -513,6 +522,37 @@ forward_stop :: proc(ui: ^Ui_State) {
 	// send_threads have joined; decoded pixels are outside the tracked heap.
 	for &p in ui.pending {forward_free(p.forward); p.forward = nil}
 	delete(ui.fwd_msg); delete(ui.fwd_source)
+	delete(ui.fwd_hit_rows); ui.fwd_hit_rows = {}
+	session_buffer_forget(&ui.fwd_hit_keys)
+	session_buffer_forget(&ui.fwd_pressed_key)
+}
+
+// Read the painted rows before layout replaces them. Their indices may no
+// longer refer to the same chats after the live refresh.
+@(private)
+fwd_sample_pointer :: proc(ui: ^Ui_State) {
+	if !ui.fwd_open {
+		clear(&ui.fwd_pressed_key)
+		return
+	}
+	pressed := mouse_pressed()
+	if !pressed && !rl.IsMouseButtonReleased(.LEFT) && !forced_release {return}
+
+	start := 0
+	for row in ui.fwd_hit_rows {
+		if nendo.pointer_over(nendo.id("FwdRow", u32(row.index))) {
+			group := ui.fwd_hit_keys[start:row.key_end]
+			if pressed {
+				clear(&ui.fwd_pressed_key)
+				append(&ui.fwd_pressed_key, ..group)
+			} else if string(group) != string(ui.fwd_pressed_key[:]) {
+				clear(&ui.fwd_pressed_key)
+			}
+			return
+		}
+		start = row.key_end
+	}
+	clear(&ui.fwd_pressed_key)
 }
 
 // Click/keyboard handling for the open forward picker; anything
@@ -535,14 +575,17 @@ handle_forward :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.focus = .Fwd
 		return
 	}
-	if !mouse_released() {
+	// A poll can contain the previous release and the next press.
+	if !mouse_released() || rl.IsMouseButtonDown(.LEFT) {
 		return
 	}
-	for _, i in ui.chats {
-		if nendo.pointer_over(nendo.id("FwdRow", u32(i))) {
+	defer clear(&ui.fwd_pressed_key)
+	if group := string(ui.fwd_pressed_key[:]); group != "" {
+		for &chat, i in ui.chats {
+			if chat.group_id != group {continue}
 			filter := strings.to_lower(string(ui.fwd_filter[:]), context.temp_allocator)
 			title := strings.builder_make(context.temp_allocator)
-			if !fwd_visible(ui, i, filter, &title) {continue}
+			if !fwd_visible(ui, i, filter, &title) {break}
 			ui.fwd_open = false
 			ui.focus = .Compose
 			if ui.fwd_kind == .Theme {
