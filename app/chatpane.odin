@@ -1551,51 +1551,43 @@ nc_member_options :: proc(ui: ^Ui_State, query: string) {
 		clip = {y = true, scroll = true},
 	},
 	) {
-		data := nendo.scroll(nendo.id("NCMemberOptions"))
-		if data.found {data.position.y = clamp(data.position.y, -max(0, f32(lines) * NC_MEMBER_H - height), 0)}
-		first := data.found ? clamp(int(-data.position.y / NC_MEMBER_H), 0, lines) : 0
-		last := min(first + 7, lines)
-		if nendo.box(nendo.id("NCMemberBefore"))(
-		{height = nendo.fixed(f32(first) * NC_MEMBER_H)},
-		) {}
 		if lines == 0 {
 			if nendo.box(nendo.id("NCMemberEmpty"))({padding = {left = 12, right = 12}}) {
 				nendo.text(tr("No matches"), {font = FONT_BODY, size = 13, color = TEXT_DIM})
 			}
-		}
-		for i in first ..< last {
-			lit := i == ui.nc_contact_sel
-			if i == count {
-				people_status_row(ui, nendo.fixed(NC_MEMBER_H))
-			} else if i < len(rows) {
-				contact := ui.nc_contacts[rows[i].idx]
-				label := contact_label(ui, contact)
-				nc_member_option(
-					"NCMemberOption",
-					u32(rows[i].idx),
-					contact.id_hex,
-					label,
-					npub_tail(contact.npub),
-					contact.pic_url,
-					lit,
-				)
-			} else {
-				at := people[i - len(rows)]
-				hit := ui.people.hits[at]
-				nc_member_option(
-					"NCMemberPerson",
-					u32(at),
-					hit.id_hex,
-					people_label(ui, hit),
-					people_sublabel(hit),
-					hit.pic_url,
-					lit,
-				)
+		} else {
+			window := nendo.virtual_rows(nendo.id("NCMemberRows"), lines, NC_MEMBER_H)
+			for i in window.first ..< window.end {
+				lit := i == ui.nc_contact_sel
+				if i == count {
+					people_status_row(ui, nendo.fixed(NC_MEMBER_H))
+				} else if i < len(rows) {
+					contact := ui.nc_contacts[rows[i].idx]
+					label := contact_label(ui, contact)
+					nc_member_option(
+						"NCMemberOption",
+						u32(rows[i].idx),
+						contact.id_hex,
+						label,
+						npub_tail(contact.npub),
+						contact.pic_url,
+						lit,
+					)
+				} else {
+					at := people[i - len(rows)]
+					hit := ui.people.hits[at]
+					nc_member_option(
+						"NCMemberPerson",
+						u32(at),
+						hit.id_hex,
+						people_label(ui, hit),
+						people_sublabel(hit),
+						hit.pic_url,
+						lit,
+					)
+				}
 			}
 		}
-		if nendo.box(nendo.id("NCMemberAfter"))(
-		{height = nendo.fixed(f32(lines - last) * NC_MEMBER_H)},
-		) {}
 	}
 	scrollbar(nendo.id("NCMemberOptions"), 16)
 }
@@ -1815,17 +1807,8 @@ nc_contact_list :: proc(ui: ^Ui_State) {
 				if loading {busy_bar("NCContactsBusy")}
 			}
 		} else {
-			ROW_H :: NC_CONTACT_H
-			data := nendo.scroll(nendo.id("NCContacts"))
-			height := data.found ? data.viewport.height : f32(rl.GetScreenHeight()) / UI_ZOOM
-			offset :=
-				data.found ? clamp(-data.position.y, 0, max(0, f32(count) * ROW_H - height)) : 0
-			if data.found {data.position.y = -offset}
-			first := clamp(int(offset / ROW_H) - 2, 0, count)
-			last := clamp(int((offset + height) / ROW_H) + 3, first, count)
-			if first >
-			   0 {if nendo.box(nendo.id("NCContactsTop"))({height = nendo.fixed(f32(first) * ROW_H)}) {}}
-			for i in first ..< last {
+			window := nendo.virtual_rows(nendo.id("NCContactRows"), count, NC_CONTACT_H)
+			for i in window.first ..< window.end {
 				lit := ui.focus == .NC_Search && ui.nc_contact_sel == i
 				if i < len(rows) {
 					contact := ui.nc_contacts[rows[i].idx]
@@ -1852,8 +1835,6 @@ nc_contact_list :: proc(ui: ^Ui_State) {
 					lit,
 				)
 			}
-			if last <
-			   count {if nendo.box(nendo.id("NCContactsBottom"))({height = nendo.fixed(f32(count - last) * ROW_H)}) {}}
 		}
 	}
 	scrollbar(nendo.id("NCContacts"))

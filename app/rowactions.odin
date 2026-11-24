@@ -480,11 +480,14 @@ open_folder_modal :: proc(ui: ^Ui_State, gid: string = "", rename: int = -1) {
 }
 
 @(private = "file")
+FOLDER_DESTINATION_H :: f32(44)
+
+@(private = "file")
 folder_destination :: proc(ui: ^Ui_State, name: string, index: int, active: bool) {
 	if nendo.box(nendo.id("FolderDestination", u32(index)))(
 	{
 		width = nendo.grow(),
-		height = nendo.fixed(44),
+		height = nendo.fixed(FOLDER_DESTINATION_H),
 		padding = {left = 12, right = 12},
 		gap = 12,
 		align = {y = .Center},
@@ -788,31 +791,22 @@ folder_modal :: proc(ui: ^Ui_State) {
 			{
 				direction = .Column,
 				width = nendo.grow(),
-				height = nendo.fit(max = max(44, min(264, modal_h(580) - 290))),
-				gap = 4,
+				height = nendo.fit(max = max(FOLDER_DESTINATION_H, min(264, modal_h(580) - 290))),
 				clip = {y = true, scroll = true},
 			},
 			) {
-				view := nendo.scroll(nendo.id("FolderList"))
-				height := view.found ? view.viewport.height : 264
-				offset := view.found ? -view.position.y : 0
-				first := clamp(int(offset / 48) - 2, 0, matches)
-				last := clamp(int((offset + height) / 48) + 3, first, matches)
-				if first > 0 {
-					if nendo.box(nendo.id("FolderDestinationsBefore"))(
-					{height = nendo.fixed(f32(first) * 48 - 4)},
-					) {}
-				}
-				for i in destinations[first:last] {
-					name := ui.prefs.folders[i]
-					folder_destination(ui, name, i, ui.folder_gid != "" && name == current)
-				}
-				if last < matches {
-					if nendo.box(nendo.id("FolderDestinationsAfter"))(
-					{height = nendo.fixed(f32(matches - last) * 48 - 4)},
-					) {}
-				}
-				if matches == 0 && query != "" {
+				if matches > 0 {
+					rows := nendo.virtual_rows(
+						nendo.id("FolderDestinationRows"),
+						matches,
+						FOLDER_DESTINATION_H,
+						gap = 4,
+					)
+					for i in destinations[rows.first:rows.end] {
+						name := ui.prefs.folders[i]
+						folder_destination(ui, name, i, ui.folder_gid != "" && name == current)
+					}
+				} else if query != "" {
 					nendo.text(
 						tr("No folders match your search."),
 						{font = FONT_BODY, size = 13, color = TEXT_LO},

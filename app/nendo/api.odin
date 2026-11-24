@@ -36,6 +36,159 @@ box :: proc {
 	box_auto,
 }
 
+Virtual_Range :: struct {
+	first, end: int,
+	remaining:  f32,
+}
+
+// Declare the final run of rows inside a top-aligned, vertically scrolling column.
+// Build one box of row_height per index in first..<end. The run owns the row gap.
+@(deferred_out = finish_virtual_rows)
+virtual_rows :: proc(id: Id, count: int, row_height: f32, gap: u16 = 0) -> Virtual_Range {
+	ctx := active_context
+	owner := get_open_layout_element()
+	stride := row_height + f32(gap)
+	height := cmax(f32(0), f32(count) * stride - f32(gap))
+	limit := ctx.layout_dimensions.height
+	if owner.config.height.max > 0 {
+		limit = cmin(limit, owner.config.height.max)
+	}
+	top, window := f32(0), limit
+	inherited_clip := false
+	// A bounded picker keeps its own small window for keyboard reveal.
+	if owner.config.height.max <= 0 || owner.config.height.max > ctx.layout_dimensions.height {
+		top, window, inherited_clip = virtual_ancestor_window(owner, limit)
+	}
+	if view := find_scroll_data(owner.id); view != nil {
+		prefix := flow_prefix_y(owner, ctx.layout_element_children_buffer.length)
+		viewport := view.bounding_box.height
+		if owner.config.height.kind == .Fixed {
+			viewport = owner.config.height.min
+		} else if !inherited_clip {
+			viewport = cmin(viewport, limit)
+		} else if owner.config.height.max > 0 {
+			viewport = cmin(viewport, owner.config.height.max)
+		}
+		content := prefix + height + f32(owner.config.padding.bottom)
+		offset := clamp(-view.scroll_position.y, 0, cmax(f32(0), content - viewport))
+		view.scroll_position.y = -offset
+		owner.config.clip.offset.y = -offset
+		top += offset - prefix
+	}
+	first := clamp(int(top / stride) - 1, 0, count)
+	end := clamp(int((top + window) / stride) + 2, first, count)
+
+	open_element_with_id(id)
+	configure(Box{width = grow(), direction = .Column, gap = gap})
+	if first > 0 {
+		if box(id_local("VirtualBefore"))({height = fixed(f32(first) * stride - f32(gap))}) {}
+	}
+	remaining := end < count ? f32(count - end) * stride - f32(gap) : 0
+	return {first, end, remaining}
+}
+
+@(private)
+flow_prefix_y :: proc(parent: ^Layout_Element, children_end: i32) -> (y: f32) {
+	y = f32(parent.config.padding.top)
+	if parent.config.direction != .Column {return}
+	ctx := active_context
+	siblings := i32(parent.children.length)
+	y += f32(siblings) * f32(parent.config.gap)
+	for i in children_end - siblings ..< children_end {
+		child := array_get(
+			&ctx.layout_elements,
+			array_get_value(&ctx.layout_element_children_buffer, i),
+		)
+		y += child.dimensions.height
+	}
+	return
+}
+
+@(private)
+virtual_ancestor_window :: proc(
+	owner: ^Layout_Element,
+	limit: f32,
+) -> (
+	top, height: f32,
+	clipped: bool,
+) {
+	ctx := active_context
+	height = limit
+	if owner.config.floating.attach_to != .None {
+		top = cmax(f32(0), -floating_origin_y(owner))
+		return
+	}
+	relative: f32
+	child := owner
+	children_end := ctx.layout_element_children_buffer.length - i32(owner.children.length)
+	for i := ctx.open_layout_element_stack.length - 2; i > 0; i -= 1 {
+		ancestor := array_get(
+			&ctx.layout_elements,
+			array_get_value(&ctx.open_layout_element_stack, i),
+		)
+		config := &ancestor.config
+		if config.align.y == .Top &&
+		   config.direction != .Wrap_Row &&
+		   config.grid.min_cell_width <= 0 {
+			relative += flow_prefix_y(ancestor, children_end)
+		} else {
+			// Layout-dependent positions come from the last arrangement, without its scroll.
+			prior_child, prior_parent :=
+				element({id = child.id}).rect, element({id = ancestor.id}).rect
+			if prior_child.height > 0 && prior_parent.height > 0 {
+				relative += prior_child.y - prior_parent.y
+				if view := find_scroll_data(ancestor.id); view != nil {relative -= view.laid_out_y}
+			}
+		}
+		if config.clip.x || config.clip.y {
+			relative += config.clip.offset.y
+		}
+		if config.clip.y {
+			clipped = true
+			top = cmax(top, -relative)
+			if config.height.max > 0 {height = cmin(height, config.height.max)}
+		}
+		if config.floating.attach_to != .None {
+			relative += floating_origin_y(ancestor)
+			break
+		}
+		child = ancestor
+		children_end -= i32(ancestor.children.length)
+	}
+	top = cmax(top, -relative)
+	return
+}
+
+@(private)
+floating_origin_y :: proc(box: ^Layout_Element) -> f32 {
+	config := &box.config.floating
+	anchor: Rect
+	if config.attach_to == .Root {
+		anchor.height = active_context.layout_dimensions.height
+	} else {
+		anchor = element({id = config.parent}).rect
+	}
+	height := box.config.height.min
+	if box.config.height.kind != .Fixed {
+		height = cmax(height, element({id = box.id}).rect.height - 2 * config.expand.height)
+	}
+	return(
+		anchor.y +
+		attach_y(config.attach.parent, anchor.height) -
+		attach_y(config.attach.element, height) +
+		config.offset.y -
+		config.expand.height \
+	)
+}
+
+@(private)
+finish_virtual_rows :: proc(rows: Virtual_Range) {
+	if rows.remaining > 0 {
+		if box(id_local("VirtualAfter"))({height = fixed(rows.remaining)}) {}
+	}
+	close_element()
+}
+
 text :: proc {
 	text_static,
 	text_dynamic,

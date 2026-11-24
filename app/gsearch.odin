@@ -629,13 +629,8 @@ gs_filter_options :: proc(ui: ^Ui_State) {
 		},
 	},
 	) {
-		data := nendo.scroll(nendo.id("GsOptions"))
-		first := data.found ? clamp(int(-data.position.y / f32(row_height)), 0, count) : 0
-		last := min(first + 8, count)
-		if nendo.box(nendo.id("GsOptionsBefore"))(
-		{height = nendo.fixed(f32(first) * row_height)},
-		) {}
-		for i in first ..< last {
+		rows := nendo.virtual_rows(nendo.id("GsOptionRows"), count, row_height)
+		for i in rows.first ..< rows.end {
 			label, key := gs_option(ui, i)
 			selected :=
 				ui.gs_picker == 1 ? ui.gs_group == key : ui.gs_picker == 2 ? ui.gs_sender == key : int(ui.gs_attachment) == i
@@ -658,9 +653,6 @@ gs_filter_options :: proc(ui: ^Ui_State) {
 				if hovered() {cursor_raise(.Pointer)}
 			}
 		}
-		if nendo.box(nendo.id("GsOptionsAfter"))(
-		{height = nendo.fixed(f32(count - last) * row_height)},
-		) {}
 	}
 	scrollbar(nendo.id("GsOptions"), 16)
 }

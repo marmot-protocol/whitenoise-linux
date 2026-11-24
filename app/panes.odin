@@ -36,56 +36,6 @@ chat_row_height :: proc() -> f32 {
 }
 
 @(private)
-ARCHIVED_ROW_H :: f32(84)
-
-// Fixed row geometry lets the first frame skip hidden rows too. Keep the
-// complete order outside this window for keyboard navigation and filtering.
-@(private)
-chat_rows_window :: proc(
-	ui: ^Ui_State,
-	rows: []Chat_Row_Ui,
-	order: []int,
-	container: nendo.Id,
-	chip: Row_Chip,
-	gap: f32,
-	offset_y: f32 = 0,
-	section: u32 = 0,
-) {
-	stride := (chip == .Unarchive ? ARCHIVED_ROW_H : chat_row_height()) + gap
-	data := nendo.scroll(container)
-	height := data.found ? data.viewport.height : f32(rl.GetScreenHeight()) / UI_ZOOM
-	if chip == .Unarchive && data.found {
-		// A restore or a narrower search can shorten the list while scrolled.
-		// Clamp before windowing so the surviving rows mount in this frame.
-		content_height := max(0, f32(len(order)) * stride - gap)
-		data.position.y = -clamp(-data.position.y, 0, max(0, content_height - height))
-	}
-	offset := (data.found ? -data.position.y : 0) - offset_y
-	first := clamp(int(offset / stride) - 2, 0, len(order))
-	last := clamp(int((offset + height) / stride) + 3, first, len(order))
-	if first > 0 {
-		if nendo.box(nendo.id("ChatRowsBefore", section))(
-		{height = nendo.fixed(f32(first) * stride - gap)},
-		) {}
-	}
-	for i in order[first:last] {
-		active := chip == .Archive && ui.selected == i
-		// Keyed by the chat rather than its slot, so a restore that
-		// closes the list up slides the rows below into place.
-		if nendo.box(nendo.id("ChatRowMove", nendo.id(rows[i].group_id).id))(
-		{width = nendo.grow(), transition = layout_motion()},
-		) {
-			chat_row(u32(i), rows[i], active, chip)
-		}
-	}
-	if last < len(order) {
-		if nendo.box(nendo.id("ChatRowsAfter", section))(
-		{height = nendo.fixed(f32(len(order) - last) * stride - gap)},
-		) {}
-	}
-}
-
-@(private)
 Folder_Section :: struct {
 	start, count, unread: int,
 }

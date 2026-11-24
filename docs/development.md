@@ -178,6 +178,22 @@ For buttons or chips of different widths, set `direction = .Wrap_Row`. Nendo kee
 
 Use `nendo.percent(1, max = 480)` to fill the parent up to a cap. A row or column subtracts padding and any gaps on the sizing axis before applying the percentage. A wrapping row applies the percentage to its padded width before packing items with gaps. A floating box uses the full size of its anchor, so `nendo.percent(1)` makes a menu as wide as its trigger. Use `nendo.grow(max = 480)` to share leftover space with siblings.
 
+Use `nendo.virtual_rows` for a run of equal-height rows at the end of a top-aligned scrolling column. Nendo reserves the full scroll extent and returns the range to build, even if an outer column handles the scroll. A picker with a height cap that fits on the canvas keeps its own row window so keyboard navigation can reveal hidden rows. Give each row a stable ID and the declared row height. Put headers before the run and give them heights known before text wraps. Nendo uses the last layout for ancestor positions that depend on wrapping or alignment. The run closes at the end of its enclosing block.
+
+```odin
+if nendo.box(nendo.id("Results"))({
+    width = nendo.grow(), height = nendo.fixed(240), direction = .Column,
+    clip = {y = true, scroll = true},
+}) {
+    rows := nendo.virtual_rows(nendo.id("ResultRows"), len(labels), 32, gap = 4)
+    for i in rows.first ..< rows.end {
+        if nendo.box(nendo.id("Result", u32(i)))({width = nendo.grow(), height = nendo.fixed(32)}) {
+            nendo.text(labels[i], {wrap = .None})
+        }
+    }
+}
+```
+
 | Path | What's there |
 | --- | --- |
 | `app/` | The whole app: panes, layout, state, workers, vault, media viewers |

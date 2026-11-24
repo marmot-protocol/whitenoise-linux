@@ -156,18 +156,25 @@ pointer :: proc() -> Pointer {
 
 @(private)
 get_scroll_offset :: proc() -> Vector2 {
-	ctx := active_context
-	if ctx.warnings.max_elements_exceeded {
+	if active_context.warnings.max_elements_exceeded {
 		return {}
 	}
-	open_layout_element := get_open_layout_element()
-	for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
-		mapping := array_get(&ctx.scroll_container_datas, i)
-		if mapping.element_id == open_layout_element.id {
-			return mapping.scroll_position
-		}
+	if mapping := find_scroll_data(get_open_layout_element().id); mapping != nil {
+		return mapping.scroll_position
 	}
 	return {}
+}
+
+@(private)
+find_scroll_data :: proc(id: u32) -> ^Scroll_Container_Data_Internal {
+	ctx := active_context
+	for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
+		mapping := array_get(&ctx.scroll_container_datas, i)
+		if mapping.element_id == id {
+			return mapping
+		}
+	}
+	return nil
 }
 
 update_scroll :: proc(drag: Drag_Scroll, scroll_delta: Vector2, delta_time: f32) {
@@ -998,26 +1005,17 @@ pointer_over :: proc(id: Id) -> bool { 	// TODO return priority for separating m
 }
 
 scroll :: proc(id: Id) -> Scroll_Data {
-	ctx := active_context
-	for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
-		scroll_container_data := array_get(&ctx.scroll_container_datas, i)
-		if scroll_container_data.element_id == id.id {
-			if scroll_container_data.layout_element == nil { 	// This can happen on the first frame before a scroll container is declared
-				return {}
-			}
-			return Scroll_Data {
-				position = &scroll_container_data.scroll_position,
-				viewport = {
-					scroll_container_data.bounding_box.width,
-					scroll_container_data.bounding_box.height,
-				},
-				content = scroll_container_data.content_size,
-				clip = scroll_container_data.layout_element.config.clip,
-				found = true,
-			}
-		}
+	data := find_scroll_data(id.id)
+	if data == nil || data.layout_element == nil {
+		return {}
 	}
-	return {}
+	return Scroll_Data {
+		position = &data.scroll_position,
+		viewport = {data.bounding_box.width, data.bounding_box.height},
+		content = data.content_size,
+		clip = data.layout_element.config.clip,
+		found = true,
+	}
 }
 
 element :: proc(id: Id) -> Element_Data {

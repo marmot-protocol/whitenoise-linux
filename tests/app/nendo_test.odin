@@ -152,6 +152,179 @@ layout_scroll_targets_movable_container :: proc(t: ^testing.T) {
 	testing.expect_value(t, errors, 0)
 }
 
+@(private = "file")
+virtual_rows_layout :: proc(count: int, height: nendo.Size) -> []nendo.Render_Command {
+	nendo.begin()
+	if nendo.box(nendo.id("VirtualList"))(
+	{
+		width = nendo.fixed(200),
+		height = height,
+		padding = {left = 11, right = 7, top = 7, bottom = 9},
+		gap = 5,
+		direction = .Column,
+		clip = {y = true, scroll = true},
+	},
+	) {
+		if nendo.box(nendo.id("VirtualHeader"))({height = nendo.fixed(19)}) {}
+		rows := nendo.virtual_rows(nendo.id("VirtualRun"), count, 20, gap = 4)
+		for i in rows.first ..< rows.end {
+			if nendo.box(nendo.id("VirtualRow", u32(i)))(
+			{width = nendo.grow(), height = nendo.fixed(20), color = {1, 1, 1, 1}},
+			) {}
+		}
+	}
+	return nendo.end(0)
+}
+
+@(test)
+layout_virtual_rows_preserves_geometry_when_scrolled_and_shrunk :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	nendo.set_context(nil)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	errors := 0
+	nendo.init(memory, {800, 600}, {handler = count_layout_error, user_data = &errors})
+
+	list_id := nendo.id("VirtualList")
+	virtual_rows_layout(1000, nendo.fixed(100))
+	view := nendo.scroll(list_id)
+	if !testing.expect(t, view.found) {return}
+	testing.expect_value(t, view.content.height, 24036)
+	testing.expect_value(t, nendo.element(nendo.id("VirtualHeader")).rect.y, 7)
+	testing.expect_value(
+		t,
+		nendo.element(nendo.id("VirtualRow", 0)).rect,
+		nendo.Rect{11, 31, 182, 20},
+	)
+	testing.expect_value(t, nendo.element(nendo.id("VirtualRow", 1)).rect.y, 55)
+	testing.expect(t, !nendo.element(nendo.id("VirtualRow", 999)).found)
+
+	view.position.y = view.viewport.height - view.content.height
+	frames := [?]struct {
+		count:           int,
+		height, content: f32,
+	}{{1000, 100, 24036}, {12, 100, 324}, {12, 140, 324}}
+	// Shrinking and resizing must clamp on the first frame, without a scroll update.
+	for frame in frames {
+		commands := virtual_rows_layout(frame.count, nendo.fixed(frame.height))
+		view = nendo.scroll(list_id)
+		if !testing.expect(t, view.found) {return}
+		testing.expect_value(t, view.viewport.height, frame.height)
+		testing.expect_value(t, view.content.height, frame.content)
+		testing.expect_value(t, view.position.y, frame.height - frame.content)
+
+		last_id := nendo.id("VirtualRow", u32(frame.count - 1))
+		expected := nendo.Rect{11, frame.height - 9 - 20, 182, 20}
+		clipping := false
+		last_drawn := false
+		for command in commands {
+			if command.kind == .Scissor_Start && command.id == list_id.id {
+				testing.expect_value(t, command.rect, nendo.Rect{0, 0, 200, frame.height})
+				clipping = command.data.clip.y
+			} else if command.kind == .Scissor_End {
+				clipping = false
+			} else if command.kind == .Rectangle && command.id == last_id.id {
+				testing.expect(t, clipping)
+				testing.expect_value(t, command.rect, expected)
+				last_drawn = true
+			}
+		}
+		testing.expect(t, last_drawn)
+	}
+
+	virtual_rows_layout(1000, nendo.grow())
+	view = nendo.scroll(list_id)
+	view.position.y = view.viewport.height - view.content.height
+	nendo.set_dimensions({800, 100})
+	virtual_rows_layout(12, nendo.grow())
+	last := nendo.element(nendo.id("VirtualRow", 11))
+	testing.expect(t, last.found)
+	testing.expect_value(t, last.rect, nendo.Rect{11, 71, 182, 20})
+	testing.expect_value(t, errors, 0)
+}
+
+@(test)
+layout_virtual_rows_follow_ancestor_scroll :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	nendo.set_context(nil)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	errors := 0
+	nendo.init(memory, {800, 600}, {handler = count_layout_error, user_data = &errors})
+	for trial in ([4]struct {
+			wheel:  f32,
+			header: f32,
+			row:    u32,
+			y:      f32,
+		}{{0, 20, 0, 20}, {-3000, 20, 999, 90}, {40, 20, 979, 90}, {0, 420, 959, 90}}) {
+		nendo.set_pointer({50, 50}, .Up)
+		nendo.update_scroll(.Off, {0, trial.wheel}, 0)
+		nendo.begin()
+		if nendo.box(nendo.id("OuterViewport"))(
+		{
+			width = nendo.fixed(200),
+			height = nendo.fixed(110),
+			direction = .Column,
+			clip = {y = true, scroll = true},
+		},
+		) {
+			if nendo.box()({height = nendo.fixed(trial.header)}) {}
+			if nendo.box(nendo.id("InnerViewport"))(
+			{
+				width = nendo.grow(),
+				height = nendo.grow(),
+				direction = .Column,
+				clip = {y = true, scroll = true},
+			},
+			) {
+				rows := nendo.virtual_rows(nendo.id("NestedRun"), 1000, 20)
+				for i in rows.first ..< rows.end {
+					if nendo.box(nendo.id("NestedRow", u32(i)))(
+					{width = nendo.grow(), height = nendo.fixed(20)},
+					) {}
+				}
+			}
+		}
+		nendo.end(0)
+		row := nendo.element(nendo.id("NestedRow", trial.row))
+		testing.expect(t, row.found)
+		testing.expect_value(t, row.rect, nendo.Rect{0, trial.y, 200, 20})
+		if trial.wheel != 0 {testing.expect(t, !nendo.element(nendo.id("NestedRow", 0)).found)}
+	}
+
+	nendo.set_dimensions({800, 100})
+	for offset in ([2]int{-200, -140}) {
+		nendo.begin()
+		if nendo.box(nendo.id("FloatingViewport"))(
+		{
+			width = nendo.fixed(200),
+			height = nendo.fixed(300),
+			direction = .Column,
+			clip = {y = true, scroll = true},
+			floating = {attach_to = .Root, offset = {0, f32(offset)}},
+		},
+		) {
+			rows := nendo.virtual_rows(nendo.id("FloatingRun"), 100, 20)
+			for i in rows.first ..< rows.end {
+				if nendo.box(nendo.id("FloatingRow", u32(i)))(
+				{width = nendo.grow(), height = nendo.fixed(20)},
+				) {}
+			}
+		}
+		nendo.end(0)
+		first_visible := u32(-offset / 20)
+		row := nendo.element(nendo.id("FloatingRow", first_visible))
+		testing.expect(t, row.found)
+		testing.expect_value(t, row.rect, nendo.Rect{0, 0, 200, 20})
+		testing.expect(t, !nendo.element(nendo.id("FloatingRow", 0)).found)
+	}
+	testing.expect_value(t, errors, 0)
+}
+
 // Three fixed rows keyed by identity, laid out in `order` inside a
 // scrolling list, like the inbox after a message reorders it.
 @(private = "file")

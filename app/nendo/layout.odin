@@ -146,6 +146,17 @@ align_y_offset :: proc(align: Align_Y, space: f32) -> f32 {
 }
 
 @(private)
+attach_y :: proc(point: Attach_Point, height: f32) -> f32 {
+	#partial switch point {
+	case .Left_Center, .Center_Center, .Right_Center:
+		return height / 2
+	case .Left_Bottom, .Center_Bottom, .Right_Bottom:
+		return height
+	}
+	return 0
+}
+
+@(private)
 Layout_Pass :: enum {
 	Static,
 	Target,
@@ -860,21 +871,10 @@ calculate_final_layout :: proc(pass: Layout_Pass) {
 			case .Right_Top, .Right_Center, .Right_Bottom:
 				target_attach_position.x -= root_dimensions.width
 			}
-			switch config.attach.parent { 	// I know I could merge the x and y switch statements, but this is easier to read
-			case .Left_Top, .Right_Top, .Center_Top:
-				target_attach_position.y = parent_bounding_box.y
-			case .Left_Center, .Center_Center, .Right_Center:
-				target_attach_position.y = parent_bounding_box.y + (parent_bounding_box.height / 2)
-			case .Left_Bottom, .Center_Bottom, .Right_Bottom:
-				target_attach_position.y = parent_bounding_box.y + parent_bounding_box.height
-			}
-			switch config.attach.element {
-			case .Left_Top, .Right_Top, .Center_Top:
-			case .Left_Center, .Center_Center, .Right_Center:
-				target_attach_position.y -= (root_dimensions.height / 2)
-			case .Left_Bottom, .Center_Bottom, .Right_Bottom:
-				target_attach_position.y -= root_dimensions.height
-			}
+			target_attach_position.y =
+				parent_bounding_box.y +
+				attach_y(config.attach.parent, parent_bounding_box.height) -
+				attach_y(config.attach.element, root_dimensions.height)
 			target_attach_position.x += config.offset.x
 			target_attach_position.y += config.offset.y
 			root_position = target_attach_position
@@ -1105,6 +1105,7 @@ calculate_final_layout :: proc(pass: Layout_Pass) {
 							scroll_container_data = mapping
 							mapping.bounding_box = current_element_bounding_box
 							scroll_offset = current_element.config.clip.offset
+							mapping.laid_out_y = scroll_offset.y
 							break
 						}
 					}

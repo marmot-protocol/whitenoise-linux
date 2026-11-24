@@ -282,38 +282,8 @@ group_files_panel :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
-	panel, list := nendo.id("GroupFilesPanel"), nendo.id("GroupFilesList")
-	head, filters := nendo.id("GroupFilesHead"), nendo.id("GroupFilesFilters")
+	panel := nendo.id("GroupFilesPanel")
 	defer scrollbar(panel)
-
-	columns, rows, first, last: int
-	cell, card_height, stride: f32
-	if ready && job.err == "" && len(matches) > 0 {
-		width := max(1, page_w(ui) - 2 * f32(pad))
-		columns = max(1, int((width + GROUP_FILE_GAP) / 160))
-		cell = (width - f32((columns - 1) * GROUP_FILE_GAP)) / f32(columns)
-		rows = (len(matches) + columns - 1) / columns
-		card_height = tap_size() ? f32(216) : f32(GROUP_FILE_CARD_H)
-		stride = card_height + GROUP_FILE_GAP
-
-		canvas_height := f32(rl.GetScreenHeight()) / UI_ZOOM
-		top: f32
-		if data := nendo.scroll(panel); data.found {
-			list_top := f32(pad) + 2 * f32(gap)
-			for id in ([2]nendo.Id{head, filters}) {
-				part := nendo.element(id)
-				list_top += part.found ? part.rect.height : f32(option_height)
-			}
-			viewport := min(data.viewport.height, canvas_height)
-			content := list_top + f32(rows) * stride + f32(pad)
-			offset := clamp(-data.position.y, 0, max(0, content - viewport))
-			data.position.y = -offset
-			top = max(0, offset - list_top)
-		}
-		first = max(0, int(top / stride) - 1)
-		// The canvas also bounds the viewport on the first frame of a resize.
-		last = min(rows, int((top + canvas_height) / stride) + 2)
-	}
 
 	if nendo.box(panel)(
 	{
@@ -326,7 +296,9 @@ group_files_panel :: proc(ui: ^Ui_State) {
 		color = BG,
 	},
 	) {
-		if nendo.box(head)({width = nendo.grow(), gap = 10, align = {y = .Center}}) {
+		if nendo.box(nendo.id("GroupFilesHead"))(
+		{width = nendo.grow(), gap = 10, align = {y = .Center}},
+		) {
 			nendo.text(tr("Files"), {font = FONT_TITLE, size = 22, color = TEXT})
 			if ready {
 				if nendo.box(nendo.id("GroupFilesCount"))(
@@ -371,7 +343,7 @@ group_files_panel :: proc(ui: ^Ui_State) {
 				if hovered() {tooltip(tr("Back to chat"))}
 			}
 		}
-		if nendo.box(filters)({width = nendo.grow(), gap = 8}) {
+		if nendo.box(nendo.id("GroupFilesFilters"))({width = nendo.grow(), gap = 8}) {
 			for menu in ([]Group_File_Menu{.Type, .Sender}) {
 				if menu == .Sender && !group_files_had_senders {continue}
 				active := menu == .Type ? ui.group_files_type != .All : ui.group_files_sender != ""
@@ -436,14 +408,8 @@ group_files_panel :: proc(ui: ^Ui_State) {
 				},
 			},
 			) {
-				data := nendo.scroll(nendo.id("GroupFilesOptions"))
-				first :=
-					data.found ? clamp(int(-data.position.y / f32(option_height)), 0, count) : 0
-				last := min(first + 9, count)
-				if nendo.box(nendo.id("GroupOptionsBefore"))(
-				{height = nendo.fixed(f32(first) * option_height)},
-				) {}
-				for i in first ..< last {
+				rows := nendo.virtual_rows(nendo.id("GroupOptionRows"), count, option_height)
+				for i in rows.first ..< rows.end {
 					label :=
 						menu == .Type ? tr(GROUP_FILE_TYPES[Group_File_Type(i)]) : group_sender_label(ui, i == 0 ? "" : job.senders[i - 1])
 					selected :=
@@ -469,9 +435,6 @@ group_files_panel :: proc(ui: ^Ui_State) {
 						)
 					}
 				}
-				if nendo.box(nendo.id("GroupOptionsAfter"))(
-				{height = nendo.fixed(f32(count - last) * option_height)},
-				) {}
 			}
 			scrollbar(nendo.id("GroupFilesOptions"), 10)
 		}
@@ -493,22 +456,21 @@ group_files_panel :: proc(ui: ^Ui_State) {
 			}
 			return
 		}
-		if nendo.box(list)({width = nendo.grow(), direction = .Column}) {
-			if nendo.box(nendo.id("GroupFilesBefore"))(
-			{height = nendo.fixed(f32(first) * stride)},
-			) {}
-			for row in first ..< last {
-				if nendo.box(nendo.id("GroupFileRow", u32(row)))(
-				{width = nendo.grow(), height = nendo.fixed(stride), gap = GROUP_FILE_GAP},
-				) {
-					for i in matches[row * columns:min((row + 1) * columns, len(matches))] {
-						group_file_card(ui, job, i, {cell, card_height})
-					}
+		width := max(1, page_w(ui) - 2 * f32(pad))
+		columns := max(1, int((width + GROUP_FILE_GAP) / 160))
+		cell := (width - f32((columns - 1) * GROUP_FILE_GAP)) / f32(columns)
+		count := (len(matches) + columns - 1) / columns
+		card_height := tap_size() ? f32(216) : f32(GROUP_FILE_CARD_H)
+		stride := card_height + GROUP_FILE_GAP
+		rows := nendo.virtual_rows(nendo.id("GroupFilesList"), count, stride)
+		for row in rows.first ..< rows.end {
+			if nendo.box(nendo.id("GroupFileRow", u32(row)))(
+			{width = nendo.grow(), height = nendo.fixed(stride), gap = GROUP_FILE_GAP},
+			) {
+				for i in matches[row * columns:min((row + 1) * columns, len(matches))] {
+					group_file_card(ui, job, i, {cell, card_height})
 				}
 			}
-			if nendo.box(nendo.id("GroupFilesAfter"))(
-			{height = nendo.fixed(f32(rows - last) * stride)},
-			) {}
 		}
 	}
 }

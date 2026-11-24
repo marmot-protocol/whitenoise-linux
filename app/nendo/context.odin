@@ -123,6 +123,7 @@ Scroll_Container_Data_Internal :: struct {
 	pointer_origin:        Vector2,
 	scroll_momentum:       Vector2,
 	scroll_position:       Vector2,
+	laid_out_y:            f32,
 	previous_delta:        Vector2,
 	momentum_time:         f32,
 	element_id:            u32,

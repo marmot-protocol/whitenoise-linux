@@ -383,26 +383,36 @@ performance_sidebar :: proc(t: ^testing.T) {
 	rl.EndDrawing()
 	ui.page = .Archived
 	ui.archived = ui.chats
-	for _ in 0 ..< 3 {
-		nendo.update_scroll(.Off, {}, 0)
-		build_layout(&ui, 0)
-	}
-	archive := nendo.scroll(nendo.id("ArchivedList"))
-	testing.expect(t, archive.found)
-	for fraction in ([]f32{0, 0.5, 1}) {
-		archive.position.y = -fraction * (archive.content.height - archive.viewport.height)
-		nendo.update_scroll(.Off, {}, 0)
-		build_layout(&ui, 0)
-		mounted := 0
-		for _, i in ui.archived {
-			row := nendo.element(nendo.id("ChatRow", u32(i)))
-			if !row.found {continue}
-			mounted += 1
-			testing.expect(t, nendo.element(nendo.id("ChatUnarch", u32(i))).found)
+	for width in ([2]i32{1200, 400}) {
+		rl.SetWindowSize(width, 800)
+		nendo.set_dimensions({f32(width), 800})
+		for _ in 0 ..< 3 {
+			nendo.update_scroll(.Off, {}, 0)
+			build_layout(&ui, 0)
 		}
-		testing.expect(t, mounted > 0 && mounted < 30)
+		archive_id := nendo.id(width == 1200 ? "ArchivedList" : "ArchivedPage")
+		for fraction in ([]f32{0, 0.5, 1}) {
+			archive := nendo.scroll(archive_id)
+			if !testing.expect(t, archive.found) {return}
+			travel := archive.content.height - archive.viewport.height
+			if !testing.expect(t, travel > 0) {return}
+			archive.position.y = -fraction * travel
+			nendo.update_scroll(.Off, {}, 0)
+			build_layout(&ui, 0)
+			mounted := 0
+			for _, i in ui.archived {
+				row := nendo.element(nendo.id("ArchivedRow", u32(i)))
+				if !row.found {continue}
+				mounted += 1
+				testing.expect(t, nendo.element(nendo.id("ChatUnarch", u32(i))).found)
+			}
+			testing.expect(t, mounted > 0 && mounted < 30)
+		}
+		viewport := nendo.element(archive_id).rect
+		last := nendo.element(nendo.id("ArchivedRow", 999))
+		testing.expect(t, last.found && last.rect.y >= viewport.y)
+		testing.expect(t, last.rect.y + last.rect.height <= viewport.y + viewport.height + 0.01)
 	}
-	testing.expect(t, nendo.element(nendo.id("ChatRow", 999)).found)
 	for msg in ui.messages {message_free(msg)}
 	delete(ui.messages)
 	wrap_clear()
