@@ -117,15 +117,23 @@ archived_row :: proc(index: u32, chat: Chat_Row_Ui) {
 			) {
 				nendo.text(chat.title, {font = FONT_TITLE, size = 15, color = TEXT, wrap = .None})
 			}
+			draft := chat_draft_text(g_ui, chat)
+			preview := draft != "" ? draft : chat.preview
 			if nendo.box(nendo.id("ChatRowPrevClip", index))(
 			{
 				width = nendo.grow(),
 				height = nendo.fixed(16),
+				gap = draft != "" ? 4 : 0,
 				align = {y = .Center},
 				clip = {x = true},
 			},
 			) {
-				row_preview(index, chat.preview)
+				row_preview(
+					index,
+					preview,
+					prefix = draft != "" ? tr("Draft:") : "",
+					prefix_ink = ACCENT,
+				)
 			}
 			if nendo.box(nendo.id("ArchiveRowMeta", index))(
 			{

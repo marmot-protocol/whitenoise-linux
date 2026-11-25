@@ -394,3 +394,257 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 		rl.EndDrawing()
 	}
 }
+
+@(test)
+chat_draft_text_resolution :: proc(t: ^testing.T) {
+	ui := Ui_State {
+		account_ref = "acct-a",
+		selected    = -1,
+	}
+	defer {
+		delete(ui.chats)
+		delete(ui.compose)
+		delete(ui.drafts)
+	}
+	alpha := Chat_Row_Ui {
+		group_id = "alpha",
+		preview  = "Last message",
+	}
+	beta := Chat_Row_Ui {
+		group_id = "beta",
+		preview  = "Older message",
+	}
+	invite := Chat_Row_Ui {
+		group_id = "invite",
+		pending  = true,
+	}
+	append(&ui.chats, alpha, beta, invite)
+
+	testing.expect_value(t, chat_draft_text(nil, alpha), "")
+	testing.expect_value(t, chat_draft_text(&ui, alpha), "")
+
+	ui.drafts["acct-a:alpha"] = "  see you soon  "
+	ui.drafts["acct-a:beta"] = "   \n\t  "
+	ui.drafts["acct-a:invite"] = "ignored invite draft"
+	ui.drafts["acct-b:alpha"] = "other account draft"
+
+	testing.expect_value(t, chat_draft_text(&ui, alpha), "see you soon")
+	testing.expect_value(t, chat_draft_text(&ui, beta), "")
+	testing.expect_value(t, chat_draft_text(&ui, invite), "")
+
+	// While selected, live composer text takes precedence over stale stashed text.
+	ui.selected = 0
+	testing.expect_value(t, chat_draft_text(&ui, alpha), "")
+	append(&ui.compose, "live reply")
+	testing.expect_value(t, chat_draft_text(&ui, alpha), "live reply")
+	testing.expect_value(
+		t,
+		chat_draft_text(&ui, Chat_Row_Ui{group_id = "alpha", archived = true}),
+		"live reply",
+	)
+
+	// While editing a sent message, the composer holds the edit, not a draft.
+	ui.editing = "msg-1"
+	testing.expect_value(t, chat_draft_text(&ui, alpha), "see you soon")
+	ui.editing = ""
+
+	// Switching accounts isolates drafts by account_ref.
+	ui.selected = -1
+	ui.account_ref = "acct-b"
+	testing.expect_value(t, chat_draft_text(&ui, alpha), "other account draft")
+}
+
+@(test)
+chat_row_draft_preview :: proc(t: ^testing.T) {
+	if !test_isolated("chat_row_draft_preview") {return}
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(1200, 800, "Chat row draft preview")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	init_fonts()
+	load_themes()
+	apply_theme(0, 0)
+	set_locale("en")
+	memory: []u8
+	init_layout(&memory, 65536, {1200, 800})
+	defer delete(memory)
+
+	ui := Ui_State {
+		page             = .Chats,
+		selected         = -1,
+		row_menu         = -1,
+		member_menu      = -1,
+		member_nick      = -1,
+		selected_contact = -1,
+		account_ref      = "acct-draft",
+		prefs            = default_prefs(),
+	}
+	ui.prefs.reduce_motion = true
+	append(&ui.accounts, Account_Row_Ui{id_hex = "acct-draft", name = "Self"})
+	append(
+		&ui.chats,
+		Chat_Row_Ui {
+			group_id = "g-short",
+			title = "Short draft",
+			preview = "Previous message",
+			tick = .DELIVERED,
+		},
+		Chat_Row_Ui {
+			group_id = "g-long",
+			title = "Long draft",
+			preview = "Older message",
+			tick = .FAILED,
+		},
+		Chat_Row_Ui{group_id = "g-empty", title = "Brand new chat", preview = ""},
+		Chat_Row_Ui{group_id = "g-multi", title = "Multiline draft", preview = "Fallback preview"},
+		Chat_Row_Ui {
+			group_id = "g-space",
+			title = "Blank draft",
+			preview = "Visible last message",
+			tick = .DELIVERED,
+		},
+	)
+	ui.drafts["acct-draft:g-short"] = "See you at five"
+	ui.drafts["acct-draft:g-long"] = "This unsent draft is deliberately much longer than any sidebar width so it must truncate cleanly"
+	ui.drafts["acct-draft:g-empty"] = "First message draft"
+	ui.drafts["acct-draft:g-multi"] = "First line\nSecond line"
+	ui.drafts["acct-draft:g-space"] = "   \n  "
+
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {
+		g_ui, g_prefs = nil, nil
+		delete(ui.accounts)
+		delete(ui.chats)
+		delete(ui.archived)
+		delete(ui.rail_rows)
+		delete(ui.compose)
+		delete(ui.drafts)
+		delete(ui.sidebar_filter)
+		delete(ui.filter_hits)
+		delete(ui.filter_previews)
+		delete(ui.pending)
+		wrap_clear()
+	}
+
+	preview_runs :: proc(
+		commands: []nendo.Render_Command,
+		index: u32,
+	) -> (
+		joined: string,
+		prefix_color: nendo.Color,
+		has_prefix: bool,
+		inside: bool,
+	) {
+		clip := nendo.element(nendo.id("ChatRowPrevClip", index)).rect
+		parts: [dynamic]string
+		parts.allocator = context.temp_allocator
+		inside = true
+		for command in commands {
+			box := command.rect
+			if command.kind != .Text ||
+			   box.y < clip.y ||
+			   box.y >= clip.y + clip.height ||
+			   box.x < clip.x ||
+			   box.x >= clip.x + clip.width {
+				continue
+			}
+			text := command.text.text
+			if len(parts) == 0 && text == "Draft:" {
+				has_prefix = true
+				prefix_color = command.text.color
+			}
+			append(&parts, text)
+			inside &&= box.x + box.width <= clip.x + clip.width + 0.5
+		}
+		joined = strings.concatenate(parts[:], context.temp_allocator)
+		return
+	}
+
+	for rail_w in ([]int{RAIL_W_MIN, RAIL_W_MAX}) {
+		ui.prefs.rail_w = rail_w
+		for _ in 0 ..< 3 {anim_snap_all(); build_layout(&ui, 0)}
+		commands := build_layout(&ui, 0)
+
+		text0, color0, has0, inside0 := preview_runs(commands, 0)
+		testing.expect(t, has0, "Short draft should show Draft: prefix")
+		testing.expect_value(t, color0, ACCENT)
+		testing.expect_value(t, text0, "Draft:See you at five")
+		testing.expect(t, inside0, text0)
+		// Delivery tick is hidden while showing a draft.
+		testing.expect(t, !nendo.element(nendo.id("Tick", 0)).found)
+
+		text1, _, has1, inside1 := preview_runs(commands, 1)
+		testing.expect(t, has1, "Long draft should show Draft: prefix")
+		testing.expect(t, strings.has_suffix(text1, "…"), text1)
+		testing.expect(t, inside1, text1)
+
+		text2, _, has2, inside2 := preview_runs(commands, 2)
+		testing.expect(t, has2, "Empty-history chat should still show Draft: prefix")
+		testing.expect_value(t, text2, "Draft:First message draft")
+		testing.expect(t, inside2, text2)
+
+		text3, _, has3, inside3 := preview_runs(commands, 3)
+		testing.expect(t, has3, "Multiline draft should show Draft: prefix")
+		testing.expect_value(t, text3, "Draft:First line…")
+		testing.expect(t, inside3, text3)
+
+		text4, _, has4, inside4 := preview_runs(commands, 4)
+		testing.expect(t, !has4, "Whitespace-only draft must fall back to last message")
+		testing.expect_value(t, text4, "Visible last message")
+		testing.expect(t, inside4, text4)
+		testing.expect(t, nendo.element(nendo.id("Tick", 4)).found)
+	}
+
+	// Active optimistic send spinner stays visible alongside a draft.
+	append(&ui.pending, Pending_Send{account_ref = "acct-draft", group_id = "g-short"})
+	for _ in 0 ..< 2 {anim_snap_all(); build_layout(&ui, 0)}
+	testing.expect(t, nendo.element(nendo.id("ChatRowSending", 0)).found)
+	clear(&ui.pending)
+
+	// Selecting row 0 uses live composer text and immediately clears when emptied.
+	ui.selected = 0
+	clear(&ui.compose)
+	for _ in 0 ..< 2 {anim_snap_all(); build_layout(&ui, 0)}
+	cleared_text, _, cleared_has, _ := preview_runs(build_layout(&ui, 0), 0)
+	testing.expect(t, !cleared_has, "Empty composer on active row must not show stale draft")
+	testing.expect_value(t, cleared_text, "Previous message")
+	testing.expect(t, nendo.element(nendo.id("Tick", 0)).found)
+
+	append(&ui.compose, "Typing live")
+	for _ in 0 ..< 2 {anim_snap_all(); build_layout(&ui, 0)}
+	live_text, _, live_has, _ := preview_runs(build_layout(&ui, 0), 0)
+	testing.expect(t, live_has)
+	testing.expect_value(t, live_text, "Draft:Typing live")
+
+	// Sidebar filter match snippet outranks the draft so search hits stay visible.
+	ui.selected = -1
+	append(&ui.sidebar_filter, "match")
+	append(&ui.filter_hits, true, false, false, false, false)
+	append(&ui.filter_previews, "Matched search snippet", "", "", "", "")
+	for _ in 0 ..< 2 {anim_snap_all(); build_layout(&ui, 0)}
+	hit_text, _, hit_has, _ := preview_runs(build_layout(&ui, 0), 0)
+	testing.expect(t, !hit_has, "Search snippet must outrank draft")
+	testing.expect_value(t, hit_text, "Matched search snippet")
+	clear(&ui.sidebar_filter)
+	clear(&ui.filter_hits)
+	clear(&ui.filter_previews)
+
+	// Archived rows also surface saved drafts.
+	append(
+		&ui.archived,
+		Chat_Row_Ui {
+			group_id = "g-arch",
+			title = "Archived chat",
+			preview = "Old archived message",
+			archived = true,
+		},
+	)
+	ui.drafts["acct-draft:g-arch"] = "Archived reply"
+	ui.page = .Archived
+	for _ in 0 ..< 3 {anim_snap_all(); build_layout(&ui, 0)}
+	arch_text, arch_color, arch_has, arch_inside := preview_runs(build_layout(&ui, 0), 0)
+	testing.expect(t, arch_has, "Archived row should show Draft: prefix")
+	testing.expect_value(t, arch_color, ACCENT)
+	testing.expect_value(t, arch_text, "Draft:Archived reply")
+	testing.expect(t, arch_inside, arch_text)
+}

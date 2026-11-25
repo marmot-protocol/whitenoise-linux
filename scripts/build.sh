@@ -854,7 +854,7 @@ if [ "${1:-}" = test ]; then
     sticker_layout sticker_picker_virtual_rows \
     restore_chat_dispatch folder_count_dispatch new_chat_reset_dispatch test_emoji_save_io_dispatch \
     backup_password_dispatch invite_input_dispatch recent_folder_filters nerd_font_fallback \
-    chat_timestamp_hover export_password_dispatch relay_input_dispatch settings_viewport \
+    chat_timestamp_hover chat_row_draft_preview export_password_dispatch relay_input_dispatch settings_viewport \
     theme_gallery_interactions test_emoji_save_dispatch wallpaper_proportions \
     test_react_shortcode reaction_details_dispatch \
     test_inline_custom_emoji emoji_picker_scroll \
