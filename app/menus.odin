@@ -640,9 +640,7 @@ PICKER_GAP :: u16(2)
 PICKER_PAD :: u16(8)
 PICKER_GUTTER :: f32(14)
 @(private = "file")
-PICKER_RAIL_INSET :: u16(PICKER_GUTTER) + PICKER_PAD
-@(private = "file")
-PICKER_RAIL_EXTRA :: f32(2 * PICKER_RAIL_INSET)
+PICKER_RAIL_EXTRA :: PICKER_GUTTER + f32(PICKER_PAD)
 
 @(private)
 picker_side :: proc() -> f32 {
@@ -886,14 +884,18 @@ picker_categories :: proc(ui: ^Ui_State) {
 	sheet := single_pane()
 	id := nendo.id("PickerCategories")
 	side := picker_side()
-	inset := sheet ? 0 : PICKER_RAIL_INSET
+	thumb, inset := scrollbar_metrics()
+	// The visible lane starts at the panel edge and ends at the scrollbar.
+	// The panel already supplies PICKER_PAD on the left.
+	right := sheet ? 0 : PICKER_PAD + u16(thumb + inset)
 	if nendo.box(id)(
 	{
 		width = sheet ? nendo.grow() : nendo.fixed(side + PICKER_RAIL_EXTRA),
 		height = sheet ? nendo.fixed(side) : nendo.grow(),
 		direction = sheet ? .Row : .Column,
 		gap = PICKER_GAP,
-		padding = {left = inset, right = inset},
+		align = {x = sheet ? .Left : .Center},
+		padding = {right = right},
 		clip = {x = sheet, y = !sheet, scroll = true},
 	},
 	) {
