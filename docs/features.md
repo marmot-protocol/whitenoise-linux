@@ -474,8 +474,10 @@ If the chat is still catching up, wait before trying again.
 
 New chats negotiate support from the KeyPackages used to invite members.
 Updating an app doesn't change capabilities already recorded in a chat.
-The updated device must sync its refreshed capabilities before an admin
-can turn on linked devices.
+White Noise for Linux queues the in-chat update as soon as it detects
+stale capabilities. Keep the updated apps online so the chat can sync.
+Devices stagger their updates so they don't all change the chat at once.
+An admin can turn on linked devices after every device reports support.
 
 ### Setup prompts for AI agents
 
