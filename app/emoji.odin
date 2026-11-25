@@ -88,6 +88,8 @@ Emoji_Entry :: struct {
 emoji_catalog: [dynamic]Emoji_Entry
 @(private)
 Emoji_Group :: enum {
+	Custom,
+	Marmot,
 	Smileys,
 	People,
 	Nature,
@@ -97,7 +99,6 @@ Emoji_Group :: enum {
 	Objects,
 	Symbols,
 	Flags,
-	Custom,
 }
 @(private)
 emoji_group_rows: [Emoji_Group][dynamic]int
@@ -106,6 +107,8 @@ emoji_group_rows: [Emoji_Group][dynamic]int
 // first entries of each group; set-specific extras follow the base catalog.
 @(private = "file")
 EMOJI_GROUP_START := [Emoji_Group]string {
+	.Custom     = "",
+	.Marmot     = "",
 	.Smileys    = "",
 	.People     = "👋",
 	.Nature     = "🐵",
@@ -115,7 +118,6 @@ EMOJI_GROUP_START := [Emoji_Group]string {
 	.Objects    = "👓",
 	.Symbols    = "🏧",
 	.Flags      = "🏁",
-	.Custom     = "",
 }
 @(private)
 emoji_base_rows: int

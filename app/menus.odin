@@ -737,6 +737,8 @@ picker_cell :: proc(id: nendo.Id, art: Picker_Art, width: f32, ring: nendo.Borde
 PICKER_CATEGORIES := [Emoji_Group]struct {
 	icon, label: string,
 } {
+	.Custom     = {"\uf005", N_("Custom emoji")},
+	.Marmot     = {"\uf1b0", N_("Marmot")},
 	.Smileys    = {ICON_SMILE, N_("Smileys and emotion")},
 	.People     = {"\uf0c0", N_("People and body")},
 	.Nature     = {"\uf1b0", N_("Animals and nature")},
@@ -746,7 +748,16 @@ PICKER_CATEGORIES := [Emoji_Group]struct {
 	.Objects    = {"\uf0eb", N_("Objects")},
 	.Symbols    = {"\uf292", N_("Symbols")},
 	.Flags      = {"\uf024", N_("Flags")},
-	.Custom     = {"\uf005", N_("Custom emoji")},
+}
+
+@(private)
+PICKER_PACK_START :: int(Emoji_Group.Smileys)
+
+@(private)
+picker_category_at :: proc(at, packs: int) -> int {
+	if at < PICKER_PACK_START {return at}
+	if at < PICKER_PACK_START + packs {return len(PICKER_CATEGORIES) + at - PICKER_PACK_START}
+	return at - packs
 }
 
 @(private)
@@ -884,21 +895,24 @@ picker_categories :: proc(ui: ^Ui_State) {
 			selected = len(PICKER_CATEGORIES) + ui.picker_pack - 1
 		}
 		if picker_query(ui) != "" {selected = -1}
-		custom := PICKER_CATEGORIES[.Custom]
-		picker_category_button(int(Emoji_Group.Custom), selected, custom.icon, tr(custom.label))
-		for pack, i in picker_emoji_packs {
-			picker_category_button(
-				len(PICKER_CATEGORIES) + i,
-				selected,
-				"\uf1b2",
-				pack.title,
-				picker_pack_art(pack.sample),
-			)
-		}
-		for group in Emoji_Group {
-			if group == .Custom {continue}
+		packs := len(picker_emoji_packs)
+		for at in 0 ..< len(PICKER_CATEGORIES) + packs {
+			index := picker_category_at(at, packs)
+			if index >= len(PICKER_CATEGORIES) {
+				pack := &picker_emoji_packs[index - len(PICKER_CATEGORIES)]
+				picker_category_button(
+					index,
+					selected,
+					"\uf1b2",
+					pack.title,
+					picker_pack_art(pack.sample),
+				)
+				continue
+			}
+			group := Emoji_Group(index)
 			category := PICKER_CATEGORIES[group]
-			picker_category_button(int(group), selected, category.icon, tr(category.label))
+			art := group == .Marmot ? picker_shortcode_tex(MARMOT_EMOJI) : Picker_Art{}
+			picker_category_button(index, selected, category.icon, tr(category.label), art)
 		}
 	}
 	scrollbar(id, 13)

@@ -172,6 +172,7 @@ Export:
 ### Emoji, standard and custom
 
 - **Emoji search accepts names and shortcodes.** `100` finds hundred points and `thumbsup` finds thumbs up, with or without surrounding colons.
+- **Marmot emoji have their own category.** Select **Marmot** next to **Custom emoji** in the picker.
 - **React from the composer.** Send `+:thumbsup:` on its own to react to the latest message in the chat or thread. If you're replying, the reaction goes to the message you're replying to.
   Type `+:` and the first few letters of a shortcode to find an emoji. Pick one, then send.
   If you're viewing older history, jump to the latest message first or reply to the message you want to react to.
