@@ -635,6 +635,7 @@ Ui_State :: struct {
 	picking_sticker:                     bool,
 	sticker_focus:                       int,
 	sticker_reveal:                      bool,
+	sticker_scroll_reset:                bool,
 	sticker_page:                        Sticker_Page,
 	timeline_metric:                     [4]f32,
 	timeline_entries:                    []Timeline_Entry, // only live from declaration to measurement

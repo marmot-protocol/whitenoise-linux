@@ -8,6 +8,7 @@ import "core:text/edit"
 import "core:thread"
 import "nendo"
 import rl "sdlrl"
+import sdl "vendor:sdl3"
 
 @(test)
 sticker_layout :: proc(t: ^testing.T) {
@@ -214,12 +215,13 @@ sticker_layout :: proc(t: ^testing.T) {
 			sticker_item_clone({ref = {pack = coordinate, code = code, sha = sha}, label = code}),
 		)
 	}
+	rl.SetWindowSize(320, 360)
+	nendo.set_dimensions({320, 360})
 	for page in ([]Sticker_Page{.Library, .Pack}) {
 		preview := page == .Pack
 		sticker_show(&ui, {pack = preview ? coordinate : ""})
 		name := preview ? "pack" : "library"
 		panel_id := nendo.id("StickerPanel")
-		nendo.scroll(panel_id).position.y = 0
 		draw(&ui, fmt.tprintf("%s-top", name), 320)
 		panel := nendo.element(panel_id).rect
 		tile_id := preview ? "StickerPreviewTile" : "StickerLibraryItem"
@@ -267,7 +269,76 @@ sticker_layout :: proc(t: ^testing.T) {
 		testing.expect_value(t, ui.sticker_page, Sticker_Page.Detail)
 		testing.expect_value(t, ui.sticker_selected.code, "sticker-71")
 		testing.expect_value(t, ui.sticker_selected.pack, preview ? coordinate : "")
+		build_layout(&ui, 0)
+		panel = nendo.element(panel_id).rect
+		for label in ([]string{"StickerBack", "StickerClose", "StickerDetailArt"}) {
+			data := nendo.element(nendo.id(label))
+			x, y := data.rect.x + data.rect.width / 2, data.rect.y + data.rect.height / 2
+			testing.expectf(
+				t,
+				data.found &&
+				x > panel.x &&
+				x < panel.x + panel.width &&
+				y > panel.y &&
+				y < panel.y + panel.height,
+				"%s must be visible on the first detail frame from %s",
+				label,
+				name,
+			)
+		}
 	}
+
+	panel_id := nendo.id("StickerPanel")
+	sticker_show(&ui, {pack = coordinate})
+	build_layout(&ui, 0)
+	panel := nendo.element(panel_id).rect
+	nendo.set_pointer({panel.x + 20, panel.y + panel.height / 2}, .Up)
+	nendo.update_scroll(.Off, {0, -100000}, 1.0 / 60)
+	build_layout(&ui, 0)
+	thumb_id := nendo.id("ScrollThumb", panel_id.id)
+	thumb := nendo.element(thumb_id)
+	if !testing.expect(t, thumb.found) {return}
+	x, y := thumb.rect.x + thumb.rect.width / 2, thumb.rect.y + thumb.rect.height / 2
+	window_list := sdl.GetWindows(nil)
+	defer sdl.free(window_list)
+	if !testing.expect(t, window_list != nil && window_list[0] != nil) {return}
+	window := window_list[0]
+
+	rl.PushKey(.ESCAPE, true)
+	handle_sticker_panel(&ui)
+	rl.PushKey(.ESCAPE, false)
+	testing.expect_value(t, ui.sticker_page, Sticker_Page.Library)
+	sdl.WarpMouseInWindow(window, x, y)
+	rl.WindowShouldClose()
+	rl.PushMouseButton(.LEFT, true)
+	nendo.set_pointer(transmute(nendo.Vector2)rl.GetMousePosition(), .Down)
+	scroll_thumb_tick()
+	testing.expect(t, nendo.pointer_over(thumb_id), "the press hit the outgoing pack thumb")
+	build_layout(&ui, 0)
+
+	sdl.WarpMouseInWindow(window, x, y + 10)
+	rl.WindowShouldClose()
+	point := rl.GetMousePosition()
+	testing.expect(t, rl.IsMouseButtonDown(.LEFT) && point.y > y)
+	nendo.set_pointer(transmute(nendo.Vector2)point, .Down)
+	scroll_thumb_tick()
+	build_layout(&ui, 0)
+	testing.expect(
+		t,
+		nendo.scroll(panel_id).position.y == 0,
+		"the old thumb cannot drag the library",
+	)
+
+	sdl.WarpMouseInWindow(window, 0, 0)
+	rl.WindowShouldClose()
+	rl.PushMouseButton(.LEFT, false)
+	nendo.set_pointer(transmute(nendo.Vector2)rl.GetMousePosition(), .Up)
+	scroll_thumb_tick()
+	testing.expect(t, !nendo.pointer_over(panel_id), "the release is outside the library")
+	handle_sticker_panel(&ui)
+	testing.expect(t, ui.sticker_open, "the outgoing thumb release must not close the library")
+	rl.WindowShouldClose()
+	scroll_thumb_tick()
 
 	// Both widths fit one column. Only the pack labels above the gallery reflow.
 	for i in 0 ..< 32 {
@@ -280,10 +351,8 @@ sticker_layout :: proc(t: ^testing.T) {
 		)
 	}
 	sticker_show(&ui, {})
-	panel_id := nendo.id("StickerPanel")
 	rl.SetWindowSize(260, 760)
 	nendo.set_dimensions({260, 760})
-	nendo.scroll(panel_id).position.y = 0
 	build_layout(&ui, 0)
 	view := nendo.scroll(panel_id)
 	view.position.y = view.viewport.height - view.content.height
@@ -291,7 +360,7 @@ sticker_layout :: proc(t: ^testing.T) {
 	rl.SetWindowSize(210, 760)
 	nendo.set_dimensions({210, 760})
 	build_layout(&ui, 0)
-	panel := nendo.element(panel_id).rect
+	panel = nendo.element(panel_id).rect
 	body := nendo.element(nendo.id("StickerContent", u32(Sticker_Page.Library))).rect
 	first_y := body.y + body.height - 73 * f32(112) + 8
 	row := int((panel.y + panel.height / 2 - first_y) / 112)

@@ -52,6 +52,7 @@ caret :: proc(h: f32 = 16) {
 Scroll_Drag :: struct {
 	container: u32,
 	grab:      f32,
+	cancelled: bool,
 }
 scroll_drag: Scroll_Drag
 
@@ -62,6 +63,11 @@ scroll_thumb_tick :: proc() {
 	   (!rl.IsMouseButtonDown(.LEFT) && !rl.IsMouseButtonReleased(.LEFT)) {
 		scroll_drag = {}
 	}
+}
+
+@(private)
+scroll_thumb_pressed :: proc(thumb: nendo.Id) -> bool {
+	return !rl.TouchActive() && rl.IsMouseButtonPressed(.LEFT) && nendo.pointer_over(thumb)
 }
 
 // Scrollbar for a nendo scroll container, floated on its right edge
@@ -87,10 +93,14 @@ scrollbar :: proc(container: nendo.Id, z: i16 = 5) {
 
 	thumb_id := nendo.id("ScrollThumb", container.id)
 	mouse_y := rl.GetMousePosition().y / UI_ZOOM
-	if !rl.TouchActive() && rl.IsMouseButtonPressed(.LEFT) && nendo.pointer_over(thumb_id) {
-		scroll_drag = {container.id, mouse_y - y}
+	cancelled := scroll_drag.container == container.id && scroll_drag.cancelled
+	if !cancelled && scroll_thumb_pressed(thumb_id) {
+		scroll_drag = {
+			container = container.id,
+			grab      = mouse_y - y,
+		}
 	}
-	dragging := scroll_drag.container == container.id
+	dragging := scroll_drag.container == container.id && !scroll_drag.cancelled
 	if dragging && travel > 0 {
 		y = clamp(mouse_y - scroll_drag.grab, 0, travel)
 		data.position.y = -y / travel * span

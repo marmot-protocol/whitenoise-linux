@@ -141,11 +141,17 @@ message_sticker :: proc(index: u32, msg: Msg_Ui) {
 }
 
 @(private)
+sticker_set_page :: proc(ui: ^Ui_State, page: Sticker_Page) {
+	ui.sticker_page = page
+	ui.sticker_scroll_reset = true
+}
+
+@(private)
 sticker_show :: proc(ui: ^Ui_State, ref: Sticker_Ref) {
 	sticker_library_open(ui)
 	if ui.picker_open {close_picker(ui)}
 	ui.sticker_open = true
-	ui.sticker_page = ref.pack != "" ? .Pack : ref.sha != "" ? .Detail : .Library
+	sticker_set_page(ui, ref.pack != "" ? .Pack : ref.sha != "" ? .Detail : .Library)
 	ui.sticker_error = ""
 	sticker_ref_free(ui.sticker_selected)
 	ui.sticker_selected = sticker_ref_clone(ref)
@@ -175,7 +181,7 @@ sticker_open_pack :: proc(ui: ^Ui_State, input: string) {
 	if index := sticker_pack_index(ui, input); index >= 0 {
 		ui.sticker_pack.title = strings.clone(ui.sticker_packs[index].title)
 		for item in ui.stickers {if item.ref.pack == input {append(&ui.sticker_preview, sticker_item_clone(item))}}
-		ui.sticker_page = .Pack
+		sticker_set_page(ui, .Pack)
 		return
 	}
 	job := sticker_job_add(.Pack, ui.account_ref)
@@ -515,8 +521,22 @@ sticker_gallery :: proc(ui: ^Ui_State, width: f32, personal: []int = nil) {
 
 @(private)
 sticker_panel :: proc(ui: ^Ui_State) {
-	width := modal_w(nendo.id("StickerPanel"), 640)
-	if nendo.box(nendo.id("StickerPanel"))(
+	panel := nendo.id("StickerPanel")
+	if ui.sticker_scroll_reset {
+		ui.sticker_scroll_reset = false
+		if data := nendo.scroll(panel); data.found {data.position^ = {}}
+		cancel_drag_scroll(panel)
+		if scroll_drag.container == panel.id ||
+		   scroll_thumb_pressed(nendo.id("ScrollThumb", panel.id)) {
+			scroll_drag = {
+				container = panel.id,
+				cancelled = true,
+			}
+		}
+		if nendo.pointer_over(panel) {scroll_residual = {}}
+	}
+	width := modal_w(panel, 640)
+	if nendo.box(panel)(
 	{
 		width = nendo.fixed(width),
 		height = nendo.fixed(
@@ -780,15 +800,16 @@ sticker_panel :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
-	scrollbar(nendo.id("StickerPanel"), 16)
+	scrollbar(panel, 16)
 }
 
 @(private)
 handle_sticker_panel :: proc(ui: ^Ui_State) {
 	if clicked_indexed("StickerBack", 0) ||
 	   rl.IsKeyPressed(.ESCAPE) && ui.sticker_page != .Library {
-		if ui.sticker_page == .Detail &&
-		   ui.sticker_selected.pack != "" {ui.sticker_page = .Pack} else {sticker_show(ui, {})}
+		if ui.sticker_page == .Detail && ui.sticker_selected.pack != "" {
+			sticker_set_page(ui, .Pack)
+		} else {sticker_show(ui, {})}
 		return
 	}
 	if rl.IsKeyPressed(.ESCAPE) ||
@@ -800,7 +821,7 @@ handle_sticker_panel :: proc(ui: ^Ui_State) {
 		if clicked_indexed("StickerRetry", 0) {ui.sticker_error = ""; sticker_library_open(ui)}
 		return
 	}
-	if clicked_indexed("StickerAddPack", 0) {ui.sticker_page = .AddPack; return}
+	if clicked_indexed("StickerAddPack", 0) {sticker_set_page(ui, .AddPack); return}
 	for pack, i in ui.sticker_packs {
 		if clicked_indexed(
 			"StickerLibraryPack",
@@ -814,7 +835,7 @@ handle_sticker_panel :: proc(ui: ^Ui_State) {
 		sticker_ref_free(ui.sticker_selected)
 		ui.sticker_selected = sticker_ref_clone(item.ref)
 		clear(&ui.sticker_name); append(&ui.sticker_name, item.label)
-		ui.sticker_page = .Detail
+		sticker_set_page(ui, .Detail)
 		return
 	}
 	if ui.sticker_page == .AddPack {

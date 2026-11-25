@@ -479,7 +479,7 @@ drain_stickers :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				ui.sticker_selected = sticker_ref_clone(job.item.ref)
 				clear(&ui.sticker_name); append(&ui.sticker_name, job.item.label)
 				ui.sticker_open = true
-				ui.sticker_page = .Detail
+				sticker_set_page(ui, .Detail)
 			}
 		case .Send:
 			if job.error == "" {queue_sticker_payload(ui, client, job)}
@@ -494,7 +494,7 @@ drain_stickers :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				ui.sticker_unmoved, job.library.packs = job.library.packs, ui.sticker_unmoved
 			}
 			if job.op == .Pack && job.input == ui.sticker_pack.coordinate && job.error == "" {
-				ui.sticker_page = .Pack
+				sticker_set_page(ui, .Pack)
 				sticker_pack_free(ui.sticker_pack)
 				ui.sticker_pack, job.pack = job.pack, {}
 				ui.sticker_preview, job.items = job.items, ui.sticker_preview

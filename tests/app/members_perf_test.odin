@@ -267,8 +267,8 @@ large_group_layout :: proc(t: ^testing.T) {
 			thumb := max(24, data.viewport.height * data.viewport.height / data.content.height)
 			travel := data.viewport.height - thumb
 			scroll_drag = {
-				nendo.id("Timeline").id,
-				rl.GetMousePosition().y / UI_ZOOM - fraction * travel,
+				container = nendo.id("Timeline").id,
+				grab      = rl.GetMousePosition().y / UI_ZOOM - fraction * travel,
 			}
 			build_layout(&ui, 0)
 			if abs(data.position.y - timeline_draw_offset) > 0.01 {build_layout(&ui, 0)}
