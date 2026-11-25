@@ -24,6 +24,7 @@ import "core:os"
 import "core:slice"
 import "core:strconv"
 import "core:strings"
+import llvm "core:sys/llvm"
 import "core:thread"
 import "core:time"
 
@@ -393,14 +394,13 @@ span_clip :: proc(span: ^[2]f32, a, b: f32) {
 // pix, with a depth test. Colors are looked up at the first pixel the
 // triangle wins: most triangles of a dense mesh win none.
 @(private = "file")
-raster_tri :: proc(job: ^Raster_Job, i: int) {
+raster_tri :: #force_inline proc(job: ^Raster_Job, i: int, p: ^[9]f32) {
 	view, mesh := job.view, job.mesh
 	w, h := view.rw, view.rh
 	cx, cy := f32(w) / 2, f32(h) / 2
 	scale := f32(min(w, h)) * 0.45 * view.zoom
 
 	// Screen-space corners; z stays in view units for the test.
-	p := mesh.rot[i * 9:i * 9 + 9]
 	x0 := cx + p[0] * scale
 	y0 := cy - p[1] * scale
 	z0 := p[2]
@@ -413,8 +413,8 @@ raster_tri :: proc(job: ^Raster_Job, i: int) {
 
 	// Most triangles of a dense mesh sit inside one strip, so every
 	// thread but its owner drops them here.
-	lo_y := clamp(int(math.floor(min(y0, y1, y2))), 0, int(h) - 1)
-	hi_y := clamp(int(math.ceil(max(y0, y1, y2))), 0, int(h) - 1)
+	lo_y := clamp(int(llvm.floor_f32(min(y0, y1, y2))), 0, int(h) - 1)
+	hi_y := clamp(int(llvm.ceil_f32(max(y0, y1, y2))), 0, int(h) - 1)
 	if lo_y / RASTER_STRIP == hi_y / RASTER_STRIP &&
 	   (lo_y / RASTER_STRIP) % job.threads != job.band {
 		return
@@ -431,8 +431,8 @@ raster_tri :: proc(job: ^Raster_Job, i: int) {
 	}
 	inv := 1 / area
 
-	lo_x := clamp(int(math.floor(min(x0, x1, x2))), 0, int(w) - 1)
-	hi_x := clamp(int(math.ceil(max(x0, x1, x2))), 0, int(w) - 1)
+	lo_x := clamp(int(llvm.floor_f32(min(x0, x1, x2))), 0, int(w) - 1)
+	hi_x := clamp(int(llvm.ceil_f32(max(x0, x1, x2))), 0, int(w) - 1)
 	if lo_x > hi_x || lo_y > hi_y {
 		return
 	}
@@ -463,7 +463,7 @@ raster_tri :: proc(job: ^Raster_Job, i: int) {
 		span_clip(&span, a0, b0)
 		span_clip(&span, a1, b1)
 		span_clip(&span, 1 - a0 - a1, -b0 - b1)
-		for px in int(math.ceil(span[0] - 0.5)) ..= int(math.floor(span[1] - 0.5)) {
+		for px in int(llvm.ceil_f32(span[0] - 0.5)) ..= int(llvm.floor_f32(span[1] - 0.5)) {
 			fx := f32(px) + 0.5
 			w0 := a0 + b0 * fx
 			w1 := a1 + b1 * fx
@@ -482,8 +482,8 @@ raster_tri :: proc(job: ^Raster_Job, i: int) {
 				if full {
 					normals = model_corner_normals(view, tri)
 				} else {
-					for k in 0 ..< 3 {
-						normals[k] = view_space(view.basis, mesh.nrm[i * 9 + k * 3:])
+					for n, k in slice.reinterpret([][3][3]f32, mesh.nrm)[i] {
+						normals[k] = view_space(view.basis, n)
 					}
 				}
 				colors = model_vert_colors(view, tri, normals)
@@ -529,9 +529,9 @@ raster_tri :: proc(job: ^Raster_Job, i: int) {
 }
 
 // Model space to view space through the pass's basis rows: yaw about
-// Y, then pitch about X, +z facing the viewer. `v` starts at x.
+// Y, then pitch about X, +z facing the viewer.
 @(private = "file")
-view_space :: #force_inline proc(b: [3][3]f32, v: []f32) -> [3]f32 {
+view_space :: #force_inline proc(b: [3][3]f32, v: [3]f32) -> [3]f32 {
 	x, y, z := v[0], v[1], v[2]
 	return {
 		b[0][0] * x + b[0][1] * y + b[0][2] * z,
@@ -544,9 +544,11 @@ view_space :: #force_inline proc(b: [3][3]f32, v: []f32) -> [3]f32 {
 @(private = "file")
 rotate_job :: proc(job: ^Raster_Job) {
 	b, mesh := job.view.basis, job.mesh
-	for at := job.first * 9; at < job.last * 9; at += 3 {
-		p := view_space(b, mesh.pos[at:])
-		mesh.rot[at], mesh.rot[at + 1], mesh.rot[at + 2] = p[0], p[1], p[2]
+	lo, hi := job.first * 9, job.last * 9
+	pos := slice.reinterpret([][3]f32, mesh.pos[lo:hi])
+	rot := slice.reinterpret([][3]f32, mesh.rot[lo:hi])
+	for &v in soa_zip(pos = pos, rot = rot) {
+		v.rot = view_space(b, v.pos)
 	}
 }
 
@@ -559,14 +561,14 @@ strip_job :: proc(shared: ^Raster_Job) {
 	// cores on every read of view and mesh.
 	job := shared^
 	defer shared.first = job.first
-	for job.first < job.last {
-		raster_tri(&job, job.first)
+	tris := slice.reinterpret([][9]f32, job.mesh.rot)
+	timed := job.deadline != {}
+	for &p in tris[job.first:job.last] {
+		raster_tri(&job, job.first, &p)
 		job.first += 1
 		// The clock is read every 4096 triangles; per triangle it
 		// would cost about as much as the triangle.
-		if job.deadline != {} &&
-		   job.first % 4096 == 0 &&
-		   time.tick_diff(job.deadline, time.tick_now()) > 0 {
+		if timed && job.first % 4096 == 0 && time.tick_diff(job.deadline, time.tick_now()) > 0 {
 			return
 		}
 	}
