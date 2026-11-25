@@ -472,10 +472,10 @@ If the chat is still catching up, wait before trying again.
 
 New chats negotiate support from the KeyPackages used to invite members.
 Updating an app doesn't change capabilities already recorded in a chat.
-White Noise for Linux schedules the in-chat update within an hour of
-detecting stale capabilities. Keep the updated apps online so the chat
-can sync. An admin can turn on linked devices after every device has
-reported support.
+White Noise for Linux queues the in-chat update as soon as it detects
+stale capabilities. Keep the updated apps online so the chat can sync.
+Devices stagger their updates so they don't all change the chat at once.
+An admin can turn on linked devices after every device reports support.
 
 ### Setup prompts for AI agents
 
