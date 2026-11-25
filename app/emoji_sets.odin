@@ -80,9 +80,9 @@ emoji_sources: [dynamic]Emoji_Source
 
 @(private)
 Picker_Emoji_Pack :: struct {
-	coordinate, title: string,
-	created_at:        u64,
-	slots:             [dynamic]u32,
+	coordinate, title, sample: string,
+	created_at:                u64,
+	slots:                     [dynamic]u32,
 }
 @(private)
 picker_emoji_packs: [dynamic]Picker_Emoji_Pack
@@ -353,7 +353,9 @@ emoji_manifest_load :: proc(
 
 @(private)
 emoji_sources_clear :: proc() {
-	for pack in picker_emoji_packs {delete(pack.coordinate); delete(pack.title); delete(pack.slots)}
+	for pack in picker_emoji_packs {
+		delete(pack.coordinate); delete(pack.title); delete(pack.sample); delete(pack.slots)
+	}
 	delete(picker_emoji_packs); picker_emoji_packs = nil
 	for source in emoji_sources {delete(source.name); delete(source.title); delete(source.author); delete(source.coordinate)}
 	delete(emoji_sources); emoji_sources = {}
@@ -426,7 +428,9 @@ emoji_scan_files :: proc(
 				// Event ID order above breaks ties, as it does in discovery.
 				if !found || set.created_at > pack.created_at {
 					delete(pack.title)
+					delete(pack.sample)
 					pack.title = strings.clone(set.title)
+					pack.sample = fmt.aprintf("sets/%s/%s", entry.name, file.name)
 					pack.created_at = set.created_at
 				}
 			}

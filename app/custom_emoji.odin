@@ -22,6 +22,9 @@ custom_emoji_scanned: bool
 custom_emoji_textures: map[string]^rl.Texture2D
 
 @(private)
+picker_pack_icons: map[string]^rl.Texture2D
+
+@(private)
 Picker_Art :: struct {
 	tex:     ^rl.Texture2D,
 	pending: bool,
@@ -30,6 +33,7 @@ Picker_Art :: struct {
 @(private)
 Emoji_Preview_Kind :: enum {
 	File,
+	Pack_Icon,
 	Builtin,
 	Other_Set,
 }
@@ -104,12 +108,14 @@ emoji_remove :: proc(ui: ^Ui_State, name: string) {
 		return
 	}
 	os.remove(fmt.tprintf("%s/%s", emoji_dir(), name))
-	if old, ok := custom_emoji_textures[name]; ok {
+	for textures in ([2]^map[string]^rl.Texture2D{&custom_emoji_textures, &picker_pack_icons}) {
+		old, ok := textures^[name]
+		if !ok {continue}
 		if old != nil {
 			rl.UnloadTexture(old^)
 			free(old)
 		}
-		key, _ := delete_key(&custom_emoji_textures, name)
+		key, _ := delete_key(textures, name)
 		delete(key)
 	}
 	custom_emoji_scan()
@@ -147,8 +153,9 @@ emoji_preview_worker :: proc(_: ^thread.Thread) {
 	defer frame_wake()
 	for &item in emoji_preview.items[:emoji_preview.count] {
 		switch item.kind {
-		case .File:
+		case .File, .Pack_Icon:
 			item.image = rl.LoadImage(fmt.ctprintf("%s/%s", emoji_preview.directory, item.key))
+			if item.kind == .Pack_Icon {item.image = image_fit(item.image, 96)}
 		case .Builtin:
 			png := BUILTIN_EMOJI[item.builtin].png
 			item.image = rl.LoadImageFromMemory(".png", raw_data(png), i32(len(png)))
@@ -176,10 +183,11 @@ emoji_preview_finish :: proc(end: Emoji_Preview_End) {
 		keep_key := false
 		if publish {
 			switch item.kind {
-			case .File:
-				if _, cached := custom_emoji_textures[item.key];
+			case .File, .Pack_Icon:
+				textures := item.kind == .File ? &custom_emoji_textures : &picker_pack_icons
+				if _, cached := textures^[item.key];
 				   !cached && emoji_preview.revision == emoji_revision {
-					custom_emoji_textures[item.key] = emoji_upload(item.image)
+					textures^[item.key] = emoji_upload(item.image)
 					keep_key = true
 				}
 			case .Builtin:
@@ -208,7 +216,9 @@ emoji_preview_finish :: proc(end: Emoji_Preview_End) {
 emoji_preview_queue :: proc(kind: Emoji_Preview_Kind, key: string, builtin := 0) {
 	if emoji_preview.worker != nil || emoji_preview.count == len(emoji_preview.items) {return}
 	for item in emoji_preview.items[:emoji_preview.count] {
-		if item.kind == kind && item.key == key && item.builtin == builtin {return}
+		if item.key == key &&
+		   item.builtin == builtin &&
+		   (item.kind == kind || (kind == .Pack_Icon && item.kind == .File)) {return}
 	}
 	emoji_preview.items[emoji_preview.count] = {
 		kind    = kind,
@@ -225,6 +235,7 @@ settings_emoji_tick :: proc(ui: ^Ui_State) {
 		if !thread.is_done(emoji_preview.worker) {return}
 		emoji_preview_finish(.Publish)
 	}
+	if ui.picker_open {picker_pack_queue()}
 	if settings_workspace_visible(ui) && ui.settings_section == .Chats && !settings_index(ui) {
 		settings_emoji_queue(ui)
 	}
@@ -234,6 +245,30 @@ settings_emoji_tick :: proc(ui: ^Ui_State) {
 	emoji_preview.directory = strings.clone(emoji_dir())
 	emoji_preview.worker = thread.create(emoji_preview_worker)
 	thread.start(emoji_preview.worker)
+}
+
+@(private = "file")
+picker_pack_queue :: proc() {
+	rail := nendo.element(nendo.id("PickerCategories"))
+	if !rail.found {return}
+	for pack, i in picker_emoji_packs {
+		if emoji_preview.count == len(emoji_preview.items) {break}
+		if !picker_pack_art(pack.sample).pending {continue}
+		chip := nendo.element(nendo.id("PickerCategory", u32(len(PICKER_CATEGORIES) + i)))
+		b, r := chip.rect, rail.rect
+		if chip.found &&
+		   b.x < r.x + r.width &&
+		   b.x + b.width > r.x &&
+		   b.y < r.y + r.height &&
+		   b.y + b.height > r.y {emoji_preview_queue(.Pack_Icon, pack.sample)}
+	}
+}
+
+@(private)
+picker_pack_art :: proc(sample: string) -> Picker_Art {
+	if tex := custom_emoji_textures[sample]; tex != nil {return {tex = tex}}
+	tex, cached := picker_pack_icons[sample]
+	return {tex, !cached}
 }
 
 @(private = "file")

@@ -885,48 +885,93 @@ picker_categories :: proc(ui: ^Ui_State) {
 		}
 		if picker_query(ui) != "" {selected = -1}
 		custom := PICKER_CATEGORIES[.Custom]
-		picker_category_button(
-			int(Emoji_Group.Custom),
-			selected,
-			custom.icon,
-			tr(custom.label),
-			side,
-		)
+		picker_category_button(int(Emoji_Group.Custom), selected, custom.icon, tr(custom.label))
 		for pack, i in picker_emoji_packs {
-			width :=
-				sheet ? max(side, min(112, rl.MeasureTextLine(FONT_BODY, 12, pack.title, 0).x + 16)) : side
-			picker_category_button(len(PICKER_CATEGORIES) + i, selected, "", pack.title, width)
+			picker_category_button(
+				len(PICKER_CATEGORIES) + i,
+				selected,
+				"\uf1b2",
+				pack.title,
+				picker_pack_art(pack.sample),
+			)
 		}
 		for group in Emoji_Group {
 			if group == .Custom {continue}
 			category := PICKER_CATEGORIES[group]
-			picker_category_button(int(group), selected, category.icon, tr(category.label), side)
+			picker_category_button(int(group), selected, category.icon, tr(category.label))
 		}
 	}
 	scrollbar(id, 13)
 }
 
 @(private = "file")
-picker_category_button :: proc(index, selected: int, glyph, label: string, width: f32) {
+picker_category_button :: proc(index, selected: int, glyph, label: string, art: Picker_Art = {}) {
 	active := index == selected
+	side := picker_side()
 	if nendo.box(nendo.id("PickerCategory", u32(index)))(
 	{
-		width = nendo.fixed(width),
-		height = nendo.fixed(picker_side()),
+		width = nendo.fixed(side),
+		height = nendo.fixed(side),
 		align = {x = .Center, y = .Center},
 		color = active ? SELECTED : hovered() ? HOVER : {},
 		radius = rr(7),
 	},
 	) {
-		font, size := u16(FONT_ICON), u16(16)
-		text := glyph
-		if glyph == "" {
-			font, size = FONT_BODY, single_pane() ? 12 : 9
-			text = text_ellipsis(label, width - 8, font, size)
+		if art.tex != nil || art.pending {
+			w, h := f32(16), f32(16)
+			if art.tex != nil {
+				w, h = f32(art.tex.width), f32(art.tex.height)
+				scale := min(side - 12, 26) / max(w, h)
+				w, h = w * scale, h * scale
+			}
+			if nendo.box(nendo.id_local("PickerCategoryArt"))(
+			{
+				width = nendo.fixed(w),
+				height = nendo.fixed(h),
+				image = art.tex,
+				color = art.pending ? ROW_BG : {},
+				radius = rr(4),
+			},
+			) {}
+		} else {
+			nendo.text(glyph, {font = FONT_ICON, size = 16, color = active ? ACCENT : TEXT_DIM})
 		}
-		nendo.text(text, {font = font, size = size, color = active ? ACCENT : TEXT_DIM})
-		if hovered() && !rl.TouchActive() {tooltip(label, single_pane() ? .Above : .Below)}
+		if hovered() && !rl.TouchActive() {
+			pack := index >= len(PICKER_CATEGORIES)
+			caption := label
+			if pack {
+				width := min(280, f32(rl.GetScreenWidth()) / UI_ZOOM - 24)
+				height := f32(rl.GetScreenHeight()) / UI_ZOOM - 16
+				line_height := max(1, rl.MeasureTextLine(FONT_BODY, 11, "A", 0).y)
+				caption = picker_pack_title(
+					label,
+					width,
+					FONT_BODY,
+					11,
+					clamp(int(height / line_height), 1, 4),
+				)
+			}
+			tooltip(caption, single_pane() ? .Above : pack ? .Right : .Below)
+		}
 	}
+}
+
+@(private = "file")
+picker_pack_title :: proc(title: string, width: f32, font, size: u16, line_cap := 0) -> string {
+	if rl.MeasureTextLine(font, size, title, 0).x <= width {return title}
+	lines := strings.builder_make(context.temp_allocator)
+	for at, line := 0, 1; at < len(title); line += 1 {
+		if at != 0 {strings.write_byte(&lines, '\n')}
+		if line == line_cap {
+			strings.write_string(&lines, text_ellipsis(title[at:], width, font, size))
+			break
+		}
+		cut := wrap_break(title, at, len(title), width, size, .Plain, plain_font = font)
+		strings.write_string(&lines, title[at:cut])
+		at = cut
+		if at < len(title) && title[at] == ' ' {at += 1}
+	}
+	return strings.to_string(lines)
 }
 
 @(private = "file")
@@ -1055,11 +1100,9 @@ picker_grid :: proc(ui: ^Ui_State, width, height: f32) {
 					}
 					scrollbar(recent_row, 13)
 				}
-				label := pack != nil ? pack.title : tr(PICKER_CATEGORIES[ui.picker_group].label)
-				nendo.text(
-					text_ellipsis(label, width, FONT_TITLE, 14),
-					{font = FONT_TITLE, size = 14, color = TEXT},
-				)
+				label :=
+					pack != nil ? picker_pack_title(pack.title, width, FONT_TITLE, 14) : text_ellipsis(tr(PICKER_CATEGORIES[ui.picker_group].label), width, FONT_TITLE, 14)
+				nendo.text(label, {font = FONT_TITLE, size = 14, color = TEXT, wrap = .Newlines})
 			}
 		}
 		if len(custom) > grid_custom {

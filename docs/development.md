@@ -216,8 +216,8 @@ The sticker library and pack previews also mount fixed-height rows. The modal sc
 
 The GIF picker passes cumulative tile heights to nendo for each column. The tallest column sets the scroll extent. Thumbnail requests still follow reading order and require a visible tile.
 
-The emoji picker uses a category rail in wide windows and a bottom sheet in the single-pane layout. It opens on Custom emoji, with one category per installed pack before the Unicode categories. Tab and Shift+Tab cycle categories. Search spans all categories, and clearing it restores the browse position. Nendo mounts only the grid rows near the viewport.
-Cold artwork starts as placeholders. The emoji preview worker decodes image files, and the UI uploads a bounded batch of textures after presenting each frame.
+The emoji picker uses a category rail in wide windows and a bottom sheet in the single-pane layout. It opens on Custom emoji. Each installed pack has a category marked by one of its emoji, before the Unicode categories. Tab and Shift+Tab cycle categories. Search spans all categories, and clearing it restores the browse position. Nendo mounts only the grid rows near the viewport.
+Cold artwork starts as placeholders. The emoji preview worker decodes visible pack icons and grid artwork, and the UI uploads a bounded batch of textures after presenting each frame.
 
 | Path | What's there |
 | --- | --- |
