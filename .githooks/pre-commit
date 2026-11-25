@@ -2,7 +2,7 @@
 # Project pre-commit hook. Enforced via core.hooksPath=.githooks
 # (run scripts/install-hooks.sh once per clone to activate).
 #
-#   1. Normalize every staged PO/POT catalog in place, then re-stage it, so the
+#   1. Normalize every staged PO catalog in place, then re-stage it, so the
 #      working tree matches what the po-clean filter writes to the index.
 #   2. Refresh .github/workflows/pr-precommit.yml (GitHub's byte-identical
 #      mirror of the canonical ngit-ci gate at
@@ -30,15 +30,15 @@ while IFS= read -r -d '' f; do
         po_changed=1
     fi
     rm -f "$tmp"
-done < <(staged -- '*.po' '*.pot')
-[ "$po_changed" = 1 ] && echo "pre-commit: normalized staged PO/POT catalogs."
+done < <(staged -- '*.po')
+[ "$po_changed" = 1 ] && echo "pre-commit: normalized staged PO catalogs."
 
 # Validate staged catalogs with msgfmt. --check makes malformed entries fatal;
 # treating any stderr output as a failure also catches the non-fatal header
 # warnings (missing/placeholder fields) so they can't creep back in.
-if staged -- '*.po' '*.pot' | grep -qz .; then
+if staged -- '*.po' | grep -qz .; then
     if ! command -v msgfmt >/dev/null 2>&1; then
-        echo "✗ msgfmt not found — needed to validate staged PO/POT catalogs." >&2
+        echo "✗ msgfmt not found — needed to validate staged PO catalogs." >&2
         echo "  Install gettext (e.g. apt install gettext / pacman -S gettext)" >&2
         exit 1
     fi
@@ -48,7 +48,7 @@ if staged -- '*.po' '*.pot' | grep -qz .; then
             printf '✗ msgfmt --check failed on %s:\n%s\n' "$f" "$err" >&2
             exit 1
         fi
-    done < <(staged -- '*.po' '*.pot')
+    done < <(staged -- '*.po')
     echo "pre-commit: msgfmt --check passed on staged catalogs."
 fi
 

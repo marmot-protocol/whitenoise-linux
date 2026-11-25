@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Normalize a gettext PO/POT stream read on stdin, write the result to stdout.
+# Normalize a gettext PO stream read on stdin, write the result to stdout.
 #
 # Used in two places, so the rules live here once:
 #   * the git `po-clean` clean filter (.gitattributes -> registered by
