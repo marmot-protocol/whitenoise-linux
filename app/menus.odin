@@ -640,7 +640,9 @@ PICKER_GAP :: u16(2)
 PICKER_PAD :: u16(8)
 PICKER_GUTTER :: f32(14)
 @(private = "file")
-PICKER_RAIL_GUTTER :: PICKER_GUTTER + f32(PICKER_PAD)
+PICKER_RAIL_INSET :: u16(PICKER_GUTTER) + PICKER_PAD
+@(private = "file")
+PICKER_RAIL_EXTRA :: f32(2 * PICKER_RAIL_INSET)
 
 @(private)
 picker_side :: proc() -> f32 {
@@ -869,7 +871,7 @@ emoji_picker :: proc(ui: ^Ui_State) {
 		) {
 			if !sheet {picker_categories(ui)}
 			grid_w :=
-				width - 2 * pad - (sheet ? 0 : side + PICKER_RAIL_GUTTER + pad) - PICKER_GUTTER
+				width - 2 * pad - (sheet ? 0 : side + PICKER_RAIL_EXTRA + pad) - PICKER_GUTTER
 			picker_grid(ui, grid_w, height)
 		}
 		if sheet {
@@ -884,13 +886,14 @@ picker_categories :: proc(ui: ^Ui_State) {
 	sheet := single_pane()
 	id := nendo.id("PickerCategories")
 	side := picker_side()
+	inset := sheet ? 0 : PICKER_RAIL_INSET
 	if nendo.box(id)(
 	{
-		width = sheet ? nendo.grow() : nendo.fixed(side + PICKER_RAIL_GUTTER),
+		width = sheet ? nendo.grow() : nendo.fixed(side + PICKER_RAIL_EXTRA),
 		height = sheet ? nendo.fixed(side) : nendo.grow(),
 		direction = sheet ? .Row : .Column,
 		gap = PICKER_GAP,
-		padding = {right = sheet ? 0 : u16(PICKER_RAIL_GUTTER)},
+		padding = {left = inset, right = inset},
 		clip = {x = sheet, y = !sheet, scroll = true},
 	},
 	) {

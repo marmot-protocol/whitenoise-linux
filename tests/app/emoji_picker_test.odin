@@ -349,10 +349,17 @@ test_picker_packs :: proc(t: ^testing.T, ui: ^Ui_State, directory: string) {
 			commands = build_layout(ui, 0)
 		}
 		rail_id := nendo.id("PickerCategories")
+		rail := nendo.element(rail_id).rect
+		button := nendo.element(nendo.id("PickerCategory", u32(Emoji_Group.Marmot))).rect
+		testing.expect(
+			t,
+			abs(button.x + button.width / 2 - rail.x - rail.width / 2) < 1,
+			"category buttons must be centered in the rail",
+		)
 		thumb := nendo.element(nendo.id("ScrollThumb", rail_id.id))
 		testing.expect(
 			t,
-			thumb.found && thumb.rect.x > marmots.rect.x + marmots.rect.width,
+			thumb.found && thumb.rect.x > button.x + button.width,
 			"the category scrollbar must not overlap the buttons",
 		)
 		rl.BeginDrawing()
