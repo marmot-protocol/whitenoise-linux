@@ -1553,8 +1553,7 @@ app_main :: proc() {
 			if ui.add_account_open && !background_captured {
 				for page in Page {
 					if clicked_indexed("Nav", u32(page)) {
-						auth_cancel(&ui)
-						ui.add_account_open = false
+						if auth_cancel(&ui) {ui.add_account_open = false}
 						break
 					}
 				}

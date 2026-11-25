@@ -122,6 +122,8 @@ State :: struct {
 	m_released:     [MouseButton]bool,
 	m_down:         [MouseButton]bool,
 	m_clicks:       u8, // click count of this frame's LEFT press (2 = double)
+	left_press:     Vector2,
+	left_release:   Vector2,
 	wheel:          Vector2,
 	chars:          [dynamic]rune,
 	preedit:        string,
@@ -922,10 +924,12 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 				state.m_down[button] = true
 				if button == .LEFT {
 					state.m_clicks = event.button.clicks
+					state.left_press = {event.button.x, event.button.y}
 				}
 			} else {
 				state.m_released[button] = true
 				state.m_down[button] = false
+				if button == .LEFT {state.left_release = {event.button.x, event.button.y}}
 			}
 		case .MOUSE_MOTION:
 			if event.motion.which == sdl.TOUCH_MOUSEID {
@@ -1226,6 +1230,11 @@ IsMouseButtonReleased :: proc(button: MouseButton) -> bool {
 
 IsMouseButtonDown :: proc(button: MouseButton) -> bool {
 	return state.m_down[button]
+}
+
+// Actual event coordinates, even if both events arrive in one poll.
+GetLeftClickPoints :: proc() -> (press, release: Vector2) {
+	return state.left_press, state.left_release
 }
 
 GetMousePosition :: proc() -> Vector2 {

@@ -1,12 +1,12 @@
-// Starter identity for freshly generated accounts: a deterministic
-// "[Adjective] [Animal]" name from the new npub, offered as the name
-// the user is asked for, plus a composed face (emoji animal glyph over
-// the npub gradient) uploaded to Blossom for its kind-0 picture.
+// Starter names and pictures derive from the account's public key.
 package main
 
 import "base:runtime"
 import "core:c"
+import "core:crypto"
+import "core:encoding/hex"
 import "core:fmt"
+import "core:mem"
 import "core:slice"
 import "core:strings"
 
@@ -14,6 +14,53 @@ import stbi "vendor:stb/image"
 
 import marmot "../marmot"
 import rl "sdlrl"
+
+@(private)
+STARTER_BLOSSOM :: cstring("https://blossom.primal.net")
+
+// The same pinned secp256k1 library that verifies Nostr events for sticker packs.
+@(private = "file", default_calling_convention = "c", link_prefix = "rustsecp256k1_v0_10_0_")
+foreign _ {
+	context_create :: proc(flags: c.uint) -> rawptr ---
+	context_destroy :: proc(ctx: rawptr) ---
+	context_randomize :: proc(ctx: rawptr, seed: ^[32]u8) -> c.int ---
+	ec_pubkey_create :: proc(ctx: rawptr, pk: ^[64]u8, sk: ^[32]u8) -> c.int ---
+	ec_pubkey_serialize :: proc(ctx: rawptr, out: ^[33]u8, len: ^c.size_t, pk: ^[64]u8, flags: c.uint) -> c.int ---
+}
+
+@(private = "file")
+starter_key :: proc() -> (nsec, npub, public_hex: string) {
+	CONTEXT_NONE :: c.uint(1 << 0)
+	EC_COMPRESSED :: c.uint((1 << 1) | (1 << 8))
+	ctx := context_create(CONTEXT_NONE)
+	if ctx == nil {return "", "", ""}
+	defer context_destroy(ctx)
+	secret: [32]u8
+	defer crypto.zero_explicit(&secret, len(secret))
+	crypto.rand_bytes(secret[:])
+	if context_randomize(ctx, &secret) != 1 {return "", "", ""}
+	pub: [64]u8
+	for {
+		crypto.rand_bytes(secret[:])
+		if ec_pubkey_create(ctx, &pub, &secret) == 1 {break}
+	}
+	encoded: [33]u8
+	size := c.size_t(len(encoded))
+	if ec_pubkey_serialize(ctx, &encoded, &size, &pub, EC_COMPRESSED) != 1 {
+		return "", "", ""
+	}
+	// Nostr uses only the x coordinate.
+	npub = bech32_encode("npub", encoded[1:])
+	public_hex = string(hex.encode(encoded[1:]))
+	// Keep the encoder's intermediate secret copies in wipeable scratch space.
+	scratch: [2048]u8
+	defer crypto.zero_explicit(&scratch, len(scratch))
+	arena: mem.Arena
+	mem.arena_init(&arena, scratch[:])
+	context.temp_allocator = mem.arena_allocator(&arena)
+	nsec = bech32_encode("nsec", secret[:])
+	return nsec, npub, public_hex
+}
 
 @(private = "file")
 ADJECTIVES := [?]string {
@@ -108,9 +155,9 @@ starter_identity :: proc(npub: string) -> (name: string, cp: rune) {
 
 // The face: vertical npub gradient with the animal glyph bilinearly
 // upscaled and alpha-blended over it. data == nil when the tile is
-// missing (temp-allocated otherwise; texture upload copies it).
+// missing. Texture upload copies the pixels.
 @(private = "file")
-starter_face :: proc(npub: string, cp: rune) -> rl.Image {
+starter_face :: proc(npub: string, cp: rune, allocator := context.temp_allocator) -> rl.Image {
 	glyph := emoji_image(fmt.tprintf("%c", cp))
 	if glyph.data == nil {
 		return {}
@@ -121,7 +168,7 @@ starter_face :: proc(npub: string, cp: rune) -> rl.Image {
 	hue := f32(avatar_hash(npub) % 360)
 	top := hsv(hue, 0.45, 0.62)
 	bottom := hsv(hue, 0.55, 0.32)
-	out := make([]u8, STARTER_SIDE * STARTER_SIDE * 4, context.temp_allocator)
+	out := make([]u8, STARTER_SIDE * STARTER_SIDE * 4, allocator)
 	for y in 0 ..< STARTER_SIDE {
 		t := f32(y) / f32(STARTER_SIDE - 1)
 		r := u8(top.r + (bottom.r - top.r) * t)
@@ -140,96 +187,61 @@ starter_face :: proc(npub: string, cp: rune) -> rl.Image {
 	return {data = raw_data(out), width = STARTER_SIDE, height = STARTER_SIDE}
 }
 
-// PNG-encode an RGBA image via stb, collecting the writer callbacks
-// into one buffer.
 @(private = "file")
-png_buf: [dynamic]u8
+Png_Write :: struct {
+	ctx:   runtime.Context,
+	bytes: [dynamic]u8,
+}
 
 @(private = "file")
 png_sink :: proc "c" (ctx: rawptr, data: rawptr, size: c.int) {
-	context = (cast(^runtime.Context)ctx)^
-	append(&png_buf, ..slice.bytes_from_ptr(data, int(size)))
+	write := (^Png_Write)(ctx)
+	context = write.ctx
+	append(&write.bytes, ..slice.bytes_from_ptr(data, int(size)))
 }
 
 @(private = "file")
 image_png :: proc(image: rl.Image) -> []u8 {
-	clear(&png_buf)
-	ctx := context
-	stbi.write_png_to_func(
-		png_sink,
-		&ctx,
-		image.width,
-		image.height,
-		4,
-		image.data,
-		image.width * 4,
-	)
-	return png_buf[:]
+	write := Png_Write{context, make([dynamic]u8, context.temp_allocator)}
+	if stbi.write_png_to_func(
+		   png_sink,
+		   &write,
+		   image.width,
+		   image.height,
+		   4,
+		   image.data,
+		   image.width * 4,
+	   ) ==
+	   0 {return nil}
+	return write.bytes[:]
 }
 
-// The account's npub, or "" when it can't be read.
 @(private = "file")
-account_npub :: proc(client: ^marmot.Client, hex: string) -> string {
-	npub_c: cstring
-	if marmot.npub(client, strings.clone_to_cstring(hex, context.temp_allocator), &npub_c) !=
-		   .OK ||
-	   npub_c == nil {
-		return ""
-	}
-	defer marmot.string_free(npub_c)
-	return strings.clone(string(npub_c), context.temp_allocator)
-}
-
-// Upload a freshly generated account's face to public Blossom so its
-// kind-0 can carry the URL; peers and future sessions then fetch it like
-// any picture. Blocks on the upload, so it runs on the sign-in worker;
-// the URL is cloned into `allocator` for the UI thread to adopt. A
-// failure only logs, and an empty URL still leaves a local face.
-upload_starter_face :: proc(
-	client: ^marmot.Client,
-	hex: string,
-	allocator := context.allocator,
-) -> string {
-	npub := account_npub(client, hex)
-	if len(npub) == 0 {
-		return ""
-	}
-	_, cp := starter_identity(npub)
-	face := starter_face(npub, cp)
-	if face.data == nil {
-		return ""
-	}
-
+upload_starter_face :: proc(client: ^marmot.Client, hex: string, face: rl.Image) -> string {
 	png := image_png(face)
+	if len(png) == 0 {return ""}
 	url_c: cstring
-	if len(png) == 0 ||
-	   marmot.upload_profile_image(
+	if marmot.upload_profile_image(
 		   client,
 		   strings.clone_to_cstring(hex, context.temp_allocator),
 		   raw_data(png),
 		   uint(len(png)),
 		   "image/png",
-		   nil,
+		   STARTER_BLOSSOM,
 		   &url_c,
 	   ) !=
-		   .OK ||
-	   url_c == nil {
-		fmt.eprintfln("starter: couldn't upload the face: %s", marmot.last_error())
+	   .OK {
+		detail := marmot.last_error()
+		defer delete(detail)
+		fmt.eprintfln("starter: couldn't upload the picture: %s", detail)
 		return ""
 	}
 	defer marmot.string_free(url_c)
-	return strings.clone(string(url_c), allocator)
+	return strings.clone(string(url_c))
 }
 
-// Publish the name the user chose for a fresh account, with its face
-// URL, as the account's kind-0. Blocks on the relay round trip, so it
-// runs on the sign-in worker. Returns "" once published, else the error
-// with marmot's thread-local detail, cloned into `allocator`.
-publish_starter_name :: proc(
-	client: ^marmot.Client,
-	hex, name, pic_url: string,
-	allocator := context.allocator,
-) -> string {
+@(private = "file")
+publish_starter_name :: proc(client: ^marmot.Client, hex, name, pic_url: string) -> bool {
 	name_c := strings.clone_to_cstring(name, context.temp_allocator)
 	metadata := marmot.User_Profile_Metadata {
 		name         = name_c,
@@ -248,32 +260,63 @@ publish_starter_name :: proc(
 		   &out,
 	   ) !=
 	   .OK {
-		return fmt.aprintf(
-			tr("Couldn't publish your name. %s"),
-			marmot.last_error(),
-			allocator = allocator,
-		)
+		detail := marmot.last_error()
+		defer delete(detail)
+		fmt.eprintfln("starter: profile publication not confirmed: %s", detail)
+		return false
 	}
 	marmot.user_profile_metadata_free(out)
-	return ""
+	return true
 }
 
-// The local half of the seed: recompose the face and register it, with
-// the chosen name, under its Blossom URL (or a starter:// pseudo-URL
-// when the upload failed). Texture creation, so this stays on the
-// render thread.
-seed_starter_local :: proc(client: ^marmot.Client, hex, name, pic_url: string) {
-	npub := account_npub(client, hex)
-	if len(npub) == 0 {
+@(private)
+prepare_starter :: proc(job: ^Auth_Job) {
+	nsec, npub, public_hex := starter_key()
+	defer delete(npub)
+	job.nsec, job.hex = nsec, public_hex
+	if npub != "" {
+		name, cp := starter_identity(npub)
+		job.name = strings.clone(name)
+		job.starter_image = starter_face(npub, cp, context.allocator)
+		if job.starter_image.data != nil {return}
+	}
+	job.err = strings.clone(tr("Couldn't prepare your starter profile. Please try again."))
+}
+
+@(private)
+create_starter :: proc(job: ^Auth_Job) {
+	hex, status, detail := import_identity_blocking(job.client, job.nsec, DEFAULT_RELAYS)
+	defer delete(detail)
+	if status != .OK {
+		fmt.eprintfln("starter: couldn't finish account setup: %s", detail)
+		job.err = strings.clone(tr("Couldn't finish account setup. Please try again."))
+		// MDK can retain a local account after a relay error. Keep the exact
+		// key for retry and only report a save after observing it.
+		accounts: ^marmot.Account_Summary_List
+		if marmot.list_accounts(job.client, &accounts) == .OK && accounts != nil {
+			defer marmot.account_summary_list_free(accounts)
+			for row in accounts.items[:accounts.len] {
+				if string(row.account_id_hex) == job.hex {job.starter_saved = true; break}
+			}
+		}
 		return
 	}
-	_, cp := starter_identity(npub)
+	session_string_forget(&job.nsec)
+	delete(job.hex)
+	job.hex = hex
+	job.pic_url = upload_starter_face(job.client, hex, job.starter_image)
+	job.profile_confirmed = publish_starter_name(job.client, hex, job.name, job.pic_url)
+}
+
+@(private)
+finish_starter :: proc(ui: ^Ui_State, job: ^Auth_Job) {
 	register_starter_pic(
-		hex,
-		name,
-		pic_url != "" ? pic_url : fmt.tprintf("starter://%s", hex),
-		starter_face(npub, cp),
+		job.hex,
+		job.name,
+		job.pic_url != "" ? job.pic_url : fmt.tprintf("starter://%s", job.hex),
+		job.starter_image,
 	)
+	finish_auth(ui, job.client, job.hex)
 }
 
 // Regenerate the local starter face at login. The face never leaves

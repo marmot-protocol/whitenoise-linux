@@ -217,11 +217,14 @@ discarding snapshots from before its relays were installed. Initialized,
 pending, and connecting relays show CONNECTING; an empty or disconnected
 pool after setup shows OFFLINE.
 
-Generate a new key stops on the sign-in card to ask "What should people call
-you?", prefilled with the generated "Adjective Animal" name. Continue
-publishes that name and the uploaded starter face as kind-0, then lands on the
-account. Leaving the step removes the unnamed key, as Back does during
-generation. `WN_TEST_CREATE` skips the step and publishes the generated name.
+Generate a new key prepares an in-memory key and shows the generated
+"Adjective Animal" name and picture before creating the account. Back discards
+the draft without saving the key or sending anything for the account. Create
+and publish sets up the account, uploads the previewed picture to Blossom, and
+publishes the chosen name and available picture URL as kind-0. Continue lands
+on the account after showing which steps were confirmed. If setup fails, Try
+again keeps the same key and profile. `WN_TEST_CREATE` skips the review and
+result cards and publishes the generated name.
 
 Sign out keeps a local key in the vault and its chats on disk.
 `accounts_adopt` keeps such accounts in `ui.signed_out_accounts`. They appear

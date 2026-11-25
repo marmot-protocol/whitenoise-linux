@@ -137,6 +137,10 @@ session_stop :: proc(ui: ^Ui_State, client: ^marmot.Client, live: ^Live) {
 	// Detach the preview on the frame thread before joining pixel-only jobs.
 	photo_cancel(ui)
 	location_cancel(ui)
+	if auth_job != nil {
+		rl.UnloadTexture(auth_job.starter_preview)
+		auth_job.starter_preview = {}
+	}
 	job := Session_Stop{client, ui, live}
 	worker := thread.create(session_stop_worker)
 	worker.data = &job

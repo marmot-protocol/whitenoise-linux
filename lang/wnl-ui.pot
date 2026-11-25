@@ -730,6 +730,9 @@ msgstr ""
 msgid "Asking your relays for their key package."
 msgstr ""
 
+msgid "At least one Nostr relay accepted your profile."
+msgstr ""
+
 msgid "Attach a file"
 msgstr ""
 
@@ -1641,10 +1644,6 @@ msgstr ""
 msgid "Couldn't copy the image to the clipboard. Please try again."
 msgstr ""
 
-#, c-format
-msgid "Couldn't create an identity. %s"
-msgstr ""
-
 msgid "Couldn't create the backup. Please try again."
 msgstr ""
 
@@ -1714,6 +1713,9 @@ msgid "Couldn't export the key. %s"
 msgstr ""
 
 msgid "Couldn't find your account on the relays. Check your relay settings and try again."
+msgstr ""
+
+msgid "Couldn't finish account setup. Please try again."
 msgstr ""
 
 msgid "Couldn't finish dictation. Please try again."
@@ -1882,6 +1884,9 @@ msgstr ""
 msgid "Couldn't play video. Click to retry."
 msgstr ""
 
+msgid "Couldn't prepare your starter profile. Please try again."
+msgstr ""
+
 msgid "Couldn't preview the picture. Please try again."
 msgstr ""
 
@@ -1891,10 +1896,6 @@ msgstr ""
 
 #, c-format
 msgid "Couldn't publish the picture. %s"
-msgstr ""
-
-#, c-format
-msgid "Couldn't publish your name. %s"
 msgstr ""
 
 msgid "Couldn't reach the Namecoin resolvers. Please try again."
@@ -2177,6 +2178,9 @@ msgstr ""
 msgid "Create a poll"
 msgstr ""
 
+msgid "Create and publish"
+msgstr ""
+
 msgid "Create backup"
 msgstr ""
 
@@ -2214,6 +2218,9 @@ msgid "Created by"
 msgstr ""
 
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
+msgstr ""
+
+msgid "Creating your account and publishing your profile"
 msgstr ""
 
 msgid "Creating your chat"
@@ -3065,9 +3072,6 @@ msgid "General"
 msgstr ""
 
 msgid "Generate a new key"
-msgstr ""
-
-msgid "Generating your key"
 msgstr ""
 
 msgid "German"
@@ -4847,6 +4851,9 @@ msgstr ""
 msgid "Preparing your pairing code"
 msgstr ""
 
+msgid "Preparing your starter profile"
+msgstr ""
+
 msgid "Press Ctrl P for the command palette."
 msgstr ""
 
@@ -4963,9 +4970,6 @@ msgid "Publishing your key package"
 msgstr ""
 
 msgid "Publishing your profile"
-msgstr ""
-
-msgid "Publishing your profile to the relays. This takes a few seconds."
 msgstr ""
 
 msgid "Publishing your relay lists"
@@ -5319,6 +5323,9 @@ msgid "Review starting over"
 msgstr ""
 
 msgid "Review unlinked profiles"
+msgstr ""
+
+msgid "Review your public profile"
 msgstr ""
 
 msgid "Right"
@@ -6507,9 +6514,6 @@ msgstr ""
 msgid "This message was deleted"
 msgstr ""
 
-msgid "This name is public. You can change it later in your profile."
-msgstr ""
-
 msgid "This number increases when the group's encryption keys change."
 msgstr ""
 
@@ -6544,6 +6548,9 @@ msgid "This request was answered on another device."
 msgstr ""
 
 msgid "This sign-in was rejected on one of your devices."
+msgstr ""
+
+msgid "This step does not publish your chats."
 msgstr ""
 
 msgid "This sticker is not in the current pack."
@@ -7033,9 +7040,6 @@ msgstr ""
 msgid "What is shared"
 msgstr ""
 
-msgid "What should people call you?"
-msgstr ""
-
 msgid "What the GM button sends. You can use it once a day in each chat."
 msgstr ""
 
@@ -7080,6 +7084,9 @@ msgid "White Noise is not affiliated with GifSnap. There is no reason to expect 
 msgstr ""
 
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
+msgstr ""
+
+msgid "White Noise uploads your picture to this public image server:"
 msgstr ""
 
 msgid "White Noise will ask your signer for these permissions. Your signer may ask you to confirm them too."
@@ -7210,6 +7217,12 @@ msgstr ""
 msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
 msgstr ""
 
+msgid "Your account key was saved on this device."
+msgstr ""
+
+msgid "Your account was created"
+msgstr ""
+
 msgid "Your chats appear here once you have some."
 msgstr ""
 
@@ -7252,6 +7265,9 @@ msgstr ""
 msgid "Your name"
 msgstr ""
 
+msgid "Your name and a link to your picture go to public Nostr relays so people can recognize you."
+msgstr ""
+
 msgid "Your new password"
 msgstr ""
 
@@ -7267,6 +7283,12 @@ msgstr ""
 msgid "Your password"
 msgstr ""
 
+msgid "Your picture upload wasn't confirmed."
+msgstr ""
+
+msgid "Your picture was uploaded."
+msgstr ""
+
 msgid "Your previous account action is still running."
 msgstr ""
 
@@ -7280,6 +7302,9 @@ msgid "Your profile"
 msgstr ""
 
 msgid "Your profile has reached the device limit in this chat."
+msgstr ""
+
+msgid "Your profile publication wasn't confirmed."
 msgstr ""
 
 msgid "Your proxy credentials are stored in your encrypted vault."
@@ -7322,6 +7347,9 @@ msgid "Your signer rejected the request."
 msgstr ""
 
 msgid "Your signer session has ended."
+msgstr ""
+
+msgid "Your starter picture and profile weren't sent."
 msgstr ""
 
 msgid "Your stickers"

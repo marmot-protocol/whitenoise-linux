@@ -669,6 +669,9 @@ msgstr "Fai una domanda..."
 msgid "Asking your relays for their key package."
 msgstr "Richiesta del suo pacchetto chiavi ai tuoi relay."
 
+msgid "At least one Nostr relay accepted your profile."
+msgstr "Almeno un relay Nostr ha accettato il tuo profilo."
+
 msgid "Attach a file"
 msgstr "Allega un file"
 
@@ -1496,10 +1499,6 @@ msgstr "Impossibile copiare %s. Riprova."
 msgid "Couldn't copy the image to the clipboard. Please try again."
 msgstr "Impossibile copiare l'immagine negli appunti. Riprova."
 
-#, c-format
-msgid "Couldn't create an identity. %s"
-msgstr "Impossibile creare un'identità. %s"
-
 msgid "Couldn't create the backup. Please try again."
 msgstr "Impossibile creare il backup. Riprova."
 
@@ -1553,6 +1552,9 @@ msgstr "Impossibile esportare la chiave. %s"
 
 msgid "Couldn't find your account on the relays. Check your relay settings and try again."
 msgstr "Impossibile trovare il tuo account sui relay. Controlla le impostazioni dei relay e riprova."
+
+msgid "Couldn't finish account setup. Please try again."
+msgstr "Impossibile completare la configurazione dell'account. Riprova."
 
 msgid "Couldn't finish dictation. Please try again."
 msgstr "Impossibile completare la dettatura. Riprova."
@@ -1710,6 +1712,9 @@ msgstr "Impossibile riprodurre la voce. Controlla l'uscita audio e riprova."
 msgid "Couldn't play video. Click to retry."
 msgstr "Impossibile riprodurre il video. Clicca per riprovare."
 
+msgid "Couldn't prepare your starter profile. Please try again."
+msgstr "Impossibile preparare il tuo profilo iniziale. Riprova."
+
 msgid "Couldn't preview the picture. Please try again."
 msgstr "Impossibile mostrare l'anteprima dell'immagine. Riprova."
 
@@ -1720,10 +1725,6 @@ msgstr "Impossibile pubblicare la foto. %s"
 #, c-format
 msgid "Couldn't publish the picture. %s"
 msgstr "Impossibile pubblicare l'immagine. %s"
-
-#, c-format
-msgid "Couldn't publish your name. %s"
-msgstr "Impossibile pubblicare il tuo nome. %s"
 
 msgid "Couldn't reach the Namecoin resolvers. Please try again."
 msgstr "Impossibile raggiungere i resolver Namecoin. Riprova."
@@ -1963,6 +1964,9 @@ msgstr "Crea"
 msgid "Create a poll"
 msgstr "Crea un sondaggio"
 
+msgid "Create and publish"
+msgstr "Crea e pubblica"
+
 msgid "Create backup"
 msgstr "Crea backup"
 
@@ -2001,6 +2005,9 @@ msgstr "Creato da"
 
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "Crea una chiave NIP-49 crittografata con una password, da conservare o trasferire in sicurezza a un altro client."
+
+msgid "Creating your account and publishing your profile"
+msgstr "Creazione del tuo account e pubblicazione del tuo profilo"
 
 msgid "Creating your chat"
 msgstr "Creazione della tua chat"
@@ -2805,9 +2812,6 @@ msgstr "Generale"
 
 msgid "Generate a new key"
 msgstr "Genera una nuova chiave"
-
-msgid "Generating your key"
-msgstr "Generazione della tua chiave"
 
 msgid "German"
 msgstr "Tedesco"
@@ -4394,6 +4398,9 @@ msgstr "Preparazione del modello di traduzione..."
 msgid "Preparing your pairing code"
 msgstr "Preparazione del tuo codice di abbinamento"
 
+msgid "Preparing your starter profile"
+msgstr "Preparazione del tuo profilo iniziale"
+
 msgid "Press Ctrl P for the command palette."
 msgstr "Premi Ctrl P per la tavolozza dei comandi."
 
@@ -4504,9 +4511,6 @@ msgstr "Pubblicazione del tuo pacchetto chiavi"
 
 msgid "Publishing your profile"
 msgstr "Pubblicazione del tuo profilo"
-
-msgid "Publishing your profile to the relays. This takes a few seconds."
-msgstr "Pubblicazione del tuo profilo sui relay. Richiede qualche secondo."
 
 msgid "Publishing your relay lists"
 msgstr "Pubblicazione delle tue liste di relay"
@@ -4800,6 +4804,9 @@ msgstr "Controlla i permessi del firmatario"
 
 msgid "Review starting over"
 msgstr "Valuta di ricominciare"
+
+msgid "Review your public profile"
+msgstr "Controlla il tuo profilo pubblico"
 
 msgid "Right"
 msgstr "Destra"
@@ -5843,9 +5850,6 @@ msgstr "Questo membro ha troppi dispositivi in questa chat."
 msgid "This message was deleted"
 msgstr "Questo messaggio è stato eliminato"
 
-msgid "This name is public. You can change it later in your profile."
-msgstr "Questo nome è pubblico. Puoi cambiarlo più tardi nel tuo profilo."
-
 msgid "This number increases when the group's encryption keys change."
 msgstr "Questo numero aumenta quando cambiano le chiavi di crittografia del gruppo."
 
@@ -5866,6 +5870,9 @@ msgstr "Questa password protegge i dati sensibili locali. Non serve per accedere
 
 msgid "This relay is already in your list."
 msgstr "Questo relay è già nel tuo elenco."
+
+msgid "This step does not publish your chats."
+msgstr "Questo passaggio non pubblica le tue chat."
 
 msgid "This sticker is not in the current pack."
 msgstr "Questo adesivo non è nel pacchetto attuale."
@@ -6280,9 +6287,6 @@ msgstr "mercoledì"
 msgid "What is shared"
 msgstr "Dati condivisi"
 
-msgid "What should people call you?"
-msgstr "Come vuoi che gli altri ti chiamino?"
-
 msgid "What the GM button sends. You can use it once a day in each chat."
 msgstr "Il messaggio inviato dal pulsante GM. Puoi usarlo una volta al giorno in ogni chat."
 
@@ -6322,6 +6326,9 @@ msgstr "White Noise non è affiliato a GifSnap. Non c'è motivo di pensare che G
 
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
 msgstr "White Noise non vede mai la tua chiave privata. Resta solo su questo dispositivo e su qualsiasi firmatario collegato."
+
+msgid "White Noise uploads your picture to this public image server:"
+msgstr "White Noise carica la tua immagine su questo server pubblico:"
 
 msgid "White Noise will ask your signer for these permissions. Your signer may ask you to confirm them too."
 msgstr "White Noise chiederà questi permessi al tuo firmatario. Anche il tuo firmatario potrebbe chiederti di confermarli."
@@ -6442,6 +6449,12 @@ msgstr "Il tuo account ha un'azione in sospeso. Completala prima di riconnettere
 msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
 msgstr "Il tuo account è stato rimosso, ma non è stato possibile rimuovere il record del suo firmatario dalla cassaforte cifrata."
 
+msgid "Your account key was saved on this device."
+msgstr "La chiave del tuo account è stata salvata su questo dispositivo."
+
+msgid "Your account was created"
+msgstr "Il tuo account è stato creato"
+
 msgid "Your chats appear here once you have some."
 msgstr "Le tue chat appariranno qui quando ne avrai."
 
@@ -6478,6 +6491,9 @@ msgstr "La tua chiave resta su questo dispositivo"
 msgid "Your name"
 msgstr "Il tuo nome"
 
+msgid "Your name and a link to your picture go to public Nostr relays so people can recognize you."
+msgstr "Il tuo nome e un link alla tua immagine vengono inviati ai relay Nostr pubblici per permettere agli altri di riconoscerti."
+
 msgid "Your new password"
 msgstr "La tua nuova password"
 
@@ -6490,6 +6506,12 @@ msgstr "Il tuo blocco note"
 msgid "Your password"
 msgstr "La tua password"
 
+msgid "Your picture upload wasn't confirmed."
+msgstr "Il caricamento della tua immagine non è stato confermato."
+
+msgid "Your picture was uploaded."
+msgstr "La tua immagine è stata caricata."
+
 msgid "Your previous account action is still running."
 msgstr "La tua precedente azione sull'account è ancora in corso."
 
@@ -6501,6 +6523,9 @@ msgstr "La tua chiave privata resta nel tuo firmatario remoto. Su questo disposi
 
 msgid "Your profile"
 msgstr "Il tuo profilo"
+
+msgid "Your profile publication wasn't confirmed."
+msgstr "La pubblicazione del tuo profilo non è stata confermata."
 
 msgid "Your proxy credentials are stored in your encrypted vault."
 msgstr "Le credenziali del proxy sono salvate nella tua cassaforte cifrata."
@@ -6546,6 +6571,9 @@ msgstr "Il tuo firmatario ha rifiutato la richiesta."
 
 msgid "Your signer session has ended."
 msgstr "La sessione del tuo firmatario è terminata."
+
+msgid "Your starter picture and profile weren't sent."
+msgstr "La tua immagine iniziale e il tuo profilo non sono stati inviati."
 
 msgid "Your stickers"
 msgstr "I tuoi adesivi"
