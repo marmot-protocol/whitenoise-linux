@@ -55,13 +55,16 @@ emoji_preview: struct {
 @(private = "file")
 emoji_revision: u64
 
+@(private)
+MARMOT_EMOJI :: "marmot"
+
 // Built-in shortcodes shipped in the binary, always available and not
 // removable. A user file with the same code takes precedence.
 BUILTIN_EMOJI := [13]struct {
 	code: string,
 	png:  []u8,
 } {
-	{"marmot", #load("assets/marmot.png")},
+	{MARMOT_EMOJI, #load("assets/marmot.png")},
 	// The logomark on its dark tile, so it reads on light themes too.
 	{"wn", #load("assets/wn.png")},
 	{"marmot_classic", #load("assets/marmot_classic.png")},
@@ -454,6 +457,20 @@ picker_custom_matches :: proc(ui: ^Ui_State) -> ([]Picker_Custom, u64) {
 		return matches[:], emoji_revision
 	}
 	if ui.picker_group == .Custom {return picker_custom("")}
+	if ui.picker_group == .Marmot {
+		matches := make([dynamic]Picker_Custom, 0, len(BUILTIN_EMOJI), context.temp_allocator)
+		for b, i in BUILTIN_EMOJI {
+			if b.code != MARMOT_EMOJI && !strings.has_prefix(b.code, "marmot_") {continue}
+			slot := len(custom_emoji_names) + i
+			if local, found := emoji_file_slot(b.code); found {
+				name := custom_emoji_names[local]
+				if tex, loaded := custom_emoji_textures[name]; loaded && tex == nil {continue}
+				slot = local
+			}
+			append(&matches, Picker_Custom{b.code, u32(slot)})
+		}
+		return matches[:], emoji_revision
+	}
 	return nil, emoji_revision
 }
 
@@ -625,12 +642,18 @@ emoji_shortcode :: proc(emoji: string) -> (code: string, ok: bool) {
 // The stored file backing a shortcode, "" when only a builtin (or
 // nothing) defines it.
 emoji_file_for :: proc(code: string) -> string {
-	for name in custom_emoji_names {
+	if slot, found := emoji_file_slot(code); found {return custom_emoji_names[slot]}
+	return ""
+}
+
+@(private = "file")
+emoji_file_slot :: proc(code: string) -> (int, bool) {
+	for name, slot in custom_emoji_names {
 		if emoji_code(name) == code {
-			return name
+			return slot, true
 		}
 	}
-	return ""
+	return 0, false
 }
 
 // Distinct shortcodes in a body that this device can ship an image

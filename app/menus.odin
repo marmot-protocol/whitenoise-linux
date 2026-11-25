@@ -639,6 +639,8 @@ PICKER_CELL :: f32(30)
 PICKER_GAP :: u16(2)
 PICKER_PAD :: u16(8)
 PICKER_GUTTER :: f32(14)
+@(private = "file")
+PICKER_RAIL_EXTRA :: PICKER_GUTTER + f32(PICKER_PAD)
 
 @(private)
 picker_side :: proc() -> f32 {
@@ -737,6 +739,8 @@ picker_cell :: proc(id: nendo.Id, art: Picker_Art, width: f32, ring: nendo.Borde
 PICKER_CATEGORIES := [Emoji_Group]struct {
 	icon, label: string,
 } {
+	.Custom     = {"\uf005", N_("Custom emoji")},
+	.Marmot     = {"\uf1b0", N_("Marmot")},
 	.Smileys    = {ICON_SMILE, N_("Smileys and emotion")},
 	.People     = {"\uf0c0", N_("People and body")},
 	.Nature     = {"\uf1b0", N_("Animals and nature")},
@@ -746,7 +750,16 @@ PICKER_CATEGORIES := [Emoji_Group]struct {
 	.Objects    = {"\uf0eb", N_("Objects")},
 	.Symbols    = {"\uf292", N_("Symbols")},
 	.Flags      = {"\uf024", N_("Flags")},
-	.Custom     = {"\uf005", N_("Custom emoji")},
+}
+
+@(private)
+PICKER_PACK_START :: int(Emoji_Group.Smileys)
+
+@(private)
+picker_category_at :: proc(at, packs: int) -> int {
+	if at < PICKER_PACK_START {return at}
+	if at < PICKER_PACK_START + packs {return len(PICKER_CATEGORIES) + at - PICKER_PACK_START}
+	return at - packs
 }
 
 @(private)
@@ -855,7 +868,8 @@ emoji_picker :: proc(ui: ^Ui_State) {
 		{width = nendo.grow(), height = nendo.grow(), gap = PICKER_PAD},
 		) {
 			if !sheet {picker_categories(ui)}
-			grid_w := width - 2 * pad - (sheet ? 0 : side + pad) - PICKER_GUTTER
+			grid_w :=
+				width - 2 * pad - (sheet ? 0 : side + PICKER_RAIL_EXTRA + pad) - PICKER_GUTTER
 			picker_grid(ui, grid_w, height)
 		}
 		if sheet {
@@ -870,12 +884,18 @@ picker_categories :: proc(ui: ^Ui_State) {
 	sheet := single_pane()
 	id := nendo.id("PickerCategories")
 	side := picker_side()
+	thumb, inset := scrollbar_metrics()
+	// The visible lane starts at the panel edge and ends at the scrollbar.
+	// The panel already supplies PICKER_PAD on the left.
+	right := sheet ? 0 : PICKER_PAD + u16(thumb + inset)
 	if nendo.box(id)(
 	{
-		width = sheet ? nendo.grow() : nendo.fixed(side),
+		width = sheet ? nendo.grow() : nendo.fixed(side + PICKER_RAIL_EXTRA),
 		height = sheet ? nendo.fixed(side) : nendo.grow(),
 		direction = sheet ? .Row : .Column,
 		gap = PICKER_GAP,
+		align = {x = sheet ? .Left : .Center},
+		padding = {right = right},
 		clip = {x = sheet, y = !sheet, scroll = true},
 	},
 	) {
@@ -884,21 +904,24 @@ picker_categories :: proc(ui: ^Ui_State) {
 			selected = len(PICKER_CATEGORIES) + ui.picker_pack - 1
 		}
 		if picker_query(ui) != "" {selected = -1}
-		custom := PICKER_CATEGORIES[.Custom]
-		picker_category_button(int(Emoji_Group.Custom), selected, custom.icon, tr(custom.label))
-		for pack, i in picker_emoji_packs {
-			picker_category_button(
-				len(PICKER_CATEGORIES) + i,
-				selected,
-				"\uf1b2",
-				pack.title,
-				picker_pack_art(pack.sample),
-			)
-		}
-		for group in Emoji_Group {
-			if group == .Custom {continue}
+		packs := len(picker_emoji_packs)
+		for at in 0 ..< len(PICKER_CATEGORIES) + packs {
+			index := picker_category_at(at, packs)
+			if index >= len(PICKER_CATEGORIES) {
+				pack := &picker_emoji_packs[index - len(PICKER_CATEGORIES)]
+				picker_category_button(
+					index,
+					selected,
+					"\uf1b2",
+					pack.title,
+					picker_pack_art(pack.sample),
+				)
+				continue
+			}
+			group := Emoji_Group(index)
 			category := PICKER_CATEGORIES[group]
-			picker_category_button(int(group), selected, category.icon, tr(category.label))
+			art := group == .Marmot ? picker_shortcode_tex(MARMOT_EMOJI) : Picker_Art{}
+			picker_category_button(index, selected, category.icon, tr(category.label), art)
 		}
 	}
 	scrollbar(id, 13)

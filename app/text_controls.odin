@@ -70,6 +70,12 @@ scroll_thumb_pressed :: proc(thumb: nendo.Id) -> bool {
 	return !rl.TouchActive() && rl.IsMouseButtonPressed(.LEFT) && nendo.pointer_over(thumb)
 }
 
+@(private)
+scrollbar_metrics :: proc() -> (width, inset: f32) {
+	if RELIEF {return 14, 0}
+	return 5, 3
+}
+
 // Scrollbar for a nendo scroll container, floated on its right edge
 // from the previous frame's scroll data. Wheel scrolls; the thumb is
 // also hand-draggable (grab it, scroll follows the pointer).
@@ -108,7 +114,7 @@ scrollbar :: proc(container: nendo.Id, z: i16 = 5) {
 
 	// A relief theme draws the desktop scrollbar: a light track down the
 	// container's edge under a raised thumb. Others keep the hairline thumb.
-	width := RELIEF ? f32(14) : f32(5)
+	width, inset := scrollbar_metrics()
 	if RELIEF {
 		if nendo.box(nendo.id("ScrollTrack", container.id))(
 		{
@@ -132,7 +138,7 @@ scrollbar :: proc(container: nendo.Id, z: i16 = 5) {
 		floating = {
 			attach_to = .Element,
 			parent = container.id,
-			offset = {RELIEF ? 0 : -3, y},
+			offset = {-inset, y},
 			z = z,
 			pointer = rl.TouchActive() ? .Passthrough : .Capture,
 			attach = {element = .Right_Top, parent = .Right_Top},

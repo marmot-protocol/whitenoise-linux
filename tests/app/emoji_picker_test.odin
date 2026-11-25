@@ -245,7 +245,9 @@ test_cold_custom_emoji :: proc(t: ^testing.T, ui: ^Ui_State) {
 	row_id := nendo.id("PkCustomRow")
 	row := nendo.scroll(row_id)
 	if !testing.expect(t, row.found && row.content.width > row.viewport.width) {return}
-	row.position.x = row.viewport.width - row.content.width
+	first_collision := nendo.element(nendo.id("PkCustom", 24))
+	if !testing.expect(t, first_collision.found) {return}
+	row.position.x += nendo.element(row_id).rect.x - first_collision.rect.x
 	build_layout(ui, 0)
 	settings_emoji_tick(ui)
 	emoji_preview_finish(.Publish)
@@ -306,15 +308,18 @@ test_picker_packs :: proc(t: ^testing.T, ui: ^Ui_State, directory: string) {
 	testing.expect_value(t, picker_emoji_packs[0].title, "Party")
 	testing.expect_value(t, picker_emoji_packs[1].title, "Wood land")
 	custom := nendo.element(nendo.id("PickerCategory", u32(Emoji_Group.Custom))).rect
+	marmots := nendo.element(nendo.id("PickerCategory", u32(Emoji_Group.Marmot)))
 	party_id := nendo.id("PickerCategory", u32(len(PICKER_CATEGORIES)))
 	woodland_id := nendo.id("PickerCategory", u32(len(PICKER_CATEGORIES) + 1))
 	party, woodland := nendo.element(party_id), nendo.element(woodland_id)
 	smileys := nendo.element(nendo.id("PickerCategory", u32(Emoji_Group.Smileys))).rect
 	if !testing.expect(
 		t,
+		marmots.found &&
 		party.found &&
 		woodland.found &&
-		custom.y < party.rect.y &&
+		custom.y < marmots.rect.y &&
+		marmots.rect.y < party.rect.y &&
 		party.rect.y < woodland.rect.y &&
 		woodland.rect.y < smileys.y,
 	) {return}
@@ -327,6 +332,54 @@ test_picker_packs :: proc(t: ^testing.T, ui: ^Ui_State, directory: string) {
 		handle_picker(ui, nil)
 		forced_press, forced_release = false, false
 	}
+	{
+		pointer(ui, marmots.rect, .Down)
+		pointer(ui, marmots.rect, .Up)
+		commands := build_layout(ui, 0)
+		items, _ := picker_custom_matches(ui)
+		if !testing.expect_value(t, len(items), 12) {return}
+		wave: nendo.Id
+		for item in items {
+			testing.expect(t, item.code == "marmot" || strings.has_prefix(item.code, "marmot_"))
+			if item.code == "marmot_wave" {wave = nendo.id("PkCustom", item.slot)}
+		}
+		for _ in 0 ..< 16 {
+			settings_emoji_tick(ui)
+			emoji_preview_finish(.Publish)
+			commands = build_layout(ui, 0)
+		}
+		rail_id := nendo.id("PickerCategories")
+		panel := nendo.element(nendo.id("PickerPanel")).rect
+		button := nendo.element(nendo.id("PickerCategory", u32(Emoji_Group.Marmot))).rect
+		thumb := nendo.element(nendo.id("ScrollThumb", rail_id.id))
+		left_gap := button.x - panel.x
+		right_gap := thumb.rect.x - (button.x + button.width)
+		testing.expect(
+			t,
+			thumb.found && right_gap > 0 && abs(left_gap - right_gap) < 1,
+			"category buttons must be centered between the panel edge and the scrollbar",
+		)
+		rl.BeginDrawing()
+		draw_frame(commands)
+		rl.TakeScreenshot("/tmp/wn-emoji-picker-marmot.png")
+		rl.EndDrawing()
+		tile := nendo.element(wave)
+		if !testing.expect(t, tile.found) {return}
+		clear(&ui.compose)
+		ui.picker_return = 0
+		pointer(ui, tile.rect, .Up)
+		testing.expect_value(t, string(ui.compose[:]), ":marmot_wave:")
+	}
+	open_picker(ui, "")
+	for expected_pack in 0 ..< 2 {
+		rl.PushKey(.TAB, true)
+		handle_picker(ui, nil)
+		rl.PushKey(.TAB, false)
+		testing.expect_value(t, ui.picker_pack, expected_pack)
+		if expected_pack == 0 {testing.expect_value(t, ui.picker_group, Emoji_Group.Marmot)}
+	}
+	open_picker(ui, "")
+	build_layout(ui, 0)
 	pointer(ui, party.rect, .Down)
 	custom_emoji_scan()
 	build_layout(ui, 0)

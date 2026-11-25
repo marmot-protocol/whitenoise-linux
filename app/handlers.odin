@@ -1551,11 +1551,14 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	step := len(rl.Preedit()) == 0 ? tab_step() : 0
 	if step != 0 {
 		packs := len(picker_emoji_packs)
-		at := ui.picker_pack
-		if ui.picker_group != .Custom {at = packs + 1 + int(ui.picker_group)}
+		at := int(ui.picker_group)
+		if ui.picker_pack != 0 {
+			at = PICKER_PACK_START + ui.picker_pack - 1
+		} else if at >= PICKER_PACK_START {
+			at += packs
+		}
 		at = (at + step) %% (len(PICKER_CATEGORIES) + packs)
-		category =
-			at == 0 ? int(Emoji_Group.Custom) : at <= packs ? len(PICKER_CATEGORIES) + at - 1 : at - packs - 1
+		category = picker_category_at(at, packs)
 	} else if pressed || released {
 		for index in 0 ..< len(PICKER_CATEGORIES) + len(picker_emoji_packs) {
 			id := nendo.id("PickerCategory", u32(index))
