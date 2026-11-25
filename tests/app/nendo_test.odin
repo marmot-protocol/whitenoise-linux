@@ -473,11 +473,7 @@ layout_virtual_rows_follow_ancestor_scroll :: proc(t: ^testing.T) {
 
 	nendo.set_dimensions({800, 600})
 	grouped_id := nendo.id("GroupedViewport")
-	for count in ([2]int{30, 5}) {
-		if count == 5 {
-			view := nendo.scroll(grouped_id)
-			view.position.y = view.viewport.height - view.content.height
-		}
+	for count, frame in ([3]int{30, 30, 5}) {
 		offsets := [2]f32{0, 40 + f32(count) * 40}
 		nendo.begin()
 		if nendo.box(grouped_id)(
@@ -502,7 +498,15 @@ layout_virtual_rows_follow_ancestor_scroll :: proc(t: ^testing.T) {
 				}
 			}
 		}
+		// A scrollbar writes this after the virtual rows have been chosen.
+		if frame == 0 {nendo.scroll(grouped_id).position.y = -1130}
 		nendo.end(0)
+		if frame == 0 {
+			testing.expect_value(t, nendo.element(nendo.id("GroupedRow", 0)).rect.y, 40)
+			testing.expect_value(t, nendo.scroll(grouped_id).position.y, -1130)
+		} else if frame == 1 {
+			testing.expect_value(t, nendo.element(nendo.id("GroupedRow", 29)).rect.y, 70)
+		}
 	}
 	testing.expect_value(t, nendo.scroll(grouped_id).position.y, -130)
 	testing.expect_value(t, nendo.element(nendo.id("GroupedRow", 3)).rect.y, 30)
@@ -578,6 +582,24 @@ layout_virtual_height_growth :: proc(t: ^testing.T) {
 			}
 		}
 	}
+
+	nendo.set_dimensions({800, 100})
+	for height, frame in ([2]nendo.Size{nendo.fixed(100), nendo.grow()}) {
+		if frame == 1 {nendo.scroll(list_id).position.y = -1900}
+		nendo.begin()
+		if nendo.box()({height = nendo.fixed(100), direction = .Column, clip = {y = true}}) {
+			if nendo.box(list_id)(
+			{height = height, direction = .Column, clip = {y = true, scroll = true}},
+			) {
+				draw_rows()
+			}
+		}
+		nendo.end(0)
+	}
+	testing.expect_value(t, nendo.scroll(list_id).viewport.height, 2000)
+	testing.expect_value(t, nendo.scroll(list_id).position.y, 0)
+	testing.expect_value(t, nendo.element(nendo.id("HeightGrowthRow", 1)).rect.y, 20)
+	testing.expect(t, !nendo.element(nendo.id("HeightGrowthRow", 99)).found)
 }
 
 @(test)

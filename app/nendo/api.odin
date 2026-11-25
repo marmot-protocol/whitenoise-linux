@@ -112,14 +112,45 @@ virtual_lower_bound :: proc(offsets: []f32, gap, y: f32) -> int {
 Y_Bounds :: [2]f32
 
 @(private)
-virtual_viewport :: proc(owner: ^Layout_Element) -> Y_Bounds {
+virtual_viewport :: proc(owner: ^Layout_Element, run_height: f32 = 0) -> Y_Bounds {
 	size := owner.config.height
 	if size.kind == .Fixed {return {size.min, size.min}}
+	ctx := active_context
 	prior := get_hash_map_item(owner.id)
 	previous := prior.appeared_this_frame ? 0 : prior.bounding_box.height
-	upper := cmax(cmax(active_context.layout_dimensions.height, previous), size.min)
+	lower := size.min
+	upper := cmax(cmax(ctx.layout_dimensions.height, previous), size.min)
+	owner_at: i32 = -1
+	for i := ctx.open_layout_element_stack.length - 1; i >= 0; i -= 1 {
+		parent := array_get(
+			&ctx.layout_elements,
+			array_get_value(&ctx.open_layout_element_stack, i),
+		)
+		if owner_at < 0 {
+			if parent == owner {owner_at = i}
+			continue
+		}
+		if parent.config.clip.y {
+			// A clipping parent may keep an overflowing child at its intrinsic height.
+			upper = MAX_FLOAT
+			if owner_at == i + 1 &&
+			   run_height > 0 &&
+			   parent.config.direction != .Wrap_Row &&
+			   parent.config.grid.min_cell_width <= 0 &&
+			   owner.config.floating.attach_to == .None &&
+			   owner.config.aspect == 0 &&
+			   size.kind != .Percent &&
+			   .Height not_in owner.config.transition.properties {
+				lower = cmax(lower, run_height)
+			}
+			break
+		}
+		bound := parent.config.height
+		upper = cmax(upper, bound.min)
+		if bound.kind == .Fixed {break}
+	}
 	if size.max > 0 {upper = cmin(upper, size.max)}
-	return {size.min, upper}
+	return {cmin(lower, upper), upper}
 }
 
 @(private)
@@ -145,14 +176,23 @@ virtual_window :: proc(height: f32) -> (top, bottom: f32) {
 	}
 	if clip.y && scroll_enabled(clip) {
 		owner.virtual_scroll_y = true
+		if view := find_scroll_data(owner.id); view != nil {
+			owner.virtual_scroll_request_y = view.scroll_position.y
+		}
 		// Mount the union for the possible scroll positions. Placement clamps to the
 		// actual viewport. Nested runs need the same scroll bounds during declaration.
-		viewport := virtual_viewport(owner)
-		tail := height + f32(owner.config.padding.bottom)
-		requested := cmax(f32(0), -clip.offset.y)
-		owner.virtual_scroll_min_y = -cmin(requested, cmax(f32(0), prefix[1] + tail - viewport[0]))
-		clip.offset.y = -cmin(requested, cmax(f32(0), prefix[0] + tail - viewport[1]))
-		prefix += Y_Bounds{owner.virtual_scroll_min_y, clip.offset.y}
+		requested := -owner.virtual_scroll_request_y
+		clip.offset.y = 0
+		if requested > 0 {
+			viewport := virtual_viewport(owner, height)
+			tail := height + f32(owner.config.padding.bottom)
+			owner.virtual_scroll_min_y = -cmin(
+				requested,
+				cmax(f32(0), prefix[1] + tail - viewport[0]),
+			)
+			clip.offset.y = -cmin(requested, cmax(f32(0), prefix[0] + tail - viewport[1]))
+			prefix += Y_Bounds{owner.virtual_scroll_min_y, clip.offset.y}
+		}
 	} else if clip.x || clip.y {
 		prefix += Y_Bounds{clip.offset.y, clip.offset.y}
 	}
@@ -276,13 +316,7 @@ virtual_ancestor_window :: proc(owner: ^Layout_Element) -> (top, bottom: f32) {
 		}
 		if config.clip.y {
 			top = cmax(top, -relative[1])
-			viewport := canvas
-			if config.height.kind == .Fixed {
-				viewport = config.height.min
-			} else if config.height.max > 0 {
-				viewport = cmin(viewport, config.height.max)
-			}
-			bottom = cmin(bottom, viewport - relative[0])
+			bottom = cmin(bottom, virtual_viewport(ancestor)[1] - relative[0])
 		}
 		if config.floating.attach_to != .None {
 			y := floating_origin_y(ancestor)

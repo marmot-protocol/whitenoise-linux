@@ -1334,13 +1334,14 @@ calculate_final_layout :: proc(pass: Layout_Pass) {
 						scroll_container_data.content_size.height -
 						current_element_bounding_box.height,
 					)
-					scroll_offset.y = clamp(
-						scroll_container_data.scroll_position.y,
-						-max_scroll,
-						0,
-					)
+					request := current_element.virtual_scroll_request_y
+					scroll_offset.y = clamp(request, -max_scroll, 0)
 					layout_config.clip.offset.y = scroll_offset.y
-					if generate_render_commands {scroll_container_data.scroll_position.y = scroll_offset.y}
+					// A scrollbar can write the next request after this frame's rows mounted.
+					if generate_render_commands &&
+					   scroll_container_data.scroll_position.y == request {
+						scroll_container_data.scroll_position.y = scroll_offset.y
+					}
 				}
 			}
 			hash_map_item.laid_out_y = scroll_offset.y

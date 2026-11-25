@@ -118,6 +118,7 @@ Layout_Element :: struct {
 	virtual_prefix_height:    f32,
 	virtual_prefix_count:     i32,
 	virtual_scroll_min_y:     f32,
+	virtual_scroll_request_y: f32,
 }
 
 @(private)
