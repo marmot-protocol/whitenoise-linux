@@ -245,7 +245,9 @@ test_cold_custom_emoji :: proc(t: ^testing.T, ui: ^Ui_State) {
 	row_id := nendo.id("PkCustomRow")
 	row := nendo.scroll(row_id)
 	if !testing.expect(t, row.found && row.content.width > row.viewport.width) {return}
-	row.position.x = row.viewport.width - row.content.width
+	first_collision := nendo.element(nendo.id("PkCustom", 24))
+	if !testing.expect(t, first_collision.found) {return}
+	row.position.x += nendo.element(row_id).rect.x - first_collision.rect.x
 	build_layout(ui, 0)
 	settings_emoji_tick(ui)
 	emoji_preview_finish(.Publish)
@@ -346,6 +348,13 @@ test_picker_packs :: proc(t: ^testing.T, ui: ^Ui_State, directory: string) {
 			emoji_preview_finish(.Publish)
 			commands = build_layout(ui, 0)
 		}
+		rail_id := nendo.id("PickerCategories")
+		thumb := nendo.element(nendo.id("ScrollThumb", rail_id.id))
+		testing.expect(
+			t,
+			thumb.found && thumb.rect.x > marmots.rect.x + marmots.rect.width,
+			"the category scrollbar must not overlap the buttons",
+		)
 		rl.BeginDrawing()
 		draw_frame(commands)
 		rl.TakeScreenshot("/tmp/wn-emoji-picker-marmot.png")
