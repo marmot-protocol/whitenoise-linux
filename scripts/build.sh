@@ -275,6 +275,7 @@ if [ "${1:-}" != sources ]; then
     printf '%s\n' "${RUST_ENV[@]}" 'OTLP_EXPORT=1'
     env | LC_ALL=C sort | while IFS= read -r setting; do
       case "$setting" in
+      CARGO_BUILD_JOBS=*) ;; # Scheduling only. Keep artifacts across runner sizes.
       CC=* | CC_*=* | CXX=* | CXX_*=* | AR=* | AR_*=* | CFLAGS*=* | CXXFLAGS*=* | CPPFLAGS*=* | LDFLAGS*=* | RUSTFLAGS=* | CARGO_ENCODED_RUSTFLAGS=* | RUSTC*=* | RUSTUP_TOOLCHAIN=* | CARGO_BUILD_*=* | CARGO_TARGET_*=* | CARGO_PROFILE_*=* | PKG_CONFIG*=* | OPENSSL*=* | LIBSQLITE3*=* | SQLITE3*=* | SDKROOT=* | MACOSX_DEPLOYMENT_TARGET=* | PRODUCT_ANALYTICS_EXPORT=*)
         printf '%s\n' "$setting"
         ;;
