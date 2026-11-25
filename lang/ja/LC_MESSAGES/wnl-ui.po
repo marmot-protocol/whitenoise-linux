@@ -3921,6 +3921,9 @@ msgstr "プレビューはありません"
 msgid "No preview for this file type. Save it, or read the bytes."
 msgstr "この種類のファイルはプレビューできません。保存するか、バイトを表示してください。"
 
+msgid "No reactions to show."
+msgstr "表示できるリアクションはありません。"
+
 #, c-format
 msgid "No record with id %s in this chat's window."
 msgstr "このチャットの読み込み範囲にID %sの記録はありません。"
@@ -4620,6 +4623,9 @@ msgstr "この端末の秘密情報を新しいパスワードで再暗号化し
 
 msgid "Reach out to support"
 msgstr "サポートに連絡"
+
+msgid "Reaction details"
+msgstr "リアクションの詳細"
 
 msgid "Read aloud"
 msgstr "読み上げ"

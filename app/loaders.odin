@@ -357,22 +357,11 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		}
 		for j in 0 ..< record.reactions.by_emoji_len {
 			entry := &record.reactions.by_emoji[j]
+			senders := make([]string, entry.senders_len)
 			mine_reaction := false
-			for k in 0 ..< record.reactions.user_reactions_len {
-				user := &record.reactions.user_reactions[k]
-				if user.sender != nil &&
-				   string(user.sender) == ui.account_ref &&
-				   string(user.emoji) == string(entry.emoji) {
-					mine_reaction = true
-					break
-				}
-			}
-			// Resolve reactor names for the chip's hover tooltip.
-			names := make([dynamic]string, context.temp_allocator)
-			for s in 0 ..< entry.senders_len {
-				if entry.senders[s] != nil {
-					append(&names, profile_label(client, string(entry.senders[s])))
-				}
+			for sender, s in entry.senders[:entry.senders_len] {
+				senders[s] = strings.clone(string(sender))
+				mine_reaction ||= senders[s] == ui.account_ref
 			}
 			append(
 				&msg.reactions,
@@ -381,7 +370,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 					emoji = strings.clone(string(entry.emoji)),
 					count = fmt.aprintf("%d", entry.count),
 					mine = mine_reaction,
-					who = strings.join(names[:], ", "),
+					senders = senders,
 				},
 			)
 		}

@@ -39,6 +39,7 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 ### Writing, sending and forwarding
 
 - **Messages are Markdown.** Bodies support typeset `$` math blocks, reactions, replies, edits with history, forwarding, and search.
+- **See who reacted to a message.** Select the people icon beside its reaction chips, or press Tab to focus the icon and Enter to open **Reaction details**. Select an emoji chip itself to toggle your reaction.
 - **A thread stays readable when you can't reply.** You can reply to a parent outside the visible page if this device still has it and can place the reply in the thread. If not, the existing replies and your draft stay in place.
 - **Enter sends; Shift+Enter starts a new line.** You can also click **Send** at the right end of the toolbar. Click the checkmark to save an edit.
 - **Type `/` in an empty draft to open commands.** Keep typing to filter. Use the arrow keys and Enter or Tab, or click a command. Escape closes the menu without changing your draft. `/shrug` inserts a shrug without sending it.

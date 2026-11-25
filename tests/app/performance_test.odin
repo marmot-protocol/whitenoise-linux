@@ -36,13 +36,15 @@ message_storage_released :: proc(t: ^testing.T) {
 		}
 		append(&opt.blocks, Md_Block_Ui{text = strings.clone("option paragraph")})
 		append(&msg.poll_opts, opt)
+		senders := make([]string, 1)
+		senders[0] = strings.clone("Alice")
 		append(
 			&msg.reactions,
 			Reaction_Ui {
 				label = strings.clone("+ 1"),
 				emoji = strings.clone("+"),
 				count = strings.clone("1"),
-				who = strings.clone("Alice"),
+				senders = senders,
 			},
 		)
 		append(
