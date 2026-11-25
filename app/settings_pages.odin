@@ -1843,11 +1843,10 @@ spawn_cmd :: proc(cmdline: string) {
 		)
 		windows.ShellExecuteW(nil, nil, windows.utf8_to_wstring("powershell.exe"), params, nil, 0)
 	} else {
-		state, out, errout, _ := host_process_exec(
-			{command = {"sh", "-c", fmt.tprintf("%s >/dev/null 2>&1 &", cmdline)}},
-			context.temp_allocator,
+		_, out, errout, _ := host_process_exec(
+			{command = {"sh", "-c", fmt.tprintf("(%s) >/dev/null 2>&1 &", cmdline)}},
+			context.allocator,
 		)
-		_ = state
 		delete(out)
 		delete(errout)
 	}

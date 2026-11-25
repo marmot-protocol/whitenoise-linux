@@ -133,8 +133,9 @@ notify_test_enabled :: proc(ui: ^Ui_State) -> bool {
 @(private)
 notify_test_worker :: proc() {
 	context.allocator = reload_allocator()
+	defer free_all(context.temp_allocator)
 	defer frame_wake()
-	state, out, errors, err := tool_exec(
+	state, out, errors, err := host_process_exec(
 		{
 			command = {
 				"notify-send",
@@ -149,7 +150,7 @@ notify_test_worker :: proc() {
 	)
 	delete(out)
 	delete(errors)
-	accepted := err == nil && state.exit_code == 0
+	accepted := err == nil && state.success && state.exit_code == 0
 	if accepted && notify_test_sound {spawn_cmd(NOTIFY_SOUND)}
 	sync.atomic_store(&notify_test_result, accepted ? .Accepted : .Failed)
 }
