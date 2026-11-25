@@ -168,6 +168,7 @@ jobs:
     environment: ${{ github.event_name == 'pull_request' && 'wn-github-pr' || 'wn-boat-build' }}
     env:
       BOAT_CI_KEY: ${{ github.event_name != 'pull_request' && secrets.BOAT_CI_KEY || '' }}
+      ORCHARD_RUST_VERSION: '1.100.0'
     defaults:
       run:
         shell: bash scripts/ci-boat.sh run {0}
@@ -176,14 +177,38 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Identify pinned Orchard source
+        if: github.event_name == 'push'
+        id: orchard-source
+        shell: bash
+        run: |
+          digest=$(awk '$1 == "orchard-source-file" && $2 == "=" {print $3}' DEPS_PIN)
+          [[ $digest =~ ^[0-9a-f]{64}$ ]]
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Orchard publisher
+        if: github.event_name == 'push'
+        id: orchard-cache
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: build/orchard-publish
+          key: orchard-publisher-v1-ubuntu24-x64-${{ env.ORCHARD_RUST_VERSION }}-${{ steps.orchard-source.outputs.digest }}-${{ hashFiles('scripts/build-orchard.sh', 'scripts/fetch.sh', 'scripts/ci-boat.sh', 'scripts/ci-container.sh', 'packaging/ci/Containerfile', 'patches/orchard-*.patch') }}
+
       - name: Start native build guest
+        if: steps.orchard-cache.outputs.cache-hit != 'true'
+        id: orchard-guest
         shell: bash
         run: bash scripts/ci-boat.sh start native
 
       - name: Build pinned publisher only
-        run: scripts/build-orchard.sh
+        if: steps.orchard-guest.outcome == 'success'
+        run: |
+          rustup toolchain install '${{ env.ORCHARD_RUST_VERSION }}' --profile minimal
+          RUSTUP_TOOLCHAIN='${{ env.ORCHARD_RUST_VERSION }}' scripts/build-orchard.sh
 
       - name: Retrieve Orchard publisher
+        if: steps.orchard-guest.outcome == 'success'
         shell: bash
         run: bash scripts/ci-boat.sh pull build/orchard-publish
 
@@ -194,9 +219,17 @@ jobs:
           if-no-files-found: error
 
       - name: Stop build guest
-        if: always()
+        if: always() && steps.orchard-guest.outcome != 'skipped'
         shell: bash
         run: bash scripts/ci-boat.sh stop
+
+      - name: Save Orchard publisher
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.orchard-guest.outcome == 'success' && steps.orchard-cache.outputs.cache-primary-key != ''
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: build/orchard-publish
+          key: ${{ steps.orchard-cache.outputs.cache-primary-key }}
 
   flatpak:
     name: Flatpak (x86_64)
