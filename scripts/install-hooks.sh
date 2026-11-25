@@ -21,6 +21,6 @@ git config filter.po-clean.clean  'scripts/po-clean.sh'
 git config filter.po-clean.smudge cat
 
 echo "✓ core.hooksPath -> .githooks"
-echo "✓ filter.po-clean registered (PO/POT normalized on stage)"
+echo "✓ filter.po-clean registered (PO normalized on stage)"
 echo
 echo "Hooks are now active for this clone. Bypass once with: git commit --no-verify"

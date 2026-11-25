@@ -14,7 +14,7 @@
 # file and re-stages it on drift; edit THIS file, never the mirror.
 #
 # Why run the actual hook (.githooks/pre-commit) instead of re-listing its
-# gates: it is the single source of truth (PO/POT msgfmt validation and
+# gates: it is the single source of truth (PO msgfmt validation and
 # normalization). Re-implementing it here would let the two drift apart.
 #
 # The hook operates on staged files. An isolated empty Git index presents
