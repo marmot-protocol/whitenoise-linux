@@ -145,9 +145,10 @@ shortcode_update :: proc(ui: ^Ui_State) {
 	for &tier in tiers {
 		tier = make([dynamic]Shortcode_Cand, context.temp_allocator)
 	}
-	for code in picker_custom(q) {
-		rank := code_rank(strings.to_lower(code, context.temp_allocator), q)
-		append(&tiers[rank], Shortcode_Cand{code = code})
+	custom, _ := picker_custom(q, .Check_Files)
+	for entry in custom {
+		rank := code_rank(strings.to_lower(entry.code, context.temp_allocator), q)
+		append(&tiers[rank], Shortcode_Cand{code = entry.code})
 	}
 	for entry in emoji_catalog {
 		if len(entry.pixels) == 0 {

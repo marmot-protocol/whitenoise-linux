@@ -691,9 +691,9 @@ picker_lift :: proc(id: nendo.Id) -> f32 {
 	return anim_to(anim_key(id.id, 4), near * near, 26) // squared: a peak, not a dome
 }
 
-picker_cell :: proc(id_str: string, index: u32, tex: ^rl.Texture2D, width: f32 = 0) {
-	id := nendo.id(id_str, index)
-	tile := PICK_TILE + PICK_LIFT * picker_lift(id)
+picker_cell :: proc(id: nendo.Id, art: Picker_Art, width: f32 = 0) {
+	if art.pending {anim_moving += 1}
+	tile := art.pending ? PICK_TILE * 0.7 : PICK_TILE + PICK_LIFT * picker_lift(id)
 	side := tap_size() ? tap_min() : PICKER_CELL
 	if nendo.box(id)(
 	{
@@ -702,10 +702,17 @@ picker_cell :: proc(id_str: string, index: u32, tex: ^rl.Texture2D, width: f32 =
 		align = {x = .Center, y = .Center},
 		color = hovered() ? HOVER : {},
 		radius = rr(8),
+		inert = art.pending,
 	},
 	) {
 		if nendo.box(nendo.id_local("PkCellImg"))(
-		{width = nendo.fixed(tile), aspect = 1, image = tex},
+		{
+			width = nendo.fixed(tile),
+			aspect = 1,
+			image = art.tex,
+			color = art.pending ? ROW_BG : {},
+			radius = rr(4),
+		},
 		) {}
 	}
 }
@@ -793,8 +800,8 @@ emoji_picker :: proc(ui: ^Ui_State) {
 		{width = nendo.grow(), gap = 2, clip = {x = true, scroll = true}},
 		) {
 			for recent, i in ui.prefs.recent_emoji {
-				if tex := emoji_tex(recent); tex != nil {
-					picker_cell("PkRecent", u32(i), tex)
+				if art := picker_emoji_tex(recent); art.tex != nil || art.pending {
+					picker_cell(nendo.id("PkRecent", u32(i)), art)
 				}
 			}
 		}
@@ -839,16 +846,10 @@ emoji_picker :: proc(ui: ^Ui_State) {
 			// Custom :shortcode: emoji lead the grid; the search box
 			// matches their codes too.
 			// ponytail: one unwrapped row; wrap it if the set grows.
-			custom := picker_custom(string(ui.picker_filter[:]))
+			custom, revision := picker_custom(string(ui.picker_filter[:]))
+			ui.picker_custom_revision = revision
 			if len(custom) > 0 {
-				if nendo.box(nendo.id("PkCustomRow"))(
-				{width = nendo.grow(), gap = PICKER_GAP, clip = {x = true, scroll = true}},
-				) {
-					for code, k in custom {
-						picker_cell("PkCustom", u32(k), custom_tex_by_code(code))
-					}
-				}
-				scrollbar(nendo.id("PkCustomRow"), 13)
+				picker_custom_row(custom, width - 24, max(grid_min, PICKER_CELL))
 			}
 			if len(matches) == 0 {
 				if len(custom) == 0 {
@@ -873,9 +874,8 @@ emoji_picker :: proc(ui: ^Ui_State) {
 					) {
 						for index in matches[start:min(start + cols, len(matches))] {
 							picker_cell(
-								"PkCell",
-								u32(index),
-								emoji_tex(emoji_catalog[index].emoji),
+								nendo.id("PkCell", u32(index)),
+								picker_emoji_tex(emoji_catalog[index].emoji),
 								cell_w,
 							)
 						}
@@ -885,6 +885,27 @@ emoji_picker :: proc(ui: ^Ui_State) {
 		}
 		scrollbar(grid, 13) // the panel floats at 12
 	}
+}
+
+@(private = "file")
+picker_custom_row :: proc(custom: []Picker_Custom, width, side: f32) {
+	id := nendo.id("PkCustomRow")
+	step := side + PICKER_GAP
+	left: f32
+	if view := nendo.scroll(id); view.found {
+		left = clamp(-view.position.x, 0, max(0, f32(len(custom)) * step - PICKER_GAP - width))
+		view.position.x = -left
+	}
+	right := left + width
+	if nendo.box(id)({width = nendo.grow(), gap = PICKER_GAP, clip = {x = true, scroll = true}}) {
+		for entry, at in custom {
+			x := f32(at) * step
+			// Keep the full scroll extent, but do not queue clipped artwork.
+			art := x < right && x + side > left ? picker_custom_tex(entry.slot) : Picker_Art{}
+			picker_cell(nendo.id("PkCustom", entry.slot), art)
+		}
+	}
+	scrollbar(id, 13)
 }
 
 CHIP_FS :: u16(11)

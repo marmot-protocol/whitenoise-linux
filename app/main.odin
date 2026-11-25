@@ -1130,6 +1130,7 @@ app_main :: proc() {
 			pointer.x /= UI_ZOOM
 			pointer.y /= UI_ZOOM
 			nendo.set_pointer(pointer, (rl.IsMouseButtonDown(.LEFT)) ? .Down : .Up)
+			ui.picker_hit_revision = ui.picker_custom_revision
 			fwd_sample_pointer(&ui)
 
 			scroll_thumb_tick()

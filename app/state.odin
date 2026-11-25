@@ -825,6 +825,8 @@ Ui_State :: struct {
 	picker_x:                            f32, // panel anchor, layout coords
 	picker_y:                            f32,
 	picker_filter:                       [dynamic]u8,
+	picker_custom_revision:              u64,
+	picker_hit_revision:                 u64, // catalog revision of the hit-tested frame
 	picker_used:                         [dynamic]string, // recents commit on close, never move under a finger
 	sidebar_filter:                      [dynamic]u8, // rail chat filter
 	filter_hits:                         [dynamic]bool, // per-chat body match for sidebar_filter

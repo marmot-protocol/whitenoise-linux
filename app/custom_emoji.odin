@@ -21,15 +21,31 @@ custom_emoji_names: [dynamic]string // filenames under emoji_dir()
 custom_emoji_scanned: bool
 custom_emoji_textures: map[string]^rl.Texture2D
 
+@(private)
+Picker_Art :: struct {
+	tex:     ^rl.Texture2D,
+	pending: bool,
+}
+
+@(private)
+Emoji_Preview_Kind :: enum {
+	File,
+	Builtin,
+	Other_Set,
+}
+
 @(private = "file")
 emoji_preview: struct {
 	worker:    ^thread.Thread,
 	directory: string,
 	revision:  u64,
+	set:       Emoji_Set,
 	count:     int,
 	items:     [2]struct {
-		name:  string,
-		image: rl.Image,
+		kind:    Emoji_Preview_Kind,
+		key:     string,
+		builtin: int,
+		image:   rl.Image,
 	},
 }
 @(private = "file")
@@ -57,6 +73,8 @@ BUILTIN_EMOJI := [13]struct {
 	{"marmot_angry", #load("assets/marmot_angry.png")},
 }
 builtin_emoji_tex: [len(BUILTIN_EMOJI)]^rl.Texture2D
+@(private = "file")
+builtin_emoji_failed: [len(BUILTIN_EMOJI)]bool
 
 emoji_dir :: proc(allocator := context.temp_allocator) -> string {
 	path := settings_path(allocator)
@@ -115,7 +133,15 @@ emoji_preview_worker :: proc(_: ^thread.Thread) {
 	context.allocator = reload_allocator()
 	defer frame_wake()
 	for &item in emoji_preview.items[:emoji_preview.count] {
-		item.image = rl.LoadImage(fmt.ctprintf("%s/%s", emoji_preview.directory, item.name))
+		switch item.kind {
+		case .File:
+			item.image = rl.LoadImage(fmt.ctprintf("%s/%s", emoji_preview.directory, item.key))
+		case .Builtin:
+			png := BUILTIN_EMOJI[item.builtin].png
+			item.image = rl.LoadImageFromMemory(".png", raw_data(png), i32(len(png)))
+		case .Other_Set:
+			item.image = emoji_image(item.key, emoji_preview.set)
+		}
 		free_all(context.temp_allocator)
 	}
 }
@@ -128,44 +154,82 @@ Emoji_Preview_End :: enum {
 
 @(private)
 emoji_preview_finish :: proc(end: Emoji_Preview_End) {
-	if emoji_preview.worker == nil {return}
-	thread.join(emoji_preview.worker)
-	thread.destroy(emoji_preview.worker)
+	publish := end == .Publish && emoji_preview.worker != nil
+	if emoji_preview.worker != nil {
+		thread.join(emoji_preview.worker)
+		thread.destroy(emoji_preview.worker)
+	}
 	for item in emoji_preview.items[:emoji_preview.count] {
-		if _, cached := custom_emoji_textures[item.name];
-		   !cached && end == .Publish && emoji_preview.revision == emoji_revision {
-			tex: ^rl.Texture2D
-			if item.image.data != nil {
-				tex = new(rl.Texture2D)
-				tex^ = rl.LoadTextureFromImage(item.image)
+		keep_key := false
+		if publish {
+			switch item.kind {
+			case .File:
+				if _, cached := custom_emoji_textures[item.key];
+				   !cached && emoji_preview.revision == emoji_revision {
+					custom_emoji_textures[item.key] = emoji_upload(item.image)
+					keep_key = true
+				}
+			case .Builtin:
+				if builtin_emoji_tex[item.builtin] == nil {
+					tex := emoji_upload(item.image)
+					builtin_emoji_tex[item.builtin] = tex
+					builtin_emoji_failed[item.builtin] = tex == nil
+				}
+			case .Other_Set:
+				if _, cached := emoji_tex_cache[item.key];
+				   !cached && emoji_preview.set == emoji_set {
+					emoji_tex_cache[item.key] = emoji_upload(item.image)
+					keep_key = true
+				}
 			}
-			custom_emoji_textures[item.name] = tex
-			frame_wake()
-		} else {
-			delete(item.name)
 		}
+		if !keep_key {delete(item.key)}
 		rl.UnloadImage(item.image)
 	}
+	if publish {frame_wake()}
 	delete(emoji_preview.directory)
 	emoji_preview = {}
 }
 
 @(private)
+emoji_preview_queue :: proc(kind: Emoji_Preview_Kind, key: string, builtin := 0) {
+	if emoji_preview.worker != nil || emoji_preview.count == len(emoji_preview.items) {return}
+	for item in emoji_preview.items[:emoji_preview.count] {
+		if item.kind == kind && item.key == key && item.builtin == builtin {return}
+	}
+	emoji_preview.items[emoji_preview.count] = {
+		kind    = kind,
+		key     = strings.clone(key),
+		builtin = builtin,
+	}
+	emoji_preview.count += 1
+}
+
+@(private)
 settings_emoji_tick :: proc(ui: ^Ui_State) {
+	picker_upload_tick()
 	if emoji_preview.worker != nil {
 		if !thread.is_done(emoji_preview.worker) {return}
 		emoji_preview_finish(.Publish)
 	}
-	if !settings_workspace_visible(ui) ||
-	   ui.settings_section != .Chats ||
-	   settings_index(ui) {return}
+	if settings_workspace_visible(ui) && ui.settings_section == .Chats && !settings_index(ui) {
+		settings_emoji_queue(ui)
+	}
+	if emoji_preview.count == 0 {return}
+	emoji_preview.revision = emoji_revision
+	emoji_preview.set = emoji_set
+	emoji_preview.directory = strings.clone(emoji_dir())
+	emoji_preview.worker = thread.create(emoji_preview_worker)
+	thread.start(emoji_preview.worker)
+}
+
+@(private = "file")
+settings_emoji_queue :: proc(ui: ^Ui_State) {
 	page := nendo.element(nendo.id("SettingsPage")).rect
 	queue :: proc(name: string) {
-		if name == "" || emoji_preview.count == len(emoji_preview.items) {return}
+		if name == "" {return}
 		if _, cached := custom_emoji_textures[name]; cached {return}
-		for item in emoji_preview.items[:emoji_preview.count] {if item.name == name {return}}
-		emoji_preview.items[emoji_preview.count].name = strings.clone(name)
-		emoji_preview.count += 1
+		emoji_preview_queue(.File, name)
 	}
 	for emoji, i in ui.prefs.quick_reactions {
 		code, custom := emoji_shortcode(emoji)
@@ -183,11 +247,35 @@ settings_emoji_tick :: proc(ui: ^Ui_State) {
 		if !row.found || row.rect.y >= page.y + page.height {break}
 		if row.rect.y + row.rect.height > page.y {queue(name)}
 	}
-	if emoji_preview.count == 0 {return}
-	emoji_preview.revision = emoji_revision
-	emoji_preview.directory = strings.clone(emoji_dir())
-	emoji_preview.worker = thread.create(emoji_preview_worker)
-	thread.start(emoji_preview.worker)
+}
+
+@(private)
+picker_shortcode_tex :: proc(code: string) -> Picker_Art {
+	if name := emoji_file_for(code); name != "" {return picker_file_tex(name)}
+	for b, i in BUILTIN_EMOJI {
+		if b.code == code {return picker_builtin_tex(i)}
+	}
+	return {tex = remote_emoji_tex[code]}
+}
+
+@(private = "file")
+picker_file_tex :: proc(name: string) -> Picker_Art {
+	if tex, loaded := custom_emoji_textures[name]; loaded {return {tex = tex}}
+	emoji_preview_queue(.File, name)
+	return {pending = true}
+}
+
+@(private = "file")
+picker_builtin_tex :: proc(i: int) -> Picker_Art {
+	if tex := builtin_emoji_tex[i]; tex != nil || builtin_emoji_failed[i] {return {tex = tex}}
+	emoji_preview_queue(.Builtin, "", i)
+	return {pending = true}
+}
+
+@(private)
+picker_custom_tex :: proc(slot: u32) -> Picker_Art {
+	if int(slot) < len(custom_emoji_names) {return picker_file_tex(custom_emoji_names[slot])}
+	return picker_builtin_tex(int(slot) - len(custom_emoji_names))
 }
 
 custom_emoji_texture :: proc(name: string) -> ^rl.Texture2D {
@@ -287,33 +375,47 @@ shortcode_at :: proc(text: string, i: int) -> (end: int, tex: ^rl.Texture2D) {
 	return j + 1, custom_tex_by_code(text[i + 1:j])
 }
 
+@(private)
+Emoji_Match_Mode :: enum {
+	Cache_Only,
+	Check_Files,
+}
+
+@(private)
+Picker_Custom :: struct {
+	code: string,
+	slot: u32,
+}
+
 // Shortcodes containing `query` (the picker search box, or a composer
 // ":token"): the user's files, then the builtins (deduped, so a user
 // override shows once).
-picker_custom :: proc(query: string) -> [dynamic]string {
-	codes := make([dynamic]string, context.temp_allocator)
+picker_custom :: proc(
+	query: string,
+	mode := Emoji_Match_Mode.Cache_Only,
+) -> (
+	[]Picker_Custom,
+	u64,
+) {
+	codes := make([dynamic]Picker_Custom, context.temp_allocator)
+	seen := make(map[string]bool, context.temp_allocator)
 	filter := strings.to_lower(query, context.temp_allocator)
-
-	add :: proc(codes: ^[dynamic]string, code, filter: string) {
-		lower := strings.to_lower(code, context.temp_allocator)
-		if len(filter) > 0 && !strings.contains(lower, filter) {
-			return
-		}
-		if !slice.contains(codes[:], code) {
-			append(codes, code)
-		}
+	for name, i in custom_emoji_names {
+		code := emoji_code(name)
+		if seen[code] ||
+		   filter != "" &&
+			   !strings.contains(strings.to_lower(code, context.temp_allocator), filter) {continue}
+		// Claim the same file that composing and sending will resolve.
+		seen[code] = true
+		if tex, loaded := custom_emoji_textures[name]; loaded && tex == nil {continue}
+		if mode == .Check_Files && custom_emoji_texture(name) == nil {continue}
+		append(&codes, Picker_Custom{code, u32(i)})
 	}
-
-	for name in custom_emoji_names {
-		if custom_emoji_texture(name) == nil {
-			continue
-		}
-		add(&codes, emoji_code(name), filter)
+	for b, i in BUILTIN_EMOJI {
+		if seen[b.code] || filter != "" && !strings.contains(b.code, filter) {continue}
+		append(&codes, Picker_Custom{b.code, u32(len(custom_emoji_names) + i)})
 	}
-	for b in BUILTIN_EMOJI {
-		add(&codes, b.code, filter)
-	}
-	return codes
+	return codes[:], emoji_revision
 }
 
 // A picked file waits here until the user names its shortcode.

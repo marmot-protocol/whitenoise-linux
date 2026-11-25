@@ -1392,10 +1392,13 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 	}
-	for code, i in picker_custom(string(ui.picker_filter[:])) {
-		if nendo.pointer_over(nendo.id("PkCustom", u32(i))) {
-			pick_emoji(ui, client, fmt.tprintf(":%s:", code))
-			return
+	custom, revision := picker_custom(string(ui.picker_filter[:]))
+	if revision == ui.picker_hit_revision {
+		for entry in custom {
+			if nendo.pointer_over(nendo.id("PkCustom", entry.slot)) {
+				pick_emoji(ui, client, fmt.tprintf(":%s:", entry.code))
+				return
+			}
 		}
 	}
 	for index in picker_matches(ui) {

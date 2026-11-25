@@ -43,6 +43,11 @@ emoji_pack: []u8
 // dropped). nil = no tile, caller falls back to the raw text glyph.
 emoji_tex_cache: map[string]^rl.Texture2D
 
+@(private = "file")
+picker_uploads: [16]string
+@(private = "file")
+picker_upload_count: int
+
 @(private)
 EMOJI_SIDE :: 128 // matches scripts/emoji-source.sh and scripts/emoji-pack.c
 @(private)
@@ -119,6 +124,7 @@ catalog_append :: proc(data: []u8) {
 // pixels (the picker hides them); tiles still load from the set folder.
 emoji_set_load :: proc(set: Emoji_Set) {
 	emoji_set = set
+	picker_upload_count = 0
 	for key, tex in emoji_tex_cache {
 		if tex != nil {
 			rl.UnloadTexture(tex^)
@@ -227,22 +233,49 @@ emoji_tex :: proc(emoji: string) -> ^rl.Texture2D {
 	} else {
 		img = emoji_image(emoji)
 	}
-	tex: ^rl.Texture2D
-	if img.data != nil {
-		tex = new(rl.Texture2D)
-		tex^ = rl.LoadTextureFromImage(img)
-		if len(pixels) == 0 {rl.UnloadImage(img)}
-		rl.SetTextureFilter(tex^, .BILINEAR)
-	}
+	tex := emoji_upload(img)
+	if len(pixels) == 0 {rl.UnloadImage(img)}
 	emoji_tex_cache[strings.clone(emoji)] = tex
 	return tex
+}
+
+@(private)
+emoji_upload :: proc(img: rl.Image) -> ^rl.Texture2D {
+	texture := rl.LoadTextureFromImage(img)
+	if texture.tex == nil {return nil}
+	tex := new(rl.Texture2D)
+	tex^ = texture
+	return tex
+}
+
+@(private)
+picker_emoji_tex :: proc(emoji: string) -> Picker_Art {
+	if code, custom := emoji_shortcode(emoji); custom {return picker_shortcode_tex(code)}
+	if tex, loaded := emoji_tex_cache[emoji]; loaded {return {tex = tex}}
+	if len(emoji_pixels[emoji]) == 0 {
+		emoji_preview_queue(.Other_Set, emoji)
+	} else if picker_upload_count < len(picker_uploads) {
+		for queued in picker_uploads[:picker_upload_count] {
+			if queued == emoji {return {pending = true}}
+		}
+		picker_uploads[picker_upload_count] = emoji
+		picker_upload_count += 1
+	}
+	return {pending = true}
+}
+
+// Upload these fixed-size tiles after present. Decoding other images stays on the worker.
+@(private)
+picker_upload_tick :: proc() {
+	for emoji in picker_uploads[:picker_upload_count] {emoji_tex(emoji)}
+	picker_upload_count = 0
 }
 
 // The active set's tile, else the first other set that draws the emoji,
 // so an emoji only OpenMoji has (its E000 goldfish) still renders as
 // OpenMoji art under Noto or Twemoji.
 @(private)
-emoji_image :: proc(emoji: string) -> rl.Image {
+emoji_image :: proc(emoji: string, set := emoji_set) -> rl.Image {
 	name := strings.builder_make(context.temp_allocator)
 	for r in emoji {
 		if r == 0xFE0F {
@@ -254,14 +287,14 @@ emoji_image :: proc(emoji: string) -> rl.Image {
 		fmt.sbprintf(&name, "%x", i32(r))
 	}
 
-	if image := emoji_set_image(emoji_set, strings.to_string(name)); image.data != nil {
+	if image := emoji_set_image(set, strings.to_string(name)); image.data != nil {
 		return image
 	}
-	for set in Emoji_Set {
-		if set == emoji_set {
+	for fallback in Emoji_Set {
+		if fallback == set {
 			continue
 		}
-		if image := emoji_set_image(set, strings.to_string(name)); image.data != nil {
+		if image := emoji_set_image(fallback, strings.to_string(name)); image.data != nil {
 			return image
 		}
 	}
