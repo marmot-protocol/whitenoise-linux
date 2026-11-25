@@ -13,19 +13,9 @@ for module in rt protocol-native client-node client-device adapter metadata sess
 done
 mkdir -p "$usr/lib/spa-0.2"
 cp -aL "${pipewire%/*}"/spa-0.2/{support,audioconvert,videoconvert} "$usr/lib/spa-0.2/"
-mkdir -p "$usr/share/pipewire" "$usr/libexec/host-tools"
+mkdir -p "$usr/share/pipewire"
 cp /usr/share/pipewire/client.conf "$usr/share/pipewire/"
-cat > "$usr/libexec/host-tools/zenity" <<'EOF'
-#!/bin/sh
-# SDL invokes Zenity directly, outside the app's host process launcher.
-PATH=${PATH#"$WN_APPIMAGE_AUDIO_ROOT/usr/libexec/host-tools:"}
-[ "${PIPEWIRE_MODULE_DIR-}" != "$WN_APPIMAGE_AUDIO_ROOT/usr/lib" ] || unset PIPEWIRE_MODULE_DIR
-[ "${SPA_PLUGIN_DIR-}" != "$WN_APPIMAGE_AUDIO_ROOT/usr/lib/spa-0.2" ] || unset SPA_PLUGIN_DIR
-[ "${PIPEWIRE_CONFIG_NAME-}" != "${WN_APPIMAGE_AUDIO_CONF-}" ] || unset PIPEWIRE_CONFIG_NAME
-unset WN_APPIMAGE_AUDIO_ROOT WN_APPIMAGE_AUDIO_CONF
-exec zenity "$@"
-EOF
-chmod 755 "$usr/libexec/host-tools/zenity"
+write_zenity_wrapper "$usr/libexec/host-tools"
 # Bundle each helper's dependencies in place before replacing it with a launcher.
 LD_LIBRARY_PATH="/usr/local/sdl3/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
   "${1:?linuxdeploy required}" --appdir "$appdir" \

@@ -96,15 +96,9 @@ static void relaunch(const std::string &image, const std::string &home, const st
     extern char **environ;
     const char *mount_env = getenv("APPDIR");
     std::string mount = mount_env ? mount_env : "";
-    const char *audio_root = getenv("WN_APPIMAGE_AUDIO_ROOT");
-    std::string tools =
-        audio_root ? "PATH=" + std::string(audio_root) + "/usr/libexec/host-tools:" : "";
     std::vector<std::string> values;
     for (char **entry = environ; *entry; ++entry) {
         std::string value(*entry), name = value.substr(0, value.find('='));
-        if (!tools.empty() && value.compare(0, tools.size(), tools) == 0) {
-            value.erase(5, tools.size() - 5);
-        }
         if (name == "APPIMAGE" || name == "APPDIR" || name == "ARGV0" || name == "OWD" ||
             name == "APPIMAGELAUNCHER_DISABLE" || name == "LD_LIBRARY_PATH" ||
             name == "LD_PRELOAD" || name == "GIO_EXTRA_MODULES" ||

@@ -20,6 +20,35 @@ copy_appimage_glibc() {
   fi
 }
 
+emit_appimage_host_env() {
+  local op name marker suffix
+  while read -r op name marker suffix; do
+    case "$op" in
+      drop)
+        printf 'if [ -n "${%s-}" ] && [ "${%s-}" = "${%s}%s" ]; then unset %s; fi\n' \
+          "$marker" "$name" "$marker" "$suffix" "$name"
+        ;;
+      trim)
+        printf 'if [ -n "${%s-}" ]; then %s=${%s#"${%s}%s"}; fi\n' \
+          "$marker" "$name" "$name" "$marker" "$suffix"
+        ;;
+      unset) printf 'unset %s\n' "$name" ;;
+      *) printf 'Unknown AppImage environment rule: %s\n' "$op" >&2; return 1 ;;
+    esac
+  done < "${BASH_SOURCE[0]%/*}/../app/appimage-host-env.txt"
+}
+
+write_zenity_wrapper() {
+  local dir="$1"
+  mkdir -p "$dir"
+  {
+    printf '#!/bin/sh\n'
+    emit_appimage_host_env
+    printf 'exec zenity "$@"\n'
+  } > "$dir/zenity"
+  chmod 755 "$dir/zenity"
+}
+
 write_appimage_launcher() {
   local launcher="$1" lib="$2" elf="$3" elf_dir="${3%/*}"
   shift 3
@@ -31,6 +60,9 @@ unset LD_PRELOAD LD_AUDIT
 base=${0%/*}
 [ "$base" != "$0" ] || base=.
 EOF
+  case "${launcher##*/}" in
+    whitenoise|wn-appimage-update) emit_appimage_host_env >> "$launcher" ;;
+  esac
   if [ "${launcher##*/}" = whitenoise ]; then
     cat >> "$launcher" <<'EOF'
 self=$(readlink -f -- "$0") || exit 1
@@ -41,15 +73,6 @@ if [ "${APPDIR-}" != "$appdir" ] && [ ! "${APPDIR-}" -ef "$appdir" ]; then
 fi
 APPDIR=$appdir
 export APPDIR
-if [ -n "${WN_APPIMAGE_AUDIO_ROOT-}" ]; then
-  [ "${PIPEWIRE_MODULE_DIR-}" != "$WN_APPIMAGE_AUDIO_ROOT/usr/lib" ] || unset PIPEWIRE_MODULE_DIR
-  [ "${SPA_PLUGIN_DIR-}" != "$WN_APPIMAGE_AUDIO_ROOT/usr/lib/spa-0.2" ] || unset SPA_PLUGIN_DIR
-  PATH=${PATH#"$WN_APPIMAGE_AUDIO_ROOT/usr/libexec/host-tools:"}
-fi
-if [ -n "${WN_APPIMAGE_AUDIO_CONF-}" ]; then
-  [ "${PIPEWIRE_CONFIG_NAME-}" != "$WN_APPIMAGE_AUDIO_CONF" ] || unset PIPEWIRE_CONFIG_NAME
-  unset WN_APPIMAGE_AUDIO_CONF
-fi
 WN_APPIMAGE_AUDIO_ROOT=$APPDIR
 case "$APPDIR" in
   *:*)

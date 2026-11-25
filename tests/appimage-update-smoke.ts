@@ -57,13 +57,21 @@ async function worker(path: string) {
   const stage = mkdtempSync(join(dirname(spec.source), ".wn-update-"));
   const bin = join(stage, "bin");
   cpSync(spec.helper, bin, { recursive: true });
+  const audioRoot = `/proc/${process.pid}/fd/9`;
   const env = {
     ...process.env,
     WN_TEST_UPDATE_FEED: spec.feed,
     APPIMAGE_EXTRACT_AND_RUN: "1",
     WN_APPIMAGE_TEST_LOG: spec.log,
-    APPDIR: "/tmp/old-appimage-test-mount",
+    APPDIR: "/tmp/old:appimage-test-mount",
     APPIMAGE: spec.source,
+    WN_APPIMAGE_AUDIO_ROOT: audioRoot,
+    WN_APPIMAGE_AUDIO_CONF: "client.conf",
+    PIPEWIRE_MODULE_DIR: `${audioRoot}/usr/lib`,
+    SPA_PLUGIN_DIR: `${audioRoot}/usr/lib/spa-0.2`,
+    PIPEWIRE_CONFIG_NAME: "client.conf",
+    PIPEWIRE_REMOTE: "wn-host",
+    PATH: `${audioRoot}/usr/libexec/host-tools:${process.env.PATH ?? ""}`,
     WN_SOCKS5_PROXY: spec.proxy ? "127.0.0.1:9" : "",
   };
   const child = spawn(
@@ -232,6 +240,7 @@ async function main(tool: string, helper: string) {
     },
   });
   try {
+    run(["bash", join(import.meta.dir, "appimage-runtime-test.sh"), root]);
     for (const name of ["trusted", "different"]) {
       run(
         [
@@ -263,7 +272,11 @@ async function main(tool: string, helper: string) {
       mkdirSync(appdir);
       writeFileSync(
         join(appdir, "AppRun"),
-        `#!/bin/sh\nprintf '%s\\n' '${version}' "$1" "$APPIMAGE" "$LD_LIBRARY_PATH" > "$WN_APPIMAGE_TEST_LOG"\n`,
+        `#!/bin/sh
+printf '%s\\n' '${version}' "$1" "$APPIMAGE" "$LD_LIBRARY_PATH" \\
+  "\${WN_APPIMAGE_AUDIO_ROOT+x}\${WN_APPIMAGE_AUDIO_CONF+x}\${PIPEWIRE_MODULE_DIR+x}\${SPA_PLUGIN_DIR+x}\${PIPEWIRE_CONFIG_NAME+x}" \\
+  "$PIPEWIRE_REMOTE" "$PATH" > "$WN_APPIMAGE_TEST_LOG"
+`,
       );
       chmodSync(join(appdir, "AppRun"), 0o755);
       writeFileSync(
@@ -375,9 +388,14 @@ async function main(tool: string, helper: string) {
           }
           const lines = readFileSync(spec.log, "utf8").split("\n");
           check(
-            JSON.stringify(lines) ===
-              JSON.stringify(["2026.10.2+10", home, source, "", ""]),
+            JSON.stringify(lines.slice(0, 4)) ===
+              JSON.stringify(["2026.10.2+10", home, source, ""]),
             `bad relaunch argv/environment: ${lines}`,
+          );
+          check(
+            JSON.stringify(lines.slice(4)) ===
+              JSON.stringify(["", "wn-host", process.env.PATH ?? "", ""]),
+            `bad relaunch audio environment: ${lines.slice(4)}`,
           );
         } else {
           await sleep(500);
