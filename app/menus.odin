@@ -635,40 +635,57 @@ encryption_modal :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 	scrollbar(nendo.id("EncModal"), 14)
 }
 
-PICKER_MAX_CELLS :: 396
 PICKER_CELL :: f32(30)
-PICKER_GAP :: 2
+PICKER_GAP :: u16(2)
+PICKER_PAD :: u16(8)
+PICKER_GUTTER :: f32(14)
 
-// Columns that fit the panel at this window width. The flat 11 assumed
-// the full 400px panel, which a window narrower than that never gets,
-// so the last columns fell outside the panel. Measured from the
-// unanimated width: sizing off modal_w would reshuffle the grid every
-// frame of the open.
-picker_cols :: proc() -> int {
-	inner := single_pane() ? fit_w(400, 8) - 24 : fit_w(400) - 24 - 13
-	cell: f32 = tap_size() ? 44 : PICKER_CELL
-	return clamp(int((inner + PICKER_GAP) / (cell + PICKER_GAP)), 1, 11)
+@(private)
+picker_side :: proc() -> f32 {
+	return tap_size() ? tap_min() : PICKER_CELL
 }
 
-// Indices into emoji_catalog matching the picker search, capped.
-picker_matches :: proc(ui: ^Ui_State) -> [dynamic]int {
-	matches := make([dynamic]int, context.temp_allocator)
-	filter := strings.to_lower(string(ui.picker_filter[:]), context.temp_allocator)
-	shortcode := fmt.tprintf(":%s:", strings.trim(filter, ":"))
-	// Names and exact shortcodes precede substring matches (fire before firefighter).
-	for exact in ([2]bool{true, false}) {
-		for entry, i in emoji_catalog {
-			if len(entry.pixels) == 0 {continue}
-			if len(filter) > 0 && !strings.contains(entry.name, filter) {continue}
-			name, _, _ := strings.partition(entry.name, " :")
-			is_exact :=
-				len(filter) > 0 && (name == filter || strings.contains(entry.name, shortcode))
-			if is_exact != exact {continue}
-			append(&matches, i)
-			if len(matches) >= PICKER_MAX_CELLS {return matches}
+@(private)
+picker_composer :: proc(ui: ^Ui_State) -> bool {
+	return ui.picker_mode == .Message && ui.picker_target == ""
+}
+
+@(private)
+picker_media :: proc(ui: ^Ui_State) -> bool {
+	return picker_composer(ui) && (ui.gif_tab || ui.sticker_tab)
+}
+
+@(private)
+picker_query :: proc(ui: ^Ui_State) -> string {
+	return strings.trim(strings.trim_space(string(ui.picker_filter[:])), ":")
+}
+
+@(private)
+picker_matches :: proc(ui: ^Ui_State) -> []int {
+	query := picker_query(ui)
+	if query == "" {return emoji_group_rows[ui.picker_group][:]}
+	filter := strings.to_lower(query, context.temp_allocator)
+	shortcode := fmt.tprintf(":%s:", filter)
+	exact, partial :=
+		make([dynamic]int, context.temp_allocator), make([dynamic]int, context.temp_allocator)
+	for entry, i in emoji_catalog {
+		if len(entry.pixels) == 0 || !strings.contains(entry.name, filter) {continue}
+		name, _, _ := strings.partition(entry.name, " :")
+		if name == filter || strings.contains(entry.name, shortcode) {
+			append(&exact, i)
+		} else {
+			append(&partial, i)
 		}
 	}
-	return matches
+	append(&exact, ..partial[:])
+	return exact[:]
+}
+
+@(private)
+picker_custom_matches :: proc(ui: ^Ui_State) -> ([]Picker_Custom, u64) {
+	query := picker_query(ui)
+	if query != "" || ui.picker_group == .Custom {return picker_custom(query)}
+	return nil, 0
 }
 
 // Dock magnification: the tile under the pointer grows, and its
@@ -691,17 +708,20 @@ picker_lift :: proc(id: nendo.Id) -> f32 {
 	return anim_to(anim_key(id.id, 4), near * near, 26) // squared: a peak, not a dome
 }
 
-picker_cell :: proc(id: nendo.Id, art: Picker_Art, width: f32 = 0) {
+@(private = "file")
+picker_cell :: proc(id: nendo.Id, art: Picker_Art, width: f32, ring: nendo.Border = {}) {
 	if art.pending {anim_moving += 1}
-	tile := art.pending ? PICK_TILE * 0.7 : PICK_TILE + PICK_LIFT * picker_lift(id)
-	side := tap_size() ? tap_min() : PICKER_CELL
+	side := picker_side()
+	tile :=
+		art.pending ? PICK_TILE * 0.7 : tap_size() ? 26 : PICK_TILE + PICK_LIFT * picker_lift(id)
 	if nendo.box(id)(
 	{
-		width = nendo.fixed(width > 0 ? width : side),
+		width = nendo.fixed(width),
 		height = nendo.fixed(side),
 		align = {x = .Center, y = .Center},
 		color = hovered() ? HOVER : {},
 		radius = rr(8),
+		border = ring,
 		inert = art.pending,
 	},
 	) {
@@ -717,73 +737,109 @@ picker_cell :: proc(id: nendo.Id, art: Picker_Art, width: f32 = 0) {
 	}
 }
 
-// Shortest a message picker gets to keep the chat header visible: the
-// tabs, search box and two rows of the grid.
-@(private = "file")
-PICKER_MIN_H :: f32(220)
+@(private)
+PICKER_CATEGORIES := [Emoji_Group]struct {
+	icon, label: string,
+} {
+	.Smileys    = {ICON_SMILE, N_("Smileys and emotion")},
+	.People     = {"\uf0c0", N_("People and body")},
+	.Nature     = {"\uf1b0", N_("Animals and nature")},
+	.Food       = {"\uf2e7", N_("Food and drink")},
+	.Travel     = {"\uf072", N_("Travel and places")},
+	.Activities = {"\uf091", N_("Activities")},
+	.Objects    = {"\uf0eb", N_("Objects")},
+	.Symbols    = {"\uf292", N_("Symbols")},
+	.Flags      = {"\uf024", N_("Flags")},
+	.Custom     = {"\uf005", N_("Custom emoji")},
+}
 
-// Emoji picker: recents, search, and an emoji grid.
+@(private)
 emoji_picker :: proc(ui: ^Ui_State) {
-	gif := ui.gif_tab && ui.picker_target == "" && ui.picker_mode == .Message
-	width := single_pane() ? fit_w(400, 8) : modal_w(nendo.id("PickerPanel"), gif ? 560 : 400)
-	height := modal_h(
-		single_pane() ? (ui.picker_mode == .Group_Image ? 560 : 480) : gif ? 540 : ui.picker_mode == .Group_Image ? 560 : 440,
-	)
+	phone := single_pane()
+	composer := picker_composer(ui)
+	media := picker_media(ui)
+	sheet := phone && !media
+	screen_w, screen_h := f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM
+	width := sheet ? screen_w : fit_w(400)
+	height := modal_h(ui.picker_mode == .Group_Image ? 560 : 440)
+	compact := sheet && ui.focus == .Picker && screen_h < 380
+	padding := media ? u16(12) : PICKER_PAD
+	pad := f32(padding)
+	side := picker_side()
 	x, y := ui.picker_x, ui.picker_y
-	if gif || single_pane() && ui.picker_mode == .Message {
-		if composer := nendo.element(nendo.id("ComposeBox")); composer.found {
-			if single_pane() {height = min(height, max(120, composer.rect.y - 16))}
-			x, y = composer.rect.x + composer.rect.width - width, composer.rect.y - height - 8
+	if sheet {
+		if ui.picker_mode != .Group_Image {
+			min_rows := compact ? 2 : composer ? 4 : 3
+			min_height := f32(min_rows) * (side + pad) + pad
+			height = min(
+				screen_h,
+				compact ? min_height + 12 : clamp(screen_h * 0.57, min_height, 480),
+			)
 		}
-	}
-	// A message picker keeps the chat name readable: it stays below the chat
-	// header, and above the composer when it inserts there, giving up height
-	// when the window is short.
-	if ui.picker_mode == .Message {
-		if head := nendo.element(nendo.id("ChatHeader")); head.found {
-			top := head.rect.y + head.rect.height + 8
-			limit := f32(rl.GetScreenHeight()) / UI_ZOOM - 8
-			if composer := nendo.element(nendo.id("ComposeBox"));
-			   composer.found && ui.picker_target == "" {limit = composer.rect.y - 8}
-			height = min(height, max(PICKER_MIN_H, limit - top))
-			y = max(top, min(y, limit - height))
+		x, y = 0, max(0, screen_h - (composer ? 0 : sheet_bottom()) - height)
+	} else {
+		if media {
+			width =
+				phone ? fit_w(400, 8) : modal_w(nendo.id("PickerPanel"), ui.gif_tab ? 560 : 400)
+			height = modal_h(phone ? 480 : ui.gif_tab ? 540 : 440)
+			if box := nendo.element(nendo.id("ComposeBox")); (phone || ui.gif_tab) && box.found {
+				if phone {height = min(height, max(120, box.rect.y - 16))}
+				x, y = box.rect.x + box.rect.width - width, box.rect.y - height - 8
+			}
+		} else if composer {
+			left := f32(8)
+			if card := nendo.element(nendo.id("MainCard")); card.found {
+				left = card.rect.x + 8
+				width = min(width, card.rect.width - 16)
+			}
+			if anchor := nendo.element(nendo.id("EmojiBtn")); anchor.found {
+				x, y =
+					max(left, anchor.rect.x + anchor.rect.width - width),
+					anchor.rect.y -
+					height -
+					8
+			}
 		}
+		if ui.picker_mode == .Message {
+			if head := nendo.element(nendo.id("ChatHeader")); head.found {
+				top := head.rect.y + head.rect.height + 8
+				limit := screen_h - 8
+				if box := nendo.element(nendo.id("ComposeBox"));
+				   composer && box.found {limit = box.rect.y - 8}
+				control_h := max(side, 34)
+				min_height := side + 4 * pad + (composer ? 2 : 1) * control_h + 22
+				height = min(height, max(media ? 220 : min_height, limit - top))
+				y = max(top, min(y, limit - height))
+			}
+		}
+		x, y = panel_pos(x, y, width, height)
 	}
-	x, y = panel_pos(x, y, width, height)
+	docked := sheet && composer
 	if nendo.box(nendo.id("PickerPanel"))(
 	{
 		direction = .Column,
 		width = nendo.fixed(width),
 		height = nendo.fixed(height),
-		padding = nendo.pad(12),
-		gap = 8,
-		floating = {attach_to = .Root, offset = {x, y + rise(nendo.id("PickerPanel"))}, z = 12},
+		padding = nendo.pad(padding),
+		gap = PICKER_PAD,
+		floating = docked ? {} : {attach_to = .Root, offset = {x, y + rise(nendo.id("PickerPanel"))}, z = 12},
 		color = CARD,
-		radius = rr(12),
+		radius = sheet ? {rr(12).top_left, rr(12).top_right, 0, 0} : rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if ui.picker_mode != .Group_Image {
-			if nendo.box(nendo.id("PickerHead"))(
-			{width = nendo.grow(), gap = 8, align = {y = .Center}},
-			) {
-				if ui.picker_target !=
-				   "" {nendo.text(tr("Add reaction"), {font = FONT_TITLE, size = 16, color = TEXT})}
-				if nendo.box(nendo.id("PickerHeadGap"))({width = nendo.grow()}) {}
-				if tap_size() {micro_button("PickerClose", tr("Close"))}
+		if ui.picker_mode == .Group_Image {emoji_mix_header(ui)}
+		if media && tap_size() {
+			if nendo.box(nendo.id("PickerHead"))({width = nendo.grow()}) {
+				if nendo.box()({width = nendo.grow()}) {}
+				micro_button("PickerClose", tr("Close"))
 			}
 		}
-		if ui.picker_mode == .Group_Image {
-			emoji_mix_header(ui)
-		}
-		if ui.picker_target == "" && ui.picker_mode == .Message {
-			if nendo.box(nendo.id("PickerTabs"))({width = nendo.grow(), gap = 6}) {
-				sticker_control(
-					"PickerEmoji",
-					0,
-					tr("Emoji"),
-					!ui.sticker_tab && !ui.gif_tab ? .Selected : .Normal,
-				)
+		if composer && !compact {
+			if nendo.box(nendo.id("PickerTabs"))(
+			{width = nendo.grow(), gap = 6, align = {y = .Center}},
+			) {
+				sticker_control("PickerEmoji", 0, tr("Emoji"), !media ? .Selected : .Normal)
 				sticker_control(
 					"PickerStickers",
 					0,
@@ -792,117 +848,251 @@ emoji_picker :: proc(ui: ^Ui_State) {
 				)
 				sticker_control("PickerGifs", 0, tr("GIFs"), ui.gif_tab ? .Selected : .Normal)
 			}
-			if ui.gif_tab {gif_picker(ui, {width - 24, height}); return}
-			if ui.sticker_tab {sticker_picker(ui, {width - 24, height}); return}
+			if ui.gif_tab {gif_picker(ui, {width - 2 * pad, height}); return}
+			if ui.sticker_tab {sticker_picker(ui, {width - 2 * pad, height}); return}
 		}
-		eyebrow(tr("RECENT"))
-		if nendo.box(nendo.id("PkRecentRow"))(
-		{width = nendo.grow(), gap = 2, clip = {x = true, scroll = true}},
+		if ui.picker_target != "" && !compact {
+			nendo.text(tr("Add reaction"), {font = FONT_TITLE, size = 16, color = TEXT})
+		}
+		if !sheet {picker_search(ui)}
+		if nendo.box(nendo.id("PickerBody"))(
+		{width = nendo.grow(), height = nendo.grow(), gap = PICKER_PAD},
 		) {
-			for recent, i in ui.prefs.recent_emoji {
-				if art := picker_emoji_tex(recent); art.tex != nil || art.pending {
-					picker_cell(nendo.id("PkRecent", u32(i)), art)
-				}
+			if !sheet {picker_categories(ui)}
+			grid_w := width - 2 * pad - (sheet ? 0 : side + pad) - PICKER_GUTTER
+			picker_grid(ui, grid_w, height)
+		}
+		if sheet {
+			picker_search(ui)
+			if !compact {picker_categories(ui)}
+		}
+	}
+}
+
+@(private = "file")
+picker_categories :: proc(ui: ^Ui_State) {
+	sheet := single_pane()
+	id := nendo.id("PickerCategories")
+	side := picker_side()
+	if nendo.box(id)(
+	{
+		width = sheet ? nendo.grow() : nendo.fixed(side),
+		height = sheet ? nendo.fixed(side) : nendo.grow(),
+		direction = sheet ? .Row : .Column,
+		gap = PICKER_GAP,
+		clip = {x = sheet, y = !sheet, scroll = true},
+	},
+	) {
+		for group in Emoji_Group {
+			active := group == ui.picker_group && picker_query(ui) == ""
+			category := PICKER_CATEGORIES[group]
+			if nendo.box(nendo.id("PickerCategory", u32(group)))(
+			{
+				width = nendo.fixed(side),
+				height = nendo.fixed(side),
+				align = {x = .Center, y = .Center},
+				color = active ? SELECTED : hovered() ? HOVER : {},
+				radius = rr(7),
+			},
+			) {
+				nendo.text(
+					category.icon,
+					{font = FONT_ICON, size = 16, color = active ? ACCENT : TEXT_DIM},
+				)
+				if hovered() &&
+				   !rl.TouchActive() {tooltip(tr(category.label), sheet ? .Above : .Below)}
 			}
 		}
-		scrollbar(nendo.id("PkRecentRow"), 13)
+	}
+	scrollbar(id, 13)
+}
 
+@(private = "file")
+picker_search :: proc(ui: ^Ui_State) {
+	if nendo.box(nendo.id("PickerSearchRow"))(
+	{width = nendo.grow(), gap = PICKER_PAD, align = {y = .Center}},
+	) {
 		if nendo.box(nendo.id("PickerSearch"))(
 		{
 			width = nendo.grow(),
 			height = nendo.fixed(tap_size() ? tap_min() : 34),
 			padding = {left = 10, right = 10},
-			gap = 4,
+			gap = 8,
 			align = {y = .Center},
 			color = ROW_BG,
 			radius = rr(8),
-			border = {color = ui.focus == .Picker ? ACCENT : FIELD_BORDER, width = bw()},
+			border = {
+				color = ui.focus == .Picker && ui.picker_selection.id == 0 ? ACCENT : FIELD_BORDER,
+				width = bw(),
+			},
 		},
 		) {
+			nendo.text(ICON_SEARCH, {font = FONT_ICON, size = 12, color = TEXT_LO})
 			field_text(
 				ui,
 				"PickerSearch",
 				&ui.picker_filter,
 				tr("Search emoji..."),
-				ui.focus == .Picker,
+				ui.focus == .Picker && ui.picker_selection.id == 0,
 				13,
 				TEXT_LO,
 			)
 		}
-
-		grid := nendo.id("PickerGrid")
-		matches := picker_matches(ui)
-		grid_min := tap_size() ? tap_min() : f32(0)
-		rows_id := nendo.id("PickerRows")
-		if nendo.box(grid)(
-		{
-			width = nendo.grow(),
-			height = nendo.grow(min = grid_min, max = max(grid_min, height)),
-			direction = .Column,
-			gap = len(matches) > 0 ? PICKER_GAP : 0,
-			clip = {y = true, scroll = true},
-		},
-		) {
-			// Custom :shortcode: emoji lead the grid; the search box
-			// matches their codes too.
-			// ponytail: one unwrapped row; wrap it if the set grows.
-			custom, revision := picker_custom(string(ui.picker_filter[:]))
-			ui.picker_custom_revision = revision
-			if len(custom) > 0 {
-				picker_custom_row(custom, width - 24, max(grid_min, PICKER_CELL))
-			}
-			if len(matches) == 0 {
-				if len(custom) == 0 {
-					nendo.text(
-						tr("No emoji match your search."),
-						{font = FONT_BODY, size = 13, color = TEXT_DIM},
-					)
-				}
-				// Clamp against the content above the run even when the run is empty.
-				nendo.virtual_rows(rows_id, 0, PICKER_CELL)
-			} else {
-				cols := picker_cols()
-				count := (len(matches) + cols - 1) / cols
-				row_h := tap_size() ? tap_min() : PICKER_CELL
-				cell_w :=
-					single_pane() ? (width - 24 - f32(cols - 1) * PICKER_GAP) / f32(cols) : f32(0)
-				rows := nendo.virtual_rows(rows_id, count, row_h, gap = PICKER_GAP)
-				for row in rows.first ..< rows.end {
-					start := row * cols
-					if nendo.box(nendo.id("PkRow", u32(start)))(
-					{gap = PICKER_GAP, height = nendo.fixed(row_h)},
-					) {
-						for index in matches[start:min(start + cols, len(matches))] {
-							picker_cell(
-								nendo.id("PkCell", u32(index)),
-								picker_emoji_tex(emoji_catalog[index].emoji),
-								cell_w,
-							)
-						}
-					}
-				}
+		if len(ui.picker_filter) != 0 {
+			side := tap_size() ? tap_min() : f32(34)
+			if nendo.box(nendo.id("PickerClear"))(
+			{
+				width = nendo.fixed(side),
+				height = nendo.fixed(side),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : ROW_BG,
+				radius = rr(8),
+			},
+			) {
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 13, color = TEXT_LO})
+				if hovered() && !rl.TouchActive() {tooltip(tr("Clear search"))}
 			}
 		}
-		scrollbar(grid, 13) // the panel floats at 12
+		if tap_size() {micro_button("PickerClose", tr("Close"))}
 	}
 }
 
 @(private = "file")
-picker_custom_row :: proc(custom: []Picker_Custom, width, side: f32) {
-	id := nendo.id("PkCustomRow")
-	step := side + PICKER_GAP
-	left: f32
-	if view := nendo.scroll(id); view.found {
-		left = clamp(-view.position.x, 0, max(0, f32(len(custom)) * step - PICKER_GAP - width))
-		view.position.x = -left
+picker_grid :: proc(ui: ^Ui_State, width, height: f32) {
+	grid := nendo.id("PickerGrid")
+	query := picker_query(ui)
+	query_id := nendo.id(query).id
+	restoring := query == "" && query_id != ui.picker_query_id
+	custom_row := nendo.id("PkCustomRow")
+	if query_id != ui.picker_query_id {
+		if ui.picker_query_id == nendo.id("").id {
+			ui.picker_browse_scroll = {}
+			if scroll := nendo.scroll(grid);
+			   scroll.found {ui.picker_browse_scroll.y = scroll.position.y}
+			shelf := ui.picker_group == .Custom ? custom_row : nendo.id("PkRecentRow")
+			if scroll := nendo.scroll(shelf);
+			   scroll.found {ui.picker_browse_scroll.x = scroll.position.x}
+		}
+		if scroll := nendo.scroll(grid); scroll.found {
+			scroll.position.y = restoring ? ui.picker_browse_scroll.y : 0
+		}
+		ui.picker_query_id = query_id
+		ui.picker_selection = {}
+		if query != "" {
+			if scroll := nendo.scroll(custom_row); scroll.found {scroll.position.x = 0}
+		}
 	}
+	matches := picker_matches(ui)
+	custom, revision := picker_custom_matches(ui)
+	if ui.picker_selection.label == "PkCustom" {
+		present := false
+		if ui.picker_custom_revision == revision {
+			for entry in custom {
+				if entry.slot == ui.picker_selection.offset {present = true; break}
+			}
+		}
+		if !present {ui.picker_selection = {}}
+	}
+	ui.picker_custom_revision = revision
+	side := picker_side()
+	gap := f32(PICKER_GAP)
+	cols := max(1, int((width + gap) / (side + gap)))
+	ui.picker_columns = cols
+	cell_w := max(side, (width + gap) / f32(cols) - gap)
+	if nendo.box(grid)(
+	{
+		width = nendo.grow(),
+		height = nendo.grow(min = 1, max = height),
+		direction = .Column,
+		padding = {right = u16(PICKER_GUTTER)},
+		gap = PICKER_GAP,
+		clip = {y = true, scroll = true},
+	},
+	) {
+		if query == "" {
+			if nendo.box(nendo.id("PickerBrowseHead"))(
+			{width = nendo.grow(), direction = .Column, gap = 4},
+			) {
+				if ui.picker_group == .Smileys && len(ui.prefs.recent_emoji) != 0 {
+					eyebrow(tr("RECENT"))
+					recent_row := nendo.id("PkRecentRow")
+					if nendo.box(recent_row)(
+					{width = nendo.grow(), gap = PICKER_GAP, clip = {x = true, scroll = true}},
+					) {
+						if restoring {
+							if scroll := nendo.scroll(recent_row);
+							   scroll.found {scroll.position.x = ui.picker_browse_scroll.x}
+						}
+						for recent, i in ui.prefs.recent_emoji {
+							if art := picker_emoji_tex(recent); art.tex != nil || art.pending {
+								picker_cell(nendo.id("PkRecent", u32(i)), art, side)
+							}
+						}
+					}
+					scrollbar(recent_row, 13)
+				}
+				nendo.text(
+					tr(PICKER_CATEGORIES[ui.picker_group].label),
+					{font = FONT_TITLE, size = 14, color = TEXT},
+				)
+			}
+		}
+		if len(custom) != 0 {
+			x: f32
+			if restoring {
+				x = ui.picker_browse_scroll.x
+			} else if scroll := nendo.scroll(custom_row); scroll.found {
+				x = scroll.position.x
+			}
+			picker_custom_row(custom, width, side, x, ui.picker_selection)
+		}
+		if len(matches) == 0 && len(custom) == 0 {
+			nendo.text(
+				tr("No emoji match your search."),
+				{font = FONT_BODY, size = 13, color = TEXT_DIM},
+			)
+		}
+		count := (len(matches) + cols - 1) / cols
+		rows := nendo.virtual_rows(nendo.id("PickerRows"), count, side, gap = PICKER_GAP)
+		for row in rows.first ..< rows.end {
+			start := row * cols
+			if nendo.box(nendo.id("PkRow", u32(start)))(
+			{height = nendo.fixed(side), gap = PICKER_GAP},
+			) {
+				for at in start ..< min(start + cols, len(matches)) {
+					index := matches[at]
+					id := nendo.id("PkCell", u32(index))
+					picker_cell(
+						id,
+						picker_emoji_tex(emoji_catalog[index].emoji),
+						cell_w,
+						ui.picker_selection == id ? kb_ring(ACCENT) : {},
+					)
+				}
+			}
+		}
+	}
+	scrollbar(grid, 13)
+}
+
+@(private = "file")
+picker_custom_row :: proc(
+	custom: []Picker_Custom,
+	width, side, scroll_x: f32,
+	selection: nendo.Id,
+) {
+	id := nendo.id("PkCustomRow")
+	step := side + f32(PICKER_GAP)
+	left := clamp(-scroll_x, 0, max(0, f32(len(custom)) * step - f32(PICKER_GAP) - width))
 	right := left + width
 	if nendo.box(id)({width = nendo.grow(), gap = PICKER_GAP, clip = {x = true, scroll = true}}) {
+		if view := nendo.scroll(id); view.found {view.position.x = -left}
 		for entry, at in custom {
 			x := f32(at) * step
 			// Keep the full scroll extent, but do not queue clipped artwork.
 			art := x < right && x + side > left ? picker_custom_tex(entry.slot) : Picker_Art{}
-			picker_cell(nendo.id("PkCustom", entry.slot), art)
+			tile := nendo.id("PkCustom", entry.slot)
+			picker_cell(tile, art, side, selection == tile ? kb_ring(ACCENT) : {})
 		}
 	}
 	scrollbar(id, 13)

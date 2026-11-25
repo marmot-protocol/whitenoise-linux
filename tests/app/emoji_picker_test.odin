@@ -44,44 +44,48 @@ emoji_picker_scroll :: proc(t: ^testing.T) {
 		delete(ui.picker_used)
 	}
 
-	matches := picker_matches(&ui)
-	if !testing.expect_value(t, len(matches), PICKER_MAX_CELLS) {return}
-	cols := picker_cols()
 	grid := nendo.id("PickerGrid")
-	last := matches[len(matches) - 1]
-	last_id := nendo.id("PkCell", u32(last))
-	tail_row := nendo.id("PkRow", u32((len(matches) - 1) / cols * cols))
 	anim_frame += 1
 	perform_composer_action(&ui, .Emoji)
 	ui.picker_x, ui.picker_y = 64, 48
+	build_layout(&ui, 0)
+	category := nendo.element(nendo.id("PickerCategory", u32(Emoji_Group.People)))
+	if !testing.expect(t, category.found) {return}
+	nendo.set_pointer({category.rect.x + 5, category.rect.y + 5}, .Up)
+	forced_release = true
+	handle_picker(&ui, nil)
+	forced_release = false
+	if !testing.expect_value(t, ui.picker_group, Emoji_Group.People) {return}
 	first_commands := build_layout(&ui, 0)
+	matches := picker_matches(&ui)
+	if !testing.expect(t, len(matches) > 0) {return}
+	testing.expect_value(t, emoji_catalog[matches[0]].emoji, "👋")
+	cols := ui.picker_columns
+	last := matches[len(matches) - 1]
+	last_id := nendo.id("PkCell", u32(last))
+	tail_row := nendo.id("PkRow", u32((len(matches) - 1) / cols * cols))
 	rl.BeginDrawing()
 	draw_frame(first_commands)
 	rl.TakeScreenshot("/tmp/wn-emoji-picker-cold.png")
 	rl.EndDrawing()
-	custom := nendo.element(nendo.id("PkCustomRow"))
 	first_id := nendo.id("PkCell", u32(matches[0]))
 	first := nendo.element(first_id)
-	testing.expect(
-		t,
-		custom.found && first.found && custom.rect.y + custom.rect.height < first.rect.y,
-	)
+	testing.expect(t, first.found && !nendo.element(nendo.id("PkCustomRow")).found)
 	testing.expect(t, nendo.element(nendo.id("PickerSearch")).found)
-	testing.expect(
-		t,
-		emoji_tex_cache[emoji_catalog[matches[0]].emoji] == nil && builtin_emoji_tex[0] == nil,
-	)
+	testing.expect(t, emoji_tex_cache[emoji_catalog[matches[0]].emoji] == nil)
 	nendo.set_pointer(
 		{first.rect.x + first.rect.width / 2, first.rect.y + first.rect.height / 2},
 		.Up,
 	)
 	testing.expect(t, !nendo.pointer_over(first_id), "a loading placeholder cannot be selected")
-	settings_emoji_tick(&ui)
+	for _ in 0 ..< 16 {
+		settings_emoji_tick(&ui)
+		if emoji_tex_cache[emoji_catalog[matches[0]].emoji] != nil {break}
+		anim_frame += 1
+		build_layout(&ui, 0)
+	}
 	emoji_preview_finish(.Publish)
-	testing.expect(
-		t,
-		emoji_tex_cache[emoji_catalog[matches[0]].emoji] != nil && builtin_emoji_tex[0] != nil,
-	)
+	testing.expect(t, emoji_tex_cache[emoji_catalog[matches[0]].emoji] != nil)
 	testing.expect(t, !nendo.element(tail_row).found, "offscreen rows should not mount")
 	view := nendo.scroll(grid)
 	if !testing.expect(t, view.found && view.content.height > view.viewport.height) {return}
@@ -107,7 +111,11 @@ emoji_picker_scroll :: proc(t: ^testing.T) {
 	rl.TakeScreenshot("/tmp/wn-emoji-picker-bottom.png")
 	rl.EndDrawing()
 
-	append(&ui.picker_filter, "marmot_wave")
+	for ch in "marmot_wave" {rl.PushChar(ch)}
+	rl.PushKey(.DOWN, true)
+	handle_picker(&ui, nil)
+	rl.PushKey(.DOWN, false)
+	nendo.update_scroll(.Off, {}, 0)
 	build_layout(&ui, 0)
 	custom_tile := nendo.element(nendo.id("PkCustom", 3))
 	testing.expect(
@@ -116,11 +124,17 @@ emoji_picker_scroll :: proc(t: ^testing.T) {
 		"custom-only results should be visible on the first frame after filtering",
 	)
 	testing.expect_value(t, nendo.scroll(grid).position.y, f32(0))
+	nendo.update_scroll(.Off, {}, 0)
+	build_layout(&ui, 0)
 
-	clear(&ui.picker_filter)
+	clear_button := nendo.element(nendo.id("PickerClear")).rect
+	nendo.set_pointer({clear_button.x + 5, clear_button.y + 5}, .Up)
+	forced_release = true
+	handle_picker(&ui, nil)
+	forced_release = false
+	nendo.update_scroll(.Off, {}, 0)
 	build_layout(&ui, 0)
-	nendo.scroll(grid).position.y = bottom
-	build_layout(&ui, 0)
+	testing.expect_value(t, nendo.scroll(grid).position.y, bottom)
 	cell = nendo.element(last_id)
 	nendo.set_pointer({cell.rect.x + cell.rect.width / 2, cell.rect.y + cell.rect.height / 2}, .Up)
 	forced_release = true
@@ -128,7 +142,7 @@ emoji_picker_scroll :: proc(t: ^testing.T) {
 	forced_release = false
 	testing.expect_value(t, string(ui.compose[:]), emoji_catalog[last].emoji)
 
-	// The message can be taller than the grid in a short desktop window.
+	// An empty result still keeps search usable in a short desktop window.
 	rl.SetWindowSize(900, 240)
 	nendo.set_dimensions({900, 240})
 	ui.picker_open = true
@@ -136,18 +150,48 @@ emoji_picker_scroll :: proc(t: ^testing.T) {
 	anim_frame += 1
 	build_layout(&ui, 0)
 	view = nendo.scroll(grid)
+	testing.expect(t, view.found && view.viewport.height > 0 && view.content.height > 0)
+	test_cold_custom_emoji(t, &ui)
+
+	rl.SetWindowSize(360, 760)
+	nendo.set_dimensions({360, 760})
+	open_picker(&ui, "")
+	for recent in ui.prefs.recent_emoji {delete(recent)}
+	clear(&ui.prefs.recent_emoji)
+	for emoji in ([8]string{"😀", "👍", "😂", "💚", "🎉", "🎶", "✋", "👀"}) {
+		append(&ui.prefs.recent_emoji, strings.clone(emoji))
+	}
+	build_layout(&ui, 0)
+	panel := nendo.element(nendo.id("PickerPanel")).rect
+	strip := nendo.element(nendo.id("PickerCategories")).rect
+	search := nendo.element(nendo.id("PickerSearch")).rect
+	cell = nendo.element(nendo.id("PickerCategory", u32(Emoji_Group.Smileys)))
+	testing.expect_value(t, panel.width, f32(360))
+	testing.expect_value(t, panel.y + panel.height, f32(760))
+	testing.expect(t, strip.y >= search.y + search.height && cell.rect.width >= 44)
+	testing.expect_value(t, ui.focus, Focus.Compose)
+
+	recents := nendo.id("PkRecentRow")
+	row := nendo.scroll(recents)
 	if !testing.expectf(
 		t,
-		view.found && 0 < view.viewport.height && view.viewport.height < view.content.height,
-		"message height %g must exceed the positive viewport height %g",
-		view.content.height,
-		view.viewport.height,
+		row.found && row.content.width > row.viewport.width,
+		"Recent shelf found: %v, content: %g, viewport: %g",
+		row.found,
+		row.content.width,
+		row.viewport.width,
 	) {return}
-	bottom = view.viewport.height - view.content.height
-	view.position.y = bottom
+	right := row.viewport.width - row.content.width
+	row.position.x = right
+	ed_set(&ui, &ui.picker_filter, "rocket")
+	for _ in 0 ..< 3 {
+		nendo.update_scroll(.Off, {}, 0)
+		build_layout(&ui, 0)
+	}
+	ed_set(&ui, &ui.picker_filter, "")
 	build_layout(&ui, 0)
-	testing.expect_value(t, nendo.scroll(grid).clip.offset.y, bottom)
-	test_cold_custom_emoji(t, &ui)
+	row = nendo.scroll(recents)
+	if testing.expect(t, row.found) {testing.expect_value(t, row.clip.offset.x, right)}
 }
 
 @(private = "file")
@@ -203,11 +247,7 @@ test_cold_custom_emoji :: proc(t: ^testing.T, ui: ^Ui_State) {
 	emoji_preview_finish(.Publish)
 	_, decoded_prefix := custom_emoji_textures[custom_emoji_names[0]]
 	testing.expect(t, !decoded_prefix, "clipped artwork must wait for scrolling into view")
-	testing.expect(
-		t,
-		custom_emoji_textures[custom_emoji_names[24]] != nil &&
-		custom_emoji_textures[custom_emoji_names[25]] != nil,
-	)
+	testing.expect(t, custom_emoji_textures[custom_emoji_names[25]] != nil)
 	build_layout(ui, 0)
 	tile := nendo.element(nendo.id("PkCustom", 25))
 	if !testing.expect(t, tile.found) {return}

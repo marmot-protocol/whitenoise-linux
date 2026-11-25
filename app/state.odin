@@ -826,6 +826,11 @@ Ui_State :: struct {
 	picker_x:                            f32, // panel anchor, layout coords
 	picker_y:                            f32,
 	picker_filter:                       [dynamic]u8,
+	picker_group:                        Emoji_Group,
+	picker_selection:                    nendo.Id, // null leaves the keyboard in search
+	picker_columns:                      int, // measured in the hit-tested layout
+	picker_query_id:                     u32,
+	picker_browse_scroll:                nendo.Vector2,
 	picker_custom_revision:              u64,
 	picker_hit_revision:                 u64, // catalog revision of the hit-tested frame
 	picker_used:                         [dynamic]string, // recents commit on close, never move under a finger

@@ -449,6 +449,9 @@ msgstr "작업 실패: %s"
 msgid "Active theme: %s"
 msgstr "사용 중인 테마: %s"
 
+msgid "Activities"
+msgstr "활동"
+
 msgid "Add"
 msgstr "추가"
 
@@ -568,6 +571,9 @@ msgstr "앰버"
 
 msgid "An empty box derives its value. The window previews as you type."
 msgstr "비어 있는 칸은 값이 자동으로 정해집니다. 입력하면 창에서 미리 볼 수 있습니다."
+
+msgid "Animals and nature"
+msgstr "동물과 자연"
 
 msgid "Animations are distracting"
 msgstr "애니메이션이 방해됩니다"
@@ -2527,6 +2533,9 @@ msgstr "피트니스"
 msgid "Flag"
 msgstr "깃발"
 
+msgid "Flags"
+msgstr "깃발"
+
 msgid "Flat"
 msgstr "단색"
 
@@ -2565,6 +2574,9 @@ msgstr "글꼴"
 
 msgid "Food"
 msgstr "음식"
+
+msgid "Food and drink"
+msgstr "음식과 음료"
 
 msgid "Forget all"
 msgstr "모두 삭제"
@@ -3741,6 +3753,9 @@ msgstr "오프라인"
 msgid "ONLINE"
 msgstr "온라인"
 
+msgid "Objects"
+msgstr "물건"
+
 msgid "Oct"
 msgstr "10월"
 
@@ -3993,6 +4008,9 @@ msgstr "다른 사람이 나를 찾을 수 없습니다"
 
 msgid "People"
 msgstr "사람"
+
+msgid "People and body"
+msgstr "사람과 신체"
 
 msgid "People can't invite you"
 msgstr "다른 사람이 나를 초대할 수 없습니다"
@@ -5065,6 +5083,9 @@ msgstr "슬로베니아어"
 msgid "Small"
 msgstr "작게"
 
+msgid "Smileys and emotion"
+msgstr "얼굴과 감정"
+
 msgid "Sold"
 msgstr "판매됨"
 
@@ -5226,6 +5247,9 @@ msgstr "스웨덴어"
 
 msgid "Switching your account"
 msgstr "계정 전환 중"
+
+msgid "Symbols"
+msgstr "기호"
 
 msgid "Synthwave"
 msgstr "신스웨이브"
@@ -5622,6 +5646,9 @@ msgstr "번역이 정확하지 않을 수 있습니다. 원본 메시지는 언�
 
 msgid "Travel"
 msgstr "여행"
+
+msgid "Travel and places"
+msgstr "여행과 장소"
 
 msgid "Trophy"
 msgstr "트로피"

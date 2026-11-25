@@ -474,6 +474,9 @@ msgstr "Aktion fehlgeschlagen: %s"
 msgid "Active theme: %s"
 msgstr "Aktives Design: %s"
 
+msgid "Activities"
+msgstr "Aktivitäten"
+
 msgid "Add"
 msgstr "Hinzufügen"
 
@@ -596,6 +599,9 @@ msgstr "Bernstein"
 
 msgid "An empty box derives its value. The window previews as you type."
 msgstr "Ein leeres Feld leitet seinen Wert ab. Das Fenster zeigt beim Tippen eine Vorschau."
+
+msgid "Animals and nature"
+msgstr "Tiere und Natur"
 
 msgid "Animations are distracting"
 msgstr "Animationen lenken ab"
@@ -2689,6 +2695,9 @@ msgstr "Fitness"
 msgid "Flag"
 msgstr "Flagge"
 
+msgid "Flags"
+msgstr "Flaggen"
+
 msgid "Flat"
 msgstr "Einfarbig"
 
@@ -2727,6 +2736,9 @@ msgstr "Schriftarten"
 
 msgid "Food"
 msgstr "Essen"
+
+msgid "Food and drink"
+msgstr "Essen und Trinken"
 
 msgid "Forget all"
 msgstr "Alle vergessen"
@@ -3988,6 +4000,9 @@ msgstr "OK"
 msgid "ONLINE"
 msgstr "ONLINE"
 
+msgid "Objects"
+msgstr "Objekte"
+
 msgid "Oct"
 msgstr "Okt."
 
@@ -4258,6 +4273,9 @@ msgstr "Ausstehende Nachrichten"
 
 msgid "People"
 msgstr "Kontakte"
+
+msgid "People and body"
+msgstr "Menschen und Körper"
 
 msgid "People can't invite you"
 msgstr "Andere können dich nicht einladen"
@@ -5412,6 +5430,9 @@ msgstr "Slowenisch"
 msgid "Small"
 msgstr "Klein"
 
+msgid "Smileys and emotion"
+msgstr "Smileys und Gefühle"
+
 msgid "Sold"
 msgstr "Verkauft"
 
@@ -5582,6 +5603,9 @@ msgstr "Schwedisch"
 
 msgid "Switching your account"
 msgstr "Dein Konto wird gewechselt"
+
+msgid "Symbols"
+msgstr "Symbole"
 
 msgid "Synthwave"
 msgstr "Synthwave"
@@ -5997,6 +6021,9 @@ msgstr "Übersetzungen können ungenau sein. Die ursprüngliche Nachricht ist je
 
 msgid "Travel"
 msgstr "Reisen"
+
+msgid "Travel and places"
+msgstr "Reisen und Orte"
 
 msgid "Trophy"
 msgstr "Trophäe"
