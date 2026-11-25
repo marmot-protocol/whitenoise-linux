@@ -5835,6 +5835,9 @@ msgstr "Verde acqua"
 msgid "Telugu"
 msgstr "Telugu"
 
+msgid "Terminal"
+msgstr "Terminale"
+
 msgid "Terminal agent by Nous Research"
 msgstr "Agente da terminale di Nous Research"
 

@@ -265,7 +265,7 @@ msgstr "%s ist kein Admin mehr"
 
 #, c-format
 msgid "%s is still in your old device list. Link it from that device."
-msgstr "%s steht noch in deiner alten Geräteliste. Starte die Verknüpfung auf diesem Gerät."
+msgstr "%s steht noch in deiner alten Geräteliste. Starte die Verknüpfung auf dem genannten Gerät."
 
 #, c-format
 msgid "%s left the group"
@@ -363,7 +363,7 @@ msgid "1. Install White Noise on the other device and sign in to this profile."
 msgstr "1. Installiere White Noise auf dem anderen Gerät und melde dich mit diesem Profil an."
 
 msgid "2. In Settings, open Account & devices, then Linked devices. Choose Link to another device."
-msgstr "2. Öffne in den Einstellungen Konto & Geräte und dann Verknüpfte Geräte. Wähle Weiteres Gerät verknüpfen."
+msgstr "2. Öffne in den Einstellungen Konto & Geräte und dann Verknüpfte Geräte. Wähle „Mit einem anderen Gerät verknüpfen“."
 
 msgid "2.5 GB"
 msgstr "2,5 GB"
@@ -570,7 +570,7 @@ msgid "Advanced"
 msgstr "Erweitert"
 
 msgid "Affected members may miss the change. Turning on linked devices now dismisses the relay refusals for those earlier changes."
-msgstr "Betroffene Mitglieder bekommen die Änderung möglicherweise nicht mit. Wenn du verknüpfte Geräte jetzt einschaltest, werden die Meldungen zu den früheren Ablehnungen durch Relays verworfen."
+msgstr "Betroffene Mitglieder bekommen die Änderung möglicherweise nicht mit. Wenn du verknüpften Geräten jetzt den Beitritt erlaubst, werden die Meldungen zu den früheren Ablehnungen durch Relays verworfen."
 
 msgid "After signing in, open Account & devices in Settings to link another device."
 msgstr "Öffne nach der Anmeldung Konto & Geräte in den Einstellungen, um ein weiteres Gerät zu verknüpfen."
@@ -1124,7 +1124,7 @@ msgid "Checking the original message…"
 msgstr "Die ursprüngliche Nachricht wird geprüft…"
 
 msgid "Checking whether linked devices are on…"
-msgstr "Es wird geprüft, ob verknüpfte Geräte eingeschaltet sind…"
+msgstr "Es wird geprüft, ob verknüpfte Geräte dem Chat beitreten dürfen…"
 
 msgid "Checking whether this chat supports linked devices…"
 msgstr "Es wird geprüft, ob dieser Chat verknüpfte Geräte unterstützt…"
@@ -2034,7 +2034,7 @@ msgid "Couldn't translate this message. Please try again."
 msgstr "Diese Nachricht konnte nicht übersetzt werden. Bitte versuche es erneut."
 
 msgid "Couldn't turn on linked devices. Please try again."
-msgstr "Verknüpfte Geräte konnten nicht eingeschaltet werden. Bitte versuche es erneut."
+msgstr "Der Beitritt für verknüpfte Geräte konnte nicht erlaubt werden. Bitte versuche es erneut."
 
 #, c-format
 msgid "Couldn't unarchive. %s"
@@ -3449,7 +3449,7 @@ msgid "Link this device to the one that has your chats. You’ll compare the sam
 msgstr "Verknüpfe dieses Gerät mit dem Gerät, auf dem deine Chats sind. Dabei vergleichst du die sieben Emojis auf beiden Bildschirmen."
 
 msgid "Link to another device"
-msgstr "Weiteres Gerät verknüpfen"
+msgstr "Mit einem anderen Gerät verknüpfen"
 
 #, c-format
 msgid "Linked by: %s"
@@ -3462,10 +3462,10 @@ msgid "Linked devices are ready"
 msgstr "Verknüpfte Geräte sind bereit"
 
 msgid "Linked devices are turned on for this chat."
-msgstr "Verknüpfte Geräte sind für diesen Chat eingeschaltet."
+msgstr "Verknüpfte Geräte dürfen diesem Chat beitreten."
 
 msgid "Linked devices weren't turned on for this chat."
-msgstr "Verknüpfte Geräte wurden für diesen Chat nicht eingeschaltet."
+msgstr "Der Beitritt für verknüpfte Geräte wurde für diesen Chat nicht erlaubt."
 
 msgid "Linked on another device"
 msgstr "Auf einem anderen Gerät verknüpft"
@@ -4172,7 +4172,7 @@ msgid "One-tap reactions"
 msgstr "Ein-Tipp-Reaktionen"
 
 msgid "Only a chat admin can turn on linked devices."
-msgstr "Nur ein Admin dieses Chats kann verknüpfte Geräte einschalten."
+msgstr "Nur ein Admin dieses Chats kann verknüpften Geräten den Beitritt erlauben."
 
 msgid "Only future invitations will appear here until you link this device."
 msgstr "Bis du dieses Gerät verknüpfst, erscheinen hier nur neue Einladungen."
@@ -5601,7 +5601,7 @@ msgid "Some chats couldn't be checked. Please try again."
 msgstr "Einige Chats konnten nicht geprüft werden. Bitte versuche es erneut."
 
 msgid "Some devices need to be replaced before linked devices can be turned on."
-msgstr "Einige Geräte müssen ersetzt werden, bevor verknüpfte Geräte eingeschaltet werden können."
+msgstr "Einige Geräte müssen ersetzt werden, bevor verknüpfte Geräte dem Chat beitreten dürfen."
 
 msgid "Some network results may be missing."
 msgstr "Einige Netzwerkergebnisse fehlen möglicherweise."
@@ -5834,6 +5834,9 @@ msgstr "Blaugrün"
 
 msgid "Telugu"
 msgstr "Telugu"
+
+msgid "Terminal"
+msgstr "Terminal"
 
 msgid "Terminal agent by Nous Research"
 msgstr "Terminal-Agent von Nous Research"
@@ -6307,13 +6310,13 @@ msgid "Turn on developer mode"
 msgstr "Entwicklermodus einschalten"
 
 msgid "Turn on linked devices"
-msgstr "Verknüpfte Geräte einschalten"
+msgstr "Verknüpften Geräten den Beitritt erlauben"
 
 msgid "Turn on linked devices?"
-msgstr "Verknüpfte Geräte einschalten?"
+msgstr "Verknüpften Geräten den Beitritt erlauben?"
 
 msgid "Turning on linked devices…"
-msgstr "Verknüpfte Geräte werden eingeschaltet…"
+msgstr "Der Beitritt für verknüpfte Geräte wird erlaubt…"
 
 msgid "Turning this off doesn't leave any chats."
 msgstr "Wenn du das ausschaltest, bleibt dieses Gerät in seinen bisherigen Chats."
@@ -6731,7 +6734,7 @@ msgid "You can open the chats already on this device."
 msgstr "Du kannst die Chats öffnen, die bereits auf diesem Gerät sind."
 
 msgid "You can turn on linked devices."
-msgstr "Du kannst verknüpfte Geräte einschalten."
+msgstr "Du kannst verknüpften Geräten den Beitritt erlauben."
 
 msgid "You can't send messages to someone you blocked."
 msgstr "Du kannst Personen, die du blockiert hast, keine Nachrichten senden."

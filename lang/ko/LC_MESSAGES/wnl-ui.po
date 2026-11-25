@@ -5834,6 +5834,9 @@ msgstr "청록"
 msgid "Telugu"
 msgstr "텔루구어"
 
+msgid "Terminal"
+msgstr "터미널"
+
 msgid "Terminal agent by Nous Research"
 msgstr "Nous Research의 터미널 에이전트"
 

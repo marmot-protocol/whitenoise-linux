@@ -5835,6 +5835,9 @@ msgstr "青緑"
 msgid "Telugu"
 msgstr "テルグ語"
 
+msgid "Terminal"
+msgstr "ターミナル"
+
 msgid "Terminal agent by Nous Research"
 msgstr "Nous Researchのターミナルエージェント"
 
