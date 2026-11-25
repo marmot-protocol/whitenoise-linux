@@ -2,20 +2,32 @@
 # Assemble package-private tests outside the production source tree.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
+usage() {
+  echo "Usage: tests/odin.sh app [compiler flags [-- runner args] | --isolated]" >&2
+  echo "       tests/odin.sh app/sdlrl [compiler flags [-- runner args]]" >&2
+  exit 1
+}
 package="${1:-}"
 case "$package" in
 app | app/sdlrl) ;;
-*)
-  echo "Usage: tests/odin.sh app|app/sdlrl [compiler flags [-- runner args] | --isolated TEST ...]" >&2
-  exit 1
-  ;;
+*) usage ;;
 esac
 shift
 isolated=()
 runner_args=()
 if [ "${1:-}" = --isolated ]; then
-  shift
-  isolated=("$@")
+  # The names come from the app tests, so a name passed here or a run of
+  # another package would silently test something else.
+  if [ "$package" != app ] || [ $# -ne 1 ]; then
+    usage
+  fi
+  # A test that needs a process of its own opens with
+  # `if !test_isolated("name") {return}`, which skips it in the shared run.
+  # That call is also the list of tests to run alone, so a new one touches
+  # only its own file.
+  mapfile -t isolated < <(
+    grep -ohE 'test_isolated\("[a-z0-9_]+"\)' "$HERE"/tests/app/*.odin | cut -d'"' -f2 | sort -u
+  )
   set --
 else
   for ((i = 1; i <= $#; i++)); do
