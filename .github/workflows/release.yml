@@ -266,7 +266,8 @@ jobs:
         run: |
           set -o pipefail
           log="$RUNNER_TEMP/flatpak-prepare.log"
-          bash scripts/ci-boat.sh run <(cat <<'PREPARE'
+          script="$RUNNER_TEMP/flatpak-prepare.sh"
+          cat > "$script" <<'PREPARE'
           flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
           # Keep relative manifest sources rooted in the checkout.
           flatpak-builder --show-manifest "packaging/flatpak/$FLATPAK_ID.yml" \
@@ -290,7 +291,7 @@ jobs:
             fi
           fi
           PREPARE
-          ) | tee "$log"
+          bash scripts/ci-boat.sh run "$script" | tee "$log"
           digest=$(awk '/^Flatpak module cache digest: / {print $NF}' "$log")
           if [[ $digest =~ ^[0-9a-f]{64}$ ]]; then
             echo "digest=$digest" >> "$GITHUB_OUTPUT"
