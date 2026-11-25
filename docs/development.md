@@ -103,7 +103,7 @@ Run `bash tests/mdk-patches-test.sh` to check fresh staging, reruns, appended ov
 
 ## Keep the build caches between builds
 
-Keep `build/cargo/native` and `build/cross/<target>/cargo` between builds. Cargo checks MDK's inputs on each build and reuses unchanged crates across MDK pin and patch changes. An MDK-only change relinks the app without recompiling its Odin sources.
+Keep `build/cargo/native` and `build/cross/<target>/cargo` between builds. Cargo checks MDK's inputs on each build and reuses unchanged crates across MDK pin and patch changes.
 
 <details>
 <summary><b>What each cache key covers, and what invalidates it</b></summary>
@@ -113,7 +113,8 @@ Keep `build/cargo/native` and `build/cross/<target>/cargo` between builds. Cargo
 - **CI restores.** CI restores Cargo state within the same compiler and target boundary and lets Cargo check the inputs. GitHub's macOS jobs save one snapshot per dependency and toolchain key, not per app commit.
 - **C/C++ helpers and Odin outputs.** Native and cross builds cache these by input contents, compiler, target, and flags. Output manifests detect missing or corrupted files and reject dangling links.
 - **SDK symlinks.** Dangling SDK symlinks contribute their link metadata to input keys; resolving or retargeting them invalidates the cache.
-- **Odin objects.** Native Linux/OpenBSD and cross builds cache Odin objects separately from linking.
+- **Native Linux app.** Odin compiles separate LLVM modules at `-o:speed` and links them with LLD. The cache stores the executable. A change to the Marmot archive rebuilds the app, even if no Odin source changed.
+- **Odin objects.** Native Linux helpers, OpenBSD builds, and cross builds cache Odin objects separately from linking.
 - **Packages.** Linux and Windows package caches cover bundled runtime libraries and archives; release downloads, signing, and update feeds still run when requested.
 
 </details>

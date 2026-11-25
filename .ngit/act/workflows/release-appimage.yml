@@ -62,10 +62,10 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: bash scripts/ngit-stage.sh
 
-      - name: Install PipeWire client modules
+      - name: Install LLD and PipeWire client modules
         run: |
           apt-get update -qq
-          apt-get install -y --no-install-recommends pipewire-bin
+          apt-get install -y --no-install-recommends lld pipewire-bin
 
       - name: Build and test
         env:

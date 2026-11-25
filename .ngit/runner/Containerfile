@@ -10,7 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 RUN apt-get update && apt-get remove -y moby-cli \
     && apt-get install -y --no-install-recommends \
-    pkg-config cmake ninja-build clang git curl gettext gnupg podman podman-docker \
+    pkg-config cmake ninja-build clang lld git curl gettext gnupg podman podman-docker \
     fuse-overlayfs slirp4netns catatonit \
     libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev \
     libcurl4-openssl-dev libssl-dev libglib2.0-dev libfreetype-dev \

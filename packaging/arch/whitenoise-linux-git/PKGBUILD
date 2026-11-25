@@ -37,7 +37,7 @@ depends=(sdl3 libwebp libarchive mpv ffmpeg poppler-glib cairo fontconfig glib2 
          libgcc libstdc++ freetype2 xdg-utils libnotify ttf-dejavu hicolor-icon-theme)
 # Rustup installs MDK's pinned compiler and llvm-tools-preview during prepare().
 # webkit2gtk-4.1 makes build.sh produce wn-webview.
-makedepends=(git rustup clang cmake unzip zstd webkit2gtk-4.1)
+makedepends=(git rustup clang lld cmake unzip zstd webkit2gtk-4.1)
 optdepends=(
   'webkit2gtk-4.1: run webxdc apps attached to messages'
   'noto-fonts-cjk: Japanese and Korean text'

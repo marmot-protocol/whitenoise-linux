@@ -19,6 +19,13 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: bash scripts/ngit-stage.sh
 
+      - name: Install LLD on workers without it
+        run: |
+          if ! test -x "$(clang -print-prog-name=ld.lld)"; then
+            apt-get update -qq
+            apt-get install -y --no-install-recommends lld
+          fi
+
       - name: Build and test
         working-directory: /var/cache/wn-ci/worktree
         run: CI=true setpriv --bounding-set=-dac_override,-dac_read_search bash scripts/build.sh test

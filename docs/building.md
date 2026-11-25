@@ -32,7 +32,7 @@ nix --extra-experimental-features 'nix-command flakes' develop -c odin version
 | Tool | Version in the flake |
 | --- | --- |
 | Odin | upstream dev-2026-10 release binary, the same compiler CI uses |
-| LLVM | 21, including Clang and `llvm-config` |
+| LLVM | 21, including Clang, LLD and `llvm-config` |
 | OLS | dev-2026-10, pinned through the nixpkgs lock |
 | Rust | 1.97.1; install that toolchain with `rustup` if it is not already available |
 | Cargo output | `target/nix` in the working directory, unless `CARGO_TARGET_DIR` is set |
@@ -44,13 +44,13 @@ The GUI needs access to your desktop session, display and audio sockets, and GPU
 You need:
 
 - **`just` and the [Odin dev-2026-10 release binary](https://github.com/odin-lang/Odin/releases/tag/dev-2026-10).** MDK compiles its Markdown parser with Odin and requires `odin version` to report commit `84bc3fc`; distribution packages may not.
-- **A C and C++ compiler, CMake, and a Rust toolchain.** Marmot's C bundle is built from source.
+- **A C and C++ compiler, CMake, and a Rust toolchain.** Marmot's C bundle is built from source. The native Linux release build links the app with LLD.
 - **SDL 3.4 or newer and the media libraries the viewers bind.** Flatpak bundles SDL because the GNOME 50 SDK ships SDL 3.2.
 
 **Debian / Ubuntu** (SDL3 needs 25.04 or newer, or a source build):
 
 ```sh
-sudo apt-get install -y just pkg-config cmake clang git curl \
+sudo apt-get install -y just pkg-config cmake clang lld git curl \
   libsdl3-dev libarchive-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libglib2.0-dev \
   libcurl4-openssl-dev libssl-dev libfreetype-dev libwebp-dev \
   libavformat-dev libavcodec-dev libavutil-dev libswresample-dev zstd
@@ -59,7 +59,7 @@ sudo apt-get install -y just pkg-config cmake clang git curl \
 **Arch:**
 
 ```sh
-sudo pacman -S --needed just rust cmake sdl3 libarchive mpv ffmpeg poppler-glib cairo glib2 curl openssl freetype2 libwebp zstd
+sudo pacman -S --needed just rust cmake clang lld sdl3 libarchive mpv ffmpeg poppler-glib cairo glib2 curl openssl freetype2 libwebp zstd
 ```
 
 **Then:**
