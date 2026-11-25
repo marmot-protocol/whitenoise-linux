@@ -181,13 +181,10 @@ handle_shell_foreground :: proc(ui: ^Ui_State, captured: bool) -> bool {
 }
 
 build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
-	anchored_reveal := (ui.sticker_reveal || ui.gif_reveal) && single_pane()
-	anchor_id: nendo.Id
+	anchored_media := ui.picker_open && picker_media(ui) && single_pane()
+	anchor_id := nendo.id("ComposeBox")
 	anchor: nendo.Element_Data
-	if anchored_reveal {
-		anchor_id = nendo.id("ComposeBox")
-		anchor = nendo.element(anchor_id)
-	}
+	if anchored_media {anchor = nendo.element(anchor_id)}
 	commands := build_layout_pass(ui, frame_time)
 	if layout_overflow {return commands}
 	reflow := false
@@ -202,14 +199,22 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 			}
 		}
 	}
-	// The floating picker reads the composer rectangle from the last pass.
-	if anchored_reveal && anchor != nendo.element(anchor_id) {
+	if anchored_media && anchor != nendo.element(anchor_id) {
 		commands = build_layout_pass(ui, 0)
 		if layout_overflow {return commands}
 		reflow = false
 	}
 	sticker_scroll := sticker_resolve_scroll(ui)
 	gif_scroll := gif_resolve_scroll(ui)
+	if ui.picker_open && !picker_media(ui) {
+		for name in ([2]string{"PkRecentRow", "PkCustomRow"}) {
+			if view := nendo.scroll(nendo.id(name));
+			   view.found && view.clip.offset.x != view.position.x {
+				reflow = true
+				break
+			}
+		}
+	}
 	return sticker_scroll || gif_scroll || reflow ? build_layout_pass(ui, 0) : commands
 }
 
@@ -238,6 +243,10 @@ build_layout_pass :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Comm
 	page_advance(ui)
 
 	logged_in := ui.account_ref != ""
+	picker_docked := single_pane() && picker_composer(ui) && !picker_media(ui)
+	picker_visible :=
+		logged_in &&
+		(picker_docked ? ui.picker_open : open_now(nendo.id("PickerPanel"), ui.picker_open))
 	settings_float := settings_modal(ui)
 	settings_full := settings_workspace_visible(ui) && !settings_float
 	page := shell_page(ui)
@@ -271,7 +280,12 @@ build_layout_pass :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Comm
 			}
 		} else {
 			if nendo.box(nendo.id("CardsRow"))(
-			{width = nendo.grow(), height = nendo.grow(), direction = .Row},
+			{
+				width = nendo.grow(),
+				height = nendo.grow(),
+				direction = .Row,
+				clip = {y = picker_visible && picker_docked},
+			},
 			) {
 				// Navigation and the list share one width preference. Narrow
 				// windows show either this sidebar or the detail pane.
@@ -376,8 +390,12 @@ build_layout_pass :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Comm
 			forward_progress(ui)
 			export_progress(ui)
 			contacts_import_progress(ui)
-			status_bar(ui)
-			if !settings_full {phone_navigation(ui)}
+			if picker_visible && picker_docked {
+				emoji_picker(ui)
+			} else {
+				status_bar(ui)
+				if !settings_full {phone_navigation(ui)}
+			}
 		}
 
 		// Root overlays can also open over the sign-in screen.
@@ -414,7 +432,7 @@ build_layout_pass :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Comm
 			}
 
 			// Root level, not the chat pane: settings opens it too.
-			if open_now(nendo.id("PickerPanel"), ui.picker_open) {
+			if picker_visible && !picker_docked {
 				emoji_picker(ui)
 			}
 			if open_now(nendo.id("StickerPanel"), ui.sticker_open) {sticker_panel(ui)}
@@ -653,6 +671,7 @@ app_main :: proc() {
 	defer emoji_pack_unmap()
 	// Before any picker or message needs them, not on first Settings visit.
 	custom_emoji_scan()
+	defer emoji_sources_clear()
 
 	// Every secret lives in $home/vault.db, marmot's account keys
 	// included, so the vault opens before the runtime does; closing the
@@ -1131,6 +1150,7 @@ app_main :: proc() {
 			pointer = archive_pointer_position(ui.page, pointer)
 			nendo.set_pointer(pointer, (rl.IsMouseButtonDown(.LEFT)) ? .Down : .Up)
 			ui.picker_hit_revision = ui.picker_custom_revision
+			picker_sample_click(&ui)
 			fwd_sample_pointer(&ui)
 
 			scroll_thumb_tick()
@@ -1205,6 +1225,18 @@ app_main :: proc() {
 				wheel = {}
 			}
 			chat_filter_wheel(&ui, &wheel)
+			if ui.picker_open && wheel.y != 0 {
+				for name in ([3]string{"PickerCategories", "PkCustomRow", "PkRecentRow"}) {
+					id := nendo.id(name)
+					if !nendo.pointer_over(id) {continue}
+					if view := nendo.scroll(id);
+					   view.found && view.content.width > view.viewport.width {
+						wheel.x += wheel.y
+						wheel.y = 0
+						break
+					}
+				}
+			}
 			if ui.timestamp.open && nendo.pointer_over(nendo.id("TimestampFormats")) {
 				data := nendo.scroll(nendo.id("TimestampFormats"))
 				if data.found && data.content.width > data.viewport.width {

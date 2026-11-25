@@ -474,6 +474,9 @@ msgstr "Azione non riuscita: %s"
 msgid "Active theme: %s"
 msgstr "Tema attivo: %s"
 
+msgid "Activities"
+msgstr "Attività"
+
 msgid "Add"
 msgstr "Aggiungi"
 
@@ -599,6 +602,9 @@ msgstr "Ambra"
 
 msgid "An empty box derives its value. The window previews as you type."
 msgstr "Una casella vuota ricava il proprio valore. La finestra mostra l'anteprima mentre scrivi."
+
+msgid "Animals and nature"
+msgstr "Animali e natura"
 
 msgid "Animations are distracting"
 msgstr "Le animazioni distraggono"
@@ -2696,6 +2702,9 @@ msgstr "Fitness"
 msgid "Flag"
 msgstr "Bandiera"
 
+msgid "Flags"
+msgstr "Bandiere"
+
 msgid "Flat"
 msgstr "Uniforme"
 
@@ -2734,6 +2743,9 @@ msgstr "Caratteri"
 
 msgid "Food"
 msgstr "Cibo"
+
+msgid "Food and drink"
+msgstr "Cibo e bevande"
 
 msgid "Forget all"
 msgstr "Dimentica tutti"
@@ -3833,6 +3845,9 @@ msgstr "Ancora nessun contatto"
 msgid "No description."
 msgstr "Nessuna descrizione."
 
+msgid "No emoji available."
+msgstr "Non ci sono emoji disponibili."
+
 msgid "No emoji match your search."
 msgstr "Nessuna emoji corrisponde alla tua ricerca."
 
@@ -4024,6 +4039,9 @@ msgstr "Va bene"
 
 msgid "ONLINE"
 msgstr "ONLINE"
+
+msgid "Objects"
+msgstr "Oggetti"
 
 msgid "Oct"
 msgstr "ott"
@@ -4298,6 +4316,9 @@ msgstr "Invii in attesa"
 
 msgid "People"
 msgstr "Contatti"
+
+msgid "People and body"
+msgstr "Persone e corpo"
 
 msgid "People can't invite you"
 msgstr "Gli altri non riescono a invitarti"
@@ -5473,6 +5494,9 @@ msgstr "Sloveno"
 msgid "Small"
 msgstr "Piccola"
 
+msgid "Smileys and emotion"
+msgstr "Faccine ed emozioni"
+
 msgid "Sold"
 msgstr "Venduto"
 
@@ -5646,6 +5670,9 @@ msgstr "Svedese"
 
 msgid "Switching your account"
 msgstr "Cambio del tuo account in corso"
+
+msgid "Symbols"
+msgstr "Simboli"
 
 msgid "Synthwave"
 msgstr "Synthwave"
@@ -6067,6 +6094,9 @@ msgstr "Le traduzioni possono essere imprecise. Il messaggio originale è sempre
 
 msgid "Travel"
 msgstr "Viaggi"
+
+msgid "Travel and places"
+msgstr "Viaggi e luoghi"
 
 msgid "Trophy"
 msgstr "Trofeo"

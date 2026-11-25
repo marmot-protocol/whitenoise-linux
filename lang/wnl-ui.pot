@@ -513,6 +513,9 @@ msgstr ""
 msgid "Active theme: %s"
 msgstr ""
 
+msgid "Activities"
+msgstr ""
+
 msgid "Add"
 msgstr ""
 
@@ -643,6 +646,9 @@ msgid "Amber"
 msgstr ""
 
 msgid "An empty box derives its value. The window previews as you type."
+msgstr ""
+
+msgid "Animals and nature"
 msgstr ""
 
 msgid "Animations are distracting"
@@ -2960,6 +2966,9 @@ msgstr ""
 msgid "Flag"
 msgstr ""
 
+msgid "Flags"
+msgstr ""
+
 msgid "Flat"
 msgstr ""
 
@@ -2997,6 +3006,9 @@ msgid "Fonts"
 msgstr ""
 
 msgid "Food"
+msgstr ""
+
+msgid "Food and drink"
 msgstr ""
 
 msgid "Forget all"
@@ -4250,6 +4262,9 @@ msgstr ""
 msgid "No devices are linked to this profile yet."
 msgstr ""
 
+msgid "No emoji available."
+msgstr ""
+
 msgid "No emoji match your search."
 msgstr ""
 
@@ -4446,6 +4461,9 @@ msgid "OFFLINE"
 msgstr ""
 
 msgid "ONLINE"
+msgstr ""
+
+msgid "Objects"
 msgstr ""
 
 msgid "Oct"
@@ -4750,6 +4768,9 @@ msgid "Pending sends"
 msgstr ""
 
 msgid "People"
+msgstr ""
+
+msgid "People and body"
 msgstr ""
 
 msgid "People can't invite you"
@@ -6038,6 +6059,9 @@ msgstr ""
 msgid "Small"
 msgstr ""
 
+msgid "Smileys and emotion"
+msgstr ""
+
 msgid "Sold"
 msgstr ""
 
@@ -6240,6 +6264,9 @@ msgid "Switching profiles and checking the request…"
 msgstr ""
 
 msgid "Switching your account"
+msgstr ""
+
+msgid "Symbols"
 msgstr ""
 
 msgid "Synthwave"
@@ -6754,6 +6781,9 @@ msgid "Translations can be inaccurate. The original message is always available.
 msgstr ""
 
 msgid "Travel"
+msgstr ""
+
+msgid "Travel and places"
 msgstr ""
 
 msgid "Trophy"

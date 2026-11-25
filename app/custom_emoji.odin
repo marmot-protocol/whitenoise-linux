@@ -22,6 +22,9 @@ custom_emoji_scanned: bool
 custom_emoji_textures: map[string]^rl.Texture2D
 
 @(private)
+picker_pack_icons: map[string]^rl.Texture2D
+
+@(private)
 Picker_Art :: struct {
 	tex:     ^rl.Texture2D,
 	pending: bool,
@@ -30,6 +33,7 @@ Picker_Art :: struct {
 @(private)
 Emoji_Preview_Kind :: enum {
 	File,
+	Pack_Icon,
 	Builtin,
 	Other_Set,
 }
@@ -104,12 +108,14 @@ emoji_remove :: proc(ui: ^Ui_State, name: string) {
 		return
 	}
 	os.remove(fmt.tprintf("%s/%s", emoji_dir(), name))
-	if old, ok := custom_emoji_textures[name]; ok {
+	for textures in ([2]^map[string]^rl.Texture2D{&custom_emoji_textures, &picker_pack_icons}) {
+		old, ok := textures^[name]
+		if !ok {continue}
 		if old != nil {
 			rl.UnloadTexture(old^)
 			free(old)
 		}
-		key, _ := delete_key(&custom_emoji_textures, name)
+		key, _ := delete_key(textures, name)
 		delete(key)
 	}
 	custom_emoji_scan()
@@ -118,6 +124,12 @@ emoji_remove :: proc(ui: ^Ui_State, name: string) {
 custom_emoji_scan :: proc() {
 	// The worker owns disk publication until drain; never block a frame on IO.
 	if g_ui != nil && g_ui.emoji_sets_job != nil && g_ui.emoji_sets_job.op == .Import {return}
+	coordinate: string
+	if g_ui != nil {
+		if pack := picker_pack_at(g_ui.picker_pack, g_ui.picker_pack_revision); pack != nil {
+			coordinate = strings.clone(pack.coordinate, context.temp_allocator)
+		}
+	}
 	emoji_revision += 1
 	custom_emoji_scanned = true
 	for name in custom_emoji_names {
@@ -125,7 +137,14 @@ custom_emoji_scan :: proc() {
 	}
 	clear(&custom_emoji_names)
 	emoji_sources_clear()
-	emoji_scan_files(emoji_dir(), &custom_emoji_names, &emoji_sources)
+	emoji_scan_files(emoji_dir(), &custom_emoji_names, &emoji_sources, &picker_emoji_packs)
+	if g_ui == nil || coordinate == "" {return}
+	g_ui.picker_pack, g_ui.picker_pack_revision = 0, 0
+	for pack, i in picker_emoji_packs {
+		if pack.coordinate != coordinate {continue}
+		g_ui.picker_pack, g_ui.picker_pack_revision = i + 1, emoji_revision
+		break
+	}
 }
 
 @(private = "file")
@@ -134,8 +153,9 @@ emoji_preview_worker :: proc(_: ^thread.Thread) {
 	defer frame_wake()
 	for &item in emoji_preview.items[:emoji_preview.count] {
 		switch item.kind {
-		case .File:
+		case .File, .Pack_Icon:
 			item.image = rl.LoadImage(fmt.ctprintf("%s/%s", emoji_preview.directory, item.key))
+			if item.kind == .Pack_Icon {item.image = image_fit(item.image, 96)}
 		case .Builtin:
 			png := BUILTIN_EMOJI[item.builtin].png
 			item.image = rl.LoadImageFromMemory(".png", raw_data(png), i32(len(png)))
@@ -163,10 +183,11 @@ emoji_preview_finish :: proc(end: Emoji_Preview_End) {
 		keep_key := false
 		if publish {
 			switch item.kind {
-			case .File:
-				if _, cached := custom_emoji_textures[item.key];
+			case .File, .Pack_Icon:
+				textures := item.kind == .File ? &custom_emoji_textures : &picker_pack_icons
+				if _, cached := textures^[item.key];
 				   !cached && emoji_preview.revision == emoji_revision {
-					custom_emoji_textures[item.key] = emoji_upload(item.image)
+					textures^[item.key] = emoji_upload(item.image)
 					keep_key = true
 				}
 			case .Builtin:
@@ -195,7 +216,9 @@ emoji_preview_finish :: proc(end: Emoji_Preview_End) {
 emoji_preview_queue :: proc(kind: Emoji_Preview_Kind, key: string, builtin := 0) {
 	if emoji_preview.worker != nil || emoji_preview.count == len(emoji_preview.items) {return}
 	for item in emoji_preview.items[:emoji_preview.count] {
-		if item.kind == kind && item.key == key && item.builtin == builtin {return}
+		if item.key == key &&
+		   item.builtin == builtin &&
+		   (item.kind == kind || (kind == .Pack_Icon && item.kind == .File)) {return}
 	}
 	emoji_preview.items[emoji_preview.count] = {
 		kind    = kind,
@@ -212,6 +235,7 @@ settings_emoji_tick :: proc(ui: ^Ui_State) {
 		if !thread.is_done(emoji_preview.worker) {return}
 		emoji_preview_finish(.Publish)
 	}
+	if ui.picker_open {picker_pack_queue()}
 	if settings_workspace_visible(ui) && ui.settings_section == .Chats && !settings_index(ui) {
 		settings_emoji_queue(ui)
 	}
@@ -221,6 +245,30 @@ settings_emoji_tick :: proc(ui: ^Ui_State) {
 	emoji_preview.directory = strings.clone(emoji_dir())
 	emoji_preview.worker = thread.create(emoji_preview_worker)
 	thread.start(emoji_preview.worker)
+}
+
+@(private = "file")
+picker_pack_queue :: proc() {
+	rail := nendo.element(nendo.id("PickerCategories"))
+	if !rail.found {return}
+	for pack, i in picker_emoji_packs {
+		if emoji_preview.count == len(emoji_preview.items) {break}
+		if !picker_pack_art(pack.sample).pending {continue}
+		chip := nendo.element(nendo.id("PickerCategory", u32(len(PICKER_CATEGORIES) + i)))
+		b, r := chip.rect, rail.rect
+		if chip.found &&
+		   b.x < r.x + r.width &&
+		   b.x + b.width > r.x &&
+		   b.y < r.y + r.height &&
+		   b.y + b.height > r.y {emoji_preview_queue(.Pack_Icon, pack.sample)}
+	}
+}
+
+@(private)
+picker_pack_art :: proc(sample: string) -> Picker_Art {
+	if tex := custom_emoji_textures[sample]; tex != nil {return {tex = tex}}
+	tex, cached := picker_pack_icons[sample]
+	return {tex, !cached}
 }
 
 @(private = "file")
@@ -385,6 +433,28 @@ Emoji_Match_Mode :: enum {
 Picker_Custom :: struct {
 	code: string,
 	slot: u32,
+}
+
+@(private)
+picker_pack_at :: proc(index: int, revision: u64) -> ^Picker_Emoji_Pack {
+	if revision != emoji_revision || index <= 0 || index > len(picker_emoji_packs) {return nil}
+	return &picker_emoji_packs[index - 1]
+}
+
+@(private)
+picker_custom_matches :: proc(ui: ^Ui_State) -> ([]Picker_Custom, u64) {
+	if query := picker_query(ui); query != "" {return picker_custom(query)}
+	if pack := picker_pack_at(ui.picker_pack, ui.picker_pack_revision); pack != nil {
+		matches := make([dynamic]Picker_Custom, 0, len(pack.slots), context.temp_allocator)
+		for slot in pack.slots {
+			name := custom_emoji_names[slot]
+			if tex, loaded := custom_emoji_textures[name]; loaded && tex == nil {continue}
+			append(&matches, Picker_Custom{emoji_code(name), slot})
+		}
+		return matches[:], emoji_revision
+	}
+	if ui.picker_group == .Custom {return picker_custom("")}
+	return nil, emoji_revision
 }
 
 // Shortcodes containing `query` (the picker search box, or a composer

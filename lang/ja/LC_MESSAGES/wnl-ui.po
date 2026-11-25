@@ -474,6 +474,9 @@ msgstr "操作に失敗しました: %s"
 msgid "Active theme: %s"
 msgstr "使用中のテーマ：%s"
 
+msgid "Activities"
+msgstr "アクティビティ"
+
 msgid "Add"
 msgstr "追加"
 
@@ -599,6 +602,9 @@ msgstr "琥珀色"
 
 msgid "An empty box derives its value. The window previews as you type."
 msgstr "空欄の項目は値が自動で導き出されます。入力するとウィンドウでプレビューされます。"
+
+msgid "Animals and nature"
+msgstr "動物と自然"
 
 msgid "Animations are distracting"
 msgstr "アニメーションが気になります"
@@ -2696,6 +2702,9 @@ msgstr "フィットネス"
 msgid "Flag"
 msgstr "旗"
 
+msgid "Flags"
+msgstr "旗"
+
 msgid "Flat"
 msgstr "単色"
 
@@ -2734,6 +2743,9 @@ msgstr "フォント"
 
 msgid "Food"
 msgstr "食べ物"
+
+msgid "Food and drink"
+msgstr "食べ物と飲み物"
 
 msgid "Forget all"
 msgstr "すべて忘れる"
@@ -3833,6 +3845,9 @@ msgstr "連絡先がまだありません"
 msgid "No description."
 msgstr "説明はありません。"
 
+msgid "No emoji available."
+msgstr "利用できる絵文字がありません。"
+
 msgid "No emoji match your search."
 msgstr "検索に一致する絵文字はありません。"
 
@@ -4024,6 +4039,9 @@ msgstr "使用できます"
 
 msgid "ONLINE"
 msgstr "オンライン"
+
+msgid "Objects"
+msgstr "物"
 
 msgid "Oct"
 msgstr "10月"
@@ -4298,6 +4316,9 @@ msgstr "送信待ちのメッセージ"
 
 msgid "People"
 msgstr "連絡先"
+
+msgid "People and body"
+msgstr "人と体"
 
 msgid "People can't invite you"
 msgstr "ほかの人があなたを招待できません"
@@ -5473,6 +5494,9 @@ msgstr "スロベニア語"
 msgid "Small"
 msgstr "小"
 
+msgid "Smileys and emotion"
+msgstr "顔と感情"
+
 msgid "Sold"
 msgstr "売却済み"
 
@@ -5646,6 +5670,9 @@ msgstr "スウェーデン語"
 
 msgid "Switching your account"
 msgstr "アカウントを切り替えています"
+
+msgid "Symbols"
+msgstr "記号"
 
 msgid "Synthwave"
 msgstr "シンセウェイヴ"
@@ -6067,6 +6094,9 @@ msgstr "翻訳は正確でない場合があります。元のメッセージは
 
 msgid "Travel"
 msgstr "旅行"
+
+msgid "Travel and places"
+msgstr "旅行と場所"
 
 msgid "Trophy"
 msgstr "トロフィー"

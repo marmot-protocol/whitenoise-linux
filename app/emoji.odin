@@ -87,6 +87,37 @@ Emoji_Entry :: struct {
 }
 emoji_catalog: [dynamic]Emoji_Entry
 @(private)
+Emoji_Group :: enum {
+	Smileys,
+	People,
+	Nature,
+	Food,
+	Travel,
+	Activities,
+	Objects,
+	Symbols,
+	Flags,
+	Custom,
+}
+@(private)
+emoji_group_rows: [Emoji_Group][dynamic]int
+
+// The bundle preserves the pinned Unicode catalog order. These are the
+// first entries of each group; set-specific extras follow the base catalog.
+@(private = "file")
+EMOJI_GROUP_START := [Emoji_Group]string {
+	.Smileys    = "",
+	.People     = "👋",
+	.Nature     = "🐵",
+	.Food       = "🍇",
+	.Travel     = "🌍",
+	.Activities = "🎃",
+	.Objects    = "👓",
+	.Symbols    = "🏧",
+	.Flags      = "🏁",
+	.Custom     = "",
+}
+@(private)
 emoji_base_rows: int
 @(private)
 emoji_extras: []u8 // backs the extras rows' emoji strings
@@ -125,6 +156,7 @@ catalog_append :: proc(data: []u8) {
 emoji_set_load :: proc(set: Emoji_Set) {
 	emoji_set = set
 	picker_upload_count = 0
+	for &rows in emoji_group_rows {clear(&rows)}
 	for key, tex in emoji_tex_cache {
 		if tex != nil {
 			rl.UnloadTexture(tex^)
@@ -165,11 +197,19 @@ emoji_set_load :: proc(set: Emoji_Set) {
 		return
 	}
 	emoji_pack = pack
+	group := Emoji_Group.Smileys
 	for &entry, i in emoji_catalog {
+		if i >= emoji_base_rows {
+			group = .Custom
+		} else if group != .Flags &&
+		   entry.emoji == EMOJI_GROUP_START[Emoji_Group(int(group) + 1)] {
+			group = Emoji_Group(int(group) + 1)
+		}
 		if flags[i] == 0 {continue}
 		offset := 8 + i * EMOJI_RECORD_BYTES
 		entry.pixels = pack[offset + 1:offset + EMOJI_RECORD_BYTES]
 		emoji_pixels[entry.emoji] = entry.pixels
+		append(&emoji_group_rows[group], i)
 	}
 }
 

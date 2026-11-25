@@ -383,6 +383,7 @@ session_media_clear :: proc() {
 	session_textures_clear(&media_textures)
 	session_textures_clear(&original_textures)
 	session_textures_clear(&remote_emoji_tex)
+	session_textures_clear(&picker_pack_icons)
 	profile_session_clear()
 	clear(&blob_sizes)
 	orbit_hover, orbit_drag = nil, nil
