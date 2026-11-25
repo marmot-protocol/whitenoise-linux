@@ -37,8 +37,10 @@ Timeline_Work :: struct {
 	paged:                  bool,
 	at:                     time.Tick,
 	read_request:           cstring,
+	read_request_revision:  u64,
 	read_latest:            string, // UI-thread deduplication, newest eligible id queued
 	read_row:               ^marmot.Chat_List_Row,
+	read_result_revision:   u64,
 	read_error:             string,
 	thread_request:         Timeline_Thread_Request,
 	thread_result:          Timeline_Thread_Result,
@@ -164,7 +166,7 @@ timeline_worker :: proc(t: ^thread.Thread) {
 		}
 		direction = job.request
 		job.request = .None
-		read_request := job.read_request
+		read_request, read_revision := job.read_request, job.read_request_revision
 		job.read_request = nil
 		sync.unlock(&job.mutex)
 		if status != .TIMEOUT || check_placement {frame_wake()}
@@ -187,9 +189,12 @@ timeline_worker :: proc(t: ^thread.Thread) {
 			delete(read_request)
 			err := read_status != .OK ? marmot.last_error() : ""
 			sync.lock(&job.mutex)
-			if job.read_row != nil {marmot.chat_list_row_free(job.read_row)}
+			if row != nil {
+				if job.read_row != nil {marmot.chat_list_row_free(job.read_row)}
+				job.read_row, job.read_result_revision = row, read_revision
+			}
 			delete(job.read_error)
-			job.read_row, job.read_error = row, err
+			job.read_error = err
 			sync.unlock(&job.mutex)
 			frame_wake()
 		}
@@ -308,7 +313,65 @@ timeline_mark_read :: proc(ui: ^Ui_State) {
 	sync.lock(&job.mutex)
 	delete(job.read_request)
 	job.read_request = strings.clone_to_cstring(id)
+	job.read_request_revision = chat_list_revision
 	sync.unlock(&job.mutex)
+}
+
+@(private)
+timeline_read_apply :: proc(
+	ui: ^Ui_State,
+	row: ^marmot.Chat_List_Row,
+	chat: ^Chat_Row_Ui,
+	revision: u64,
+) {
+	if revision != chat_list_revision {
+		// The write may have committed after the revision changed. Refresh
+		// from storage without copying a row that could predate the current cursor.
+		chat_read_invalidate(ui)
+		return
+	}
+	chat_read_apply(ui, row, chat)
+}
+
+@(private)
+timeline_read_drain_job :: proc(ui: ^Ui_State, job: ^Timeline_Work, chat: ^Chat_Row_Ui) {
+	if string(job.account) != ui.account_ref {return}
+	sync.lock(&job.mutex)
+	row, err, revision := job.read_row, job.read_error, job.read_result_revision
+	job.read_row, job.read_error = nil, ""
+	sync.unlock(&job.mutex)
+	if row != nil {
+		timeline_read_apply(ui, row, chat, revision)
+		marmot.chat_list_row_free(row)
+	}
+	if err != "" {
+		if chat != nil {
+			set_status(
+				ui,
+				fmt.aprintf("%s %s", tr("Couldn't mark the chat read. Please try again."), err),
+				.Error,
+			)
+		}
+		delete(err)
+	}
+}
+
+// Apply read commits before either Archive or live snapshots can replace the rows.
+@(private)
+timeline_drain_reads :: proc(ui: ^Ui_State) {
+	for i := len(timeline_retired) - 1; i >= 0; i -= 1 {
+		retired := timeline_retired[i]
+		done := thread.is_done(retired.worker)
+		timeline_read_drain_job(ui, retired, nil)
+		if done {
+			timeline_free(retired)
+			unordered_remove(&timeline_retired, i)
+		}
+	}
+	if job := timeline_job; job != nil {
+		chat := timeline_group_scope(ui, job) ? &ui.chats[ui.selected] : nil
+		timeline_read_drain_job(ui, job, chat)
+	}
 }
 
 @(private)
@@ -317,12 +380,6 @@ timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   ui.event_data.source == .Timeline &&
 	   (ui.selected < 0 || ui.page != .Chats) {
 		event_data_close(&ui.event_data)
-	}
-	for i := len(timeline_retired) - 1; i >= 0; i -= 1 {
-		if thread.is_done(timeline_retired[i].worker) {
-			timeline_free(timeline_retired[i])
-			unordered_remove(&timeline_retired, i)
-		}
 	}
 	job := timeline_job
 	if job == nil {return}
@@ -334,8 +391,6 @@ timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	sync.lock(&job.mutex)
 	page, err, paged, at := job.page, job.err, job.paged, job.at
 	job.page, job.err, job.paged = nil, "", false
-	read_row, read_error := job.read_row, job.read_error
-	job.read_row, job.read_error = nil, ""
 	placement, closed := job.thread_result, job.closed
 	job.thread_result = {}
 	sync.unlock(&job.mutex)
@@ -345,25 +400,6 @@ timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		} else if placement.revision != 0 && placement.revision == ui.thread_placement_revision {
 			ui.thread_placement = placement.state
 		}
-	}
-	if read_row != nil {
-		chat := &ui.chats[ui.selected]
-		// A newer rail event may already have arrived while this write ran.
-		if read_row.last_message != nil &&
-		   chat.last_id == string(read_row.last_message.message_id_hex) {
-			chat.unread = read_row.unread_count
-			delete(chat.first_unread)
-			chat.first_unread = strings.clone(string(read_row.first_unread_message_id_hex))
-		}
-		marmot.chat_list_row_free(read_row)
-	}
-	if read_error != "" {
-		set_status(
-			ui,
-			fmt.aprintf("%s %s", tr("Couldn't mark the chat read. Please try again."), read_error),
-			.Error,
-		)
-		delete(read_error)
 	}
 	if err != "" {
 		delete(ui.timeline_error)

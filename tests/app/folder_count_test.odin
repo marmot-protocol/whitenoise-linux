@@ -61,8 +61,12 @@ folder_count_dispatch :: proc(t: ^testing.T) {
 		if settings_resolve_scroll(ui) {commands = build_layout(ui, 0)}
 		return commands
 	}
-	click :: proc(t: ^testing.T, ui: ^Ui_State, id: nendo.Id) -> bool {
+	click :: proc(t: ^testing.T, ui: ^Ui_State, id: nendo.Id, container := "") -> bool {
 		for _ in 0 ..< 3 {frame(ui)}
+		if container != "" {
+			scroll_into_view(nendo.id(container), id)
+			frame(ui)
+		}
 		data := nendo.element(id)
 		if !testing.expect(t, data.found, "dispatch target exists") {return false}
 		b := data.rect
@@ -166,4 +170,44 @@ folder_count_dispatch :: proc(t: ^testing.T) {
 	if !click(t, &ui, nendo.id("FolderSave")) {return}
 	testing.expect(t, !ui.folder_open)
 	testing.expect_value(t, ui.prefs.folder_rules["All chats"].rules[0].count, 0)
+
+	// An excluded group in Any must not veto an unread Studio chat.
+	if !click(t, &ui, nendo.id("SettingsFolderNew")) {return}
+	ed_set(&ui, &ui.folder_input, "Nested")
+	body := "FolderEditorBody"
+	if !click(t, &ui, nendo.id("FolderSort", u32(Folder_Sort.Name)), body) {return}
+	if !click(t, &ui, nendo.id("FolderRuleAdd"), body) {return}
+	if !click(t, &ui, nendo.id("FolderRuleKind", 0), body) {return}
+	if !click(
+		t,
+		&ui,
+		nendo.id(fmt.tprintf("FolderRulePick%d", int(Folder_Rule_Kind.Unread))),
+	) {return}
+	if !click(t, &ui, nendo.id("FolderGroupAdd"), body) {return}
+	if !click(t, &ui, nendo.id("FolderMatchAny"), body) {return}
+	if !click(t, &ui, nendo.id("FolderMatchAny1"), body) {return}
+	if !click(t, &ui, nendo.id("FolderExclude1"), body) {return}
+	if !click(t, &ui, nendo.id("FolderRuleAdd1"), body) {return}
+	ed_set(&ui, &ui.folder_rules[2].input, "Studio")
+	if !click(t, &ui, nendo.id("FolderRuleAdd1"), body) {return}
+	ed_set(&ui, &ui.folder_rules[3].input, "Workshop")
+	if !click(t, &ui, nendo.id("FolderGroupAdd1"), body) {return}
+	if !click(t, &ui, nendo.id("FolderExclude4"), body) {return}
+	frame(&ui)
+	scroll_into_view(nendo.id(body), nendo.id("FolderGroupHead", 1))
+	capture(&ui, "nested")
+	if !click(t, &ui, nendo.id("FolderSave")) {return}
+
+	reopened: Ui_State
+	load_settings(&reopened, .Preferences)
+	testing.expect_value(t, reopened.prefs.folder_sorts["Nested"], Folder_Sort.Name)
+	folder_rules_load(&reopened, "Nested")
+	set, bad, why := folder_rules_parse(&reopened)
+	defer folder_rules_free(set)
+	if !testing.expect(t, bad == -1, why) {return}
+	testing.expect(t, len(reopened.folder_rules) == 4, "empty nested group was saved")
+	testing.expect(t, folder_rules_match(set, Chat_Facts{title = "studio", unread = true}))
+	testing.expect(t, !folder_rules_match(set, Chat_Facts{title = "studio"}))
+	testing.expect(t, !folder_rules_match(set, Chat_Facts{title = "workshop"}))
+	testing.expect(t, folder_rules_match(set, Chat_Facts{title = "elsewhere"}))
 }

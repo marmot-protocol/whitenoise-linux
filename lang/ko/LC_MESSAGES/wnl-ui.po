@@ -467,6 +467,9 @@ msgstr "선택지를 두 개 이상 추가하세요."
 msgid "Add contact"
 msgstr "연락처 추가"
 
+msgid "Add group"
+msgstr "그룹 추가"
+
 msgid "Add member"
 msgstr "멤버 추가"
 
@@ -1686,6 +1689,9 @@ msgstr "기존 연락처를 읽을 수 없습니다. 다시 시도하세요."
 msgid "Couldn't read your local time. Check your device's clock and try again."
 msgstr "현지 시간을 확인할 수 없습니다. 기기의 시계를 확인하고 다시 시도하세요."
 
+msgid "Couldn't refresh automatic folders. Please try again."
+msgstr "자동 폴더를 새로 고치지 못했습니다. 다시 시도해 주세요."
+
 msgid "Couldn't remove the GIF. Please try again."
 msgstr "GIF를 제거할 수 없습니다. 다시 시도하세요."
 
@@ -2404,6 +2410,9 @@ msgstr "이벤트 ID"
 msgid "Everyone in the group sees the new name."
 msgstr "그룹의 모든 사람에게 새 이름이 표시됩니다."
 
+msgid "Exclude"
+msgstr "제외"
+
 msgid "Existing shortcodes are never replaced."
 msgstr "기존 단축 코드는 대체되지 않습니다."
 
@@ -2729,6 +2738,12 @@ msgstr "임시 저장 있음"
 msgid "Has member"
 msgstr "멤버 포함"
 
+msgid "Has pending sends"
+msgstr "전송 대기 중인 메시지 있음"
+
+msgid "Has unread mentions of you"
+msgstr "나를 멘션한 읽지 않은 메시지 있음"
+
 msgid "Has unread messages"
 msgstr "읽지 않은 메시지 있음"
 
@@ -2956,6 +2971,24 @@ msgstr "선택한 텍스트 반전"
 
 msgid "Invite"
 msgstr "초대"
+
+msgid "Is a direct chat"
+msgstr "개인 채팅"
+
+msgid "Is a group chat"
+msgstr "그룹 채팅"
+
+msgid "Is accepted"
+msgstr "수락한 채팅"
+
+msgid "Is archived"
+msgstr "보관한 채팅"
+
+msgid "Is muted"
+msgstr "알림 끈 채팅"
+
+msgid "Is pinned"
+msgstr "고정한 채팅"
 
 msgid "It disappears for everyone in the chat. This can't be undone."
 msgstr "채팅의 모든 사람에게서 사라집니다. 이 작업은 되돌릴 수 없습니다."
@@ -3413,6 +3446,9 @@ msgstr "다음보다 많음"
 msgid "More tools"
 msgstr "도구 더 보기"
 
+msgid "Most recent activity"
+msgstr "최근 활동순"
+
 msgid "Move earlier"
 msgstr "앞으로 이동"
 
@@ -3460,6 +3496,9 @@ msgstr "현재"
 
 msgid "Name"
 msgstr "이름"
+
+msgid "Name A to Z"
+msgstr "이름 오름차순"
 
 msgid "Name includes"
 msgstr "이름 포함"
@@ -4377,6 +4416,9 @@ msgstr "관리자 권한을 해제하시겠습니까?"
 msgid "Remove contact"
 msgstr "연락처 제거"
 
+msgid "Remove group"
+msgstr "그룹 제거"
+
 msgid "Remove option"
 msgstr "선택지 제거"
 
@@ -4529,6 +4571,9 @@ msgstr "거칠기"
 
 msgid "Rounded"
 msgstr "둥근 모서리"
+
+msgid "Rule group"
+msgstr "규칙 그룹"
 
 #, c-format
 msgid "Runtime failed: %s"
@@ -5058,6 +5103,9 @@ msgstr "판매됨"
 
 msgid "Some network results may be missing."
 msgstr "일부 네트워크 결과가 누락되었을 수 있습니다."
+
+msgid "Sort chats by"
+msgstr "채팅 정렬 기준"
 
 msgid "Sort chats by recent activity"
 msgstr "최근 활동순으로 채팅 정렬"
@@ -5695,6 +5743,9 @@ msgstr "고정 해제"
 
 msgid "Unread"
 msgstr "읽지 않음"
+
+msgid "Unread first"
+msgstr "읽지 않은 채팅 우선"
 
 msgid "Unsupported attachment format."
 msgstr "지원하지 않는 첨부 파일 형식입니다."

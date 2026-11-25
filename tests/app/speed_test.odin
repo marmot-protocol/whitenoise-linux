@@ -216,6 +216,7 @@ search_obsolete_filters :: proc(t: ^testing.T) {
 
 @(test)
 timeline_scope_changes :: proc(t: ^testing.T) {
+	if !test_isolated("timeline_scope_changes") {return}
 	// Worker results use the process allocator, as in the running app.
 	context.allocator = runtime.default_context().allocator
 	old := timeline_job
@@ -255,6 +256,7 @@ timeline_scope_changes :: proc(t: ^testing.T) {
 	testing.expect(t, ui.client_status != "")
 	testing.expect(t, !ui.timeline_loading)
 	delete(ui.client_status)
+	delete(ui.timeline_error)
 	timeline_stop()
 }
 
@@ -488,8 +490,8 @@ performance_sidebar :: proc(t: ^testing.T) {
 	ui.archived = ui.chats
 	for width in ([2]i32{1200, 400}) {
 		rl.SetWindowSize(width, 800)
-		nendo.set_dimensions({f32(width), 800})
 		for _ in 0 ..< 3 {
+			nendo.set_dimensions({f32(width), 800})
 			nendo.update_scroll(.Off, {}, 0)
 			build_layout(&ui, 0)
 		}
@@ -503,19 +505,57 @@ performance_sidebar :: proc(t: ^testing.T) {
 			nendo.update_scroll(.Off, {}, 0)
 			build_layout(&ui, 0)
 			mounted := 0
-			for _, i in ui.archived {
-				row := nendo.element(nendo.id("ArchivedRow", u32(i)))
+			for chat in ui.archived {
+				key := nendo.id(chat.group_id).id
+				row := nendo.element(nendo.id("ArchivedRow", key))
 				if !row.found {continue}
 				mounted += 1
-				testing.expect(t, nendo.element(nendo.id("ChatUnarch", u32(i))).found)
+				testing.expect(t, nendo.element(nendo.id("ChatUnarch", key)).found)
 			}
 			testing.expect(t, mounted > 0 && mounted < 30)
 		}
 		viewport := nendo.element(archive_id).rect
-		last := nendo.element(nendo.id("ArchivedRow", 999))
+		last := nendo.element(nendo.id("ArchivedRow", nendo.id(ui.archived[999].group_id).id))
 		testing.expect(t, last.found && last.rect.y >= viewport.y)
-		testing.expect(t, last.rect.y + last.rect.height <= viewport.y + viewport.height + 0.01)
+		testing.expectf(
+			t,
+			last.rect.y + last.rect.height <= viewport.y + viewport.height + 0.01,
+			"Archive width %d: last row %v must fit in %v",
+			width,
+			last.rect,
+			viewport,
+		)
 	}
+
+	// Restoring the only chat in one folder moves the next section as a unit.
+	ui.archived = make([dynamic]Chat_Row_Ui, 0, 2)
+	defer delete(ui.archived)
+	append(&ui.archived, ui.chats[0], ui.chats[500])
+	rl.SetWindowSize(1200, 800)
+	for _ in 0 ..< 2 {
+		nendo.set_dimensions({1200, 800})
+		build_layout(&ui, step)
+	}
+	first_header := nendo.element(nendo.id("ArchiveFolder", 0))
+	header_id = nendo.id("ArchiveFolder", 1)
+	row_id = nendo.id("ArchivedRow", nendo.id(ui.chats[500].group_id).id)
+	header, row = nendo.element(header_id), nendo.element(row_id)
+	testing.expect(t, first_header.found && header.found && row.found)
+	ordered_remove(&ui.archived, 0)
+	for _ in 0 ..< 2 {build_layout(&ui, step)}
+	moved = nendo.element(header_id).rect.y
+	testing.expectf(
+		t,
+		first_header.rect.y < moved && moved < header.rect.y,
+		"Folder should move from %v toward %v, but is at %v",
+		header.rect.y,
+		first_header.rect.y,
+		moved,
+	)
+	testing.expect_value(t, nendo.element(row_id).rect.y - moved, row.rect.y - header.rect.y)
+	build_layout(&ui, step)
+	testing.expect_value(t, nendo.element(header_id).rect.y, first_header.rect.y)
+
 	for msg in ui.messages {message_free(msg)}
 	delete(ui.messages)
 	wrap_clear()

@@ -495,6 +495,9 @@ msgstr "Aggiungi almeno due opzioni."
 msgid "Add contact"
 msgstr "Aggiungi contatto"
 
+msgid "Add group"
+msgstr "Aggiungi gruppo"
+
 msgid "Add member"
 msgstr "Aggiungi membro"
 
@@ -1777,6 +1780,9 @@ msgstr "Impossibile leggere i tuoi contatti esistenti. Riprova."
 msgid "Couldn't read your local time. Check your device's clock and try again."
 msgstr "Impossibile leggere la tua ora locale. Controlla l'orologio del dispositivo e riprova."
 
+msgid "Couldn't refresh automatic folders. Please try again."
+msgstr "Impossibile aggiornare le cartelle automatiche. Riprova."
+
 msgid "Couldn't remove the GIF. Please try again."
 msgstr "Impossibile rimuovere la GIF. Riprova."
 
@@ -2560,6 +2566,9 @@ msgstr "Tutti gli account in questa cassaforte. Solo su questo computer."
 msgid "Everyone in the group sees the new name."
 msgstr "Tutti nel gruppo vedono il nuovo nome."
 
+msgid "Exclude"
+msgstr "Escludi"
+
 msgid "Existing shortcodes are never replaced."
 msgstr "Gli shortcode esistenti non vengono mai sostituiti."
 
@@ -2903,6 +2912,12 @@ msgstr "Ha una bozza"
 msgid "Has member"
 msgstr "Ha il membro"
 
+msgid "Has pending sends"
+msgstr "Ha messaggi in attesa di invio"
+
+msgid "Has unread mentions of you"
+msgstr "Ha menzioni di te non lette"
+
 msgid "Has unread messages"
 msgstr "Ha messaggi non letti"
 
@@ -3139,6 +3154,24 @@ msgstr "Inverti testo selezionato"
 
 msgid "Invite"
 msgstr "Invita"
+
+msgid "Is a direct chat"
+msgstr "È una chat diretta"
+
+msgid "Is a group chat"
+msgstr "È una chat di gruppo"
+
+msgid "Is accepted"
+msgstr "È stata accettata"
+
+msgid "Is archived"
+msgstr "È archiviata"
+
+msgid "Is muted"
+msgstr "È silenziata"
+
+msgid "Is pinned"
+msgstr "È fissata in alto"
 
 msgid "Issue title"
 msgstr "Titolo della segnalazione"
@@ -3642,6 +3675,9 @@ msgstr "Più di"
 msgid "More tools"
 msgstr "Altri strumenti"
 
+msgid "Most recent activity"
+msgstr "Attività più recente"
+
 msgid "Move earlier"
 msgstr "Sposta prima"
 
@@ -3692,6 +3728,9 @@ msgstr "ORA"
 
 msgid "Name"
 msgstr "Nome"
+
+msgid "Name A to Z"
+msgstr "Nome dalla A alla Z"
 
 msgid "Name includes"
 msgstr "Il nome contiene"
@@ -4660,6 +4699,9 @@ msgstr "Rimuovere i diritti di admin?"
 msgid "Remove contact"
 msgstr "Rimuovi contatto"
 
+msgid "Remove group"
+msgstr "Rimuovi gruppo"
+
 msgid "Remove option"
 msgstr "Rimuovi opzione"
 
@@ -4834,6 +4876,9 @@ msgstr "Rugosità"
 
 msgid "Rounded"
 msgstr "Arrotondato"
+
+msgid "Rule group"
+msgstr "Gruppo di regole"
 
 #, c-format
 msgid "Runtime failed: %s"
@@ -5411,6 +5456,9 @@ msgstr "Venduto"
 
 msgid "Some network results may be missing."
 msgstr "Alcuni risultati della rete potrebbero mancare."
+
+msgid "Sort chats by"
+msgstr "Ordina chat per"
 
 msgid "Sort chats by recent activity"
 msgstr "Ordina le chat per attività recente"
@@ -6082,6 +6130,9 @@ msgstr "Rimuovi dai fissati"
 
 msgid "Unread"
 msgstr "Non lette"
+
+msgid "Unread first"
+msgstr "Prima le non lette"
 
 msgid "Unresolved"
 msgstr "Aperta"

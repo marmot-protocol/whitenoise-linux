@@ -495,6 +495,9 @@ msgstr "選択肢を2つ以上追加してください。"
 msgid "Add contact"
 msgstr "連絡先を追加"
 
+msgid "Add group"
+msgstr "グループを追加"
+
 msgid "Add member"
 msgstr "メンバーを追加"
 
@@ -1777,6 +1780,9 @@ msgstr "既存の連絡先を読み取れませんでした。もう一度お試
 msgid "Couldn't read your local time. Check your device's clock and try again."
 msgstr "現地時刻を取得できませんでした。端末の時計を確認してから、もう一度お試しください。"
 
+msgid "Couldn't refresh automatic folders. Please try again."
+msgstr "自動フォルダーを更新できませんでした。もう一度お試しください。"
+
 msgid "Couldn't remove the GIF. Please try again."
 msgstr "GIFを削除できませんでした。もう一度お試しください。"
 
@@ -2560,6 +2566,9 @@ msgstr "この保管庫のすべてのアカウントが対象です。このコ
 msgid "Everyone in the group sees the new name."
 msgstr "新しい名前はグループの全員に表示されます。"
 
+msgid "Exclude"
+msgstr "除外"
+
 msgid "Existing shortcodes are never replaced."
 msgstr "既存のショートコードは置き換えません。"
 
@@ -2903,6 +2912,12 @@ msgstr "下書きがある"
 msgid "Has member"
 msgstr "メンバーを含む"
 
+msgid "Has pending sends"
+msgstr "送信待ちのメッセージあり"
+
+msgid "Has unread mentions of you"
+msgstr "あなたへの未読メンションあり"
+
 msgid "Has unread messages"
 msgstr "未読メッセージがある"
 
@@ -3139,6 +3154,24 @@ msgstr "選択テキストを反転"
 
 msgid "Invite"
 msgstr "招待"
+
+msgid "Is a direct chat"
+msgstr "ダイレクトチャット"
+
+msgid "Is a group chat"
+msgstr "グループチャット"
+
+msgid "Is accepted"
+msgstr "承認済み"
+
+msgid "Is archived"
+msgstr "アーカイブ済み"
+
+msgid "Is muted"
+msgstr "ミュート中"
+
+msgid "Is pinned"
+msgstr "ピン留め済み"
 
 msgid "Issue title"
 msgstr "報告のタイトル"
@@ -3642,6 +3675,9 @@ msgstr "人数が次より多い"
 msgid "More tools"
 msgstr "その他のツール"
 
+msgid "Most recent activity"
+msgstr "最近のアクティビティ順"
+
 msgid "Move earlier"
 msgstr "前へ移動"
 
@@ -3692,6 +3728,9 @@ msgstr "現在"
 
 msgid "Name"
 msgstr "名前"
+
+msgid "Name A to Z"
+msgstr "名前順"
 
 msgid "Name includes"
 msgstr "名前に含む"
@@ -4660,6 +4699,9 @@ msgstr "管理者権限を外しますか？"
 msgid "Remove contact"
 msgstr "連絡先を削除"
 
+msgid "Remove group"
+msgstr "グループを削除"
+
 msgid "Remove option"
 msgstr "選択肢を削除"
 
@@ -4834,6 +4876,9 @@ msgstr "ラフネス"
 
 msgid "Rounded"
 msgstr "角丸"
+
+msgid "Rule group"
+msgstr "ルールグループ"
 
 #, c-format
 msgid "Runtime failed: %s"
@@ -5411,6 +5456,9 @@ msgstr "売却済み"
 
 msgid "Some network results may be missing."
 msgstr "ネットワークの結果の一部が表示されていない可能性があります。"
+
+msgid "Sort chats by"
+msgstr "チャットの並べ替え"
 
 msgid "Sort chats by recent activity"
 msgstr "最近のアクティビティ順にチャットを並べ替え"
@@ -6082,6 +6130,9 @@ msgstr "ピン留めを解除"
 
 msgid "Unread"
 msgstr "未読"
+
+msgid "Unread first"
+msgstr "未読を先に表示"
 
 msgid "Unresolved"
 msgstr "未解決"

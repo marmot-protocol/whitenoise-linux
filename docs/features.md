@@ -240,7 +240,7 @@ Folder rules file chats automatically. A chat goes to the first folder, in folde
   <img alt="How folder rules file one chat. The chat, Marmot meetup, has 6 people including you, unread messages and no draft. A chat moved by hand stays in that folder and skips the rules; Follow folder rules in the move dialog hands it back. Otherwise the folders are checked in order. Folder 1, Work, matches all of its rules: name includes standup fails and fewer than 10 people holds, so Work does not match. Folder 2, Busy, matches any one rule: more than 5 people holds and has a draft fails, so the chat files under Busy. Folder 3, Friends, comes later in order and is not checked. Unfiled takes a chat when no folder matches." src="../assets/docs/features-rules-light.svg" width="880">
 </picture>
 
-Each folder matches all of its rules or any one of them.
+Each folder and nested rule group can match all of its children or any one of them. **Exclude** reverses a rule or group's result inside its parent. For example, use **Match all rules** for unread messages and **Exclude** a draft, then add a **Match any rule** group for the titles Studio and Workshop. Empty rule groups are not saved.
 
 | Rule | Matches a chat that |
 | --- | --- |
@@ -249,6 +249,15 @@ Each folder matches all of its rules or any one of them.
 | Fewer than, More than | Has fewer or more than N people, you included |
 | Has unread messages | Has unread messages |
 | Has a draft | Has unsent composer text saved |
+| Has unread mentions of you | Has an unread message that directly mentions your account |
+| Has pending sends | Has a message queued, sending, or waiting to retry |
+| Is a direct chat, Is a group chat | Has the selected conversation type |
+| Is accepted | Was started or accepted by you |
+| Is muted | Is currently muted |
+| Is pinned | Is pinned in your chat list |
+| Is archived | Is in Archive |
+
+Archived chats use the same folder placement in Archive and stay out of Chats.
 
 - **Hand placement wins over rules.** Choosing "Follow folder rules" in the move dialog hands the chat back to the rules.
 - **Deleting a folder asks first.** This applies from both Settings and its context menu; only the folder is removed and its chats stay in your chat list.
@@ -258,7 +267,8 @@ Each folder matches all of its rules or any one of them.
 <summary><b>Checked boxes, sidebar modes and when member lists are read</b></summary>
 
 - In **Settings > Chats > Folders**, chats placed by hand show a checked box. Clearing it hands the chat back to the rules.
-- In Recent mode, every folder appears beside Chats, Unread, and Groups as a filter, keeping recent activity order within the selected folder.
+- **Sort chats by** sets the order inside each folder: most recent activity, name A to Z, or unread first. Pins keep their existing order at the top. Equal titles and chats with the same unread state stay in recent-activity order.
+- In Recent mode, every folder appears beside Chats, Unread, and Groups as a filter. The full Chats list still uses recent activity.
 - In Grouped mode, empty folders stay out of the chat list sidebar.
 - Member rules read each group's member list on every chat-list refresh, and only while such a rule exists.
 

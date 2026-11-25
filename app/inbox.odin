@@ -2,11 +2,20 @@ package main
 
 import marmot "../marmot"
 import "core:slice"
+import "core:unicode"
+import "core:unicode/utf8"
 import "nendo"
 import rl "sdlrl"
 
 @(private)
 INBOX_GAP :: u16(2)
+
+@(private)
+Folder_Sort :: enum {
+	Recent,
+	Name,
+	Unread,
+}
 
 @(private)
 Inbox_Row :: struct {
@@ -18,10 +27,11 @@ Inbox_Row :: struct {
 }
 
 @(private)
-inbox_rows :: proc(ui: ^Ui_State, chats: []int) -> []Inbox_Row {
+inbox_rows :: proc(ui: ^Ui_State, chats: []int, source: []Chat_Row_Ui = nil) -> []Inbox_Row {
+	chat_source := source != nil ? source : ui.chats[:]
 	rows := make([]Inbox_Row, len(chats), context.temp_allocator)
 	for index, at in chats {
-		chat := &ui.chats[index]
+		chat := &chat_source[index]
 		rows[at] = {
 			index       = index,
 			key         = chat.group_id,
@@ -30,12 +40,32 @@ inbox_rows :: proc(ui: ^Ui_State, chats: []int) -> []Inbox_Row {
 			unread      = chat.unread > 0 || ui.prefs.unread_ids[chat.group_id],
 		}
 	}
-	slice.sort_by(rows, proc(a, b: Inbox_Row) -> bool {
-		if a.pinned != b.pinned {return a.pinned}
-		if a.activity_at != b.activity_at {return a.activity_at > b.activity_at}
-		return a.index < b.index
-	})
+	slice.sort_by_cmp(rows, inbox_recent_compare)
 	return rows
+}
+
+@(private = "file")
+inbox_recent_compare :: proc(a, b: Inbox_Row) -> slice.Ordering {
+	if a.pinned != b.pinned {return a.pinned ? .Less : .Greater}
+	if a.activity_at != b.activity_at {return a.activity_at > b.activity_at ? .Less : .Greater}
+	if a.index != b.index {return a.index < b.index ? .Less : .Greater}
+	return .Equal
+}
+
+@(private = "file")
+inbox_title_compare :: proc(a, b: string) -> slice.Ordering {
+	a, b := a, b
+	for len(a) > 0 && len(b) > 0 {
+		x, x_len := utf8.decode_rune(a)
+		y, y_len := utf8.decode_rune(b)
+		if x != y {
+			x, y = unicode.to_lower(x), unicode.to_lower(y)
+			if x != y {return x < y ? .Less : .Greater}
+		}
+		a, b = a[x_len:], b[y_len:]
+	}
+	if len(a) == len(b) {return .Equal}
+	return len(a) < len(b) ? .Less : .Greater
 }
 
 @(private)
@@ -45,23 +75,23 @@ inbox_all :: proc(ui: ^Ui_State) -> []Inbox_Row {
 	return inbox_rows(ui, chats[:])
 }
 
-// Stable partition keeps recent/pinned order inside every folder.
 @(private)
 inbox_sections :: proc(
 	ui: ^Ui_State,
 	rows: []Inbox_Row,
 	allocator := context.temp_allocator,
+	source: []Chat_Row_Ui = nil,
 ) -> (
 	[]Folder_Section,
 	[]Inbox_Row,
 ) {
+	chat_source := source != nil ? source : ui.chats[:]
 	sections := make([]Folder_Section, len(ui.prefs.folders) + 1, allocator)
 	grouped := make([]Inbox_Row, len(rows), allocator)
-	slots := make(map[string]int, len(ui.prefs.folders), context.temp_allocator)
-	for name, index in ui.prefs.folders {slots[name] = index}
+	lookup := folder_lookup(ui)
 	row_slots := make([]int, len(rows), context.temp_allocator)
 	for row, index in rows {
-		slot := chat_folder_slot(ui, &ui.chats[row.index], slots)
+		slot := chat_folder_slot(ui, &chat_source[row.index], lookup)
 		row_slots[index] = slot
 		sections[slot].count += 1
 		if row.unread {sections[slot].unread += 1}
@@ -72,6 +102,31 @@ inbox_sections :: proc(
 		section := &sections[row_slots[index]]
 		grouped[section.start + section.count] = row
 		section.count += 1
+	}
+	if len(ui.prefs.folder_sorts) > 0 {
+		for name, index in ui.prefs.folders {
+			section := sections[index]
+			if section.count < 2 {continue}
+			members := grouped[section.start:section.start + section.count]
+			for len(members) > 0 && members[0].pinned {members = members[1:]}
+			#partial switch ui.prefs.folder_sorts[name] {
+			case .Name:
+				slice.sort_by_cmp_with_data(
+					members,
+					proc(a, b: Inbox_Row, data: rawptr) -> slice.Ordering {
+						chats := (^[]Chat_Row_Ui)(data)^
+						order := inbox_title_compare(chats[a.index].title, chats[b.index].title)
+						return order != .Equal ? order : inbox_recent_compare(a, b)
+					},
+					&chat_source,
+				)
+			case .Unread:
+				slice.sort_by_cmp(members, proc(a, b: Inbox_Row) -> slice.Ordering {
+					if a.unread != b.unread {return a.unread ? .Less : .Greater}
+					return inbox_recent_compare(a, b)
+				})
+			}
+		}
 	}
 	return sections, grouped
 }

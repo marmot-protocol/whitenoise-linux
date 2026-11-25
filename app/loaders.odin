@@ -707,6 +707,8 @@ load_archived :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	job.chat_list.client = client
 	job.chat_list.account = strings.clone_to_cstring(ui.account_ref)
 	job.chat_list.include_archived = true
+	chat_list_revision += 1
+	job.chat_list.revision = chat_list_revision
 	chat_list_snapshot(&job.chat_list, ui)
 	account_job_start(job)
 }

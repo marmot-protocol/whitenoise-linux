@@ -12,6 +12,8 @@ import "nendo"
 
 @(test)
 live_refresh_does_not_wait :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	gate: sync.Sema
 	job := new(Chat_List_Work)

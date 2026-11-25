@@ -2124,6 +2124,8 @@ foreign lib {
 	presented_chat_list :: proc(client: ^Client, account_ref: cstring, include_archived: bool, out: ^^Presented_Chat_List) -> Status ---
 	@(link_name = "marmot_presented_chat_list_snapshot_free")
 	presented_chat_list_free :: proc(list: ^Presented_Chat_List) ---
+	folder_unread_mentions :: proc(client: ^Client, account_ref: cstring, out: ^^String_List) -> Status ---
+	folder_pending_sends :: proc(client: ^Client, account_ref: cstring, out: ^^String_List) -> Status ---
 
 	// Empty inbox_relays declares default_relays as the kind-10050 list too.
 	create_identity :: proc(client: ^Client, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, inbox_relays: [^]cstring, inbox_relays_len: uint, out: ^^Account_Summary) -> Status ---

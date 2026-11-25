@@ -4,6 +4,68 @@ import marmot "../marmot"
 import "core:fmt"
 import "core:strings"
 import "nendo"
+import rl "sdlrl"
+
+@(private)
+archived_apply :: proc(ui: ^Ui_State, job: ^Chat_List_Work) {
+	rows := job.rows
+	if rows == nil {return}
+	chat_members_free(&ui.archive_members)
+	previous := chat_facts_previous(ui.archived[:], job.failed_facts)
+	fresh: [dynamic]Chat_Row_Ui
+	for i in 0 ..< rows.rows_len {
+		row := &rows.rows[i]
+		if !row.row.archived {continue}
+		chat := chat_work_row_to_ui(job, row, previous)
+		if members, known := job.members[chat.group_id]; known {
+			key, _ := delete_key(&job.members, chat.group_id)
+			ui.archive_members[key] = members
+		}
+		append(&fresh, chat)
+	}
+	chats_replace(&ui.archived, fresh, fence_reads = true)
+}
+
+@(private)
+Archive_Action :: enum {
+	None,
+	Open,
+	Restore,
+}
+
+@(private)
+Archive_Press :: struct {
+	group_id: string,
+	action:   Archive_Action,
+	frame:    u32,
+}
+
+@(private)
+archive_press_clear :: proc(ui: ^Ui_State) {
+	delete(ui.archive_press.group_id)
+	ui.archive_press = {}
+}
+
+@(private)
+archive_pointer_position :: proc(page: Page, pointer: nendo.Vector2) -> nendo.Vector2 {
+	if page == .Archived {
+		if point, ok := rl.GetCoalescedLeftClick(); ok {
+			return transmute(nendo.Vector2)point / UI_ZOOM
+		}
+	}
+	return pointer / UI_ZOOM
+}
+
+@(private)
+archive_action_at_pointer :: proc(ui: ^Ui_State) -> (action: Archive_Action, index: int) {
+	// Pointer hits use the displayed layout, not the latest array indices.
+	for chat, i in ui.archived {
+		key := nendo.id(chat.group_id).id
+		if nendo.pointer_over(nendo.id("ChatUnarch", key)) {return .Restore, i}
+		if nendo.pointer_over(nendo.id("ArchivedRow", key)) {return .Open, i}
+	}
+	return .None, -1
+}
 
 @(private = "file")
 ARCHIVED_ROW_H :: f32(84)
@@ -25,7 +87,8 @@ select_archived_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) 
 
 @(private)
 archived_row :: proc(index: u32, chat: Chat_Row_Ui) {
-	if nendo.box(nendo.id("ArchivedRow", index))(
+	key := nendo.id(chat.group_id).id
+	if nendo.box(nendo.id("ArchivedRow", key))(
 	{
 		width = nendo.grow(),
 		height = nendo.fixed(ARCHIVED_ROW_H),
@@ -85,7 +148,7 @@ archived_row :: proc(index: u32, chat: Chat_Row_Ui) {
 				}
 			}
 		}
-		if nendo.box(nendo.id("ChatUnarch", index))(
+		if nendo.box(nendo.id("ChatUnarch", key))(
 		{
 			height = nendo.fixed(tap_size() ? tap_min() : 40),
 			padding = {left = 12, right = 12},
@@ -96,6 +159,87 @@ archived_row :: proc(index: u32, chat: Chat_Row_Ui) {
 		},
 		) {
 			nendo.text(tr("Restore"), {font = FONT_TITLE, size = 13, color = ACCENT, wrap = .None})
+		}
+	}
+}
+
+@(private = "file")
+ARCHIVE_GAP :: u16(8)
+
+@(private = "file")
+archive_window :: proc(ui: ^Ui_State, id: nendo.Id, rows: []$T) {
+	window := nendo.virtual_rows(id, len(rows), ARCHIVED_ROW_H, gap = ARCHIVE_GAP)
+	for row in rows[window.first:window.end] {
+		index: int
+		when T == int {index = row} else {index = row.index}
+		chat := ui.archived[index]
+		// Key by chat so restoring one slides the rows below it into place.
+		if nendo.box(nendo.id("ChatRowMove", nendo.id(chat.group_id).id))(
+		{width = nendo.grow(), height = nendo.fixed(ARCHIVED_ROW_H), transition = layout_motion()},
+		) {
+			chat_row(u32(index), chat, false, .Unarchive)
+		}
+	}
+}
+
+@(private = "file")
+archive_rows :: proc(ui: ^Ui_State, order: []int) {
+	if len(ui.prefs.folders) == 0 {
+		archive_window(ui, nendo.id("ArchivedRows"), order)
+		return
+	}
+	rows := inbox_rows(ui, order, ui.archived[:])
+	sections, grouped := inbox_sections(ui, rows, source = ui.archived[:])
+	header_height :: f32(28)
+	stride := ARCHIVED_ROW_H + f32(ARCHIVE_GAP)
+	visible := make([]int, len(sections), context.temp_allocator)
+	offsets := make([]f32, len(sections) + 1, context.temp_allocator)
+	count := 0
+	for section, i in sections {
+		if section.count == 0 {continue}
+		visible[count] = i
+		offsets[count + 1] = offsets[count] + header_height + f32(section.count) * stride
+		count += 1
+	}
+	window := nendo.virtual_rows(
+		nendo.id("ArchivedRows"),
+		offsets[:count + 1],
+		gap = ARCHIVE_GAP,
+		overscan = stride,
+	)
+	for pos in window.first ..< window.end {
+		i := visible[pos]
+		section := sections[i]
+		id := u32(i)
+		name := i < len(ui.prefs.folders) ? ui.prefs.folders[i] : ""
+		if nendo.box(nendo.id("ArchiveSection", id))(
+		{
+			width = nendo.grow(),
+			height = nendo.fixed(offsets[pos + 1] - offsets[pos]),
+			direction = .Column,
+			gap = ARCHIVE_GAP,
+			transition = layout_motion(),
+		},
+		) {
+			if nendo.box(nendo.id("ArchiveFolder", id))(
+			{
+				width = nendo.grow(),
+				height = nendo.fixed(header_height),
+				gap = 8,
+				align = {y = .Center},
+			},
+			) {
+				folder_icon(ui, name, 16)
+				nendo.text(
+					name == "" ? tr("Unfiled") : name,
+					{font = FONT_TITLE, size = 14, color = TEXT},
+				)
+			}
+			archive_window(
+				ui,
+				nendo.id("ArchiveFolderRows", id),
+				grouped[section.start:section.start + section.count],
+			)
 		}
 	}
 }
@@ -199,25 +343,7 @@ archived_pane :: proc(ui: ^Ui_State) {
 		},
 		) {
 			if count > 0 {
-				rows := nendo.virtual_rows(
-					nendo.id("ArchivedRows"),
-					count,
-					ARCHIVED_ROW_H,
-					gap = 8,
-				)
-				for i in order[rows.first:rows.end] {
-					chat := ui.archived[i]
-					// Key by chat so restoring one slides the rows below it into place.
-					if nendo.box(nendo.id("ChatRowMove", nendo.id(chat.group_id).id))(
-					{
-						width = nendo.grow(),
-						height = nendo.fixed(ARCHIVED_ROW_H),
-						transition = layout_motion(),
-					},
-					) {
-						chat_row(u32(i), chat, false, .Unarchive)
-					}
-				}
+				archive_rows(ui, order[:count])
 			} else if len(filter) > 0 {
 				chat_rail_hint(
 					"ArchiveNoMatch",

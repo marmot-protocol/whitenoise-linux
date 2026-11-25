@@ -1,0 +1,259 @@
+diff --git a/crates/storage-sqlite/src/app/chat_list.rs b/crates/storage-sqlite/src/app/chat_list.rs
+--- a/crates/storage-sqlite/src/app/chat_list.rs
++++ b/crates/storage-sqlite/src/app/chat_list.rs
+@@ -515,7 +515,75 @@
+         chat_list_rows_tx(&conn, query)
+     }
+ 
++    // Require a candidate-only scan even if most unread messages are mentions.
++    const FOLDER_UNREAD_MENTIONS_SQL: &str = "SELECT unread.group_id_hex, timeline.tags_json
++         FROM chat_list_unread_messages AS unread
++             INDEXED BY idx_wn_folder_unread_mention_candidates
++         CROSS JOIN message_timeline AS timeline
++         WHERE unread.mentions_local = 1
++           AND timeline.group_id_hex = unread.group_id_hex
++           AND timeline.message_id_hex = unread.message_id_hex";
++
++    /// Chats with an unread message whose original tags match the supplied predicate.
++    /// The unread membership projection already accounts for read order, imports,
++    /// deleted messages, blocked senders, and the receiving account.
++    pub fn folder_unread_mentions(
++        &self,
++        has_typed_mention: &MentionClassifier<'_>,
++    ) -> StorageResult<Vec<String>> {
++        let conn = self.lock()?;
++        // Install on first use so existing account databases get the index too.
++        conn.prepare_cached(
++            "CREATE INDEX IF NOT EXISTS idx_wn_folder_unread_mention_candidates
++             ON chat_list_unread_messages (group_id_hex, message_id_hex)
++             WHERE mentions_local = 1",
++        )
++        .storage()?
++        .execute([])
++        .storage()?;
++        let mut stmt = conn
++            .prepare_cached(Self::FOLDER_UNREAD_MENTIONS_SQL)
++            .storage()?;
++        let mut rows = stmt.query([]).storage()?;
++        let mut groups = HashSet::new();
++        while let Some(row) = rows.next().storage()? {
++            let group: String = row.get(0).storage()?;
++            if groups.contains(&group) {
++                continue;
++            }
++            let tags = crate::tags_from_json(row.get(1).storage()?).unwrap_or_default();
++            if has_typed_mention("", &tags) {
++                groups.insert(group);
++            }
++        }
++        Ok(groups.into_iter().collect())
++    }
++
++    /// Chats with queued submissions or messages still awaiting delivery.
++    /// An older pending send can be absent from the latest-message preview.
++    pub fn folder_pending_sends(&self) -> StorageResult<Vec<String>> {
++        let conn = self.lock()?;
++        let activity = chat_list_activity_filter_sql("timeline.");
++        let mut stmt = conn.prepare_cached(&format!(
++            "SELECT group_id_hex FROM local_message_submissions WHERE state = 0
++             UNION
++             SELECT event.group_id_hex
++             FROM app_events AS event
++             CROSS JOIN message_timeline AS timeline
++             WHERE event.direction = 'sent'
++               AND event.source_message_id_hex IS NULL AND event.invalidated = 0
++               AND timeline.group_id_hex = event.group_id_hex
++               AND timeline.message_id_hex = event.message_id_hex
++               AND timeline.invalidation_status IS NULL AND timeline.deleted = 0
++               AND timeline.recipient_confirmed = 0 AND {activity}"
++        )).storage()?;
++        stmt.query_map([], |row| row.get(0))
++            .storage()?
++            .collect::<Result<Vec<_>, _>>()
++            .storage()
++    }
++
+     pub fn chat_list_row(&self, group_id_hex: &str) -> StorageResult<Option<ChatListRow>> {
+         let conn = self.lock()?;
+         chat_list_row_tx(&conn, group_id_hex)
+     }
+diff --git a/crates/marmot-app/src/lib.rs b/crates/marmot-app/src/lib.rs
+--- a/crates/marmot-app/src/lib.rs
++++ b/crates/marmot-app/src/lib.rs
+@@ -3939,6 +3939,28 @@
+         self.hydrate_chat_list_rows(&mut rows)?;
+         Ok(rows)
+     }
+ 
++    pub(crate) fn folder_unread_mentions(&self, label: &str) -> Result<Vec<String>, AppError> {
++        let account = self.account_home().account(label)?;
++        self.ensure_account_state(&account.label)?;
++        self.ensure_chat_list_projection(&account)?;
++        let matches = |_: &str, tags: &[Vec<String>]| {
++            tags.iter().any(|tag| {
++                tag.first().is_some_and(|name| name == crate::messages::PUBKEY_REF_TAG)
++                    && tag.get(1).is_some_and(|value| {
++                        value.eq_ignore_ascii_case(&account.account_id_hex)
++                            || crate::messages::mention_pubkey_hex(value)
++                                .is_some_and(|value| value.eq_ignore_ascii_case(&account.account_id_hex))
++                    })
++            })
++        };
++        Ok(self.account_storage(&account.label)?.app_storage().folder_unread_mentions(&matches)?)
++    }
++
++    pub(crate) fn folder_pending_sends(&self, label: &str) -> Result<Vec<String>, AppError> {
++        self.ensure_account_state(label)?;
++        Ok(self.account_storage(label)?.app_storage().folder_pending_sends()?)
++    }
++
+     pub fn chat_list_row(
+         &self,
+diff --git a/crates/marmot-app/src/runtime/mod.rs b/crates/marmot-app/src/runtime/mod.rs
+--- a/crates/marmot-app/src/runtime/mod.rs
++++ b/crates/marmot-app/src/runtime/mod.rs
+@@ -6204,4 +6204,14 @@
+             .chat_list(&account.label, include_archived)
+     }
+ 
++    pub fn folder_unread_mentions(&self, account_ref: &str) -> Result<Vec<String>, AppError> {
++        let account = self.accounts.resolve(account_ref)?;
++        self.accounts.app.folder_unread_mentions(&account.label)
++    }
++
++    pub fn folder_pending_sends(&self, account_ref: &str) -> Result<Vec<String>, AppError> {
++        let account = self.accounts.resolve(account_ref)?;
++        self.accounts.app.folder_pending_sends(&account.label)
++    }
++
+     /// Read the durable chat-list projection row for a single group (unread
+diff --git a/crates/marmot-uniffi/src/commands/chat_list.rs b/crates/marmot-uniffi/src/commands/chat_list.rs
+--- a/crates/marmot-uniffi/src/commands/chat_list.rs
++++ b/crates/marmot-uniffi/src/commands/chat_list.rs
+@@ -10,4 +10,14 @@
+ use crate::{Marmot, optional_message_id_hex};
+ 
++impl Marmot {
++    pub fn folder_unread_mentions(&self, account_ref: String) -> Result<Vec<String>, MarmotKitError> {
++        Ok(self.runtime.folder_unread_mentions(&account_ref)?)
++    }
++
++    pub fn folder_pending_sends(&self, account_ref: String) -> Result<Vec<String>, MarmotKitError> {
++        Ok(self.runtime.folder_pending_sends(&account_ref)?)
++    }
++}
++
+ #[uniffi::export]
+ impl Marmot {
+diff --git a/crates/marmot-c/src/commands.rs b/crates/marmot-c/src/commands.rs
+--- a/crates/marmot-c/src/commands.rs
++++ b/crates/marmot-c/src/commands.rs
+@@ -1252,3 +1252,7 @@
+     sync fn marmot_chat_list(account_ref: str, include_archived: flag) -> rec(MarmotChatListRowList) = chat_list;
++    /// Group IDs with unread typed mentions of the account. Free with marmot_string_list_free.
++    sync fn marmot_folder_unread_mentions(account_ref: str) -> rec(MarmotStringList) = folder_unread_mentions;
++    /// Group IDs with outstanding sends. Free with marmot_string_list_free.
++    sync fn marmot_folder_pending_sends(account_ref: str) -> rec(MarmotStringList) = folder_pending_sends;
+     /// Complete local rows with selected title/avatar. Free with marmot_presented_chat_list_snapshot_free.
+     async fn marmot_presented_chat_list(account_ref: str, include_archived: flag) -> rec(MarmotPresentedChatListSnapshot) = presented_chat_list;
+diff --git a/crates/storage-sqlite/src/app/chat_list/tests.rs b/crates/storage-sqlite/src/app/chat_list/tests.rs
+--- a/crates/storage-sqlite/src/app/chat_list/tests.rs
++++ b/crates/storage-sqlite/src/app/chat_list/tests.rs
+@@ -3037,4 +3037,97 @@
++#[test]
++fn folder_mentions_skip_non_candidate_unread_history() {
++    let store = setup_store();
++    let app = store.app_storage();
++    app.initialize_chat_read_state(LOCAL, GROUP, &mentions_local)
++        .unwrap();
++
++    let read_steps = || {
++        let conn = store.lock().unwrap();
++        let mut stmt = conn
++            .prepare(SqliteAppStorage::FOLDER_UNREAD_MENTIONS_SQL)
++            .unwrap();
++        let mut rows = stmt.query([]).unwrap();
++        assert!(rows.next().unwrap().is_none());
++        drop(rows);
++        stmt.get_status(rusqlite::StatementStatus::VmStep)
++    };
++
++    let add_ordinary = |range: std::ops::Range<u64>| {
++        let count = range.end;
++        for n in range {
++            app.record_app_event(&chat(&format!("ordinary-{n}"), REMOTE, n + 1, "hello"))
++                .unwrap();
++        }
++        let row = app
++            .refresh_chat_list_row(LOCAL, GROUP, &mentions_local)
++            .unwrap()
++            .unwrap();
++        assert_eq!(row.unread_count, count);
++        assert_eq!(row.unread_mention_count, 0);
++        assert!(app.folder_unread_mentions(&mentions_local).unwrap().is_empty());
++    };
++
++    add_ordinary(0..1);
++    let baseline = read_steps();
++    add_ordinary(1..128);
++    assert_eq!(read_steps(), baseline);
++}
++
++#[test]
++fn folder_mentions_use_original_typed_tags_and_unread_membership() {
++    let store = setup_store().app_storage();
++    let typed = |_: &str, tags: &[Vec<String>]| {
++        tags.iter().any(|tag| {
++            tag.first().map(String::as_str) == Some("p")
++                && tag.get(1).map(String::as_str) == Some(LOCAL)
++        })
++    };
++    let tags = |key: &str| vec![vec!["p".to_owned(), key.to_owned()]];
++    store.initialize_chat_read_state(LOCAL, GROUP, &mentions_local).unwrap();
++    for event in [
++        chat("plain", REMOTE, 10, LOCAL),
++        chat_with_tags("other", REMOTE, 20, "other recipient", tags(REMOTE)),
++        chat_with_tags("own", LOCAL, 30, "self send", tags(LOCAL)),
++    ] {
++        store.record_app_event(&event).unwrap();
++    }
++    let row = store.refresh_chat_list_row(LOCAL, GROUP, &mentions_local).unwrap().unwrap();
++    assert_eq!(row.unread_mention_count, 1);
++    assert!(store.folder_unread_mentions(&typed).unwrap().is_empty());
++
++    store.record_app_event(&chat_with_tags("typed", REMOTE, 40, "hello", tags(LOCAL))).unwrap();
++    store.record_app_event(&chat("newer", REMOTE, 50, LOCAL)).unwrap();
++    store.refresh_chat_list_row(LOCAL, GROUP, &mentions_local).unwrap();
++    assert_eq!(store.folder_unread_mentions(&typed).unwrap(), vec![GROUP.to_owned()]);
++    let row = store.mark_timeline_message_read(LOCAL, GROUP, "typed", &mentions_local).unwrap().unwrap();
++    assert_eq!(row.unread_mention_count, 1);
++    assert!(store.folder_unread_mentions(&typed).unwrap().is_empty());
++}
++
++#[test]
++fn folder_pending_sends_ignore_newer_previews_and_settled_sends() {
++    let store = setup_store().app_storage();
++    let mut pending = chat("pending", LOCAL, 10, "optimistic send");
++    pending.source_message_id_hex = None;
++    store.record_app_event(&pending).unwrap();
++    store.record_app_event(&chat("newer", REMOTE, 20, "incoming")).unwrap();
++    let row = store.refresh_chat_list_row(LOCAL, GROUP, &no_mentions).unwrap().unwrap();
++    assert_eq!(row.last_message.unwrap().message_id_hex, "newer");
++    assert_eq!(store.folder_pending_sends().unwrap(), vec![GROUP.to_owned()]);
++
++    store.invalidate_app_event_by_message_id(GROUP, "pending", "local_publish_failed").unwrap();
++    assert!(store.folder_pending_sends().unwrap().is_empty());
++
++    let mut retry = chat("retry", LOCAL, 30, "retry");
++    retry.source_message_id_hex = None;
++    store.record_app_event(&retry).unwrap();
++    assert_eq!(store.folder_pending_sends().unwrap(), vec![GROUP.to_owned()]);
++    retry.source_message_id_hex = Some("source-retry".to_owned());
++    store.record_app_event(&retry).unwrap();
++    assert!(store.folder_pending_sends().unwrap().is_empty());
++}
++
+ /// A thread message moves the chat like kind 9: preview, activity order,
+ /// unread and mention counts. A kind-1111 event without a parent does not.
+ #[test]
+ fn thread_messages_are_chat_activity() {

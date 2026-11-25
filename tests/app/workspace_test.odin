@@ -127,7 +127,16 @@ workspace_load_boundaries :: proc(t: ^testing.T) {
 		testing.expect_value(t, saved.prefs.crop_avatar_shape, seed.saved)
 		testing.expect_value(t, saved.prefs.zoom_pct, 125)
 	}
-	data := `{"prefs":{"zoom_pct":125,"page":1,"settings_section":4,"window_w":1130,"window_h":820,"reduce_motion":true,"folders":["Valid","Retired","Future","Negative"],"folder_of":{"chat":"Retired"},"pinned":{"chat":true},"folder_rules":{"Valid":{"match":0,"rules":[{"kind":0,"value":"work"}]},"Retired":{"match":0,"rules":[{"kind":0,"value":"work"},{"kind":6}]},"Future":{"match":1,"rules":[{"kind":999}]},"Negative":{"match":0,"rules":[{"kind":-1}]}},"unknown_setting":{"nested":[1,2,3]}}}`
+	data := `{"prefs":{"zoom_pct":125,"page":1,"settings_section":4,"window_w":1130,"window_h":820,"reduce_motion":true,"folders":["Valid","Retired","Future","Negative","Null child","Unknown mode","Bad type","Duplicate key"],"folder_of":{"chat":"Retired"},"pinned":{"chat":true},"folder_rules":{
+		"Valid":{"match":0,"rules":[{"kind":0,"value":"work"}]},
+		"Retired":{"match":0,"rules":[{"kind":0,"value":"work"},{"kind":6}]},
+		"Future":{"match":1,"rules":[{"kind":999}]},
+		"Negative":{"match":0,"rules":[{"kind":-1}]},
+		"Null child":{"rules":[{"kind":15,"nested":{"match":1,"rules":[null]}}]},
+		"Unknown mode":{"rules":[{"kind":15,"nested":{"match":"None","rules":[{"kind":4}]}}]},
+		"Bad type":{"rules":[{"kind":15,"nested":{"match":true,"rules":[{"kind":4}]}}]},
+		"Duplicate key":{"rules":[{"kind":15,"nested":{"match":0,"match":1,"rules":[{"kind":4}]}}]}
+	}},"unknown_setting":{"nested":[1,2,3]}}`
 	if !testing.expect(
 		t,
 		os.write_entire_file(settings_path(), transmute([]u8)data) == nil,
@@ -140,7 +149,7 @@ workspace_load_boundaries :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.prefs.window_w, i32(1130))
 	testing.expect_value(t, ui.prefs.window_h, i32(820))
 	testing.expect(t, ui.prefs.reduce_motion && ui.prefs.pinned["chat"])
-	testing.expect_value(t, len(ui.prefs.folders), 4)
+	testing.expect_value(t, len(ui.prefs.folders), 8)
 	testing.expect_value(t, ui.prefs.folder_of["chat"], "Retired")
 	testing.expect_value(t, len(ui.prefs.folder_rules), 1)
 	valid, found := ui.prefs.folder_rules["Valid"]
@@ -148,7 +157,7 @@ workspace_load_boundaries :: proc(t: ^testing.T) {
 	if !testing.expect_value(t, len(valid.rules), 1) {return}
 	testing.expect_value(t, valid.rules[0].kind, Folder_Rule_Kind.Name_Has)
 	testing.expect_value(t, valid.rules[0].value, "work")
-	for name in ([]string{"Retired", "Future", "Negative"}) {
+	for name in ([]string{"Retired", "Future", "Negative", "Null child", "Unknown mode", "Bad type", "Duplicate key"}) {
 		testing.expect(t, name not_in ui.prefs.folder_rules)
 	}
 
