@@ -1148,6 +1148,13 @@ GetCharPressed :: proc() -> rune {
 	return r
 }
 
+HasTypedText :: proc() -> bool {
+	for ch in state.chars {
+		if ch > ' ' {return true}
+	}
+	return false
+}
+
 // Test hook: inject a rune as if it arrived from TEXT_INPUT, so a
 // headless run can type.
 PushChar :: proc(r: rune) {

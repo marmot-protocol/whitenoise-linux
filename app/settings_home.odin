@@ -709,16 +709,23 @@ settings_escape :: proc(ui: ^Ui_State) -> bool {
 @(private)
 settings_search_field :: proc(ui: ^Ui_State) {
 	if ui.lang_open || ui.shortcuts_open || ui.export_open {return}
-	if !nendo.element(nendo.id("SettingsSearchBox")).found {return}
-	if field_mouse(ui, &ui.settings_search, "SettingsSearchBox", 12) {
+	search_box := nendo.id("SettingsSearchBox")
+	visible := nendo.element(search_box).found
+	if visible && field_mouse(ui, &ui.settings_search, "SettingsSearchBox", 12) {
 		ui.focus = .SettingsSearch
 		kb_focus = "SettingsSearchBox"
-	} else if ui.focus == .SettingsSearch &&
-	   rl.IsMouseButtonPressed(.LEFT) &&
-	   !nendo.pointer_over(nendo.id("SettingsSearchBox")) {
-		ui.focus = .Compose
+	} else if ui.focus == .SettingsSearch {
+		outside := visible && rl.IsMouseButtonPressed(.LEFT) && !nendo.pointer_over(search_box)
+		closed := !visible && settings_query(ui) == "" && !rl.IsKeyPressed(.ESCAPE)
+		if outside || closed {ui.focus = .Compose}
+	}
+	// Space alone still activates the focused control.
+	if ui.focus == .Compose && !rl.HasTouch() && rl.HasTypedText() {
+		ui.focus = .SettingsSearch
+		kb_focus = "SettingsSearchBox"
 	}
 	if ui.focus != .SettingsSearch {return}
+	if !visible && (rl.HasTouch() || rl.IsKeyPressed(.ESCAPE)) {return}
 	settings_theme_preview_reset(ui)
 	before := avatar_hash(string(ui.settings_search[:]))
 	edit_text(ui, &ui.settings_search)

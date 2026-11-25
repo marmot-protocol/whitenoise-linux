@@ -2187,7 +2187,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // new chat, so the user stays where they went.
 close_new_chat :: proc(ui: ^Ui_State) {
 	for job in account_jobs {
-		if job.account == ui.account_ref && job.kind == .Create_Chat && job.form {
+		if job.account == ui.account_ref && job.kind == .Create_Chat && job.form != nil {
 			job.open_chat = false
 		}
 	}
@@ -2206,7 +2206,7 @@ new_chat_create_and_open :: proc(ui: ^Ui_State, client: ^marmot.Client, name, me
 	}
 	job := account_job_new(ui, client, .Create_Chat); if job == nil {return}
 	job.title = strings.clone(name); job.target = strings.clone(member); job.open_chat = true
-	job.form = true
+	job.form = ui.nc_page
 	if ui.nc_page == .Group && len(ui.nc_pic.data) > 0 {
 		job.pic_data = ui.nc_pic.data; job.pic_media = ui.nc_pic.media_type
 		rl.UnloadImage(ui.nc_pic.image)

@@ -433,6 +433,12 @@ Banner messages go through `set_status(ui, text, .Error | .Info)`
 (`shell.odin`). The kind is explicit because translated text can't be
 inspected for words like "Couldn't".
 
+An error banner closes when you leave the screen that raised it. Closing
+the Members panel keeps the banner because the conversation is still open.
+
+In desktop Settings, typing with no text field focused starts a search.
+In a narrow window, search opens the results list in place of the section.
+
 Edit the `.po` files directly. The catalogs have no `msgctxt` (`po_parse`
 ignores it and keys on msgid alone, first entry winning), and no plural forms.
 

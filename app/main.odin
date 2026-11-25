@@ -355,7 +355,7 @@ build_layout_pass :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Comm
 									centered_note(
 										"PickChat",
 										tr("Select a chat"),
-										ui.client_status == tr("Runtime running") ? "" : ui.client_status,
+										ui.client_status_kind == .Error || ui.client_status == tr("Runtime running") ? "" : ui.client_status,
 									)
 								}
 							case .Contacts:
@@ -1062,7 +1062,6 @@ app_main :: proc() {
 			mi_tick(&ui, client) // periodic mentions-inbox badge refresh
 			health_tick(&ui, client) // relay-pool counters, Network page only
 			retention_tick(&ui, client) // prune disappeared messages
-			banner_tick(&ui) // a new client_status becomes the shell banner
 			tray_tick(&ui) // unread total in the tray tooltip
 
 			// Interface zoom shortcuts (Ctrl + / - / 0).
@@ -1162,7 +1161,8 @@ app_main :: proc() {
 			// before drawing so the release doesn't present the old modal again.
 			settings_captured :=
 				client != nil &&
-				settings_modal(&ui) &&
+				ui.account_ref != "" &&
+				settings_workspace_visible(&ui) &&
 				!photo_captured &&
 				!location_captured &&
 				!overlay_captured &&
@@ -1308,6 +1308,7 @@ app_main :: proc() {
 			}
 			settings_theme_preview_guard(&ui)
 			child_captured = child_captured || shell_child_open(&ui)
+			banner_tick(&ui)
 			// anim_dt, not the raw frame time: the first frame after an idle
 			// wait would otherwise spend a whole layout move in one step.
 			render_commands := build_layout(&ui, anim_dt)
@@ -1619,7 +1620,9 @@ app_main :: proc() {
 			)
 
 			// After consumed input, dispatch the top visible modal.
-			if composer_captured || shell_back || settings_captured || foreground_captured {
+			if settings_captured {
+				settings_search_field(&ui)
+			} else if composer_captured || shell_back || foreground_captured {
 				// Already handled.
 			} else if photo_captured {
 				if photo_interactive &&
@@ -1779,6 +1782,14 @@ app_main :: proc() {
 			if photo_captured || location_captured || ui.location_open {
 				text_field_live = false
 				for rl.GetCharPressed() != 0 {}
+			} else if client != nil &&
+			   ui.account_ref != "" &&
+			   settings_workspace_visible(&ui) &&
+			   ui.focus == .Compose &&
+			   !rl.HasTouch() &&
+			   !shell_child_open(&ui) {
+				// Idle desktop Settings also accepts text for type-to-search.
+				text_field_live = true
 			}
 			rl.SetTextInput(text_field_live)
 			if text_field_live {

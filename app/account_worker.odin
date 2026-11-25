@@ -56,7 +56,8 @@ Account_Job :: struct {
 	accounts_read:                                bool,
 	wipe_report:                                  string,
 	wipe_report_error:                            bool,
-	fresh, notes, form, open_chat, departed:      bool,
+	fresh, notes, open_chat, departed:            bool,
+	form:                                         Maybe(Nc_Page),
 	accepted:                                     u64,
 	skipped:                                      int, // requested members the create left out
 	key_rows:                                     [dynamic]Kp_Row,
@@ -768,7 +769,13 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 			// The sign-in card shows its own failure; the banner sits behind it.
 			if job.kind == .Sign_In && (ui.account_ref == "" || ui.add_account_open) {
 				ui.login_error = strings.clone(job.error)
-			} else {
+			} else if job.form == nil ||
+			   (job.open_chat &&
+					   ui.page == .Chats &&
+					   !ui.add_account_open &&
+					   ui.new_chat_open &&
+					   ui.nc_page == job.form &&
+					   ui.account_ref == job.account) {
 				set_status(ui, strings.clone(job.error), .Error)
 			}
 		}
@@ -885,7 +892,7 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 					if job.notes {delete(ui.prefs.notes_group); ui.prefs.notes_group = strings.clone(job.result); ui.prefs.pinned[strings.clone(job.result)] = true; save_settings(ui)}
 					load_chat_list(job.client, job.account, ui)
 					if job.open_chat {
-						if job.form {close_new_chat(ui)}
+						if job.form != nil {close_new_chat(ui)}
 						ui.focus = .Compose
 						ui.page = .Chats
 						ui.new_chat_open = false

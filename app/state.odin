@@ -978,6 +978,7 @@ Ui_State :: struct {
 	// linkguard.odin) ────────────────────────────────────────────────
 	banner:                              string, // status/error strip over the status bar; "" = none
 	banner_kind:                         Status_Kind, // .Error tints it danger
+	banner_screen:                       Banner_Screen,
 	banner_seen:                         string, // client_status already routed to the banner
 	toast:                               string, // transient confirmation ("Copied")
 	toast_until:                         f64, // rl.GetTime() deadline; 0 = no toast
