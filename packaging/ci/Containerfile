@@ -6,7 +6,7 @@ ARG BUN_VERSION=1.3.10
 ARG BUN_SHA256=f57bc0187e39623de716ba3a389fda5486b2d7be7131a980ba54dc7b733d2e08
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential clang cmake ninja-build pkg-config git openssh-client curl ca-certificates \
+    build-essential clang lld cmake ninja-build pkg-config git openssh-client curl ca-certificates \
     gnupg libgpgme-dev libboost-filesystem-dev nlohmann-json3-dev \
     autoconf automake libtool libgcrypt20-dev libx11-dev libxpm-dev \
     liblzma-dev libzstd-dev libfuse-dev zlib1g-dev patchelf librsvg2-dev \

@@ -42,17 +42,20 @@ native_odin_build() {
     ;;
   esac
   printf -v signature '%q ' "$root" "$mode" "$@"
-  object_key="$(build_cache_key "Odin object $object_key $signature single-module")"
-  # Leave macOS's compiler-managed framework linking unchanged.
-  if [ "$(uname -s)" = Darwin ]; then
-    link_key="$(build_cache_key "$object_key $link_key")"
+  # Cache the linked executable when Odin manages multiple objects or macOS frameworks.
+  case "$(uname -s):$name" in
+  Linux:app | Darwin:*)
+    link_key="$(build_cache_key "$object_key $link_key $signature")"
     if ! build_cache_fresh "$link_key" "$binary.link.stamp" "$binary"; then
+      echo "==> Building native $name"
       rm -f "$binary.link.stamp" "$binary"
       env ODIN_ROOT="$root" odin build "$package" "${options[@]}" "$@" -out:"$binary"
       build_cache_store "$link_key" "$binary.link.stamp" "$binary"
     fi
     return
-  fi
+    ;;
+  esac
+  object_key="$(build_cache_key "Odin object $object_key $signature single-module")"
   if build_cache_fresh "$object_key" "$binary.object.stamp" "$binary.o" "$binary.link.args"; then
     echo "==> native cache hit: $name object"
   else
@@ -668,7 +671,7 @@ if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$SYS_ODIN/vendo
   ODIN_ROOT_ARG=(ODIN_ROOT="$OVERLAY")
 fi
 
-APP_LINK_ARGS=()
+APP_ODIN_ARGS=()
 if [ "$(uname -s)" = Linux ]; then
   APPIMAGE_KEY="$(native_key 'AppImage bridge C11 O2 PIC pthread' "$HERE/scripts/build-appimage-updater.sh" "$HERE/app/appimage_update_client.c")"
   if ! build_cache_fresh "$APPIMAGE_KEY" "$HERE/build/appimage-bridge.stamp" "$HERE/build/libwnappimage.a"; then
@@ -716,20 +719,7 @@ if [ "$(uname -s)" = OpenBSD ]; then
     fi
   done
   # Keep bundled OpenSSL/SQLCipher symbols private: system libcurl uses LibreSSL.
-  APP_LINK_ARGS=('-extra-linker-flags:-Wl,--wrap=execve,--exclude-libs=libmarmot_c.a')
-elif [ "$(uname -s)" = Linux ]; then
-  # System libssl must not resolve crypto calls to Marmot's bundled OpenSSL.
-  link_flags='-Wl,--exclude-libs=libmarmot_c.a'
-  # clang searches LIBRARY_PATH after its system dirs (GCC searches it
-  # first), so the Flatpak's /app/lib SDL 3.4 would lose to the SDK's
-  # SDL 3.2. Explicit -L dirs precede the system ones.
-  IFS=: read -ra lib_dirs <<<"${LIBRARY_PATH:-}"
-  for dir in "${lib_dirs[@]}"; do
-    if [ -n "$dir" ]; then
-      link_flags+=" -L$dir"
-    fi
-  done
-  APP_LINK_ARGS=("-extra-linker-flags:$link_flags")
+  APP_ODIN_ARGS=('-extra-linker-flags:-Wl,--wrap=execve,--exclude-libs=libmarmot_c.a')
 fi
 if [ "$OVERLAY_REBUILT" = 1 ]; then
   # OpenBSD modifies core and SDL bindings above; publish only their final form.
@@ -770,14 +760,31 @@ native_odin_build smoke "$HERE/tests/smoke" "$SMOKE_ODIN" default "$SMOKE_OBJECT
 # -o:minimal vs 3.4ms; 60fps budget is 16.6ms).
 APP_LIBS=("$BUNDLE/lib/libmarmot_c.a" "$HERE/build/libwnipc.a" "$HERE/build/libwndecoder.a" "$HERE/build/libwntimestamp.a" "$HERE/build/libwnws.a")
 case "$(uname -s)" in
-Linux) APP_LIBS+=("$HERE/build/libwnappimage.a" "$HERE/build/libwntray.a") ;;
+Linux)
+  lld="$(clang -print-prog-name=ld.lld)"
+  if [ ! -x "$lld" ]; then
+    echo 'Install LLD to build the native Linux app.' >&2
+    exit 1
+  fi
+  # Keep Marmot's OpenSSL private. Pin the same LLD executable the cache hashes.
+  link_flags="-Wl,--exclude-libs=libmarmot_c.a --ld-path=\"$lld\""
+  # Put Flatpak's /app/lib SDL ahead of the SDK's older system SDL.
+  IFS=: read -ra lib_dirs <<<"${LIBRARY_PATH:-}"
+  for dir in "${lib_dirs[@]}"; do
+    if [ -n "$dir" ]; then
+      link_flags+=" -L\"$dir\""
+    fi
+  done
+  APP_ODIN_ARGS=(-use-separate-modules -linker:lld "-extra-linker-flags:$link_flags")
+  APP_LIBS+=("$HERE/build/libwnappimage.a" "$HERE/build/libwntray.a" "$(command -v clang)" "$lld")
+  ;;
 Darwin) APP_LIBS+=("$HERE/build/libwnsparkle.a") ;;
 OpenBSD) APP_LIBS+=("$HERE/build/libwnsandbox.a" "$HERE/build/sdl/lib/libSDL3.a") ;;
 esac
 APP_INPUTS=("$HERE/app" "$HERE/marmot" "$HERE/lang" "$HERE/themes" "$CROP" "$HERE/vendor/common-passwords.txt" "$HERE/build/observability-tokens.toml")
 APP_OBJECT_KEY="$(native_compile_key "app Odin speed $ODIN_ENV" "${APP_INPUTS[@]}")"
-APP_KEY="$(native_key "app Odin speed $ODIN_LINK_ENV ${APP_LINK_ARGS[*]}" "${APP_INPUTS[@]}" "${APP_LIBS[@]}")"
-native_odin_build app "$HERE/app" "$ACTIVE_ODIN" speed "$APP_OBJECT_KEY" "$APP_KEY" "${APP_LINK_ARGS[@]}"
+APP_KEY="$(native_key "app Odin speed $ODIN_LINK_ENV ${APP_ODIN_ARGS[*]}" "${APP_INPUTS[@]}" "${APP_LIBS[@]}")"
+native_odin_build app "$HERE/app" "$ACTIVE_ODIN" speed "$APP_OBJECT_KEY" "$APP_KEY" "${APP_ODIN_ARGS[@]}"
 # Unused imports: fatal in CI, a warning locally so a work-in-progress
 # import does not block a build.
 if ! env "${ODIN_ROOT_ARG[@]}" "$HERE/scripts/vet-imports.sh"; then
