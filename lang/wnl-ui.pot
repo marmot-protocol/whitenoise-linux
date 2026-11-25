@@ -975,7 +975,13 @@ msgstr ""
 msgid "Cancel linking"
 msgstr ""
 
+msgid "Cancel preview"
+msgstr ""
+
 msgid "Cancel reply"
+msgstr ""
+
+msgid "Cancel text edit"
 msgstr ""
 
 msgid "Cancel translation"
@@ -1637,6 +1643,9 @@ msgstr ""
 msgid "Couldn't configure the proxy. Please try again."
 msgstr ""
 
+msgid "Couldn't confirm picture publication. Your picture was uploaded. Please try again."
+msgstr ""
+
 msgid "Couldn't confirm the emoji code. Please try again."
 msgstr ""
 
@@ -1897,10 +1906,6 @@ msgstr ""
 msgid "Couldn't publish the photo. %s"
 msgstr ""
 
-#, c-format
-msgid "Couldn't publish the picture. %s"
-msgstr ""
-
 msgid "Couldn't reach the Namecoin resolvers. Please try again."
 msgstr ""
 
@@ -2144,8 +2149,7 @@ msgstr ""
 msgid "Couldn't update that sign-in. Please try again."
 msgstr ""
 
-#, c-format
-msgid "Couldn't upload the picture. %s"
+msgid "Couldn't upload the picture. Please try again."
 msgstr ""
 
 msgid "Couldn't use that file. Choose a PNG or JPEG."
@@ -2510,10 +2514,13 @@ msgstr ""
 msgid "Discard"
 msgstr ""
 
-msgid "Discard profile changes?"
+msgid "Discard your text draft?"
 msgstr ""
 
 msgid "Discard your theme changes?"
+msgstr ""
+
+msgid "Discarding your text draft won't undo a picture upload or publication."
 msgstr ""
 
 msgid "Discover"
@@ -2604,12 +2611,6 @@ msgid "Dust"
 msgstr ""
 
 msgid "Dutch"
-msgstr ""
-
-msgid "EDIT PROFILE"
-msgstr ""
-
-msgid "EDITING · BROADCAST TO RELAYS ON PUBLISH"
 msgstr ""
 
 msgid "EMOJI GROUP IMAGE"
@@ -2765,9 +2766,6 @@ msgstr ""
 
 #, c-format
 msgid "Enter dates like %s, with the start on or before the end."
-msgstr ""
-
-msgid "Enter moves to the next field, Escape cancels."
 msgstr ""
 
 msgid "Enter publishes, Escape cancels."
@@ -4644,6 +4642,9 @@ msgstr ""
 msgid "PROFILE"
 msgstr ""
 
+msgid "PROFILE TEXT"
+msgstr ""
+
 msgid "PUBLIC PROFILE"
 msgstr ""
 
@@ -4764,6 +4765,9 @@ msgid "Pick the whole app's look."
 msgstr ""
 
 msgid "Picture"
+msgstr ""
+
+msgid "Picture published to your profile."
 msgstr ""
 
 msgid "Pieces"
@@ -4911,6 +4915,12 @@ msgstr ""
 msgid "Profile & devices"
 msgstr "Profile & devices"
 
+msgid "Profile picture preview"
+msgstr ""
+
+msgid "Profile text changes published."
+msgstr ""
+
 #, c-format
 msgid "Profile: %s"
 msgstr ""
@@ -4954,7 +4964,7 @@ msgstr ""
 msgid "Publish a key package"
 msgstr ""
 
-msgid "Publish changes"
+msgid "Publish text changes"
 msgstr ""
 
 msgid "Publish your key package"
@@ -4967,6 +4977,12 @@ msgid "Published inbox relays"
 msgstr ""
 
 msgid "Published outbox relays"
+msgstr ""
+
+msgid "Publishing makes your display name, About, verified address, and Lightning address public on Nostr relays."
+msgstr ""
+
+msgid "Publishing text changes…"
 msgstr ""
 
 msgid "Publishing your group profile"
@@ -6202,6 +6218,9 @@ msgstr ""
 msgid "TROUBLESHOOTERS"
 msgstr ""
 
+msgid "Tab to focus Publish. Press Enter or Space to activate it."
+msgstr ""
+
 #, c-format
 msgid "Take %d"
 msgstr ""
@@ -6544,6 +6563,9 @@ msgstr ""
 msgid "This password protects sensitive local data. It is not a service login or a password to share with contacts. Save it in your password manager."
 msgstr ""
 
+msgid "This preview stays on your device. Publishing uploads the picture and adds it to your public profile, separately from your text draft."
+msgstr ""
+
 msgid "This profile has reached its device limit. Unlink an existing device before trying again."
 msgstr ""
 
@@ -6762,6 +6784,9 @@ msgstr ""
 msgid "Type your password first."
 msgstr ""
 
+msgid "UNPUBLISHED TEXT DRAFT"
+msgstr ""
+
 msgid "UV checker"
 msgstr ""
 
@@ -6848,13 +6873,16 @@ msgstr ""
 msgid "Updating your contacts"
 msgstr ""
 
+msgid "Upload and publish picture"
+msgstr ""
+
 msgid "Upload custom emoji"
 msgstr ""
 
 msgid "Uploaded emoji"
 msgstr ""
 
-msgid "Uploading picture"
+msgid "Uploading and publishing your picture…"
 msgstr ""
 
 msgid "Urdu"
@@ -7379,13 +7407,13 @@ msgstr ""
 msgid "Your themes"
 msgstr ""
 
-msgid "Your unpublished profile changes are lost."
-msgstr ""
-
 msgid "Zoom in"
 msgstr ""
 
 msgid "Zoom out"
+msgstr ""
+
+msgid "Zoom out or enlarge the window to review what will be public."
 msgstr ""
 
 msgid "Zoom the interface"

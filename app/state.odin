@@ -351,6 +351,8 @@ Focus :: enum {
 	Device_Name,
 	Device_Own_Name,
 	Timestamp,
+	Profile_Disclosure,
+	Profile_Publish,
 }
 
 // The create-poll modal grows one option row at a time up to this cap
@@ -577,19 +579,20 @@ Account_Row_Ui :: struct {
 }
 
 Profile_Ui :: struct {
-	npub:     string,
-	name:     string, // display name
-	about:    string, // kind-0 `about`
-	username: string, // kind-0 `name` handle
-	nip05:    string,
-	lud16:    string,
-	pic_set:  bool, // kind-0 has a picture URL
-	nip65:    [dynamic]string,
-	inbox:    [dynamic]string,
-	nsec:     string, // revealed on demand, "" otherwise
-	loaded:   bool,
-	editing:  bool, // profile page shows the edit form
-	qr:       ^rl.Texture2D, // own marmot:// deep link, page-inline
+	npub:            string,
+	name:            string, // display name
+	about:           string, // kind-0 `about`
+	username:        string, // kind-0 `name` handle
+	nip05:           string,
+	lud16:           string,
+	pic_set:         bool, // kind-0 has a picture URL
+	nip65:           [dynamic]string,
+	inbox:           [dynamic]string,
+	nsec:            string, // revealed on demand, "" otherwise
+	loaded:          bool,
+	editing:         bool, // profile page shows the edit form
+	disclosure_seen: bool,
+	qr:              ^rl.Texture2D, // own marmot:// deep link, page-inline
 }
 
 // Where an emoji picker pick lands.
@@ -973,6 +976,8 @@ Ui_State :: struct {
 	people:                              People_Search, // directory hits for the new-chat fields
 	client_status:                       string, // written only through set_status
 	client_status_kind:                  Status_Kind,
+	profile_pic_notice:                  string,
+	profile_pic_notice_kind:             Status_Kind,
 	status_reveal:                       string, // folder the next Info toast offers to open; owned
 	// ── Shell chrome (shell.odin, palette.odin, confirm.odin,
 	// linkguard.odin) ────────────────────────────────────────────────

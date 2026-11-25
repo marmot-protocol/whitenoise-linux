@@ -3,9 +3,6 @@
 // new URL with every other field preserved. Both are relay round
 // trips, so a one-shot thread runs them; drain_ppic hands the URL back
 // to the frame loop, which owns texture creation.
-//
-//   pick → photo preview → Use → ppic_worker (upload +
-//   publish) → drain_ppic (round texture + my_pic_url)
 package main
 
 import "core:fmt"
@@ -18,6 +15,14 @@ import rl "sdlrl"
 import marmot "../marmot"
 
 @(private = "file")
+Ppic_Result :: enum {
+	None,
+	Published,
+	Upload_Failed,
+	Publish_Failed,
+}
+
+@(private = "file")
 Ppic_Job :: struct {
 	client:     ^marmot.Client,
 	account:    string,
@@ -25,8 +30,13 @@ Ppic_Job :: struct {
 	media_type: string, // static literal from media_type_for
 }
 
-// One upload in flight at a time; the pane greys the button off this.
+// Only the frame thread reads the owner or starts another upload.
 ppic_busy: bool
+
+@(private)
+profile_pic_owner :: proc() -> string {
+	return ppic_job.account
+}
 
 @(private = "file")
 ppic_mutex: sync.Mutex
@@ -35,11 +45,9 @@ ppic_job: Ppic_Job
 @(private = "file")
 ppic_url: string // "" on failure
 @(private = "file")
-ppic_err: string
-@(private = "file")
-ppic_ready: bool
+ppic_result: Ppic_Result
 
-// Use has revalidated the captured account and busy state. Takes the draft.
+// The preview has revalidated the captured account and busy state. Takes the draft.
 @(private)
 upload_profile_pic :: proc(client: ^marmot.Client, account: string, draft: Pic_Draft) {
 	rl.UnloadImage(draft.image)
@@ -56,10 +64,12 @@ upload_profile_pic :: proc(client: ^marmot.Client, account: string, draft: Pic_D
 @(private = "file")
 ppic_worker :: proc() {
 	context.allocator = reload_allocator()
+	defer frame_wake()
 	job := ppic_job
 	account := strings.clone_to_cstring(job.account, context.temp_allocator)
 	media := strings.clone_to_cstring(job.media_type, context.temp_allocator)
-	url, err: string
+	url: string
+	result := Ppic_Result.Upload_Failed
 
 	url_c: cstring
 	if marmot.upload_profile_image(
@@ -74,37 +84,42 @@ ppic_worker :: proc() {
 		   .OK &&
 	   url_c != nil {
 		url = strings.clone(string(url_c))
+	}
+	if url_c != nil {
 		marmot.string_free(url_c)
-	} else {
-		err = fmt.aprintf(tr("Couldn't upload the picture. %s"), marmot.last_error())
 	}
 
 	// Republish kind-0 with the new URL, everything else as it stands.
 	if len(url) > 0 {
+		result = .Publish_Failed
 		metadata: marmot.User_Profile_Metadata
 		cur: ^marmot.User_Profile_Metadata
-		if marmot.user_profile(job.client, account, &cur) == .OK && cur != nil {
-			metadata = cur^
+		if marmot.user_profile(job.client, account, &cur) == .OK {
+			if cur != nil {
+				metadata = cur^
+			}
+			metadata.picture = strings.clone_to_cstring(url, context.temp_allocator)
+			out: ^marmot.User_Profile_Metadata
+			if marmot.publish_user_profile(
+				   job.client,
+				   account,
+				   &metadata,
+				   raw_data(DEFAULT_RELAYS),
+				   len(DEFAULT_RELAYS),
+				   raw_data(DEFAULT_RELAYS),
+				   len(DEFAULT_RELAYS),
+				   &out,
+			   ) ==
+			   .OK {
+				result = .Published
+			}
+			if out != nil {
+				marmot.user_profile_metadata_free(out)
+			}
 		}
-		metadata.picture = strings.clone_to_cstring(url, context.temp_allocator)
-
-		out: ^marmot.User_Profile_Metadata
-		if marmot.publish_user_profile(
-			   job.client,
-			   account,
-			   &metadata,
-			   raw_data(DEFAULT_RELAYS),
-			   uint(len(DEFAULT_RELAYS)),
-			   raw_data(DEFAULT_RELAYS),
-			   uint(len(DEFAULT_RELAYS)),
-			   &out,
-		   ) !=
-		   .OK {
-			err = fmt.aprintf(tr("Couldn't publish the picture. %s"), marmot.last_error())
+		if result != .Published {
 			delete(url)
 			url = ""
-		} else {
-			marmot.user_profile_metadata_free(out)
 		}
 		if cur != nil {
 			marmot.user_profile_metadata_free(cur)
@@ -114,8 +129,7 @@ ppic_worker :: proc() {
 
 	sync.lock(&ppic_mutex)
 	ppic_url = url
-	ppic_err = err
-	ppic_ready = true
+	ppic_result = result
 	sync.unlock(&ppic_mutex)
 }
 
@@ -123,19 +137,15 @@ ppic_worker :: proc() {
 // URL (same bytes, saves the re-download) and adopt it as my_pic_url.
 drain_ppic :: proc(ui: ^Ui_State) {
 	sync.lock(&ppic_mutex)
-	ready := ppic_ready
+	result := ppic_result
 	url := ppic_url
-	err := ppic_err
-	ppic_ready = false
+	ppic_result, ppic_url = .None, ""
 	sync.unlock(&ppic_mutex)
-	if !ready {
+	if result == .None {
 		return
 	}
 
-	if len(err) > 0 {
-		set_status(ui, err, .Error)
-	}
-	if len(url) > 0 {
+	if result == .Published {
 		ext := strings.clone_to_cstring(
 			fmt.tprintf(".%s", strings.trim_prefix(ppic_job.media_type, "image/")),
 			context.temp_allocator,
@@ -147,6 +157,23 @@ drain_ppic :: proc(ui: ^Ui_State) {
 		}
 		adopt_profile_pic(ui, ppic_job.account, url)
 	}
+
+	label: string
+	kind := Status_Kind.Error
+	switch result {
+	case .None:
+	case .Published:
+		label, kind = tr("Picture published to your profile."), .Info
+	case .Upload_Failed:
+		label = tr("Couldn't upload the picture. Please try again.")
+	case .Publish_Failed:
+		label = tr(
+			"Couldn't confirm picture publication. Your picture was uploaded. Please try again.",
+		)
+	}
+	delete(ui.profile_pic_notice)
+	ui.profile_pic_notice = fmt.aprintf("%s · %s", account_label(ui, ppic_job.account), label)
+	ui.profile_pic_notice_kind = kind
 
 	delete(ppic_job.data)
 	delete(ppic_job.account)

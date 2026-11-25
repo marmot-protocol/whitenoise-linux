@@ -806,10 +806,8 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 				switch job.kind {
 				case .Profile:
 					reload_profile(ui, job.client)
-					if ui.settings_profile_return && ui.confirm.kind == .Discard_Profile {
-						confirm_close(ui)
-					}
 					profile_edit_finish(ui)
+					set_status(ui, tr("Profile text changes published."), .Info)
 				case .Outbox, .Inbox:
 					reload_profile(ui, job.client)
 				case .Key_Package, .Read_Key_Packages:
@@ -994,8 +992,15 @@ account_pending_label :: proc(kind: Account_Operation) -> string {
 }
 @(private)
 account_pending_ui :: proc(ui: ^Ui_State) {
-	for job, i in account_jobs {
-		if nendo.box(nendo.id("AccountPending", u32(i)))(
+	if owner := profile_pic_owner(); owner != "" {
+		account_pending_row(
+			nendo.id("ProfilePicturePending"),
+			"ProfilePictureBusy",
+			account_label(ui, owner),
+			tr("Uploading and publishing your picture…"),
+		)
+	} else if ui.profile_pic_notice != "" {
+		if nendo.box(nendo.id("ProfilePictureNotice"))(
 		{
 			width = nendo.grow(),
 			padding = nendo.pad(8),
@@ -1005,15 +1010,23 @@ account_pending_ui :: proc(ui: ^Ui_State) {
 		},
 		) {
 			nendo.text(
-				fmt.tprintf(
-					"%s · %s",
-					account_label(ui, job.account),
-					account_pending_label(job.kind),
-				),
-				{font = FONT_BODY, size = 12, color = TEXT_DIM},
+				ui.profile_pic_notice,
+				{
+					font = FONT_BODY,
+					size = 12,
+					color = ui.profile_pic_notice_kind == .Error ? DANGER : TEXT,
+				},
 			)
-			busy_bar(fmt.tprintf("AccountPendingBusy%d", i))
+			micro_button("ProfilePicDismiss", tr("Dismiss"))
 		}
+	}
+	for job, i in account_jobs {
+		account_pending_row(
+			nendo.id("AccountPending", u32(i)),
+			fmt.tprintf("AccountPendingBusy%d", i),
+			account_label(ui, job.account),
+			account_pending_label(job.kind),
+		)
 	}
 	for item, i in nip46_accounts {
 		if account_departing(item.account) || account_revoked(ui, item.account) {continue}
@@ -1066,6 +1079,25 @@ account_pending_ui :: proc(ui: ^Ui_State) {
 				   "" {if nendo.box(nendo.id("SignerApproval", u32(i)))({padding = nendo.pad(5), color = ROW_BG}) {nendo.text(tr("Review signer approval link"), {font = FONT_BODY, size = 12, color = ACCENT})}}
 			}
 		}
+	}
+}
+
+@(private = "file")
+account_pending_row :: proc(id: nendo.Id, busy_id, owner, action: string) {
+	if nendo.box(id)(
+	{
+		width = nendo.grow(),
+		padding = nendo.pad(8),
+		gap = 10,
+		align = {y = .Center},
+		color = STATUS_BAR,
+	},
+	) {
+		nendo.text(
+			fmt.tprintf("%s · %s", owner, action),
+			{font = FONT_BODY, size = 12, color = TEXT_DIM},
+		)
+		busy_bar(busy_id)
 	}
 }
 @(private)

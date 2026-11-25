@@ -966,14 +966,15 @@ toast_layer :: proc(ui: ^Ui_State) {
 		ui.toast_until = max(ui.toast_until, rl.GetTime() + 1)
 	}
 	frame_deadline = min(frame_deadline, ui.toast_until)
-	bottom: f32 = 60
+	window_height := f32(rl.GetScreenHeight()) / UI_ZOOM
+	bottom := min(f32(60), window_height / 4)
 	if ui.page == .Chats &&
 	   ui.selected >= 0 &&
 	   !ui.show_members &&
 	   !ui.group_files_open &&
 	   !ui.add_account_open {
 		if composer := nendo.element(nendo.id("Composer")); composer.found {
-			bottom = max(bottom, f32(rl.GetScreenHeight()) / UI_ZOOM - composer.rect.y + 8)
+			bottom = max(bottom, window_height - composer.rect.y + 8)
 		}
 	}
 	// Arrives rising the last few px, and follows the composer when it
