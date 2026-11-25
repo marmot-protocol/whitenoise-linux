@@ -437,13 +437,10 @@ board_header :: proc(ui: ^Ui_State, index, count: int, target, insert: bool) {
 			)
 		}
 		if folder {
-			rules := ui.prefs.folder_rules[name]
+			rules := folder_rule_count(ui.prefs.folder_rules[name])
 			summary := tr("No rules")
-			if len(rules.rules) > 0 {
-				summary = fmt.tprintf(
-					tr(len(rules.rules) == 1 ? N_("%d rule") : N_("%d rules")),
-					len(rules.rules),
-				)
+			if rules > 0 {
+				summary = fmt.tprintf(tr(rules == 1 ? N_("%d rule") : N_("%d rules")), rules)
 			}
 			nendo.text(summary, {font = FONT_BODY, size = 11, color = TEXT_LO})
 		}

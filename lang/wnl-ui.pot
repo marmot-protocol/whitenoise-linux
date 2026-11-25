@@ -537,6 +537,9 @@ msgstr ""
 msgid "Add contact"
 msgstr ""
 
+msgid "Add group"
+msgstr ""
+
 msgid "Add member"
 msgstr ""
 
@@ -1952,6 +1955,9 @@ msgstr ""
 msgid "Couldn't read your local time. Check your device's clock and try again."
 msgstr ""
 
+msgid "Couldn't refresh automatic folders. Please try again."
+msgstr ""
+
 msgid "Couldn't refresh device information."
 msgstr ""
 
@@ -2827,6 +2833,9 @@ msgstr ""
 msgid "Everyone in the group sees the new name."
 msgstr ""
 
+msgid "Exclude"
+msgstr ""
+
 msgid "Existing shortcodes are never replaced."
 msgstr ""
 
@@ -3167,6 +3176,12 @@ msgstr ""
 msgid "Has member"
 msgstr ""
 
+msgid "Has pending sends"
+msgstr ""
+
+msgid "Has unread mentions of you"
+msgstr ""
+
 msgid "Has unread messages"
 msgstr ""
 
@@ -3411,6 +3426,24 @@ msgid "Invert selected text"
 msgstr ""
 
 msgid "Invite"
+msgstr ""
+
+msgid "Is a direct chat"
+msgstr ""
+
+msgid "Is a group chat"
+msgstr ""
+
+msgid "Is accepted"
+msgstr ""
+
+msgid "Is archived"
+msgstr ""
+
+msgid "Is muted"
+msgstr ""
+
+msgid "Is pinned"
 msgstr ""
 
 msgid "Issue title"
@@ -4032,6 +4065,9 @@ msgstr ""
 msgid "More tools"
 msgstr ""
 
+msgid "Most recent activity"
+msgstr ""
+
 msgid "Move earlier"
 msgstr ""
 
@@ -4090,6 +4126,9 @@ msgid "NOW"
 msgstr ""
 
 msgid "Name"
+msgstr ""
+
+msgid "Name A to Z"
 msgstr ""
 
 msgid "Name for this device"
@@ -5144,6 +5183,9 @@ msgstr ""
 msgid "Remove from this device"
 msgstr ""
 
+msgid "Remove group"
+msgstr ""
+
 msgid "Remove option"
 msgstr ""
 
@@ -5359,6 +5401,9 @@ msgid "Roughness"
 msgstr ""
 
 msgid "Rounded"
+msgstr ""
+
+msgid "Rule group"
 msgstr ""
 
 #, c-format
@@ -5993,6 +6038,9 @@ msgid "Some network results may be missing."
 msgstr ""
 
 msgid "Someone may have your private key"
+msgstr ""
+
+msgid "Sort chats by"
 msgstr ""
 
 msgid "Sort chats by recent activity"
@@ -6809,6 +6857,9 @@ msgid "Unpin"
 msgstr ""
 
 msgid "Unread"
+msgstr ""
+
+msgid "Unread first"
 msgstr ""
 
 #, c-format

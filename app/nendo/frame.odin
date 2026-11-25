@@ -736,7 +736,20 @@ end :: proc(delta_time: f32) -> []Render_Command {
 				map_item := get_hash_map_item(transition_data.element_id)
 				parent_map_item := get_hash_map_item(transition_data.parent_id)
 				target_state := transition_data.target_state
+				old_relative_position := transition_data.old_parent_relative_position
+				new_relative_position := old_relative_position
 				if transition_data.state != .Exiting {
+					// A newly mounted row already has a position within its list.
+					parent_scroll_offset := parent_map_item.layout_element.config.clip.offset
+					new_relative_position = {
+						map_item.bounding_box.x -
+						parent_map_item.bounding_box.x -
+						parent_scroll_offset.x,
+						map_item.bounding_box.y -
+						parent_map_item.bounding_box.y -
+						parent_scroll_offset.y,
+					}
+					transition_data.old_parent_relative_position = new_relative_position
 					target_state = Transition_Data {
 						map_item.bounding_box,
 						current_element.config.color,
@@ -775,17 +788,6 @@ end :: proc(delta_time: f32) -> []Render_Command {
 					}
 				} else {
 					if transition_data.state != .Exiting {
-						parent_scroll_offset := parent_map_item.layout_element.config.clip.offset
-						new_relative_position := Vector2 {
-							map_item.bounding_box.x -
-							parent_map_item.bounding_box.x -
-							parent_scroll_offset.x,
-							map_item.bounding_box.y -
-							parent_map_item.bounding_box.y -
-							parent_scroll_offset.y,
-						}
-						old_relative_position := transition_data.old_parent_relative_position
-						transition_data.old_parent_relative_position = new_relative_position
 						properties := current_element.config.transition.properties
 						new_active_properties: Transition_Properties
 						if .X in properties {

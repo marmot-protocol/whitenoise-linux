@@ -229,7 +229,7 @@ MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
 MDK="$HERE/vendor/mdk"
 BUNDLE="$MDK/crates/marmot-c/output"
-MDK_PATCHES=("$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-thread-media-retention.patch" "$HERE/patches/mdk-odin-host-symbols.patch" "$HERE/patches/mdk-odin-windows-cross.patch" "$HERE/patches/mdk-odin-mingw-fltused.patch" "$HERE/patches/mdk-solo-group-reset.patch" "$HERE/patches/mdk-activation-blockers.patch" "$HERE/patches/mdk-timeline-quotes.patch" "$HERE/patches/mdk-thread-send-context.patch" "$HERE/patches/mdk-legacy-thread-polls.patch")
+MDK_PATCHES=("$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-thread-media-retention.patch" "$HERE/patches/mdk-odin-host-symbols.patch" "$HERE/patches/mdk-odin-windows-cross.patch" "$HERE/patches/mdk-odin-mingw-fltused.patch" "$HERE/patches/mdk-solo-group-reset.patch" "$HERE/patches/mdk-activation-blockers.patch" "$HERE/patches/mdk-timeline-quotes.patch" "$HERE/patches/mdk-thread-send-context.patch" "$HERE/patches/mdk-legacy-thread-polls.patch" "$HERE/patches/mdk-folder-chat-facts.patch")
 
 if [ ! -d "$MDK" ]; then
   git clone --filter=blob:none "$MDK_REPO" "$MDK"
@@ -861,6 +861,7 @@ if [ "${1:-}" = test ]; then
     devices_visibility devices_post_link_review devices_pairing_projection devices_roster_repair \
     devices_account_fence devices_sign_in_review devices_chat_activation devices_chat_sync \
     thread_reply_previews agent_item_timeline_visibility thread_offline_retry_preflights_destination \
+    timeline_scope_changes \
     "${din_tests[@]}"
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app/sdlrl
 fi

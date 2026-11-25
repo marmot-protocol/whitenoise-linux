@@ -14,6 +14,24 @@ import rl "sdlrl"
 import marmot "../marmot"
 
 handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	left_released := rl.IsMouseButtonReleased(.LEFT) || forced_release
+	if ui.archive_press.action != .None {
+		// A skipped input frame means another surface captured the gesture.
+		if ui.page != .Archived ||
+		   client == nil ||
+		   ui.account_ref == "" ||
+		   ui.add_account_open ||
+		   ui.sticker_open ||
+		   ui.qr_open ||
+		   drag_moved ||
+		   anim_frame - ui.archive_press.frame > 1 {
+			archive_press_clear(ui)
+		} else {
+			ui.archive_press.frame = anim_frame
+		}
+	}
+	defer if left_released && ui.archive_press.action != .None {archive_press_clear(ui)}
+
 	// Wipe private keys off their page without disarming other settings actions.
 	if ui.page != .Settings ||
 	   ((ui.settings_section != .Account || settings_index(ui)) &&
@@ -121,6 +139,28 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.page == .Profile {
 		profile_fields(ui, client)
 		if ui.page != .Profile {return}
+	}
+
+	archive_click_same_poll := false
+	if ui.page == .Archived && mouse_pressed() {
+		if left_released {
+			archive_press_clear(ui)
+			if point, ok := rl.GetCoalescedLeftClick(); ok {
+				archive_click_same_poll =
+					nendo.pointer().position == transmute(nendo.Vector2)point / UI_ZOOM
+			}
+		} else if forced_press || nendo.pointer().state == .Pressed_This_Frame {
+			archive_press_clear(ui)
+			if !drag_moved {
+				if action, index := archive_action_at_pointer(ui); action != .None {
+					ui.archive_press = {
+						strings.clone(ui.archived[index].group_id),
+						action,
+						anim_frame,
+					}
+				}
+			}
+		}
 	}
 
 	if !mouse_released() {
@@ -232,16 +272,21 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			ui.focus = .Filter
 			return
 		}
-		for _, i in ui.archived {
-			if nendo.pointer_over(nendo.id("ChatUnarch", u32(i))) {
-				set_archived(ui, client, ui.archived[i].group_id, false)
+		if archive_click_same_poll || ui.archive_press.action != .None {
+			action, index := archive_action_at_pointer(ui)
+			if action == .None {return}
+			if !archive_click_same_poll &&
+			   (action != ui.archive_press.action ||
+					   ui.archived[index].group_id != ui.archive_press.group_id) {return}
+			switch action {
+			case .Restore:
+				set_archived(ui, client, ui.archived[index].group_id, false)
 				load_archived(client, ui)
-				return
+			case .Open:
+				select_archived_chat(ui, client, index)
+			case .None:
 			}
-			if nendo.pointer_over(nendo.id("ArchivedRow", u32(i))) {
-				select_archived_chat(ui, client, i)
-				return
-			}
+			return
 		}
 	}
 
@@ -1087,9 +1132,13 @@ account_workspace_clear :: proc(ui: ^Ui_State) {
 	ui.tl_has_more, ui.tl_has_after = false, false
 	thread_clear(ui)
 	chat_list_revision += 1
+	archive_press_clear(ui)
 	chats_replace(&ui.chats, {}); chats_replace(&ui.archived, {})
 	clear(&ui.rail_rows)
 	chat_members_free(&ui.chat_members); ui.chat_members_read = false
+	chat_members_free(&ui.archive_members)
+	ui.chat_folder_facts_attempted = {}
+	ui.chat_read_dirty = false
 	members_clear(ui)
 	ui.selected, ui.row_menu, ui.member_menu, ui.selected_contact = -1, -1, -1, -1
 	ui.show_members, ui.group_files_open, ui.search_open, ui.chat_head_menu =
@@ -1800,17 +1849,21 @@ row_to_ui :: proc(
 		unread              = row.unread_count,
 		archived            = row.archived,
 		pending             = row.pending_confirmation,
+		accepted            = !row.pending_confirmation && row.self_membership == .MEMBER && !row.leave_request_pending,
 		stable              = row.lifecycle_state == .STABLE,
 		tick                = tick,
 		first_unread        = strings.clone(
 			row.first_unread_message_id_hex != nil ? string(row.first_unread_message_id_hex) : "",
 		),
+		last_read           = strings.clone(string(row.last_read_message_id_hex)),
 		avatar_url          = strings.clone(avatar_url),
 		avatar_key          = strings.clone(avatar_key),
 		image_hash          = strings.clone(image_hash),
-		// marmot's mute OR the local one from the row menu (its C API
-		// has no mute setter); the notification gate reads this flag.
+		// Row badges and the notification gate also honor the app's local mute.
 		muted               = row.muted || (g_prefs != nil && g_prefs.muted_ids[string(row.group_id_hex)]),
+		native_muted        = row.muted,
+		has_muted_until     = row.has_muted_until_ms,
+		muted_until         = row.muted_until_ms,
 		last_id             = strings.clone(
 			row.last_message != nil && row.last_message.message_id_hex != nil ? string(row.last_message.message_id_hex) : "",
 		),
@@ -1818,6 +1871,42 @@ row_to_ui :: proc(
 		last_mine           = mine,
 		last_blocked        = blocked,
 	}
+}
+
+@(private)
+chat_facts_previous :: proc(
+	rows: []Chat_Row_Ui,
+	keep: Folder_Async_Facts,
+) -> map[string]Folder_Async_Facts {
+	if keep == {} || len(rows) == 0 {return nil}
+	previous := make(map[string]Folder_Async_Facts, context.temp_allocator)
+	for &row in rows {
+		facts: Folder_Async_Facts
+		if row.unread_mention && .Mention in keep {facts += {.Mention}}
+		if row.pending_send && .Pending in keep {facts += {.Pending}}
+		if facts != {} {previous[row.group_id] = facts}
+	}
+	return previous
+}
+
+@(private)
+chat_work_row_to_ui :: proc(
+	job: ^Chat_List_Work,
+	row: ^marmot.Presented_Chat_Row,
+	previous: map[string]Folder_Async_Facts = nil,
+) -> Chat_Row_Ui {
+	chat := row_to_ui(
+		job.client,
+		row,
+		string(job.account),
+		job.previews,
+		job.reading_previews,
+		job.members,
+	)
+	facts := job.folder_facts[chat.group_id] + previous[chat.group_id]
+	chat.unread_mention = .Mention in facts && row.row.unread_mention_count > 0
+	chat.pending_send = .Pending in facts
+	return chat
 }
 
 load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_State) -> bool {
@@ -1828,22 +1917,36 @@ load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_Stat
 	}
 	defer chat_list_free(&job)
 	chat_list_snapshot(&job, ui)
+	// Keep the current facts until the live worker can refresh them.
+	deferred_facts := job.read_facts
+	job.read_facts = {}
 	chat_list_read(&job)
-	chat_list_apply(ui, &job)
+	chat_list_apply(ui, &job, deferred_facts)
 	return job.err == "" && job.rows != nil
 }
 
 @(private)
-chat_list_apply :: proc(ui: ^Ui_State, job: ^Chat_List_Work) {
+chat_list_apply :: proc(
+	ui: ^Ui_State,
+	job: ^Chat_List_Work,
+	deferred_facts: Folder_Async_Facts = {},
+) {
 	// Adopt the job's member lists even on failure: the flag records that
 	// they were asked for, so a failing read isn't retried every frame.
+	if job.include_archived && job.err == "" {archived_apply(ui, job)}
 	chat_members_free(&ui.chat_members)
-	ui.chat_members = job.members
-	job.members = nil
 	ui.chat_members_read = job.read_members
+	ui.chat_folder_facts_attempted = job.read_facts
 	if job.err != "" {
 		set_status(ui, fmt.aprintf(tr("Chat list failed: %s"), job.err), .Error)
 		return
+	}
+	if job.failed_facts != {} {
+		set_status(
+			ui,
+			strings.clone(tr("Couldn't refresh automatic folders. Please try again.")),
+			.Error,
+		)
 	}
 	rows := job.rows
 	if rows == nil {return}
@@ -1854,21 +1957,14 @@ chat_list_apply :: proc(ui: ^Ui_State, job: ^Chat_List_Work) {
 		selected_group = selected.group_id
 		search_only = selected.search_only
 	}
+	previous := chat_facts_previous(ui.chats[:], job.failed_facts + deferred_facts)
 	fresh := make([dynamic]Chat_Row_Ui, 0, int(rows.rows_len))
 	for i in 0 ..< rows.rows_len {
-		append(
-			&fresh,
-			row_to_ui(
-				job.client,
-				&rows.rows[i],
-				string(job.account),
-				job.previews,
-				job.reading_previews,
-				ui.chat_members,
-			),
-		)
+		if rows.rows[i].row.archived {continue}
+		append(&fresh, chat_work_row_to_ui(job, &rows.rows[i], previous))
 	}
-	chats_replace(&ui.chats, fresh)
+	ui.chat_members, job.members = job.members, nil
+	chats_replace(&ui.chats, fresh, fence_reads = true)
 	if search_only {
 		gs_keep_open_chat(ui, selected_group)
 	}

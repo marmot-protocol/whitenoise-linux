@@ -85,6 +85,7 @@ Prefs :: struct {
 	collapsed_folders:     map[string]bool, // folder name; "" is Unfiled
 	folder_icons:          map[string]int, // folder name → FOLDER_ICONS index
 	folder_colors:         map[string]u32, // folder name → RGB; absent uses the theme accent
+	folder_sorts:          map[string]Folder_Sort,
 	folder_rules:          map[string]Folder_Rules, // folder name → automatic filing rules
 	// Advanced (telemetry/audit toggles live in marmot's shared
 	// sqlite, not here)
@@ -230,11 +231,20 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	if read_err != nil {
 		return
 	}
-	settings := Settings {
-		prefs = {message_lines = DEFAULT_MESSAGE_LINES},
+	// Decode folder rules separately so one bad tree cannot reset other preferences.
+	wire: struct {
+		using _:    Settings,
+		prefs_wire: struct {
+			using _:        Prefs,
+			ignore_folders: struct{} `json:"folder_rules"`,
+		} `json:"prefs"`,
 	}
+	wire.prefs_wire.message_lines = DEFAULT_MESSAGE_LINES
+	decode := json.unmarshal(data, &wire)
+	settings: Settings = wire
+	settings.prefs = wire.prefs_wire
 	defer sign_in_reviews_free(settings.prefs.sign_ins_recognized)
-	if json.unmarshal(data, &settings) != nil {
+	if decode != nil {
 		settings_discard_private(settings.nicknames, settings.drafts, settings.blocked)
 		return
 	}
@@ -264,6 +274,7 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 		delete(ui.prefs.quick_reactions)
 		delete(ui.prefs.fetch_relays)
 		ui.prefs = settings.prefs
+		settings_read_folder_rules(ui, data)
 		settings.prefs.sign_ins_recognized = nil
 		if ui.prefs.settings_category == .Home {
 			ui.prefs.settings_category = migrate_legacy_settings_category(data, ui.prefs.dev_mode)
@@ -290,14 +301,6 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	case .Chats, .Unread, .Groups:
 	case:
 		ui.prefs.chat_filter = .Chats
-	}
-	// Drop the whole set: removing one unknown rule could broaden an All match.
-	for name, set in ui.prefs.folder_rules {
-		for rule in set.rules {
-			if int(rule.kind) >= 0 && rule.kind <= max(Folder_Rule_Kind) {continue}
-			folder_rules_drop(ui, name)
-			break
-		}
 	}
 	ui.page = ui.prefs.page
 	ui.settings_section = ui.prefs.settings_category
@@ -332,6 +335,55 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	}
 	if len(ui.prefs.event_client) == 0 {
 		ui.prefs.event_client = strings.clone(DEFAULT_EVENT_CLIENT)
+	}
+}
+
+// Skip values without storing object keys so a duplicate only invalidates
+// the folder whose bytes the real decoder reads below.
+@(private = "file")
+settings_skip_json :: proc(p: ^json.Parser) -> bool {
+	allocator := p.allocator
+	p.allocator = mem.nil_allocator()
+	defer p.allocator = allocator
+	_, err := json.parse_value(p)
+	return err == nil
+}
+
+@(private = "file")
+settings_enter_json :: proc(p: ^json.Parser, key: string) -> bool {
+	for p.curr_token.kind != .Close_Brace {
+		name, err := json.parse_object_key(p, p.allocator)
+		if err != nil || json.parse_colon(p) != nil {return false}
+		if name == key {return json.allow_token(p, .Open_Brace)}
+		if !settings_skip_json(p) || json.parse_comma(p) {return false}
+	}
+	return false
+}
+
+@(private = "file")
+settings_read_folder_rules :: proc(ui: ^Ui_State, data: []byte) {
+	p := json.make_parser(data, allocator = context.temp_allocator)
+	if !json.allow_token(&p, .Open_Brace) ||
+	   !settings_enter_json(&p, "prefs") ||
+	   !settings_enter_json(&p, "folder_rules") {
+		return
+	}
+	for p.curr_token.kind != .Close_Brace {
+		name, err := json.parse_object_key(&p, p.allocator)
+		if err != nil || json.parse_colon(&p) != nil {return}
+		start := p.curr_token.pos.offset
+		if !settings_skip_json(&p) {return}
+		encoded := data[start:p.curr_token.pos.offset]
+		value, parse_err := json.parse(encoded, parse_integers = true, allocator = p.allocator)
+		set: Folder_Rules
+		if parse_err == nil &&
+		   json.unmarshal(encoded, &set) == nil &&
+		   folder_rules_valid(set, value) {
+			folder_rules_store(ui, name, set)
+		} else {
+			folder_rules_free(set)
+		}
+		if json.parse_comma(&p) {break}
 	}
 }
 

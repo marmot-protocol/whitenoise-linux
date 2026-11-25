@@ -845,26 +845,20 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 					job.contacts = {}
 					nc_add_chat_peers(ui, job.client, job.chat_list.members)
 				case .Read_Archived:
-					fresh := make([dynamic]Chat_Row_Ui)
-					if rows := job.chat_list.rows; rows != nil {
-						for i in 0 ..< rows.rows_len {
-							row := &rows.rows[i]
-							if !row.row.archived {continue}
-							append(
-								&fresh,
-								row_to_ui(
-									job.client,
-									row,
-									job.account,
-									job.chat_list.previews,
-									job.chat_list.reading_previews,
-									job.chat_list.members,
+					if job.chat_list.revision == chat_list_revision {
+						archived_apply(ui, &job.chat_list)
+						if job.chat_list.failed_facts != {} {
+							set_status(
+								ui,
+								strings.clone(
+									tr("Couldn't refresh automatic folders. Please try again."),
 								),
+								.Error,
 							)
 						}
+					} else if live != nil {
+						live.refresh_dirty = true
 					}
-					chats_replace(&ui.archived, fresh)
-					clear(&ui.rail_rows)
 				case .Open_DM:
 					ui.page, ui.focus = .Chats, .Compose
 					gs_keep_open_chat(ui, job.result)

@@ -251,13 +251,20 @@ Chat_Row_Ui :: struct {
 	unread:              u64,
 	archived:            bool,
 	pending:             bool, // invite awaiting accept/decline
+	accepted:            bool,
+	unread_mention:      bool,
+	pending_send:        bool,
 	stable:              bool, // MLS lifecycle stable (session established)
 	tick:                marmot.Delivery_State,
 	first_unread:        string, // first unread message id, "" = none
+	last_read:           string, // native cumulative read cursor message id
 	avatar_url:          string, // chat picture URL, "" = none
 	avatar_key:          string, // peer public key for a DM, otherwise group id
 	image_hash:          string, // encrypted-Blossom avatar hash, "" = none
 	muted:               bool, // marmot's per-chat mute, suppresses notifications
+	native_muted:        bool,
+	has_muted_until:     bool,
+	muted_until:         i64,
 	last_id:             string, // latest message id, "" = none (notification dedupe)
 	last_kind:           u64, // latest message's event kind
 	last_mine:           bool, // latest message is an own send
@@ -667,7 +674,11 @@ Ui_State :: struct {
 	chats:                               [dynamic]Chat_Row_Ui,
 	chat_members:                        map[string][]string, // group id → member pubkey hex, for folder rules
 	chat_members_read:                   bool, // the last chat-list read asked for chat_members
+	chat_folder_facts_attempted:         Folder_Async_Facts,
+	chat_read_dirty:                     bool,
+	archive_members:                     map[string][]string,
 	archived:                            [dynamic]Chat_Row_Ui,
+	archive_press:                       Archive_Press,
 	contacts:                            [dynamic]Contact_Ui,
 	contact_import:                      ^Contact_Import_Job,
 	contact_tools_open:                  bool,
@@ -854,11 +865,13 @@ Ui_State :: struct {
 	folder_rename:                       int, // folder index being renamed, -1 = creating
 	folder_mode:                         Folder_Mode,
 	folder_icon:                         int,
+	folder_sort:                         Folder_Sort,
 	folder_search:                       [dynamic]u8,
 	folder_color_input:                  [dynamic]u8,
 	folder_rules:                        [dynamic]Folder_Rule_Draft, // the editor's rule rows, reserved to FOLDER_RULES_CAP
 	folder_rule_focus:                   int, // which rule box has the caret (focus == .FolderRule)
 	folder_rule_menu:                    int, // rule row whose type menu is open, -1 = none
+	folder_rule_next_id:                 u32,
 	folder_match:                        Folder_Match, // the editor's all/any toggle
 	board_drag:                          Board_Drag, // a chat or folder held in Chats settings
 	folder_menu_open:                    bool,

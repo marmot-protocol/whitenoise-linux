@@ -149,7 +149,11 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	ui.account_ref = account
 	append(&ui.accounts, Account_Row_Ui{id_hex = account, name = "Offline fixture"})
 	g_ui, g_prefs = &ui, &ui.prefs
-	defer {g_ui, g_prefs = nil, nil; forced_release = false; text_field_live = false}
+	defer {
+		archive_press_clear(&ui)
+		g_ui, g_prefs = nil, nil
+		forced_release, text_field_live = false, false
+	}
 	// Selecting a chat starts timeline and roster workers; join them before
 	// the client is freed, as app shutdown does.
 	defer {timeline_stop(); members_stop(); for job in account_jobs {thread.join(job.worker)}
@@ -167,20 +171,133 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		}
 		return string(text[:])
 	}
-	for other_selected in ([]bool{true, false}) {
+	archive_flag :: proc(
+		t: ^testing.T,
+		client: ^marmot.Client,
+		account, group: string,
+		archived: bool,
+	) -> bool {
 		record: ^marmot.App_Group_Record
-		if !testing.expect_value(
-			t,
-			marmot.set_group_archived(
-				client,
-				strings.clone_to_cstring(account, context.temp_allocator),
-				strings.clone_to_cstring(target, context.temp_allocator),
-				true,
-				&record,
-			),
-			marmot.Status.OK,
-		) {return}
+		status := marmot.set_group_archived(
+			client,
+			strings.clone_to_cstring(account, context.temp_allocator),
+			strings.clone_to_cstring(group, context.temp_allocator),
+			archived,
+			&record,
+		)
+		if !testing.expect(t, status == .OK, marmot.last_error()) {return false}
 		marmot.app_group_record_free(record)
+		return true
+	}
+	control_point :: proc(t: ^testing.T, id: nendo.Id) -> (point: nendo.Vector2, ok: bool) {
+		data := nendo.element(id)
+		if !testing.expect(t, data.found, "Archive control is rendered") {return {}, false}
+		b := data.rect
+		return {b.x + b.width / 2, b.y + b.height / 2}, true
+	}
+	mouse_at :: proc(ui: ^Ui_State, client: ^marmot.Client, point: nendo.Vector2, down: bool) {
+		rl.WindowShouldClose()
+		rl.PushMouseButton(.LEFT, down)
+		nendo.set_pointer(point, down ? .Down : .Up)
+		anim_tick(1.0 / 60)
+		handle_pages(ui, client)
+	}
+	touch_poll :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+		rl.WindowShouldClose()
+		nendo.set_pointer(
+			archive_pointer_position(ui.page, transmute(nendo.Vector2)rl.GetMousePosition()),
+			rl.IsMouseButtonDown(.LEFT) ? .Down : .Up,
+		)
+		anim_tick(1.0 / 60)
+		update_drag_scroll(ui, false)
+		handle_pages(ui, client)
+	}
+	touch_at :: proc(
+		ui: ^Ui_State,
+		client: ^marmot.Client,
+		point: nendo.Vector2,
+		phase: rl.Finger_Phase,
+	) {
+		rl.InjectFinger(phase, point.x, point.y)
+		touch_poll(ui, client)
+	}
+
+	ui.page = .Archived
+	if !archive_flag(t, client, account, target, true) ||
+	   !archive_flag(t, client, account, other, true) {return}
+	load_archived(client, &ui)
+	for job in account_jobs {thread.join(job.worker)}
+	account_job_drain(&ui)
+	if !testing.expect_value(t, len(ui.archived), 2) {return}
+	status_before := ui.client_status
+	for control in ([]string{"ChatUnarch", "ArchivedRow"}) {
+		if ui.archived[0].group_id != target {
+			ui.archived[0], ui.archived[1] = ui.archived[1], ui.archived[0]
+		}
+		for _ in 0 ..< 3 {frame(&ui)}
+		id := nendo.id(control, nendo.id(target).id)
+		point, found := control_point(t, id)
+		if !found {return}
+		mouse_at(&ui, client, point, true)
+		if !testing.expect(t, nendo.pointer_over(id), "Press begins on the first chat") {return}
+		// Replace the chat rows as a live snapshot would, then show the new order.
+		fresh: [dynamic]Chat_Row_Ui
+		append(&fresh, chat_clone(ui.archived[1]), chat_clone(ui.archived[0]))
+		chats_replace(&ui.archived, fresh)
+		chats_collect()
+		build_layout(&ui, 0)
+		mouse_at(&ui, client, point, false)
+		if !testing.expect(
+			t,
+			nendo.pointer_over(nendo.id(control, nendo.id(other).id)),
+			"The other chat takes the same screen position before release",
+		) {return}
+		if !testing.expect_value(t, ui.page, Page.Archived) ||
+		   !testing.expect_value(t, ui.client_status, status_before) {return}
+		testing.expect_value(t, ui.selected, -1)
+	}
+	row_id := nendo.id("ArchivedRow", nendo.id(target).id)
+	restore_id := nendo.id("ChatUnarch", nendo.id(target).id)
+	row_point, row_found := control_point(t, row_id)
+	restore_point, restore_found := control_point(t, restore_id)
+	if !row_found || !restore_found {return}
+	mouse_at(&ui, client, row_point, true)
+	if !testing.expect(t, nendo.pointer_over(row_id) && !nendo.pointer_over(restore_id)) {return}
+	mouse_at(&ui, client, restore_point, false)
+	if !testing.expect_value(t, ui.client_status, status_before) {return}
+
+	rl.InjectFinger(.Down, row_point.x, row_point.y)
+	rl.InjectFinger(.Up, restore_point.x, restore_point.y)
+	touch_poll(&ui, client)
+	if !testing.expect(t, nendo.pointer_over(restore_id)) ||
+	   !testing.expect_value(t, ui.client_status, status_before) {return}
+
+	rl.InjectFinger(.Down, restore_point.x, restore_point.y)
+	rl.InjectFinger(.Move, row_point.x, row_point.y)
+	rl.InjectFinger(.Up, restore_point.x, restore_point.y)
+	touch_poll(&ui, client)
+	if !testing.expect_value(t, ui.client_status, status_before) {return}
+
+	touch_at(&ui, client, restore_point, .Down)
+	drag_point := restore_point + nendo.Vector2{12, 0}
+	touch_at(&ui, client, drag_point, .Move)
+	touch_at(&ui, client, drag_point, .Up)
+	if !testing.expect(
+		t,
+		nendo.pointer_over(restore_id),
+		"The finger lifts inside Restore",
+	) {return}
+	if !testing.expect_value(t, ui.client_status, status_before) {return}
+	rl.WindowShouldClose()
+	update_drag_scroll(&ui, false)
+	load_archived(client, &ui)
+	for job in account_jobs {thread.join(job.worker)}
+	account_job_drain(&ui)
+	if !testing.expect_value(t, len(ui.archived), 2) {return}
+	if !archive_flag(t, client, account, other, false) {return}
+
+	for other_selected in ([]bool{true, false}) {
+		if !archive_flag(t, client, account, target, true) {return}
 		ui.page = .Archived
 		ui.selected = -1
 		// Dismiss without clearing the notice identity. Repeating the same
@@ -198,7 +315,16 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		} else {
 			// Opening an archived conversation is not restoration. Its temporary
 			// search-only row must not become the identity used after the list reload.
-			select_archived_chat(&ui, client, 0)
+			for _ in 0 ..< 3 {frame(&ui)}
+			point, found := control_point(t, nendo.id("ArchivedRow", nendo.id(target).id))
+			if !found {return}
+			touch_at(&ui, client, point, .Down)
+			touch_at(&ui, client, point, .Up)
+			if !testing.expect(
+				t,
+				ui.selected >= 0,
+				"A stationary tap opens the archived chat",
+			) {return}
 			testing.expect_value(t, ui.chats[ui.selected].group_id, target)
 			testing.expect(t, ui.chats[ui.selected].search_only)
 		}
@@ -216,18 +342,14 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		staged := raw_data(ui.staged)
 		payload := raw_data(ui.staged[0].data)
 		for _ in 0 ..< 3 {frame(&ui)}
-		id := nendo.id("ChatUnarch", 0)
-		data := nendo.element(id)
-		if !testing.expect(t, data.found, "Restore is rendered") {return}
-		b := data.rect
-		nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
-		if !testing.expect(t, nendo.pointer_over(id), "Restore is reachable") {return}
+		id := nendo.id("ChatUnarch", nendo.id(target).id)
+		point, found := control_point(t, id)
+		if !found {return}
 		if other_selected {
 			selected := ui.selected
 			ui.account_ref = "missing-offline-account"
-			forced_release = true
-			handle_pages(&ui, client)
-			forced_release = false
+			mouse_at(&ui, client, point, true)
+			mouse_at(&ui, client, point, false)
 			testing.expect_value(t, ui.page, Page.Archived)
 			testing.expect_value(t, ui.chat_filter, Chat_Filter.Unread)
 			testing.expect_value(t, string(ui.sidebar_filter[:]), "Restored")
@@ -241,16 +363,22 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 			account_job_drain(&ui)
 			ui.account_ref = account
 			for _ in 0 ..< 3 {frame(&ui)}
-			nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
+			point, found = control_point(t, id)
+			if !found {return}
 		}
 		if !other_selected {
 			testing.expect_value(t, ui.client_status, "Chat restored.")
 			testing.expect_value(t, ui.banner_seen, "Chat restored.")
 			testing.expect_value(t, ui.banner, "")
+			rl.InjectFinger(.Down, point.x, point.y)
+			rl.InjectFinger(.Up, point.x, point.y)
+			rl.InjectFinger(.Move, point.x + 1, point.y)
+			touch_poll(&ui, client)
+			testing.expect_value(t, rl.GetMousePosition().x, point.x + 1)
+		} else {
+			mouse_at(&ui, client, point, true)
+			mouse_at(&ui, client, point, false)
 		}
-		forced_release = true
-		handle_pages(&ui, client)
-		forced_release = false
 		// Restore confirms in place: Archive keeps its page, filter and search,
 		// and no conversation opens.
 		testing.expect_value(t, ui.page, Page.Archived)

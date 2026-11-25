@@ -71,7 +71,7 @@ live_worker :: proc(t: ^thread.Thread) {
 	job := (^Live_Stream)(t.data)
 	live := job.live
 	sub: ^marmot.Chat_List_Subscription
-	if marmot.subscribe_chat_list(job.client, job.account, false, &sub) != .OK {
+	if marmot.subscribe_chat_list(job.client, job.account, true, &sub) != .OK {
 		detail := marmot.last_error()
 		fmt.eprintfln("live: subscribe failed: %s", detail)
 		delete(detail)
@@ -415,7 +415,8 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if refresh_members {load_members(client, ui)}
 
-	if dirty {live.refresh_dirty = true}
+	live.refresh_dirty ||= dirty || ui.chat_read_dirty
+	ui.chat_read_dirty = false
 	if len(groups) > 0 {
 		clear(&groups)
 		sync.lock(&live.mutex)
@@ -432,20 +433,27 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	job := live.refresh
 	if job != nil && thread.is_done(job.worker) {
 		live.refresh = nil
-		if string(job.account) == ui.account_ref && job.revision == chat_list_revision {
-			live_apply(ui, client, job)
-		}
+		live_apply(live, ui, client, job)
 		chat_list_free(job)
 		free(job)
 	}
-	// A new membership rule needs the member lists the last read skipped.
-	if !ui.chat_members_read && folder_rules_need_members(ui.prefs) {live.refresh_dirty = true}
+	// New rules can need facts the last refresh did not ask for.
+	needed := folder_async_facts(ui.prefs)
+	if (!ui.chat_members_read && folder_rules_need_members(ui.prefs)) ||
+	   needed - ui.chat_folder_facts_attempted != {} {live.refresh_dirty = true}
 	// Coalesce events while a read is running; never wait for that read on a frame.
 	if live.refresh != nil || !live.refresh_dirty || client == nil || ui.account_ref == "" {return}
+	include_archived := ui.page == .Archived
+	if include_archived {
+		for pending in account_jobs {
+			if pending.kind == .Read_Archived && pending.account == ui.account_ref {return}
+		}
+	}
 	live.refresh_dirty = false
 	job = new(Chat_List_Work)
 	job.client, job.account = client, strings.clone_to_cstring(ui.account_ref)
 	job.revision = chat_list_revision
+	job.include_archived = include_archived
 	chat_list_snapshot(job, ui)
 	job.worker = thread.create(chat_list_worker)
 	job.worker.data = job
@@ -454,7 +462,12 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 }
 
 @(private)
-live_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, job: ^Chat_List_Work) {
+live_apply :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client, job: ^Chat_List_Work) {
+	if string(job.account) != ui.account_ref {return}
+	if job.revision != chat_list_revision {
+		live.refresh_dirty ||= ui.page == .Archived
+		return
+	}
 	// Unread counts before the reload, to spot the chats that gained
 	// messages for desktop notifications.
 	old_unread := make(map[string]u64, context.temp_allocator)
@@ -653,6 +666,7 @@ Pending_Send :: struct {
 	failed:             bool,
 	thread_unavailable: bool,
 	queued:             bool, // waiting for the auto-retry timer (offline.odin)
+	acknowledged:       bool, // sent; preview retained until the timeline contains its replacement
 	dismissed:          bool, // hidden during an active send; freed when its worker completes
 	purged:             bool, // wiped while a worker still borrows the row
 	attempts:           int, // failed tries so far, capped by MAX_SEND_ATTEMPTS
@@ -1197,11 +1211,12 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		// until the replacement exists, and recover a missed subscription update.
 		waiting := false
 		if d.err == "" && timeline_scope(ui, "") {
-			for p in ui.pending {
+			for &p in ui.pending {
 				if p.ticket != d.ticket ||
 				   !pending_in_workspace(ui, p, string(timeline_job.group)) {
 					continue
 				}
+				p.acknowledged = true
 				for id in d.ids {
 					waiting ||= !visible[id]
 				}

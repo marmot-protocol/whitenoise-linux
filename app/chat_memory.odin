@@ -1,5 +1,6 @@
 package main
 
+import marmot "../marmot"
 import "core:strings"
 
 @(private)
@@ -24,11 +25,74 @@ chat_peer :: proc(ui: ^Ui_State) -> string {
 }
 
 @(private)
+chat_read_row_apply :: proc(
+	chat: ^Chat_Row_Ui,
+	row: ^marmot.Chat_List_Row,
+	explicit := false,
+) -> bool {
+	cursor := string(row.last_read_message_id_hex)
+	advanced := cursor != "" && cursor != chat.last_read
+	if advanced {
+		delete(chat.last_read)
+		chat.last_read = strings.clone(cursor)
+		// The remaining native count may include only inline references.
+		chat.unread_mention = false
+	}
+	// The rail may already know about a message that arrived after the read.
+	if last := row.last_message;
+	   explicit || (last != nil && chat.last_id == string(last.message_id_hex)) {
+		chat.unread = row.unread_count
+		chat.unread_mention &= row.unread_mention_count > 0
+		if first := string(row.first_unread_message_id_hex); chat.first_unread != first {
+			delete(chat.first_unread)
+			chat.first_unread = strings.clone(first)
+		}
+	}
+	return advanced
+}
+
+@(private)
+chat_read_invalidate :: proc(ui: ^Ui_State) {
+	chat_list_revision += 1
+	ui.chat_read_dirty = true
+}
+
+@(private)
+chat_read_apply :: proc(
+	ui: ^Ui_State,
+	row: ^marmot.Chat_List_Row,
+	chat: ^Chat_Row_Ui,
+	explicit := false,
+) {
+	group := string(row.group_id_hex)
+	target := chat
+	if target == nil {
+		for &item in ui.chats {
+			if item.group_id == group {target = &item; break}
+		}
+	}
+	advanced := target != nil && chat_read_row_apply(target, row, explicit)
+	known := target != nil
+	if row.archived || (target != nil && target.archived) {
+		for &item in ui.archived {
+			if item.group_id == group {
+				advanced |= chat_read_row_apply(&item, row)
+				known = true
+				break
+			}
+		}
+	}
+	if explicit || advanced || (!known && row.last_read_message_id_hex != nil) {
+		chat_read_invalidate(ui)
+	}
+}
+
+@(private)
 retired_chats: [dynamic]Chat_Row_Ui
 
 @(private)
 chat_free :: proc(chat: Chat_Row_Ui) {
-	for value in ([]string{chat.group_id, chat.peer_hex, chat.title, chat.preview, chat.at, chat.first_unread, chat.avatar_url, chat.avatar_key, chat.image_hash, chat.last_id}) {
+	for value in ([]string{chat.group_id, chat.peer_hex, chat.title, chat.preview, chat.at, chat.first_unread, chat.last_read, chat.avatar_url, chat.avatar_key, chat.image_hash, chat.last_id}) {
 		delete(value)
 	}
 }
@@ -36,7 +100,7 @@ chat_free :: proc(chat: Chat_Row_Ui) {
 @(private)
 chat_clone :: proc(chat: Chat_Row_Ui) -> Chat_Row_Ui {
 	copy := chat
-	for value in ([]^string{&copy.group_id, &copy.peer_hex, &copy.title, &copy.preview, &copy.at, &copy.first_unread, &copy.avatar_url, &copy.avatar_key, &copy.image_hash, &copy.last_id}) {value^ = strings.clone(value^)}
+	for value in ([]^string{&copy.group_id, &copy.peer_hex, &copy.title, &copy.preview, &copy.at, &copy.first_unread, &copy.last_read, &copy.avatar_url, &copy.avatar_key, &copy.image_hash, &copy.last_id}) {value^ = strings.clone(value^)}
 	return copy
 }
 
@@ -50,19 +114,31 @@ chats_collect :: proc() {
 }
 
 @(private)
-chats_replace :: proc(rows: ^[dynamic]Chat_Row_Ui, fresh: [dynamic]Chat_Row_Ui) {
+chats_replace :: proc(
+	rows: ^[dynamic]Chat_Row_Ui,
+	fresh: [dynamic]Chat_Row_Ui,
+	fence_reads := false,
+) {
 	previous := make(map[string]int, context.temp_allocator)
 	for row, i in rows^ {
 		previous[row.group_id] = i
 	}
+	cursor_changed := false
 	for &row in fresh {
-		if i, ok := previous[row.group_id]; ok && rows^[i] == row {
-			chat_free(row)
-			row = rows^[i]
-			rows^[i] = {}
+		if i, ok := previous[row.group_id]; ok {
+			old := &rows^[i]
+			if old^ == row {
+				chat_free(row)
+				row, old^ = old^, {}
+			} else {
+				cursor_changed ||= fence_reads && old.last_read != row.last_read
+			}
+		} else {
+			cursor_changed ||= fence_reads && row.last_read != ""
 		}
 	}
 	append(&retired_chats, ..rows^[:])
 	delete(rows^)
 	rows^ = fresh
+	if cursor_changed {chat_list_revision += 1}
 }

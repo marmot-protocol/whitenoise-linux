@@ -1,6 +1,7 @@
 package main
 
 import marmot "../marmot"
+import "core:fmt"
 import "core:strings"
 import "core:thread"
 import "core:time"
@@ -16,6 +17,9 @@ Chat_List_Work :: struct {
 	blocked:          map[string]bool, // owned copy of ui.blocked; the worker must not read Ui_State
 	members:          map[string][]string, // group id to member pubkey hex, read only when read_members
 	read_members:     bool, // some folder rule looks at membership
+	folder_facts:     map[string]Folder_Async_Facts,
+	read_facts:       Folder_Async_Facts,
+	failed_facts:     Folder_Async_Facts,
 	include_archived: bool,
 	err:              string,
 	revision:         u64,
@@ -29,6 +33,7 @@ chat_list_revision: u64
 chat_list_snapshot :: proc(job: ^Chat_List_Work, ui: ^Ui_State) {
 	for hex in ui.blocked {job.blocked[strings.clone(hex)] = true}
 	job.read_members = folder_rules_need_members(ui.prefs)
+	job.read_facts = folder_async_facts(ui.prefs)
 }
 
 @(private)
@@ -44,6 +49,33 @@ chat_list_read :: proc(job: ^Chat_List_Work) {
 		chat_members_fetch(job.client, job.account, job.rows, &job.members)
 	}
 	chat_identity_members_fetch(job.client, job.account, job.rows, &job.members)
+	for fact in Folder_Async_Fact {
+		if fact not_in job.read_facts {continue}
+		list: ^marmot.String_List
+		status: marmot.Status
+		switch fact {
+		case .Mention:
+			status = marmot.folder_unread_mentions(job.client, job.account, &list)
+		case .Pending:
+			status = marmot.folder_pending_sends(job.client, job.account, &list)
+		}
+		if status != .OK {
+			job.failed_facts += {fact}
+			err := marmot.last_error()
+			fmt.eprintfln("folder facts: %v: %s", fact, err)
+			delete(err)
+			continue
+		}
+		for id in list.items[:list.len] {
+			key := string(id)
+			if facts, ok := &job.folder_facts[key]; ok {
+				facts^ += {fact}
+			} else {
+				job.folder_facts[strings.clone(key)] = {fact}
+			}
+		}
+		marmot.string_list_free(list)
+	}
 	for i in 0 ..< job.rows.rows_len {
 		row := &job.rows.rows[i].row
 		last := row.last_message
@@ -115,6 +147,8 @@ chat_list_free :: proc(job: ^Chat_List_Work) {
 	for hex in job.blocked {delete(hex)}
 	delete(job.blocked)
 	chat_members_free(&job.members)
+	for id in job.folder_facts {delete(id)}
+	delete(job.folder_facts)
 	if job.rows != nil {marmot.presented_chat_list_free(job.rows)}
 	delete(job.account); delete(job.err)
 }

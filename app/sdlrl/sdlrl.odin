@@ -124,6 +124,7 @@ State :: struct {
 	m_clicks:       u8, // click count of this frame's LEFT press (2 = double)
 	left_press:     Vector2,
 	left_release:   Vector2,
+	m_click_at:     Maybe(Vector2), // stationary LEFT press and release in one poll
 	wheel:          Vector2,
 	chars:          [dynamic]rune,
 	preedit:        string,
@@ -849,6 +850,7 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 		state.m_pressed[button] = false
 		state.m_released[button] = false
 	}
+	state.m_click_at = nil
 	state.wheel = {}
 	clear(&state.chars)
 	clear_dropped_files()
@@ -863,6 +865,9 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 	state.density = max(sdl.GetWindowPixelDensity(state.window), 1)
 
 	pump_tray()
+	left_stationary: bool
+	left_device: sdl.MouseID
+	left_window: sdl.WindowID
 	event: sdl.Event
 	for sdl.PollEvent(&event) {
 		if changed != nil {changed^ = true}
@@ -901,10 +906,11 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 				}
 			}
 		case .MOUSE_BUTTON_DOWN, .MOUSE_BUTTON_UP:
+			at := Vector2{event.button.x, event.button.y}
 			state.touch_active = event.button.which == sdl.TOUCH_MOUSEID
 			if event.button.which == sdl.TOUCH_MOUSEID {
 				state.touch = true
-				state.touch_position = {event.button.x, event.button.y}
+				state.touch_position = at
 				state.touch_lifting = event.type == .MOUSE_BUTTON_UP
 			}
 			if event.type == .MOUSE_BUTTON_DOWN {state.touch_lifted = false}
@@ -920,21 +926,44 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 				continue
 			}
 			if event.type == .MOUSE_BUTTON_DOWN {
-				state.m_pressed[button] = true
-				state.m_down[button] = true
 				if button == .LEFT {
 					state.m_clicks = event.button.clicks
-					state.left_press = {event.button.x, event.button.y}
+					state.left_press = at
+					state.m_click_at = nil
+					left_stationary =
+						!state.m_pressed[button] &&
+						!state.m_released[button] &&
+						!state.m_down[button]
+					left_device, left_window = event.button.which, event.button.windowID
 				}
+				state.m_pressed[button] = true
+				state.m_down[button] = true
 			} else {
+				if button == .LEFT {
+					state.left_release = at
+					state.m_click_at = nil
+					if left_stationary &&
+					   left_device == event.button.which &&
+					   left_window == event.button.windowID &&
+					   state.left_press == at {
+						state.m_click_at = at
+					}
+					left_stationary = false
+				}
 				state.m_released[button] = true
 				state.m_down[button] = false
-				if button == .LEFT {state.left_release = {event.button.x, event.button.y}}
 			}
 		case .MOUSE_MOTION:
+			at := Vector2{event.motion.x, event.motion.y}
+			if left_stationary &&
+			   left_device == event.motion.which &&
+			   left_window == event.motion.windowID &&
+			   state.left_press != at {
+				left_stationary = false
+			}
 			if event.motion.which == sdl.TOUCH_MOUSEID {
 				state.touch_active = true
-				state.touch_position = {event.motion.x, event.motion.y}
+				state.touch_position = at
 			} else if event.motion.xrel != 0 || event.motion.yrel != 0 {
 				state.touch_active = false
 				state.touch_lifting, state.touch_lifted = false, false
@@ -1176,6 +1205,7 @@ PushKey :: proc(key: KeyboardKey, down: bool) {
 
 PushMouseButton :: proc(button: MouseButton, down: bool) {
 	UseMouse()
+	if button == .LEFT {state.m_click_at = nil}
 	state.m_pressed[button] = down
 	state.m_released[button] = !down
 	state.m_down[button] = down
@@ -1252,6 +1282,11 @@ GetMousePosition :: proc() -> Vector2 {
 	x, y: f32
 	_ = sdl.GetMouseState(&x, &y)
 	return {x, y}
+}
+
+GetCoalescedLeftClick :: proc() -> (position: Vector2, ok: bool) {
+	if at, found := state.m_click_at.?; found {return at, true}
+	return {}, false
 }
 
 GetMouseWheelMoveV :: proc() -> Vector2 {

@@ -981,10 +981,12 @@ app_main :: proc() {
 
 			start_events(&live, client)
 			devices_drain(&ui, client, &live)
+			timeline_drain_reads(&ui)
 			account_job_drain(&ui, &live)
 			if profile := ui.devices.profiles[ui.account_ref];
 			   profile != nil && profile.unlink_check {
 				// Keep the workspace intact but do not run any of its input handlers.
+				archive_press_clear(&ui)
 				rl.SetTextInput(false)
 				for rl.GetCharPressed() != 0 {}
 				forced_press, forced_release = false, false
@@ -1126,8 +1128,7 @@ app_main :: proc() {
 			devctl_poll(&ui, client, int(frame), &pointer)
 			if ui.lock_requested {lock_now(&ui); lock_wait_frame(); break}
 			handle_file_drop(&ui) // publish preparation chips before this frame's layout
-			pointer.x /= UI_ZOOM
-			pointer.y /= UI_ZOOM
+			pointer = archive_pointer_position(ui.page, pointer)
 			nendo.set_pointer(pointer, (rl.IsMouseButtonDown(.LEFT)) ? .Down : .Up)
 			ui.picker_hit_revision = ui.picker_custom_revision
 			fwd_sample_pointer(&ui)
@@ -2059,6 +2060,7 @@ app_main :: proc() {
 			delete(ui.staged); delete(key)
 		}
 		delete(ui.staged_drafts)
+		archive_press_clear(&ui)
 		for row in ui.chats {chat_free(row)}
 		for row in ui.archived {chat_free(row)}
 		delete(ui.chats); delete(ui.archived); delete(retired_chats); retired_chats = {}

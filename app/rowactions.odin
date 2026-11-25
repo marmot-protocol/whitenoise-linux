@@ -453,6 +453,7 @@ open_folder_modal :: proc(ui: ^Ui_State, gid: string = "", rename: int = -1) {
 	ui.folder_gid = strings.clone(gid)
 	ui.folder_rename = rename
 	ui.folder_icon = 0
+	ui.folder_sort = .Recent
 	ui.folder_mode = gid != "" ? .Move : .Create
 	ed_set(ui, &ui.folder_input, "")
 	ed_set(ui, &ui.folder_search, "")
@@ -464,6 +465,7 @@ open_folder_modal :: proc(ui: ^Ui_State, gid: string = "", rename: int = -1) {
 		ed_set(ui, &ui.folder_input, name)
 		folder_rules_load(ui, name)
 		ui.folder_icon = clamp(ui.prefs.folder_icons[name], 0, len(FOLDER_ICONS) - 1)
+		ui.folder_sort = ui.prefs.folder_sorts[name]
 		if rgb, ok := ui.prefs.folder_colors[name]; ok {
 			ed_set(ui, &ui.folder_color_input, fmt.tprintf("#%06X", rgb))
 		}
@@ -538,7 +540,7 @@ folder_editor_focus :: proc(ui: ^Ui_State, focus: Focus) {
 	case .FolderColor:
 		id = "FolderColorBox"
 	case .FolderRule:
-		id = fmt.tprintf("FolderRuleBox%d", ui.folder_rule_focus)
+		id = fmt.tprintf("FolderRuleBox%d", ui.folder_rules[ui.folder_rule_focus].field_id)
 	}
 	scroll_into_view(nendo.id(single_pane() ? "FolderModal" : "FolderEditorBody"), nendo.id(id))
 }
@@ -582,6 +584,27 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 				ui.focus == .Folder,
 				14,
 				TEXT_LO,
+			)
+		}
+		nendo.text(tr("Sort chats by"), {font = FONT_TITLE, size = 13, color = TEXT_DIM})
+		if nendo.box(nendo.id("FolderSortOptions"))({direction = .Column, gap = 4}) {
+			settings_option(
+				"FolderSort",
+				u32(Folder_Sort.Recent),
+				tr("Most recent activity"),
+				ui.folder_sort == .Recent,
+			)
+			settings_option(
+				"FolderSort",
+				u32(Folder_Sort.Name),
+				tr("Name A to Z"),
+				ui.folder_sort == .Name,
+			)
+			settings_option(
+				"FolderSort",
+				u32(Folder_Sort.Unread),
+				tr("Unread first"),
+				ui.folder_sort == .Unread,
 			)
 		}
 		folder_rules_editor(ui)
@@ -930,9 +953,8 @@ mark_chat_read :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 		)
 		return
 	}
-	ui.chats[index].unread = row.unread_count
-	delete(ui.chats[index].first_unread)
-	ui.chats[index].first_unread = strings.clone(string(row.first_unread_message_id_hex))
+	if row == nil {return}
+	chat_read_apply(ui, row, &ui.chats[index], explicit = true)
 	marmot.chat_list_row_free(row)
 }
 
@@ -1019,6 +1041,12 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if mouse_released() {
+		for mode in Folder_Sort {
+			if nendo.pointer_over(nendo.id("FolderSort", u32(mode))) {
+				ui.folder_sort = mode
+				return
+			}
+		}
 		for color, i in FOLDER_COLORS {
 			if nendo.pointer_over(nendo.id("FolderColor", u32(i))) {
 				ed_set(ui, &ui.folder_color_input, fmt.tprintf("#%06X", color))
@@ -1058,6 +1086,7 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			folder_editor_focus(ui, .FolderRule)
 			return
 		}
+		folder_index := ui.folder_rename
 		if ui.folder_mode == .Edit {
 			if ui.folder_rename < 0 || ui.folder_rename >= len(ui.prefs.folders) {
 				folder_rules_free(rules)
@@ -1076,12 +1105,19 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				delete_key(&ui.prefs.collapsed_folders, old)
 				delete_key(&ui.prefs.folder_icons, old)
 				delete_key(&ui.prefs.folder_colors, old)
+				delete_key(&ui.prefs.folder_sorts, old)
 				folder_rules_drop(ui, old)
 				ui.prefs.folders[ui.folder_rename] = strings.clone(name)
 				if ui.chat_folder == old {ui.chat_folder = ui.prefs.folders[ui.folder_rename]}
 			}
 		} else {
+			folder_index = len(ui.prefs.folders)
 			append(&ui.prefs.folders, strings.clone(name))
+		}
+		if ui.folder_sort == .Recent {
+			delete_key(&ui.prefs.folder_sorts, name)
+		} else {
+			ui.prefs.folder_sorts[ui.prefs.folders[folder_index]] = ui.folder_sort
 		}
 		ui.prefs.folder_icons[strings.clone(name)] = clamp(
 			ui.folder_icon,
@@ -1120,6 +1156,7 @@ delete_folder :: proc(ui: ^Ui_State, index: int) {
 	delete_key(&ui.prefs.collapsed_folders, name)
 	delete_key(&ui.prefs.folder_icons, name)
 	delete_key(&ui.prefs.folder_colors, name)
+	delete_key(&ui.prefs.folder_sorts, name)
 	folder_rules_drop(ui, name)
 	ordered_remove(&ui.prefs.folders, index)
 	if ui.folder_rename == index {
