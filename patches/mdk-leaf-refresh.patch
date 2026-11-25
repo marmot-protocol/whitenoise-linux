@@ -1,0 +1,160 @@
+diff --git a/crates/marmot-session/src/runtime.rs b/crates/marmot-session/src/runtime.rs
+--- a/crates/marmot-session/src/runtime.rs
++++ b/crates/marmot-session/src/runtime.rs
+@@ -116,7 +116,7 @@
+ /// advertises fewer app components than this device supports. Wide so that a
+ /// release does not make every member of a group commit at once (spec
+ /// app-components/README.md, "Enabling a Component in an Existing Group").
+-const LEAF_REFRESH_WINDOW_SECS: u64 = 5 * 24 * 60 * 60;
++const LEAF_REFRESH_WINDOW_SECS: u64 = 60 * 60;
+ const COMPONENT_MIGRATION_RECHECK: Duration = Duration::from_secs(10 * 60);
+ const TRANSPORT_FANOUT_RETENTION_SECS: u64 = 24 * 60 * 60;
+ /// How long a due self-update waits for the group's previous commit to reach
+@@ -3452,7 +3452,10 @@
+         if missing.is_empty() || has_active {
+             state.leaf_refresh_due_at = None;
+         } else {
+-            match state.leaf_refresh_due_at {
++            let latest_due = now.0.saturating_add(LEAF_REFRESH_WINDOW_SECS);
++            // Resample old deadlines outside the window without bunching them at its end.
++            let due = state.leaf_refresh_due_at.filter(|due| due.0 <= latest_due);
++            match due {
+                 None => {
+                     state.leaf_refresh_due_at = Some(Timestamp(
+                         now.0.saturating_add(
+diff --git a/crates/marmot-session/tests/runtime/account_devices_advertising.rs b/crates/marmot-session/tests/runtime/account_devices_advertising.rs
+--- a/crates/marmot-session/tests/runtime/account_devices_advertising.rs
++++ b/crates/marmot-session/tests/runtime/account_devices_advertising.rs
+@@ -45,13 +45,13 @@
+         .unwrap()
+ }
+ 
+-/// Maintenance randomness that steps a day per draw, so two groups that
++/// Maintenance randomness that steps twenty minutes per draw, so two groups that
+ /// sample a refresh time never draw the same one.
+-struct DayStepRandom(AtomicU64);
++struct TwentyMinuteRandom(AtomicU64);
+ 
+-impl MaintenanceRandom for DayStepRandom {
++impl MaintenanceRandom for TwentyMinuteRandom {
+     fn next_u64(&self) -> u64 {
+-        self.0.fetch_add(1, Ordering::Relaxed) * 24 * 60 * 60
++        self.0.fetch_add(1, Ordering::Relaxed) * 20 * 60
+     }
+ }
+ 
+@@ -123,7 +123,7 @@
+ #[tokio::test]
+ async fn an_upgrade_refreshes_each_existing_leaf_at_its_own_random_time() {
+     use cgka_traits::app_components::ACCOUNT_DEVICES_COMPONENT_ID;
+-    const WINDOW_5_DAYS: u64 = 5 * 24 * 60 * 60;
++    const HOUR: u64 = 60 * 60;
+ 
+     let dir = relaxed_storage_dir().unwrap();
+     let key = SqlCipherKey::new("leaf refresh account-devices upgrade").unwrap();
+@@ -156,9 +156,13 @@
+             vec![alice.self_id()]
+         );
+     }
+-    drop(alice);
+ 
+     let start = 100_000u64;
++    let mut old = alice.group_maintenance(&groups[0]).unwrap().unwrap();
++    old.leaf_refresh_due_at = Some(Timestamp(start + 4 * 24 * HOUR));
++    alice.put_group_maintenance(&old).unwrap();
++    drop(alice);
++
+     let wall = Arc::new(TestWallClock::new(start));
+     let adapter = RecordingAdapter::default();
+     let mut routing = StaticTransportRouting::new(vec![]).required_acks(1);
+@@ -178,7 +182,7 @@
+     .with_maintenance_sources(
+         wall.clone(),
+         Arc::new(TestMonotonicClock::default()),
+-        Arc::new(DayStepRandom(AtomicU64::new(1))),
++        Arc::new(TwentyMinuteRandom(AtomicU64::new(4))),
+     )
+     .with_maintenance_timing(MaintenanceTiming::immediate());
+     let epochs_before: Vec<_> = groups
+@@ -186,14 +190,14 @@
+         .map(|group_id| runtime.session().epoch(group_id).unwrap())
+         .collect();
+ 
+-    // The first tick only samples a due time for each group.
++    // One group gets its first deadline and the other replaces its old deadline.
+     runtime.run_due_maintenance().await.unwrap();
+     let mut order: Vec<_> = groups
+         .iter()
+         .map(|group_id| {
+             let at =
+                 refresh_due_at(&runtime, group_id).expect("each stale leaf schedules a refresh");
+-            assert!(at.0 >= start && at.0 <= start + WINDOW_5_DAYS);
++            assert!(at.0 >= start && at.0 <= start + HOUR);
+             (at, group_id.clone())
+         })
+         .collect();
+@@ -201,7 +205,7 @@
+     let [(early_at, early), (late_at, late)] = &order[..] else {
+         unreachable!()
+     };
+-    assert!(late_at.0 > early_at.0 + 60 * 60, "{early_at:?} {late_at:?}");
++    assert!(late_at.0 > early_at.0 + 15 * 60, "{early_at:?} {late_at:?}");
+     assert!(adapter.publishes().is_empty());
+ 
+     // At the earlier time only that group's leaf is refreshed.
+diff --git a/crates/marmot-session/tests/runtime/component_migration.rs b/crates/marmot-session/tests/runtime/component_migration.rs
+--- a/crates/marmot-session/tests/runtime/component_migration.rs
++++ b/crates/marmot-session/tests/runtime/component_migration.rs
+@@ -33,7 +33,7 @@
+ #[tokio::test]
+ async fn maintenance_refreshes_a_stale_leaf_at_a_persisted_random_time() {
+     use cgka_traits::app_components::GROUP_AVATAR_URL_COMPONENT_ID;
+-    const WINDOW_5_DAYS: u64 = 5 * 24 * 60 * 60;
++    const HOUR: u64 = 60 * 60;
+ 
+     let dir = relaxed_storage_dir().unwrap();
+     let database = dir.path().join("alice.sqlite");
+@@ -81,7 +81,7 @@
+     .with_maintenance_sources(
+         wall.clone(),
+         Arc::new(TestMonotonicClock::default()),
+-        Arc::new(TestRandom::new(0)),
++        Arc::new(TestRandom::new(HOUR / 2)),
+     )
+     .with_maintenance_timing(MaintenanceTiming::immediate());
+     assert_eq!(
+@@ -104,7 +104,7 @@
+         .unwrap()
+         .leaf_refresh_due_at
+         .expect("a stale leaf schedules a refresh");
+-    assert!(due.0 >= start && due.0 <= start + WINDOW_5_DAYS);
++    assert!(due.0 > start && due.0 <= start + HOUR);
+     assert!(
+         runtime
+             .session()
+diff --git a/crates/marmot-session/README.md b/crates/marmot-session/README.md
+--- a/crates/marmot-session/README.md
++++ b/crates/marmot-session/README.md
+@@ -151,8 +151,8 @@
+ For every live group, enrolled or not, `run_due_maintenance` schedules a leaf refresh when the own leaf advertises fewer
+ components than the build supports:
+ 
+-- **When.** The self-update runs at a random time within 5 days, so a release does not make every member of a group
+-  commit at once. The due time is stored on the group's maintenance record, so a restart keeps the sampled delay.
++- **When.** Maintenance schedules the self-update at a random time within one hour, so members don't all commit at
++  once. It keeps an existing deadline across restarts unless that deadline is still more than one hour away.
+ - **How.** The self-update goes through the ordinary obligation pipeline, so every commit hold applies, and it
+   re-advertises the supported set. Any own self-update already in flight satisfies the refresh.
+ - **Cost.** The engine is queried for each group at most every ten minutes unless a due time has arrived. A group whose
+diff --git a/docs/marmot-architecture/further-context/capability-negotiation.md b/docs/marmot-architecture/further-context/capability-negotiation.md
+--- a/docs/marmot-architecture/further-context/capability-negotiation.md
++++ b/docs/marmot-architecture/further-context/capability-negotiation.md
+@@ -209,6 +209,7 @@
+ 
+ - **Leaf refresh.** A self-update re-advertises every supported app component in the own leaf, keeping every other leaf
+   byte.
+-- **Stale leaves.** Account maintenance gives a stale own leaf a self-update at a persisted random time within 5 days.
++- **Stale leaves.** Account maintenance schedules a self-update for a stale own leaf at a persisted random time
++  within one hour.
+ - **Activation.** Not implemented yet. Requiring a new component in an existing group (one admin Commit, once every
+   leaf advertises it) lands with its first caller, such as moving `EnableDisbanding` onto the generic path.

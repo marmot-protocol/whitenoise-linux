@@ -229,7 +229,7 @@ MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
 MDK="$HERE/vendor/mdk"
 BUNDLE="$MDK/crates/marmot-c/output"
-MDK_PATCHES=("$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-thread-media-retention.patch" "$HERE/patches/mdk-odin-host-symbols.patch" "$HERE/patches/mdk-odin-windows-cross.patch" "$HERE/patches/mdk-odin-mingw-fltused.patch" "$HERE/patches/mdk-solo-group-reset.patch" "$HERE/patches/mdk-activation-blockers.patch" "$HERE/patches/mdk-timeline-quotes.patch" "$HERE/patches/mdk-thread-send-context.patch" "$HERE/patches/mdk-legacy-thread-polls.patch" "$HERE/patches/mdk-folder-chat-facts.patch")
+MDK_PATCHES=("$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-thread-media-retention.patch" "$HERE/patches/mdk-odin-host-symbols.patch" "$HERE/patches/mdk-odin-windows-cross.patch" "$HERE/patches/mdk-odin-mingw-fltused.patch" "$HERE/patches/mdk-solo-group-reset.patch" "$HERE/patches/mdk-activation-blockers.patch" "$HERE/patches/mdk-timeline-quotes.patch" "$HERE/patches/mdk-thread-send-context.patch" "$HERE/patches/mdk-legacy-thread-polls.patch" "$HERE/patches/mdk-folder-chat-facts.patch" "$HERE/patches/mdk-leaf-refresh.patch")
 
 if [ ! -d "$MDK" ]; then
   git clone --filter=blob:none "$MDK_REPO" "$MDK"
