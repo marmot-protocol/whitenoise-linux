@@ -18,6 +18,55 @@ proxy_uri_component :: proc(value: string) -> string {
 	return string(encoded)
 }
 
+when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
+	@(private)
+	strip_appimage_env :: proc(entries: []string) -> []string {
+		rules := #load("appimage-host-env.txt", string)
+		for rule in strings.split_lines_iterator(&rules) {
+			line := rule
+			op, _ := strings.fields_iterator(&line)
+			name, _ := strings.fields_iterator(&line)
+			marker, _ := strings.fields_iterator(&line)
+			suffix, _ := strings.fields_iterator(&line)
+			owner := ""
+			if marker != "" {
+				for entry in entries {
+					key, _, value := strings.partition(entry, "=")
+					if key == marker {
+						owner = value
+						break
+					}
+				}
+				if owner == "" {continue}
+			}
+			for &entry in entries {
+				key, _, value := strings.partition(entry, "=")
+				if key != name {continue}
+				if op == "unset" {
+					entry = ""
+					continue
+				}
+				if !strings.has_prefix(value, owner) {continue}
+				value = value[len(owner):]
+				if !strings.has_prefix(value, suffix) {continue}
+				value = value[len(suffix):]
+				if op == "trim" {
+					entry = fmt.tprintf("%s=%s", name, value)
+				} else if op == "drop" && value == "" {
+					entry = ""
+				}
+			}
+		}
+		n := 0
+		for entry in entries {
+			if entry == "" {continue}
+			entries[n] = entry
+			n += 1
+		}
+		return entries[:n]
+	}
+}
+
 @(private)
 host_process_exec :: proc(
 	desc: os.Process_Desc,
@@ -30,37 +79,15 @@ host_process_exec :: proc(
 ) {
 	desc := desc
 	when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
-		if root := os.get_env("WN_APPIMAGE_AUDIO_ROOT", context.temp_allocator); root != "" {
+		if os.get_env("WN_APPIMAGE_AUDIO_ROOT", context.temp_allocator) != "" {
 			entries := desc.env
-			env := entries
 			if entries == nil {
-				entries, err = os.environ(context.temp_allocator)
-				if err != nil {return}
-				env = entries
+				entries = os.environ(context.temp_allocator) or_return
 			} else {
-				env = make([]string, len(entries), context.temp_allocator)
+				entries = make([]string, len(desc.env), context.temp_allocator)
+				copy(entries, desc.env)
 			}
-			modules := fmt.tprintf("PIPEWIRE_MODULE_DIR=%s/usr/lib", root)
-			plugins := fmt.tprintf("SPA_PLUGIN_DIR=%s/usr/lib/spa-0.2", root)
-			conf := os.get_env("WN_APPIMAGE_AUDIO_CONF", context.temp_allocator)
-			config := fmt.tprintf("PIPEWIRE_CONFIG_NAME=%s", conf)
-			tools := fmt.tprintf("PATH=%s/usr/libexec/host-tools:", root)
-			n := 0
-			for entry in entries {
-				if entry == modules ||
-				   entry == plugins ||
-				   (conf != "" && entry == config) ||
-				   strings.has_prefix(entry, "WN_APPIMAGE_AUDIO_ROOT=") ||
-				   strings.has_prefix(entry, "WN_APPIMAGE_AUDIO_CONF=") {
-					continue
-				}
-				env[n] = entry
-				if strings.has_prefix(entry, tools) {
-					env[n] = fmt.tprintf("PATH=%s", entry[len(tools):])
-				}
-				n += 1
-			}
-			desc.env = env[:n]
+			desc.env = strip_appimage_env(entries)
 		}
 	}
 	return os.process_exec(desc, allocator)
