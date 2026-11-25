@@ -747,6 +747,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		handle_group_files(ui)
 		return
 	}
+	if handle_reaction_keys(ui) {return}
 	// With the webxdc modal open the page owns the keyboard: skip the
 	// composer edit, or it drains the typed runes before
 	// handle_web_input can forward them.
@@ -1970,6 +1971,7 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int)
 		if i < index {index -= 1}
 	}
 	ui.selected = index
+	ui.reaction_focus = 0
 	key := draft_key(ui.account_ref, ui.chats[index].group_id)
 	ui.staged = staged_draft_take(ui, key)
 	ui.search_open = false

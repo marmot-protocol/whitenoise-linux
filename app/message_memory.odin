@@ -145,7 +145,8 @@ message_free :: proc(msg: Msg_Ui) {
 		delete(reaction.label)
 		delete(reaction.emoji)
 		delete(reaction.count)
-		delete(reaction.who)
+		for sender in reaction.senders {delete(sender)}
+		delete(reaction.senders)
 	}
 	delete(msg.reactions)
 	for opt in msg.poll_opts {
@@ -174,7 +175,8 @@ messages_collect :: proc() {
 @(private)
 messages_rebind :: proc(ui: ^Ui_State) {
 	reacting := ui.picker_target != ""
-	for target in ([]^string{&ui.replying, &ui.editing, &ui.picker_target}) {
+	details := ui.reaction_details_id != ""
+	for target in ([]^string{&ui.replying, &ui.editing, &ui.picker_target, &ui.reaction_details_id}) {
 		id := target^
 		target^ = ""
 		if id == "" {
@@ -192,4 +194,5 @@ messages_rebind :: proc(ui: ^Ui_State) {
 	if reacting && ui.picker_target == "" && ui.picker_open {
 		close_picker(ui)
 	}
+	if details && ui.reaction_details_id == "" {reaction_modal_close(ui)}
 }

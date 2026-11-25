@@ -154,7 +154,8 @@ shell_overlay_open :: proc(ui: ^Ui_State) -> bool {
 		ui.peer_open ||
 		ui.folder_open ||
 		ui.devices.panel != .None ||
-		ui.event_data.id != "" \
+		ui.event_data.id != "" ||
+		ui.reaction_details_id != "" \
 	)
 }
 
@@ -233,6 +234,7 @@ build_layout_pass :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Comm
 		menu_press = {}
 		composer_capture_press(ui)
 		kb_focus = ""
+		ui.reaction_focus = 0
 	}
 	nendo.begin()
 
@@ -464,6 +466,7 @@ build_layout_pass :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Comm
 			   ui.event_data.id != "" {
 				event_data_modal(&ui.event_data)
 			}
+			if ui.reaction_details_id != "" {reaction_details_modal(ui)}
 			// The reaction fan and the flights cross everything, so they are
 			// declared last.
 			fan_layer(ui)
@@ -940,6 +943,7 @@ app_main :: proc() {
 		frame_input: bool
 		for !rl.WindowShouldClose(&frame_input) {
 			frame_start := time.tick_now()
+			reaction_was_open := ui.reaction_details_id != ""
 			when ODIN_OS == .Darwin {macos_update_tick()}
 			if ui.lock_requested {lock_wait_frame(); break}
 			if dev_reload_poll(&ui) {break}
@@ -1149,6 +1153,8 @@ app_main :: proc() {
 			handle_file_drop(&ui) // publish preparation chips before this frame's layout
 			pointer = archive_pointer_position(ui.page, pointer)
 			nendo.set_pointer(pointer, (rl.IsMouseButtonDown(.LEFT)) ? .Down : .Up)
+			reaction_captured :=
+				!overlay_captured && !photo_captured && !location_captured && reaction_pointer(&ui)
 			ui.picker_hit_revision = ui.picker_custom_revision
 			picker_sample_click(&ui)
 			fwd_sample_pointer(&ui)
@@ -1159,6 +1165,7 @@ app_main :: proc() {
 			if !photo_captured &&
 			   !location_captured &&
 			   !overlay_captured &&
+			   !reaction_captured &&
 			   rl.IsMouseButtonReleased(.LEFT) &&
 			   text_drag != nil {
 				if text_drag != &ui.login_input &&
@@ -1187,6 +1194,7 @@ app_main :: proc() {
 				!photo_captured &&
 				!location_captured &&
 				!overlay_captured &&
+				!reaction_captured &&
 				!modal_open(&ui) &&
 				!ui.picker_open &&
 				!ui.folder_menu_open &&
@@ -1211,6 +1219,7 @@ app_main :: proc() {
 			wheel := rl.GetMouseWheelMoveV()
 			location_scroll := location_captured || ui.location_open
 			if photo_captured ||
+			   reaction_was_open != (ui.reaction_details_id != "") ||
 			   (location_scroll &&
 					   (!ui.location_open || !nendo.pointer_over(nendo.id("LocationModal")))) {
 				wheel = {}
@@ -1567,6 +1576,7 @@ app_main :: proc() {
 			update_drag_scroll(
 				&ui,
 				composer_captured ||
+				reaction_captured ||
 				native_drag ||
 				text_drag != nil ||
 				orbit_hover != nil ||
@@ -1575,14 +1585,18 @@ app_main :: proc() {
 				fan_open() ||
 				video_bar_active(),
 			)
-			if composer_captured {
+			if composer_captured || reaction_captured {
 				long_pressed = false
 			} else {
 				long_press_tick() // before any handler reads long_pressed
 			}
 			blur_field, blur_focus := touch_field, ui.focus
 			shell_captured :=
-				composer_captured || photo_captured || location_captured || overlay_captured
+				composer_captured ||
+				reaction_captured ||
+				photo_captured ||
+				location_captured ||
+				overlay_captured
 			background_captured := shell_captured || settings_modal(&ui)
 			if ui.add_account_open && !background_captured {
 				for page in Page {
@@ -1604,6 +1618,7 @@ app_main :: proc() {
 			   !ui.poll_open &&
 			   !ui.timestamp.open &&
 			   !ui.ctx_open &&
+			   ui.reaction_focus == 0 &&
 			   !ui.mi_open &&
 			   !ui.chat_head_menu &&
 			   !ui.compose_more &&
@@ -1658,7 +1673,7 @@ app_main :: proc() {
 			// After consumed input, dispatch the top visible modal.
 			if settings_captured {
 				settings_search_field(&ui)
-			} else if composer_captured || shell_back || foreground_captured {
+			} else if composer_captured || reaction_captured || shell_back || foreground_captured {
 				// Already handled.
 			} else if photo_captured {
 				if photo_interactive &&
@@ -1683,6 +1698,8 @@ app_main :: proc() {
 				handle_device_modal(&ui, client)
 			} else if ui.event_data.id != "" {
 				handle_event_data(&ui)
+			} else if ui.reaction_details_id != "" {
+				handle_reaction_modal(&ui)
 			} else if location_captured {
 				if ui.location_open {
 					handle_geo(&ui)

@@ -890,6 +890,7 @@ modal_open :: proc(ui: ^Ui_State) -> bool {
 		ui.hist_open ||
 		ui.raw_open ||
 		ui.event_data.id != "" ||
+		ui.reaction_details_id != "" ||
 		ui.enc_open ||
 		ui.fwd_open ||
 		ui.sticker_open ||

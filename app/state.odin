@@ -284,12 +284,12 @@ Staged_File :: struct {
 }
 
 Reaction_Ui :: struct {
-	label: string, // text fallback when no emoji tile, e.g. "👍 2"
-	emoji: string,
-	count: string,
-	mine:  bool, // clicking toggles: unreact when mine, react otherwise
-	ghost: bool, // optimistic: the op is still in flight, drawn faded
-	who:   string, // reactor names, comma-joined, for the hover tooltip
+	label:   string, // text fallback when no emoji tile, e.g. "👍 2"
+	emoji:   string,
+	count:   string,
+	mine:    bool, // clicking toggles: unreact when mine, react otherwise
+	ghost:   bool, // optimistic: the op is still in flight, drawn faded
+	senders: []string, // owned IDs of confirmed reactors
 }
 
 // A react/unreact still on the wire, overlaid onto the timeline so the
@@ -701,6 +701,8 @@ Ui_State :: struct {
 	offline_unowned:                     [dynamic]Offline_Item,
 	offline_unowned_warned:              bool,
 	react_pending:                       [dynamic]Pending_React, // optimistic reactions awaiting ack
+	reaction_details_id:                 string, // message ID borrowed from messages
+	reaction_focus, reaction_press:      u32, // message-keyed nendo button IDs
 	compose:                             [dynamic]u8,
 	// One shared caret/selection/undo state, targeting whichever input
 	// buffer was edited last (ed_target). ed_view temporarily wraps the

@@ -3936,6 +3936,9 @@ msgstr "Keine Vorschau verfügbar"
 msgid "No preview for this file type. Save it, or read the bytes."
 msgstr "Für diesen Dateityp gibt es keine Vorschau. Speichere die Datei oder sieh dir die Bytes an."
 
+msgid "No reactions to show."
+msgstr "Keine Reaktionen vorhanden."
+
 #, c-format
 msgid "No record with id %s in this chat's window."
 msgstr "Kein Eintrag mit der ID %s im geladenen Bereich dieses Chats."
@@ -4641,6 +4644,9 @@ msgstr "Verschlüsselt die geheimen Daten dieses Geräts mit einem neuen Passwor
 
 msgid "Reach out to support"
 msgstr "Support kontaktieren"
+
+msgid "Reaction details"
+msgstr "Reaktionsdetails"
 
 msgid "Read aloud"
 msgstr "Vorlesen"

@@ -64,6 +64,14 @@ fan_open :: proc() -> bool {
 	return fan.open > 0
 }
 
+@(private)
+fan_cancel :: proc() {
+	delete(fan.msg_id)
+	fan = {
+		hover = -1,
+	}
+}
+
 // Where cell i sits, and how far it has arrived (0 hidden, 1 landed).
 @(private = "file")
 fan_cell :: proc(index, count: int) -> (x, y, t: f32) {
@@ -77,10 +85,7 @@ fan_cell :: proc(index, count: int) -> (x, y, t: f32) {
 // and a release either picks a cell or drops it.
 handle_react_fan :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if video_bar_active() {
-		delete(fan.msg_id)
-		fan = {
-			hover = -1,
-		}
+		fan_cancel()
 		return
 	}
 	pos := rl.GetMousePosition()
@@ -91,17 +96,11 @@ handle_react_fan :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			message_op(ui, client, .React, fan.msg_id, ui.prefs.quick_reactions[fan.hover])
 			drag_moved = true // this release was a gesture, not a click
 		}
-		delete(fan.msg_id)
-		fan = {
-			hover = -1,
-		}
+		fan_cancel()
 		return
 	}
 	if !rl.IsMouseButtonDown(.LEFT) {
-		delete(fan.msg_id)
-		fan = {
-			hover = -1,
-		}
+		fan_cancel()
 		return
 	}
 	if fan_open() {

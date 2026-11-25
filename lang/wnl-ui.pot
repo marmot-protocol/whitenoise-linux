@@ -4353,6 +4353,9 @@ msgstr ""
 msgid "No preview for this file type. Save it, or read the bytes."
 msgstr ""
 
+msgid "No reactions to show."
+msgstr ""
+
 #, c-format
 msgid "No record with id %s in this chat's window."
 msgstr ""
@@ -5103,6 +5106,9 @@ msgid "Re-encrypts this device's secrets under a new password. The media cache i
 msgstr ""
 
 msgid "Reach out to support"
+msgstr ""
+
+msgid "Reaction details"
 msgstr ""
 
 msgid "Read aloud"
