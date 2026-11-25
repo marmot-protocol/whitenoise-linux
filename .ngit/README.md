@@ -32,16 +32,17 @@ along with `boat-adapter.ts`, `boat-act.sh`, and `boat-guest.sh`. Install the
 matching units from `runner/`. Use separate `wn-ngit` and `wn-boat` system
 users. Sign the adapter into Boat as `wn-boat` using a scoped key with
 `account.read`, `sandbox.read`, `sandbox.create`, `sandbox.delete-own`,
-`snapshot.read`, and `exec`. Include `ssh` if the adapter serves staging
-artifacts. Pass the key on stdin with `boat login --key-stdin`.
+`snapshot.read`, `exec`, and `ssh`. Pass the key on stdin with
+`boat login --key-stdin`.
 The coordinator's signing key and Boat credential never enter job VMs.
 
 Each job starts in a fresh large VM and discards its disk at teardown.
 The adapter waits for hydration before extracting caches. Starting at
 `ready` stalled on archive reads and failed a Windows extraction. The
 adapter logs provisioning and hydration time for each staging worker.
-Only trusted `master` builds seed snapshots. The PR snapshot
-`wn-ngit-native-70fd486b-pax` holds the Podman SDK and `/wn-ci/cargo-cache.tar`.
+Only trusted `master` builds seed snapshots. The current PR snapshot holds
+the Podman SDK and `/wn-ci/cargo-cache.tar`. The adapter reads its name from
+`/var/lib/wn-seed/current.json` for each new PR job.
 AppImage and Android use `wn-ngit-staging-70fd486b-android-pax`.
 Only `release-android.yml` restores `/wn-ci/android-cache.tar`. It contains
 the Android SDK, Cargo
@@ -68,9 +69,31 @@ the same `/var/cache/wn-ci` paths as PR jobs. Pack the Cargo target, MDK
 checkout, Rustup directory, and Cargo registry and Git volumes with GNU tar
 `--format=pax`. A raw filesystem snapshot rounded some timestamps down to
 whole seconds, making Cargo rebuild unchanged crates. Compress each cross
-archive with `zstd -T4 -3`. Refresh the seed when the MDK pin or patch set
-changes. Verify it on a fresh worker before changing the snapshot name in
-the adapter.
+archive with `zstd -T4 -3`.
+
+`wn-ngit-native-seed.timer` checks signed ngit `master` every ten minutes.
+Only changes to the MDK pin, patches, or native build inputs start a refresh.
+A fresh worker must run the native PR workflow without recompiling MDK before
+the service switches the selector. Running jobs keep their original snapshot.
+The selector records the previous snapshot for rollback.
+Failed refreshes keep the selector in place and retry the same inputs at
+most once an hour.
+
+Install `boat-native-refresh.sh` and `boat-native-job.sh` in `/opt/wn-ngit`.
+Create the `wn-native-seed` service account with home `/var/lib/wn-seed`.
+Keep the home path short enough for Boat's SSH control sockets.
+Import the maintainer's public signing key into that account's `gnupg` directory.
+Sign in to Boat as `wn-native-seed` with a separate key scoped to `account.read`,
+`sandbox.read`, `sandbox.create`, `sandbox.stop`, `sandbox.delete-own`,
+`snapshot.read`, `snapshot.write`, `exec`, and `ssh`. Use the same Boat
+account and organization as the adapter, whose key cannot write snapshots.
+Before enabling the timer or starting the adapter,
+run `boat-native-refresh.sh --adopt SNAPSHOT REVISION` as `wn-native-seed`
+with `STATE_DIRECTORY=/var/lib/wn-seed`. Use a PR snapshot already
+verified on a fresh worker and the exact signed `master` revision that built it.
+Read `journalctl -u wn-ngit-native-seed.service` for the qualification result.
+Renew the refresh key before its Boat expiry. For rollback, stop the timer and
+service, then atomically replace `current.json` with its `previous` object.
 
 The kernel limits the worker's job container to 80% of VM CPU and leaves
 8 GiB of physical RAM available. The container can use up to 8 GiB of disk

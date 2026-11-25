@@ -1,0 +1,20 @@
+[Unit]
+Description=Refresh the White Noise native Boat snapshot
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=wn-native-seed
+Group=wn-native-seed
+StateDirectory=wn-seed
+StateDirectoryMode=0755
+WorkingDirectory=/var/lib/wn-seed
+ExecStart=/bin/bash /opt/wn-ngit/boat-native-refresh.sh
+TimeoutStartSec=85min
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+UMask=0077
+MemoryMax=768M
