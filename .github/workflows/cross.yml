@@ -176,6 +176,21 @@ jobs:
             *[!a-zA-Z0-9._+-]*) echo 'Invalid archive version' >&2; exit 2 ;;
           esac
           bash scripts/ci-boat.sh start openbsd
+      - name: Restore OpenBSD Cargo cache
+        if: github.event_name == 'push'
+        id: openbsd-cache
+        uses: actions/cache/restore@v4
+        env:
+          CACHE_PREFIX: openbsd-cargo-v1-${{ hashFiles('scripts/ci-openbsd.sh', 'scripts/openbsd-build.sh', 'DEPS_PIN', 'patches/mdk-*.patch') }}-
+        with:
+          path: build/openbsd/cargo-cache
+          key: ${{ env.CACHE_PREFIX }}
+          restore-keys: ${{ env.CACHE_PREFIX }}
+      - name: Send OpenBSD Cargo cache to Boat
+        if: steps.openbsd-cache.outputs.cache-matched-key != ''
+        continue-on-error: true
+        shell: bash
+        run: bash scripts/ci-boat.sh push build/openbsd/cargo-cache
       - name: Build and package in Boat OpenBSD guest
         if: github.event_name != 'pull_request'
         run: |
@@ -227,6 +242,25 @@ jobs:
           name: smoke-openbsd-amd64
           path: build/openbsd/wn-odin-shot.png
           if-no-files-found: error
+      - name: Retrieve new OpenBSD Cargo cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        id: openbsd-cache-export
+        continue-on-error: true
+        shell: bash
+        run: |
+          bash scripts/ci-boat.sh pull build/openbsd/cargo-cache-update
+          sdk=$(<build/openbsd/cargo-cache-update)
+          if [ -n "$sdk" ]; then
+            bash scripts/ci-boat.sh pull build/openbsd/cargo-cache
+            echo "sdk=$sdk" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Save OpenBSD Cargo cache
+        if: steps.openbsd-cache-export.outputs.sdk != ''
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: build/openbsd/cargo-cache
+          key: ${{ steps.openbsd-cache.outputs.cache-primary-key }}${{ steps.openbsd-cache-export.outputs.sdk }}
       - name: Stop OpenBSD build environment
         if: always() && github.event_name != 'pull_request'
         shell: bash
