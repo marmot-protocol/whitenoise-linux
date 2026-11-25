@@ -117,6 +117,9 @@ content-keyed OCI archive and retains its Rust and vcpkg state. Outputs still
 follow the existing build scripts' input keys; a cache hit does not skip tests
 or packaged-app smoke runs.
 
+The native MDK target key includes compiler and codegen settings. Changing
+`CARGO_BUILD_JOBS` keeps the same target directory.
+
 Boat's ARM64 staging workers discard the package stage and archive after each
 run. They skip package cache keys and manifests, but still check the dependency
 closure, unpack the new archive, and boot it under QEMU.
