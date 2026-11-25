@@ -850,6 +850,7 @@ if [ "${1:-}" = test ]; then
     mobile_shell_viewports mobile_touch_scrolling mobile_onboard_viewport \
     mobile_settings_viewport mobile_chat_layout_boundaries login_input_required \
     profile_edit_summary sticker_input_validation folder_picker_dispatch archive_chat_dispatch \
+    sticker_layout \
     restore_chat_dispatch folder_count_dispatch new_chat_reset_dispatch test_emoji_save_io_dispatch \
     backup_password_dispatch invite_input_dispatch recent_folder_filters nerd_font_fallback \
     chat_timestamp_hover export_password_dispatch relay_input_dispatch settings_viewport \

@@ -212,6 +212,7 @@ The loading message and progress bar stay above the scrollable filters and resul
 The destination picker passes fixed-height rows to nendo for forwarding, theme sharing, and adding a peer to a group. It reads group IDs from the painted rows before rebuilding the list. A release acts only on the chat that was pressed, even if a live refresh changed its index.
 
 The composer sticker grid mounts fixed-height rows near the viewport. Arrow keys scroll to the focused row by its position in the filtered grid, even when the row has not been built.
+The sticker library and pack previews also mount fixed-height rows. The modal scrolls the rows together with the headings and pack controls.
 
 The GIF picker passes cumulative tile heights to nendo for each column. The tallest column sets the scroll extent. Thumbnail requests still follow reading order and require a visible tile.
 

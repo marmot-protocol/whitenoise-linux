@@ -475,6 +475,44 @@ handle_sticker_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   mouse_released() && !nendo.pointer_over(nendo.id("PickerPanel")) {close_picker(ui)}
 }
 
+@(private = "file")
+STICKER_GALLERY_TILE :: f32(104)
+@(private = "file")
+STICKER_GALLERY_GAP :: u16(8)
+
+@(private = "file")
+sticker_gallery :: proc(ui: ^Ui_State, width: f32, personal: []int = nil) {
+	preview := ui.sticker_page == .Pack
+	items := preview ? ui.sticker_preview[:] : ui.stickers[:]
+	count := preview ? len(items) : len(personal)
+	if count == 0 {return}
+	tile_id := preview ? "StickerPreviewTile" : "StickerLibraryItem"
+	columns := max(1, int(width / (STICKER_GALLERY_TILE + f32(STICKER_GALLERY_GAP))))
+	// The page scrolls the gallery together with its headings and trailing copy.
+	if nendo.box(nendo.id_local("StickerGallery"))({width = nendo.grow(), direction = .Column}) {
+		rows := nendo.virtual_rows(
+			nendo.id_local("StickerGalleryRows"),
+			(count + columns - 1) / columns,
+			STICKER_GALLERY_TILE,
+			gap = STICKER_GALLERY_GAP,
+		)
+		for row in rows.first ..< rows.end {
+			start := row * columns
+			if nendo.box(nendo.id_local("StickerGalleryRow", u32(row)))(
+			{height = nendo.fixed(STICKER_GALLERY_TILE), gap = STICKER_GALLERY_GAP},
+			) {
+				for at in start ..< min(start + columns, count) {
+					index := preview ? at : personal[at]
+					item := items[index]
+					state: Sticker_Tile_State =
+						preview && item.ref.sha == ui.sticker_selected.sha ? .Focused : .Normal
+					sticker_tile(tile_id, index, item, state, STICKER_GALLERY_TILE)
+				}
+			}
+		}
+	}
+}
+
 @(private)
 sticker_panel :: proc(ui: ^Ui_State) {
 	width := modal_w(nendo.id("StickerPanel"), 640)
@@ -521,13 +559,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 			}
 		}
 		if nendo.box(nendo.id("StickerContent", u32(ui.sticker_page)))(
-		{
-			width = nendo.grow(),
-			height = nendo.grow(min = 44),
-			direction = .Column,
-			gap = 12,
-			clip = {y = true, scroll = true},
-		},
+		{width = nendo.grow(), height = nendo.grow(min = 44), direction = .Column, gap = 12},
 		) {
 			switch ui.sticker_page {
 			case .Library:
@@ -581,10 +613,14 @@ sticker_panel :: proc(ui: ^Ui_State) {
 						if nendo.box(nendo.id_local("PackLabel"))(
 						{width = nendo.grow(), direction = .Column, gap = 6},
 						) {
-							sticker_copy(0x100 + u32(i), pack.title, width - 156, 15, TEXT)
-							nendo.text(
+							copy_id := 0x100 + u32(i) * 2
+							sticker_copy(copy_id, pack.title, width - 156, 15, TEXT)
+							// The gallery needs this height before nendo arranges the page.
+							sticker_copy(
+								copy_id + 1,
 								fmt.tprintf(tr("Stickers: %d"), counts[i]),
-								{font = FONT_BODY, size = 12, color = TEXT_DIM},
+								width - 156,
+								12,
 							)
 						}
 						nendo.text("›", {font = FONT_BODY, size = 22, color = TEXT_DIM})
@@ -595,12 +631,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 				for item, i in ui.stickers {if item.ref.pack == "" {append(&personal, i)}}
 				if len(personal) ==
 				   0 {sticker_copy(0, tr("Import an image to make your first sticker."), width - 40)}
-				columns := max(1, int((width - 32) / 112))
-				for start := 0; start < len(personal); start += columns {
-					if nendo.box(nendo.id("StickerLibraryRow", u32(start)))({gap = 8}) {
-						for at in start ..< min(start + columns, len(personal)) {sticker_tile("StickerLibraryItem", personal[at], ui.stickers[personal[at]], .Normal, 104)}
-					}
-				}
+				sticker_gallery(ui, width - 32, personal[:])
 			case .AddPack:
 				sticker_copy(
 					1,
@@ -645,12 +676,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 						fmt.tprintf(tr("Stickers: %d"), len(ui.sticker_preview)),
 						{font = FONT_BODY, size = 13, color = TEXT_DIM},
 					)
-					columns := max(1, int((width - 32) / 112))
-					for start := 0; start < len(ui.sticker_preview); start += columns {
-						if nendo.box(nendo.id("StickerPreviewRow", u32(start)))({gap = 8}) {
-							for index in start ..< min(start + columns, len(ui.sticker_preview)) {sticker_tile("StickerPreviewTile", index, ui.sticker_preview[index], ui.sticker_preview[index].ref.sha == ui.sticker_selected.sha ? .Focused : .Normal, 104)}
-						}
-					}
+					sticker_gallery(ui, width - 32)
 					sticker_copy(3, tr("Click a sticker for a larger preview."), width - 40, 13)
 				}
 			case .Detail:
@@ -722,7 +748,6 @@ sticker_panel :: proc(ui: ^Ui_State) {
 				if ui.sticker_page != .AddPack {sticker_control("StickerRetry", 0, tr("Retry"))}
 			}
 		}
-		scrollbar(nendo.id("StickerContent", u32(ui.sticker_page)), 16)
 		if nendo.box(nendo.id("StickerFooter"))(
 		{width = nendo.grow(), gap = 8, align = {y = .Center}},
 		) {
