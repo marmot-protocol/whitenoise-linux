@@ -30,15 +30,14 @@ const metadata = {
 const queues = [
   {
     socket: "adapter.sock",
-    snapshot: "wn-ngit-native-70fd486b-pax",
-    staging: false,
+    staging: false as const,
     active: 0,
     limit: 4,
   },
   {
     socket: "staging.sock",
     snapshot: "wn-ngit-staging-70fd486b-android-pax",
-    staging: true,
+    staging: true as const,
     active: 0,
     limit: 4,
   },
@@ -47,6 +46,15 @@ const crossSnapshots = {
   cross: "wn-ngit-staging-arm64-70f4e07f-preloaded",
   windows: "wn-ngit-staging-82ff7da6-cross-only",
 };
+
+async function nativeSnapshot() {
+  const selector = "/var/lib/wn-seed/current.json";
+  const { name } = await Bun.file(selector).json();
+  if (typeof name !== "string" || !/^wn-ngit-native-[a-z0-9-]+-pax$/.test(name)) {
+    throw new Error("Invalid Boat PR snapshot selector");
+  }
+  return name;
+}
 
 function findCrossSnapshot(script: string) {
   // The pinned socket runner emits either an ACT_WORKFLOW assignment or a
@@ -274,8 +282,11 @@ async function serve(socket: Socket, queue: (typeof queues)[number]) {
     abort.signal.throwIfAborted();
     script = join(home, `${crypto.randomUUID()}.sh`);
     await writeFile(script, req.stdin, { mode: 0o600, flag: "wx" });
-    const snapshot =
-      (queue.staging && findCrossSnapshot(req.stdin)) || queue.snapshot;
+    const snapshot = queue.staging
+      ? findCrossSnapshot(req.stdin) || queue.snapshot
+      : await nativeSnapshot();
+    // The Windows snapshot can take over three minutes to reach ready.
+    const createTimeout = snapshot === crossSnapshots.windows ? 360_000 : 180_000;
     const creating = performance.now();
     const create = boat(
       [
@@ -290,14 +301,8 @@ async function serve(socket: Socket, queue: (typeof queues)[number]) {
         "--no-snapshots",
         "--name",
         `wn-ngit-${req.identifier.slice(0, 16)}`,
-        "--file",
-        `wn-job.sh=${script}`,
-        "--file",
-        `wn-guest.sh=${install}/boat-guest.sh`,
-        "--file",
-        `wn-act.sh=${install}/boat-act.sh`,
       ],
-      AbortSignal.timeout(180_000),
+      AbortSignal.timeout(createTimeout),
     );
     let ready = false;
     let createError: string | undefined;
@@ -324,7 +329,7 @@ async function serve(socket: Socket, queue: (typeof queues)[number]) {
     await send(socket, abort.signal, { type: "started" });
     await send(socket, abort.signal, {
       type: "stdout",
-      data: `Boat VM ${id} ready\n`,
+      data: `Boat VM ${id} ready (snapshot ${snapshot})\n`,
     });
     const readyAt = performance.now();
     await waitHydrated(id, abort.signal);
@@ -333,6 +338,23 @@ async function serve(socket: Socket, queue: (typeof queues)[number]) {
       console.info(
         `Boat staging ${id} snapshot=${snapshot} provision_ms=${Math.round(readyAt - creating)} hydrate_ms=${Math.round(hydratedAt - readyAt)}`,
       );
+    }
+    // Boat rejects create-time file copies while a snapshot is restoring.
+    for (const [name, source] of [
+      ["wn-job.sh", script],
+      ["wn-guest.sh", join(install, "boat-guest.sh")],
+      ["wn-act.sh", join(install, "boat-act.sh")],
+    ]) {
+      abort.signal.throwIfAborted();
+      const copy = boat(
+        ["scp", source, `${id}:/home/user/${name}`],
+        AbortSignal.any([abort.signal, AbortSignal.timeout(60_000)]),
+      );
+      await new Response(copy.stdout).text();
+      const status = await copy.exited;
+      if (status !== 0) {
+        throw new Error(`Boat could not copy ${name} to ${id}: exit ${status}`);
+      }
     }
     const exec = boat(
       [
