@@ -82,6 +82,18 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 		forced_release = false
 		return true
 	}
+	for _ in 0 ..< 3 {frame(&ui)}
+	box := nendo.element(nendo.id("RelayBox"))
+	if !testing.expect(t, box.found) {return}
+	nendo.set_pointer({box.rect.x + box.rect.width / 2, box.rect.y + box.rect.height / 2}, .Down)
+	rl.PushMouseButton(.LEFT, true)
+	rl.PushChar('r')
+	settings_fields(&ui)
+	rl.PushMouseButton(.LEFT, false)
+	testing.expect_value(t, string(ui.relay_input[:]), "r")
+	testing.expect_value(t, string(ui.settings_search[:]), "")
+	text_drag = nil
+
 	for inbox in ([]bool{false, true}) {
 		field := inbox ? &ui.inbox_input : &ui.relay_input
 		button := inbox ? "AddInboxBtn" : "AddRelayBtn"

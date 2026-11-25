@@ -2527,7 +2527,6 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // Focus clicks for the settings text boxes run on press, not release;
 // the frame loop calls this before the release-gated handler.
 settings_fields :: proc(ui: ^Ui_State) {
-	settings_search_field(ui)
 	if ui.settings_section == .Account {keys_fields(ui)}
 	if ui.settings_section == .Connection {
 		if field_mouse(ui, &ui.relay_input, "RelayBox", 14) {
@@ -2543,10 +2542,6 @@ settings_fields :: proc(ui: ^Ui_State) {
 			ui.focus = .Client
 		}
 		socks5_fields(ui)
-		if ui.focus in SOCKS5_FIELDS {
-			if rl.IsKeyPressed(.ENTER) {save_socks5(ui)}
-			if rl.IsKeyPressed(.ESCAPE) {ui.focus = .Compose}
-		}
 	}
 	if ui.settings_section == .KP {
 		if field_mouse(ui, &ui.kp_input, "KpBox", 14) {
@@ -2562,6 +2557,25 @@ settings_fields :: proc(ui: ^Ui_State) {
 		if field_mouse(ui, &ui.gm_input, "GmBox", 14) {
 			ui.focus = .Gm
 		}
+		if len(ui.emoji_staged) > 0 && field_mouse(ui, &ui.emoji_name, "EmojiNameBox", 14) {
+			ui.focus = .EmojiName
+		}
+	}
+	if ui.new_chat_open {return}
+	#partial switch ui.focus {
+	case .Relay, .Inbox, .Fetch, .Client, .Gm, .KP, .EmojiName:
+		edit_text(ui, active_buf(ui))
+	case .Socks5, .Socks5User, .Socks5Password:
+		if ui.socks5_job == nil {edit_text(ui, active_buf(ui))}
+		if rl.IsKeyPressed(.ENTER) {save_socks5(ui)}
+		if rl.IsKeyPressed(.ESCAPE) {ui.focus = .Compose}
+	case .EmojiSetsQuery:
+		before := avatar_hash(string(ui.emoji_sets_query[:]))
+		edit_text(ui, &ui.emoji_sets_query)
+		if before != avatar_hash(string(ui.emoji_sets_query[:])) {ui.emoji_sets_page = 0}
+	}
+	settings_search_field(ui)
+	if ui.settings_section == .Chats {
 		// Commits every keystroke; the frame loop writes it in the background.
 		// Stored trimmed, so a box of only spaces saves as unset.
 		if gm := strings.trim_space(string(ui.gm_input[:])); gm != ui.prefs.gm_text {
@@ -2569,14 +2583,10 @@ settings_fields :: proc(ui: ^Ui_State) {
 			ui.prefs.gm_text = strings.clone(gm)
 			ui.settings_dirty = true
 		}
-	}
-	if ui.settings_section == .Chats && len(ui.emoji_staged) > 0 {
-		if field_mouse(ui, &ui.emoji_name, "EmojiNameBox", 14) {
-			ui.focus = .EmojiName
-		}
-		// Runs every frame (the release-gated handler would miss keys):
-		// Enter saves the shortcode; settings_escape drops the staged file.
-		if ui.focus == .EmojiName && rl.IsKeyPressed(.ENTER) && ui.emoji_sets_job == nil {
+		if len(ui.emoji_staged) > 0 &&
+		   ui.focus == .EmojiName &&
+		   rl.IsKeyPressed(.ENTER) &&
+		   ui.emoji_sets_job == nil {
 			save_staged_emoji(ui)
 		}
 	}

@@ -1496,7 +1496,7 @@ NC_CONTACT_H :: f32(64)
 @(private)
 nc_pending_label :: proc(ui: ^Ui_State) -> string {
 	for job in account_jobs {
-		if job.account == ui.account_ref && job.kind == .Create_Chat && job.form {
+		if job.account == ui.account_ref && job.kind == .Create_Chat && job.form != nil {
 			return tr("Creating your chat")
 		}
 	}

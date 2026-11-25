@@ -36,34 +36,10 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if ((ui.page == .Profile &&
-			   ui.profile.editing &&
-			   (ui.focus == .Name ||
-					   ui.focus == .About ||
-					   ui.focus == .Nip05 ||
-					   ui.focus == .Lud16)) ||
-		   (ui.page == .Settings &&
-				   (ui.theme_edit ||
-						   ui.focus == .Relay ||
-						   ui.focus == .Inbox ||
-						   ui.focus == .Fetch ||
-						   ui.focus == .Client ||
-						   ui.focus == .Socks5 ||
-						   ui.focus == .Socks5User ||
-						   ui.focus == .Socks5Password ||
-						   ui.focus == .Gm ||
-						   ui.focus == .KP ||
-						   ui.focus == .EmojiName ||
-						   ui.focus == .EmojiSetsQuery ||
-						   ui.focus == .ExportPw))) &&
-	   !ui.new_chat_open &&
-	   !(ui.focus in SOCKS5_FIELDS && ui.socks5_job != nil) {
-		if ui.focus == .EmojiSetsQuery {
-			before := avatar_hash(string(ui.emoji_sets_query[:]))
-			edit_text(ui, &ui.emoji_sets_query)
-			if before != avatar_hash(string(ui.emoji_sets_query[:])) {ui.emoji_sets_page = 0}
-		} else {
-			edit_text(ui, active_buf(ui), ui.page == .Profile && ui.focus == .About)
+	if ui.page == .Profile && ui.profile.editing && !ui.new_chat_open {
+		#partial switch ui.focus {
+		case .Name, .About, .Nip05, .Lud16:
+			edit_text(ui, active_buf(ui), ui.focus == .About)
 		}
 	}
 
@@ -71,8 +47,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Settings, so their capture lives here rather than in handle_chat,
 	// which only runs on the Chats page.
 	if ui.theme_edit {
-		// The keystrokes already went to active_buf above; this is the
-		// mouse and the two buttons.
+		if ui.page == .Settings && !ui.new_chat_open {edit_text(ui, active_buf(ui))}
 		handle_theme_edit(ui)
 		return
 	}
@@ -126,11 +101,11 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if ui.page == .Settings {
-		settings_fields(ui) // press-phase focus clicks for text boxes
 		if ui.lang_open || ui.shortcuts_open || ui.export_open {
 			handle_settings(ui, client) // open modals capture Esc every frame
 			return
 		}
+		settings_fields(ui)
 		if ui.settings_section == .Chats &&
 		   (ui.board_drag.kind != .None ||
 				   nendo.pointer_over(nendo.id("FolderBoard")) ||

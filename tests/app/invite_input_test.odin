@@ -123,6 +123,30 @@ invite_input_dispatch :: proc(t: ^testing.T) {
 			testing.expect_value(t, ui.banner, error)
 		}
 	}
+	ui.show_members = false
+	frame(&ui)
+	testing.expect(t, ui.banner == error, "Closing Members stays in the same chat")
+	ui.page = .Contacts
+	frame(&ui)
+	testing.expect(t, ui.banner == "", "The invite error is not shown in People")
+	ui.page = .Chats
+	ui.show_members = true
+	frame(&ui)
+	testing.expect(t, ui.banner == "", "Returning does not resurrect the error")
+	ui.new_chat_open = true
+	ui.nc_page = .Group
+	set_status(&ui, error, .Error)
+	banner_tick(&ui)
+	selected := ui.selected
+	ui.selected = -1
+	banner_tick(&ui)
+	testing.expect_value(t, ui.banner, error)
+	ui.nc_page = .Contacts
+	banner_tick(&ui)
+	testing.expect_value(t, ui.banner, "")
+	ui.new_chat_open = false
+	ui.selected = selected
+
 	// Permissions and unrelated Enter presses still leave the action alone.
 	for allowed in ([]bool{false, true}) {
 		ui.members[0].is_admin = allowed

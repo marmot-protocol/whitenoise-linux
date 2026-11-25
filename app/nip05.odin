@@ -106,6 +106,7 @@ nip05_complete :: proc(ui: ^Ui_State, done: Op_Done) {
 	if done.group == "" {input = strings.trim_space(input)}
 	if input != done.target {return}
 	if done.content == "" {
+		if ui.add_account_open {return}
 		set_status(
 			ui,
 			strings.clone(

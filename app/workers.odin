@@ -1697,10 +1697,12 @@ op_worker :: proc(t: ^thread.Thread) {
 	if job.op == .History ||
 	   job.op == .Edit ||
 	   job.op == .Lookup_Member ||
-	   job.op == .Enable_Account_Devices {
+	   job.op == .Enable_Account_Devices ||
+	   (job.op == .Invite && err != "") {
 		done.account = strings.clone(string(job.account))
 		done.group = strings.clone(string(job.group))
-		if job.op != .Enable_Account_Devices {done.target = strings.clone(string(job.target))}
+		if job.op != .Enable_Account_Devices &&
+		   job.op != .Invite {done.target = strings.clone(string(job.target))}
 		if job.op == .Edit {done.content = strings.clone(string(job.content))}
 	}
 	sync.lock(&ops_mutex)
@@ -1864,6 +1866,17 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			}
 			continue
 		}
+		if d.op == .Invite &&
+		   (ui.account_ref != d.account ||
+				   ui.page != .Chats ||
+				   ui.add_account_open ||
+				   ui.new_chat_open ||
+				   ui.selected < 0 ||
+				   ui.selected >= len(ui.chats) ||
+				   ui.chats[ui.selected].group_id != d.group) {
+			edit_result_free(d)
+			continue
+		}
 		#partial switch d.op {
 		case .Retention:
 			load_members(client, ui) // undo the optimistic chip flip
@@ -1872,7 +1885,7 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		// d.err is marmot's error text or an N_ msgid from the worker.
 		set_status(ui, fmt.aprintf(tr("Action failed: %s"), tr(d.err)), .Error)
-		delete(d.err)
+		edit_result_free(d)
 		shake()
 		play_sound(.Error)
 	}

@@ -538,9 +538,10 @@ settings_test_search_routes :: proc(t: ^testing.T, ui: ^Ui_State) {
 		}
 		settings_open(ui, nil, .Notifications)
 		settings_test_frame(ui)
-		ui.focus = .SettingsSearch
 		for ch in target.query {rl.PushChar(ch)}
 		settings_search_field(ui)
+		testing.expect_value(t, string(ui.settings_search[:]), target.query)
+		testing.expect_value(t, ui.focus, Focus.SettingsSearch)
 		for _ in 0 ..< 3 {settings_test_frame(ui)}
 		testing.expect_value(t, ui.settings_section, Settings_Section.Notifications)
 		testing.expect(
@@ -653,6 +654,36 @@ settings_test_search_routes :: proc(t: ^testing.T, ui: ^Ui_State) {
 	settings_open(ui, nil, .Mute)
 	settings_back(ui)
 	testing.expect_value(t, ui.settings_section, Settings_Section.Help)
+
+	for logical_width in ([2]f32{PHONE_W + 20, PHONE_W - 120}) {
+		width := i32(logical_width * zoom_for_width(1024))
+		rl.SetWindowSize(width, 700)
+		apply_zoom(ui)
+		nendo.set_dimensions({f32(width) / UI_ZOOM, 700 / UI_ZOOM})
+		settings_open(ui, nil, .Notifications)
+		for _ in 0 ..< 3 {settings_test_frame(ui)}
+		testing.expect(t, !nendo.element(nendo.id("SettingsSearchBox")).found)
+		rl.PushChar(' ')
+		settings_search_field(ui)
+		testing.expect_value(t, ui.focus, Focus.Compose)
+		for ch in "relay" {rl.PushChar(ch)}
+		settings_search_field(ui)
+		for _ in 0 ..< 3 {settings_test_frame(ui)}
+		testing.expect_value(t, settings_query(ui), "relay")
+		testing.expect(t, nendo.element(nendo.id("SettingsSearchBox")).found)
+		ed_set(ui, &ui.settings_search, "r")
+		rl.PushKey(.BACKSPACE, true)
+		settings_search_field(ui)
+		rl.PushKey(.BACKSPACE, false)
+		for _ in 0 ..< 3 {settings_test_frame(ui)}
+		testing.expect(t, !nendo.element(nendo.id("SettingsSearchBox")).found)
+		rl.PushChar('y')
+		settings_search_field(ui)
+		testing.expect_value(t, settings_query(ui), "y")
+	}
+	rl.SetWindowSize(1024, 700)
+	apply_zoom(ui)
+	nendo.set_dimensions({1024 / UI_ZOOM, 700 / UI_ZOOM})
 }
 
 @(private)

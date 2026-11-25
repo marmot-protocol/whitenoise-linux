@@ -8,6 +8,7 @@
 package main
 
 import "core:fmt"
+import "core:hash"
 import "core:math"
 import "core:os"
 import "core:path/filepath"
@@ -761,6 +762,7 @@ set_status :: proc(ui: ^Ui_State, text: string, kind: Status_Kind) {
 	if ui.client_status == text {ui.banner_seen = ""}
 	ui.client_status = text
 	ui.client_status_kind = kind
+	if kind == .Error {ui.banner_screen = banner_screen(ui)}
 	delete(ui.status_reveal); ui.status_reveal = ""
 }
 
@@ -774,8 +776,41 @@ status_reveal_file :: proc(ui: ^Ui_State, path: string) {
 	}
 }
 
-// Route a new client_status into the banner.
+@(private)
+Banner_Screen :: struct {
+	page:        Page,
+	section:     Settings_Section,
+	chat:        u64, // hash of the chat's group ID, not its sortable row index
+	new_chat:    Maybe(Nc_Page),
+	add_account: bool,
+}
+
+@(private = "file")
+banner_screen :: proc(ui: ^Ui_State) -> Banner_Screen {
+	screen := Banner_Screen {
+		page        = ui.page,
+		add_account = ui.add_account_open,
+	}
+	if screen.add_account {return screen}
+	if ui.new_chat_open {
+		screen.new_chat = ui.nc_page
+	} else if ui.page == .Settings && !settings_index(ui) {
+		screen.section = ui.settings_section
+	} else if ui.page == .Chats && ui.selected >= 0 && ui.selected < len(ui.chats) {
+		screen.chat = hash.fnv64a(transmute([]u8)ui.chats[ui.selected].group_id)
+	}
+	return screen
+}
+
 banner_tick :: proc(ui: ^Ui_State) {
+	if ui.client_status_kind == .Error &&
+	   ui.client_status != "" &&
+	   (ui.banner != "" || ui.client_status != ui.banner_seen) &&
+	   banner_screen(ui) != ui.banner_screen {
+		ui.banner = ""
+		ui.banner_seen = ui.client_status
+		return
+	}
 	if ui.client_status == ui.banner_seen {
 		return
 	}
