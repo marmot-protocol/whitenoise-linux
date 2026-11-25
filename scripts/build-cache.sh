@@ -29,22 +29,21 @@ build_cache_key() (
   if [ -s "$dir/sorted" ]; then
     xargs -0 "$resolve" -m -z -- <"$dir/sorted" >"$dir/resolved" || return
   fi
-  : >"$dir/safe"
-  : >"$dir/targets"
-  : >"$dir/files"
-  : >"$dir/names"
-  while IFS= read -r -d '' item && IFS= read -r -d '' real <&3; do
+  # Stream complete path pairs. Keep the four output lists open across headers.
+  while IFS= read -r -d '' item; do
+    IFS= read -r -d '' -u 7 real || return 1
     case "/$real/" in */.git/* | */.hg/* | */.svn/* | */.env/* | *.env/*) continue ;; esac
-    if [ -f "$item" ] || [ -d "$item" ]; then
-      printf '%s\0' "$item" >>"$dir/targets"
-    elif [ ! -L "$item" ] || [ -e "$item" ]; then
+    printf '%s\0' "$item" >&3 || return
+    printf '%s\0%s\0' "$item" "$real" >&6 || return
+    if [ -f "$item" ]; then
+      printf '%s\0' "$item" >&5 || return
+    elif [ ! -d "$item" ]; then
+      if [ -L "$item" ] && [ ! -e "$item" ]; then continue; fi
       echo "Unsupported cache input: $item" >&2
       return 1
     fi
-    printf '%s\0' "$item" >>"$dir/safe"
-    printf '%s\0%s\0' "$item" "$real" >>"$dir/names"
-    if [ -f "$item" ]; then printf '%s\0' "$item" >>"$dir/files"; fi
-  done <"$dir/sorted" 3<"$dir/resolved"
+    printf '%s\0' "$item" >&4 || return
+  done <"$dir/sorted" 7<"$dir/resolved" 3>"$dir/safe" 4>"$dir/targets" 5>"$dir/files" 6>"$dir/names" || return
   # Names, target names, modes and contents matter; mtimes/ownership do not.
   # No .env is ever opened, including an innocently named link to one.
   {

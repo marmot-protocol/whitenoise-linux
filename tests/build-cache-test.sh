@@ -48,6 +48,15 @@ touch -r "$TMP/original" "$TMP/src/main"
 cp -p "$TMP/original" "$TMP/src/main"
 [ "$KEY" = "$(build_cache_key 'compiler flags target' "$TMP/src")" ]
 [ "$(build_cache_key order "$TMP/src/main" "$TMP/src/asset")" = "$(build_cache_key order "$TMP/src/asset" "$TMP/src/main")" ]
+ODD_PATH="$TMP/src/"$'-header with spaces\n'
+printf 'header\n' >"$ODD_PATH"
+ODD_KEY="$(build_cache_key odd "$TMP/src")"
+OVERLAP_KEY="$(build_cache_key odd "$ODD_PATH" "$TMP/src" "$TMP/src")"
+[ "$ODD_KEY" = "$OVERLAP_KEY" ]
+printf 'edited\n' >"$ODD_PATH"
+EDITED_KEY="$(build_cache_key odd "$TMP/src")"
+[ "$ODD_KEY" != "$EDITED_KEY" ]
+rm "$ODD_PATH"
 # Flatpak SDKs contain links whose cross-toolchain include trees are absent.
 mkdir -p "$TMP/sdk/usr/include"
 SDK_EMPTY_KEY="$(build_cache_key sdk "$TMP/sdk/usr/include")"

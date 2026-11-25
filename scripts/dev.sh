@@ -18,6 +18,10 @@ if [ "${1:-}" != --dev-session ]; then
 fi
 shift
 OPT="${WN_DEV_OPT:--o:minimal}"
+if [[ $OSTYPE == linux* && ! $OPT =~ (^|[[:space:]])--?linker[:=] && $OPT != *-fuse-ld=* ]] &&
+	"${ODIN_CLANG_PATH:-clang}" -fuse-ld=lld -Wl,--version -o /dev/null {WN_DEV_VAULT_FD}>&- >/dev/null 2>&1; then
+	OPT+=" -linker:lld"
+fi
 export WN_DEV_CMD="${WN_DEV_CMD:-$HERE/build/dev-cmd}"
 command -v inotifywait >/dev/null || { echo "just dev needs inotify-tools"; exit 1; }
 "$HERE/scripts/build.sh" stage {WN_DEV_VAULT_FD}>&- || exit $?
@@ -31,11 +35,10 @@ last_host=""
 last_native=""
 generation=0
 
-# Watch the root so atomic DEPS_PIN replacements remain visible.
-coproc WATCH { exec inotifywait -mq -e close_write,moved_to,delete,create \
-	--format '%w%f' \
-	--exclude '/(\.git|\.ngit|\.flatpak-builder|build|vendor)(/|$)' -r \
-	"$HERE" {WN_DEV_VAULT_FD}>&-; }
+# Prune staged trees at startup. Watch their parent for source replacements.
+coproc WATCH { cd "$HERE" && exec inotifywait -mq -e close_write,moved_to,delete,create \
+	--exclude '/(\.git|\.ngit|\.flatpak-builder|build|vendor)(/|$)' \
+	--format '%w%f' -P -r @./{.git,.ngit,.flatpak-builder,build,vendor} . {WN_DEV_VAULT_FD}>&-; }
 watch_pid=$WATCH_PID
 watch_fd=${WATCH[0]}
 stop() {
@@ -86,7 +89,6 @@ while :; do
 		generation=$((generation + 1))
 		module="$DEV_DIR/app-$generation.so"
 		if build_module; then
-			"$HERE/scripts/vet-imports.sh" {WN_DEV_VAULT_FD}>&- || true
 			if [ "$host_hash" != "$last_host" ]; then
 				stop
 				mv "$HERE/build/dev-host.next" "$HERE/build/dev-host" || exit $?
@@ -100,12 +102,13 @@ while :; do
 				"$HERE/build/dev-host" "$DEV_DIR/module" "$@" &
 				pid=$!
 			fi
+			"$HERE/scripts/vet-imports.sh" {WN_DEV_VAULT_FD}>&- || true
 		else
 			echo "==> build failed, keeping the running app"
 		fi
 	fi
 	while :; do
-		read -r -u "$watch_fd" changed || exit 0
+		read -r -u "$watch_fd" changed || exit 1
 		case "$changed" in
 			*.odin|*.c|*.h|*.toml|*.po|*.map|*.patch|*.sh|*/DEPS_PIN) break ;;
 		esac

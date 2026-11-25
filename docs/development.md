@@ -30,6 +30,10 @@ just translations      # merge new strings into the catalogs, on a translation b
 
 `just dev` keeps the SDL window and vault unlock across code reloads. It rebuilds the UI and runtime from saved settings and drafts, so transient dialogs and playback reset.
 
+On Linux, `just dev` uses LLD when available. Set `WN_DEV_OPT='-o:minimal -linker:default'` to use the system linker instead. The unused-import check reports warnings after the new module is ready to load; it does not hold up the reload.
+
+The watcher skips existing build and vendor trees at startup. If a packaging command creates a new tree such as `.flatpak-builder` during the session, its events are ignored, but it can still consume watches. Restart `just dev` to prune it.
+
 - **Reload waits for you.** It holds for active writes and file pickers, and until you send or clear staged attachments and finish message edits.
 - **Failed builds change nothing.** The current app keeps running.
 - **Native changes restart the host.** Editing the small C window host or the Rust library restarts the host; the vault stays unlocked for the `just dev` session.
@@ -117,6 +121,7 @@ Keep `build/cargo/native` and `build/cross/<target>/cargo` between builds. Cargo
 - **Flatpak CI.** The module cache key uses the resolved manifest, the builder version, and the installed runtime commits. Workflow-only edits no longer invalidate it. Only `master` saves the cache, before the app module runs.
 - **C/C++ helpers and Odin outputs.** Native and cross builds cache these by input contents, compiler, target, and flags. Output manifests detect missing or corrupted files and reject dangling links.
 - **SDK symlinks.** Dangling SDK symlinks contribute their link metadata to input keys; resolving or retargeting them invalidates the cache.
+- **SDK headers.** The build streams header paths through the fingerprint check. It still hashes file contents, so an edit invalidates its key even if the modification time stays the same.
 - **Native Linux app.** Odin compiles separate LLVM modules at `-o:speed` and links them with LLD. The cache stores the executable. A change to the Marmot archive rebuilds the app, even if no Odin source changed.
 - **Odin objects.** Native Linux helpers, OpenBSD builds, and cross builds cache Odin objects separately from linking.
 - **Packages.** Linux and Windows package caches cover bundled runtime libraries and archives; release downloads, signing, and update feeds still run when requested.
