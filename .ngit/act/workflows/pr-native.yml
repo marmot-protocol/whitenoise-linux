@@ -21,4 +21,13 @@ jobs:
 
       - name: Build and test
         working-directory: /var/cache/wn-ci/worktree
-        run: CI=true setpriv --bounding-set=-dac_override,-dac_read_search bash scripts/build.sh test
+        run: |
+          set -o pipefail
+          # ngit retains only the tail of long job logs.
+          CI=true setpriv --bounding-set=-dac_override,-dac_read_search bash scripts/build.sh test 2>&1 |
+            awk '
+              { print; fflush() }
+              /^==> Building release cdylib/ { bundle = 1 }
+              bundle && duration == "" && /^[[:space:]]+Finished `release` profile / { duration = $0 }
+              END { if (duration != "") print "MDK Cargo:" duration }
+            '
