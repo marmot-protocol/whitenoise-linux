@@ -2345,6 +2345,9 @@ msgstr "ダウンロード中: %d%%"
 msgid "Downloads"
 msgstr "ダウンロード"
 
+msgid "Draft:"
+msgstr "下書き:"
+
 msgid "Drag a chat onto a folder to keep it there, or drag a folder to reorder it."
 msgstr "チャットをフォルダにドラッグするとそこに置かれます。フォルダをドラッグすると並べ替えられます。"
 

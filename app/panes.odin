@@ -315,18 +315,35 @@ folder_header :: proc(
 	}
 }
 
+// Unsent composer text for this row: live while the chat is open (unless an
+// edit borrows the composer), otherwise the stashed per-chat draft.
+@(private)
+chat_draft_text :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) -> string {
+	if ui == nil || chat.pending {return ""}
+	if ui.selected >= 0 &&
+	   ui.selected < len(ui.chats) &&
+	   ui.chats[ui.selected].group_id == chat.group_id &&
+	   len(ui.editing) == 0 {
+		return strings.trim_space(string(ui.compose[:]))
+	}
+	return strings.trim_space(ui.drafts[draft_key(ui.account_ref, chat.group_id)])
+}
+
 chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 	chat := chat
 	if chip == .Unarchive {
 		archived_row(index, chat)
 		return
 	}
-	if g_ui != nil &&
-	   len(g_ui.sidebar_filter) > 0 &&
-	   int(index) < len(g_ui.filter_previews) &&
-	   g_ui.filter_previews[index] != "" {
+	filter_hit :=
+		g_ui != nil &&
+		len(g_ui.sidebar_filter) > 0 &&
+		int(index) < len(g_ui.filter_previews) &&
+		g_ui.filter_previews[index] != ""
+	if filter_hit {
 		chat.preview = g_ui.filter_previews[index]
 	}
+	draft := filter_hit ? "" : chat_draft_text(g_ui, chat)
 	if nendo.box(nendo.id("ChatRow", index))(
 	{width = nendo.grow(), height = nendo.fixed(chat_row_height())},
 	) {
@@ -338,12 +355,13 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 			radius = rr(6),
 		},
 		) {
-			title_ink, detail_ink := SIDEBAR_TEXT, SIDEBAR_DIM
+			title_ink, detail_ink, draft_ink := SIDEBAR_TEXT, SIDEBAR_DIM, ACCENT
 			if SIDEBAR_SURFACE_TEXT {
 				fill :=
 					active ? SELECTED : hovered() ? mix_color(PANEL, HOVER, HOVER.a / 255) : PANEL
 				title_ink = readable_ink(title_ink, fill)
 				detail_ink = readable_ink(detail_ink, fill)
+				draft_ink = readable_ink(draft_ink, fill)
 			}
 			if nendo.box(nendo.id("ChatRowBar", index))(
 			{
@@ -464,10 +482,11 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 								action_chip("ChatMenu", index, "···")
 							}
 						}
+						preview := draft != "" ? draft : chat.preview
 						if nendo.box(nendo.id("ChatRowPrev", index))(
 						{width = nendo.grow(), gap = 6, align = {y = .Center}},
 						) {
-							if len(chat.preview) > 0 {
+							if len(preview) > 0 {
 								// One clipped line. A preview with an emoji, mention
 								// or link renders as several inline elements, which
 								// nendo would otherwise stack down the row; clipping
@@ -477,14 +496,17 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 								{
 									width = nendo.grow(),
 									height = nendo.fixed(16),
+									gap = draft != "" ? 4 : 0,
 									align = {y = .Center},
 									clip = {x = true},
 								},
 								) {
 									row_preview(
 										index,
-										chat.preview,
+										preview,
 										SIDEBAR_SURFACE_TEXT ? detail_ink : TEXT_DIM,
+										draft != "" ? tr("Draft:") : "",
+										draft_ink,
 									)
 								}
 							} else if nendo.box(nendo.id("ChatRowPrevGap", index))(
@@ -494,12 +516,14 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 							}
 							// An unacked optimistic send outranks the stored delivery
 							// state: the row is mid-send, whatever the last confirmed
-							// message says.
+							// message says. A draft replaces the last message preview,
+							// so hide its delivery tick while keeping live send state.
 							if state := chat_send_state(chat.group_id); state != .Idle {
 								send_spinner(index, state)
-							} else if chat.tick == .DELIVERED || chat.tick == .PENDING {
+							} else if draft == "" &&
+							   (chat.tick == .DELIVERED || chat.tick == .PENDING) {
 								delivery_tick(chat.group_id, index, chat.tick)
-							} else if chat.tick == .FAILED {
+							} else if draft == "" && chat.tick == .FAILED {
 								nendo.text("!", {font = FONT_TITLE, size = 11, color = DANGER})
 							}
 						}
@@ -518,7 +542,13 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 //   Are you still coming to the marmot meetup to|   clipped
 //   Are you still coming to the marmot meetup…   |   fitted
 @(private)
-row_preview :: proc(index: u32, preview: string, ink: nendo.Color = {}) {
+row_preview :: proc(
+	index: u32,
+	preview: string,
+	ink: nendo.Color = {},
+	prefix: string = "",
+	prefix_ink: nendo.Color = {},
+) {
 	tile_px := body_tile_size(preview, 12)
 	end := strings.index_byte(preview, '\n')
 	if end < 0 {
@@ -526,11 +556,25 @@ row_preview :: proc(index: u32, preview: string, ink: nendo.Color = {}) {
 	}
 	shown := preview
 	clip, laid_out := element_box(nendo.id("ChatRowPrevClip", index))
+	avail := clip.width
+	if prefix != "" {
+		nendo.text(
+			prefix,
+			{
+				font = FONT_BODY,
+				size = 12,
+				color = prefix_ink.a == 0 ? ACCENT : prefix_ink,
+				wrap = .None,
+			},
+		)
+		avail -= rl.MeasureTextLine(FONT_BODY, 12, prefix, 0).x + 4
+	}
 	if laid_out &&
 	   clip.width >= 40 &&
-	   (end < len(preview) || rune_fit(preview, 0, end, clip.width, 12, tile_px = tile_px) < end) {
+	   avail >= 20 &&
+	   (end < len(preview) || rune_fit(preview, 0, end, avail, 12, tile_px = tile_px) < end) {
 		// Room for the ellipsis and the 2px gap a chip leaves before it.
-		room := clip.width - rl.MeasureTextLine(FONT_BODY, 12, "…", 0).x - 2
+		room := avail - rl.MeasureTextLine(FONT_BODY, 12, "…", 0).x - 2
 		cut := rune_fit(preview, 0, end, room, 12, tile_px = tile_px)
 		shown = fmt.tprintf("%s…", strings.trim_right_space(preview[:cut]))
 	}

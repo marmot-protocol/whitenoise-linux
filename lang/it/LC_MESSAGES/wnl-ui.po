@@ -2345,6 +2345,9 @@ msgstr "Download: %d%%"
 msgid "Downloads"
 msgstr "Download"
 
+msgid "Draft:"
+msgstr "Bozza:"
+
 msgid "Drag a chat onto a folder to keep it there, or drag a folder to reorder it."
 msgstr "Trascina una chat su una cartella per tenerla lì, o trascina una cartella per riordinarla."
 
