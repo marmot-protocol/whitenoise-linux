@@ -849,26 +849,6 @@ if [ "${1:-}" = test ]; then
   "$HERE/build/speech-decode-test"
   WN_ODIN_TEST_BUILD_KEY="$(build_cache_key "$APP_OBJECT_KEY $APP_KEY" "$HERE/tests/odin.sh" "$HERE/tests/app" "$HERE/scripts/build-cache.sh")"
   export WN_ODIN_TEST_BUILD_KEY
-  din_tests=()
-  if [ "$(uname -s)" = Linux ]; then
-    din_tests=(theme_din_live notify_test_send)
-  fi
-  env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app --isolated \
-    rail_default_window rail_expand_narrow status_bar_viewports \
-    mobile_shell_viewports mobile_touch_scrolling mobile_onboard_viewport \
-    mobile_settings_viewport mobile_chat_layout_boundaries login_input_required \
-    profile_edit_summary sticker_input_validation folder_picker_dispatch archive_chat_dispatch \
-    sticker_layout sticker_picker_virtual_rows \
-    restore_chat_dispatch folder_count_dispatch new_chat_reset_dispatch test_emoji_save_io_dispatch \
-    backup_password_dispatch invite_input_dispatch recent_folder_filters nerd_font_fallback \
-    chat_timestamp_hover chat_row_draft_preview export_password_dispatch relay_input_dispatch settings_viewport \
-    theme_gallery_interactions test_emoji_save_dispatch wallpaper_proportions \
-    test_react_shortcode reaction_details_dispatch \
-    test_inline_custom_emoji emoji_picker_scroll \
-    devices_visibility devices_post_link_review devices_pairing_projection devices_roster_repair \
-    devices_account_fence devices_sign_in_review devices_chat_activation devices_chat_sync \
-    thread_reply_previews agent_item_timeline_visibility thread_offline_retry_preflights_destination \
-    timeline_scope_changes \
-    "${din_tests[@]}"
+  env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app --isolated
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app/sdlrl
 fi

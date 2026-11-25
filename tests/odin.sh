@@ -6,7 +6,7 @@ package="${1:-}"
 case "$package" in
 app | app/sdlrl) ;;
 *)
-  echo "Usage: tests/odin.sh app|app/sdlrl [compiler flags [-- runner args] | --isolated TEST ...]" >&2
+  echo "Usage: tests/odin.sh app|app/sdlrl [compiler flags [-- runner args] | --isolated]" >&2
   exit 1
   ;;
 esac
@@ -14,8 +14,13 @@ shift
 isolated=()
 runner_args=()
 if [ "${1:-}" = --isolated ]; then
-  shift
-  isolated=("$@")
+  # A test that needs a process of its own opens with
+  # `if !test_isolated("name") {return}`, which skips it in the shared run.
+  # That call is also the list of tests to run alone, so a new one touches
+  # only its own file.
+  mapfile -t isolated < <(
+    grep -ohE 'test_isolated\("[a-z0-9_]+"\)' "$HERE"/tests/app/*.odin | cut -d'"' -f2 | sort -u
+  )
   set --
 else
   for ((i = 1; i <= $#; i++)); do
