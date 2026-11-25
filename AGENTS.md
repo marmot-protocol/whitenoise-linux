@@ -416,10 +416,10 @@ at build time and parsed on boot and on locale switch. A missing entry falls
 back to English, so an unextracted string is invisible until someone switches
 locale.
 
-`scripts/update-translations.sh` regenerates `lang/wnl-ui.pot` and merges it
-into the catalogs. It is `xgettext -L C` over a copy of `app/*.odin` (Odin is
-close enough to C for the lexer, once backtick raw strings are blanked out),
-and it recognizes two markers:
+`scripts/update-translations.sh` extracts the msgids into a temporary
+template and merges it into the catalogs. It is `xgettext -L C` over a copy of
+`app/*.odin` (Odin is close enough to C for the lexer, once backtick raw
+strings are blanked out), and it recognizes two markers:
 
 - `tr("…")`: translated where it is written.
 - `N_("…")`: gettext's noop marker, for a string held in a package-level
@@ -443,8 +443,15 @@ the Members panel keeps the banner because the conversation is still open.
 In desktop Settings, typing with no text field focused starts a search.
 In a narrow window, search opens the results list in place of the section.
 
-Edit the `.po` files directly. The catalogs have no `msgctxt` (`po_parse`
-ignores it and keys on msgid alone, first entry winning), and no plural forms.
+**A branch that changes code leaves `lang/` alone.** Mark the string and
+stop: it shows in English until the next translation pass. A translation pass
+is a branch of its own that touches only `lang/`: run `just translations`,
+fill the empty entries and review the fuzzy ones by editing the `.po` files
+directly. Two branches that edit the same catalog usually conflict, so keep
+only one translation pass open at a time.
+
+The catalogs have no `msgctxt` (`po_parse` ignores it and keys on msgid alone,
+first entry winning), and no plural forms.
 
 ### Copy voice
 

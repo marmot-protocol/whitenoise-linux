@@ -119,7 +119,7 @@ Panes are plain procs that read `Ui_State`: no widget objects, no retained view 
 ```sh
 just test          # build, then run the same checks as CI
 just dev           # rebuild and reload in-process, keeping the window
-just translations  # regenerate the gettext catalogs
+just translations  # merge new strings into the catalogs, on a translation branch
 ```
 
 ## Contributing

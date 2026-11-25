@@ -21,7 +21,7 @@ just build             # build
 just test              # build, then run the tests
 just dev               # rebuild code in-process, keeping the window
 just test-reload       # check reload, unlock, and failed-build recovery
-just translations      # regenerate the gettext catalogs
+just translations      # merge new strings into the catalogs, on a translation branch
 ```
 
 `just dev [data-dir]` and `just run [data-dir]` accept an optional data directory. The shell implementations live under `scripts/`; CI and packaging call them directly.
@@ -55,7 +55,7 @@ On Linux, the tray needs a StatusNotifier host. Without one, the app starts with
 
 ## Translations go through `tr()`
 
-Use `tr("text")` for UI strings and `tr("%d item", "%d items", count)` for counted labels, then format the returned string with the count. The counted form selects the first catalog entry for one and the second for every other count. Run `just translations` to extract both entries.
+Use `tr("text")` for UI strings and `tr("%d item", "%d items", count)` for counted labels, then format the returned string with the count. The counted form selects the first catalog entry for one and the second for every other count. A translation pass extracts both entries with `just translations`; a branch that changes code leaves `lang/` alone.
 
 | Language | Singular and plural |
 | --- | --- |

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Extract translatable strings from the Odin UI and merge them into the
-# locale catalogs in lang/.
+# locale catalogs in lang/. The extracted template is a temp file: only the
+# catalogs are tracked, so a feature branch that adds a string touches no
+# file under lang/, and a translation pass is a branch of its own.
 #
 # Extraction is plain xgettext in C mode: Odin's string, comment and call
 # syntax is close enough to C that the C lexer reads it correctly, once
@@ -21,7 +23,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="$ROOT/app"
-POT="$ROOT/lang/wnl-ui.pot"
 LOCALES=(it de ja ko)
 
 for tool in xgettext msgmerge; do
@@ -30,6 +31,7 @@ done
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
+POT="$TMP/wnl-ui.pot"
 
 # `...` raw strings hold regex/quote fragments the C lexer would read as an
 # unterminated string literal, silently dropping every msgid after it in
@@ -45,24 +47,10 @@ done
     --keyword=tr --keyword=N_ --package-name=wnl-ui --copyright-holder="" --msgid-bugs-address="" \
     -o wnl-ui.pot ./*.odin) 2>&1 | grep -vE 'msgid-bugs-address|Makevars|MSGID_BUGS|Empty msgid|^ +(gettext|meta information)' || true
 
-# Fill the header fields xgettext leaves as placeholders. msgfmt --check warns
-# on every one of them, and the pre-commit hook treats those warnings as
-# fatal. The revision date is a constant so the header never churns.
-sed -i \
-    -e 's|^"PO-Revision-Date: .*|"PO-Revision-Date: 2026-07-06 00:00+0000\\n"|' \
-    -e 's|^"Last-Translator: .*|"Last-Translator: Automatically generated\\n"|' \
-    -e 's|^"Language-Team: .*|"Language-Team: none\\n"|' \
-    -e 's|^"Language: .*|"Language: en\\n"|' \
-    "$TMP/wnl-ui.pot"
-# Drop xgettext's placeholder title block and the `#, fuzzy` it marks the
-# header with, so the file opens on the header entry like the old catalogs.
-sed -i '1,5{/^# SOME DESCRIPTIVE TITLE\.$/d; /^# This file is put in the public domain\.$/d; /^# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR\.$/d; /^#, fuzzy$/d}' "$TMP/wnl-ui.pot"
-mv "$TMP/wnl-ui.pot" "$POT"
-
 for loc in "${LOCALES[@]}"; do
     po="$ROOT/lang/$loc/LC_MESSAGES/wnl-ui.po"
     msgmerge --quiet --no-wrap --backup=off --update "$po" "$POT"
     printf '%-4s %s\n' "$loc" "$(msgfmt --statistics -o /dev/null "$po" 2>&1)"
 done
 
-echo "==> $POT ($(grep -c '^msgid ' "$POT") entries)"
+echo "==> $(grep -c '^msgid "..*"' "$POT") source strings"
