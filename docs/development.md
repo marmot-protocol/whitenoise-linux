@@ -215,6 +215,8 @@ The composer sticker grid mounts fixed-height rows near the viewport. Arrow keys
 
 The GIF picker passes cumulative tile heights to nendo for each column. The tallest column sets the scroll extent. Thumbnail requests still follow reading order and require a visible tile.
 
+The emoji picker keeps the custom shortcode row at the top of the grid. Nendo mounts the Unicode emoji rows near the viewport and preserves the full scroll extent.
+
 | Path | What's there |
 | --- | --- |
 | `app/` | The whole app: panes, layout, state, workers, vault, media viewers |
