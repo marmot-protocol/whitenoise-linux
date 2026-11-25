@@ -52,7 +52,7 @@ consent_bounds :: proc(id: nendo.Id) -> nendo.Rect {
 }
 
 @(private = "file")
-consent_hit :: proc(bounds: nendo.Rect, point: rl.Vector2) -> bool {
+pointer_in_bounds :: proc(bounds: nendo.Rect, point: rl.Vector2) -> bool {
 	return(
 		point.x >= bounds.x &&
 		point.x <= bounds.x + bounds.width &&
@@ -74,7 +74,7 @@ consent_clicked :: proc(job: ^Auth_Job, id: nendo.Id, state: Button_State) -> bo
 	if forced_press {
 		job.consent_pressed = nendo.pointer_over(id)
 	} else if rl.IsMouseButtonPressed(.LEFT) && !test_pointer_on {
-		job.consent_pressed = consent_hit(bounds, press)
+		job.consent_pressed = pointer_in_bounds(bounds, press)
 	}
 	if !forced_release && (rl.IsMouseButtonDown(.LEFT) || !rl.IsMouseButtonReleased(.LEFT)) {
 		if !rl.IsMouseButtonDown(.LEFT) && !forced_press {job.consent_pressed = false}
@@ -85,7 +85,7 @@ consent_clicked :: proc(job: ^Auth_Job, id: nendo.Id, state: Button_State) -> bo
 	return(
 		matched_press &&
 		mouse_released() &&
-		(forced_release ? nendo.pointer_over(id) : consent_hit(bounds, release)) \
+		(forced_release ? nendo.pointer_over(id) : pointer_in_bounds(bounds, release)) \
 	)
 }
 
@@ -1388,8 +1388,11 @@ open_picker :: proc(ui: ^Ui_State, target: string) {
 	ui.focus = tap_size() ? .Compose : .Picker
 	if tap_size() {touch_field = {}; compose_keyboard = false}
 	clear(&ui.picker_filter)
-	ui.picker_group = .Smileys
+	ui.picker_group = .Custom
+	ui.picker_pack, ui.picker_pack_revision = 0, 0
 	ui.picker_selection = {}
+	ui.picker_pressed_category = {}
+	ui.picker_reveal = false
 	ui.picker_query_id = nendo.id("").id
 	ui.picker_browse_scroll = {}
 	for name in ([4]string{"PickerGrid", "PickerCategories", "PkCustomRow", "PkRecentRow"}) {
@@ -1472,6 +1475,30 @@ close_picker :: proc(ui: ^Ui_State) {
 	ui.picker_mode = .Message
 }
 
+// Both edges can arrive in one poll. Use the painted rail, before it scrolls.
+@(private)
+picker_sample_click :: proc(ui: ^Ui_State) {
+	ui.picker_batched_category = {}
+	if !ui.picker_open ||
+	   !rl.IsMouseButtonPressed(.LEFT) ||
+	   !rl.IsMouseButtonReleased(.LEFT) {return}
+	press, release := rl.GetLeftClickPoints()
+	press = {press.x / UI_ZOOM, press.y / UI_ZOOM}
+	release = {release.x / UI_ZOOM, release.y / UI_ZOOM}
+	rail := nendo.element(nendo.id("PickerCategories"))
+	if !rail.found ||
+	   !pointer_in_bounds(rail.rect, press) ||
+	   !pointer_in_bounds(rail.rect, release) {return}
+	for index in 0 ..< len(PICKER_CATEGORIES) + len(picker_emoji_packs) {
+		id := nendo.id("PickerCategory", u32(index))
+		if !nendo.pointer_over(id) {continue}
+		chip := nendo.element(id).rect
+		if pointer_in_bounds(chip, press) &&
+		   pointer_in_bounds(chip, release) {ui.picker_batched_category = id}
+		return
+	}
+}
+
 handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if clicked("PickerClose") || rl.IsKeyPressed(.ESCAPE) {
 		close_picker(ui)
@@ -1510,18 +1537,65 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		return
 	}
-	for group in Emoji_Group {
-		if !clicked_indexed("PickerCategory", u32(group)) {continue}
-		if group != ui.picker_group {
+	category := -1
+	if ui.picker_reveal &&
+	   (ui.picker_pack == 0 || ui.picker_custom_revision == ui.picker_pack_revision) {
+		selected :=
+			ui.picker_pack == 0 ? int(ui.picker_group) : len(PICKER_CATEGORIES) + ui.picker_pack - 1
+		ui.picker_reveal = !picker_reveal_category(selected)
+	}
+	pressed := mouse_pressed()
+	released := mouse_released() && !rl.IsMouseButtonDown(.LEFT)
+	if pressed {ui.picker_pressed_category = {}}
+	step := len(rl.Preedit()) == 0 ? tab_step() : 0
+	if step != 0 {
+		packs := len(picker_emoji_packs)
+		at := ui.picker_pack
+		if ui.picker_group != .Custom {at = packs + 1 + int(ui.picker_group)}
+		at = (at + step) %% (len(PICKER_CATEGORIES) + packs)
+		category =
+			at == 0 ? int(Emoji_Group.Custom) : at <= packs ? len(PICKER_CATEGORIES) + at - 1 : at - packs - 1
+	} else if pressed || released {
+		for index in 0 ..< len(PICKER_CATEGORIES) + len(picker_emoji_packs) {
+			id := nendo.id("PickerCategory", u32(index))
+			if !nendo.pointer_over(id) {continue}
+			if pressed && released && !forced_press && id != ui.picker_batched_category {return}
+			if pressed {
+				ui.picker_pressed_category = id
+				ui.picker_press_revision = ui.picker_hit_revision
+			}
+			if !released {break}
+			if id != ui.picker_pressed_category ||
+			   ui.picker_press_revision != ui.picker_hit_revision {return}
+			category = index
+			break
+		}
+	}
+	if released {ui.picker_pressed_category = {}}
+	if category >= 0 {
+		group, pack, revision := Emoji_Group.Custom, 0, u64(0)
+		if category < len(PICKER_CATEGORIES) {
+			group = Emoji_Group(category)
+		} else {
+			pack, revision = category - len(PICKER_CATEGORIES) + 1, ui.picker_hit_revision
+			if picker_pack_at(pack, revision) == nil {return}
+		}
+		if group != ui.picker_group ||
+		   pack != ui.picker_pack ||
+		   revision != ui.picker_pack_revision {
 			ui.picker_browse_scroll = {}
 			if scroll := nendo.scroll(nendo.id("PickerGrid")); scroll.found {scroll.position.y = 0}
 			if scroll := nendo.scroll(nendo.id("PkCustomRow"));
 			   scroll.found {scroll.position.x = 0}
 		}
-		ui.picker_group = group
+		ui.picker_group, ui.picker_pack, ui.picker_pack_revision = group, pack, revision
 		ed_set(ui, &ui.picker_filter, "")
 		ui.picker_selection = {}
-		if tap_size() {ui.focus = .Compose; touch_field = {}}
+		if step != 0 {
+			ui.focus = .Picker
+			touch_field = {}
+			ui.picker_reveal = !picker_reveal_category(category)
+		} else if tap_size() {ui.focus = .Compose; touch_field = {}}
 		scroll_residual = {}
 		if fling_id.id == nendo.id("PickerGrid").id {fling_vel = {}}
 		return
@@ -1582,6 +1656,30 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 }
 
 @(private = "file")
+picker_reveal_category :: proc(category: int) -> bool {
+	rail := nendo.element(nendo.id("PickerCategories"))
+	chip := nendo.element(nendo.id("PickerCategory", u32(category)))
+	view := nendo.scroll(nendo.id("PickerCategories"))
+	if !rail.found || !chip.found || !view.found {return false}
+	if single_pane() {
+		x := chip.rect.x - rail.rect.x - view.clip.offset.x
+		view.position.x = -clamp(
+			-view.position.x,
+			max(0, x + chip.rect.width - view.viewport.width),
+			max(0, x),
+		)
+	} else {
+		reveal_scroll_span(
+			view,
+			max(0, chip.rect.y - rail.rect.y - view.clip.offset.y),
+			chip.rect.height,
+		)
+	}
+	if fling_id.id == nendo.id("PickerCategories").id {fling_vel = {}}
+	return true
+}
+
+@(private = "file")
 handle_picker_keys :: proc(ui: ^Ui_State) -> bool {
 	if len(rl.Preedit()) != 0 {return false}
 	down, up := key_hit(.DOWN), key_hit(.UP)
@@ -1609,16 +1707,17 @@ handle_picker_keys :: proc(ui: ^Ui_State) -> bool {
 		}
 	}
 	cols := max(ui.picker_columns, 1)
+	shelf := picker_query(ui) != "" ? len(custom) : 0
 	switch {
 	case at < 0:
 		at = 0
-	case down && at < len(custom) && len(matches) != 0:
-		at = len(custom) + min(at, min(cols, len(matches)) - 1)
-	case up && at < len(custom):
+	case down && at < shelf && len(matches) != 0:
+		at = shelf + min(at, min(cols, len(matches)) - 1)
+	case up && at < shelf:
 		at = -1
-	case up && at < len(custom) + cols:
-		at = len(custom) == 0 ? -1 : min(at - len(custom), len(custom) - 1)
-	case down && at >= len(custom):
+	case up && at < shelf + cols:
+		at = shelf == 0 ? -1 : min(at - shelf, shelf - 1)
+	case down && at >= shelf:
 		at += cols
 	case up:
 		at -= cols
@@ -1640,14 +1739,14 @@ handle_picker_keys :: proc(ui: ^Ui_State) -> bool {
 		step := side + f32(PICKER_GAP)
 		prefix := nendo.element(nendo.id("PickerBrowseHead")).rect.height
 		if prefix > 0 {prefix += f32(PICKER_GAP)}
-		if at < len(custom) {
+		if at < shelf {
 			if row := nendo.scroll(nendo.id("PkCustomRow")); row.found {
 				x := f32(at) * step
 				row.position.x = -clamp(-row.position.x, max(0, x + side - row.viewport.width), x)
 			}
 		} else {
-			if len(custom) != 0 {prefix += step}
-			prefix += f32((at - len(custom)) / cols) * step
+			if shelf != 0 {prefix += step}
+			prefix += f32((at - shelf) / cols) * step
 		}
 		reveal_scroll_span(view, prefix, side)
 		scroll_residual = {}

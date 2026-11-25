@@ -827,12 +827,18 @@ Ui_State :: struct {
 	picker_y:                            f32,
 	picker_filter:                       [dynamic]u8,
 	picker_group:                        Emoji_Group,
+	picker_pack:                         int, // one-based in picker_emoji_packs
+	picker_pack_revision:                u64,
 	picker_selection:                    nendo.Id, // null leaves the keyboard in search
 	picker_columns:                      int, // measured in the hit-tested layout
 	picker_query_id:                     u32,
 	picker_browse_scroll:                nendo.Vector2,
 	picker_custom_revision:              u64,
 	picker_hit_revision:                 u64, // catalog revision of the hit-tested frame
+	picker_pressed_category:             nendo.Id,
+	picker_press_revision:               u64,
+	picker_batched_category:             nendo.Id,
+	picker_reveal:                       bool,
 	picker_used:                         [dynamic]string, // recents commit on close, never move under a finger
 	sidebar_filter:                      [dynamic]u8, // rail chat filter
 	filter_hits:                         [dynamic]bool, // per-chat body match for sidebar_filter

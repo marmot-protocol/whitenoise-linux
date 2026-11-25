@@ -78,6 +78,15 @@ Emoji_Source :: struct {
 @(private)
 emoji_sources: [dynamic]Emoji_Source
 
+@(private)
+Picker_Emoji_Pack :: struct {
+	coordinate, title: string,
+	created_at:        u64,
+	slots:             [dynamic]u32,
+}
+@(private)
+picker_emoji_packs: [dynamic]Picker_Emoji_Pack
+
 @(private, default_calling_convention = "c")
 foreign _ {
 	wn_ws_fetch_many :: proc(url: cstring, req: cstring, out: [^]u8, cap: c.size_t, timeout_ms: c.long, max_events: c.size_t) -> c.int ---
@@ -146,12 +155,13 @@ emoji_set_parse :: proc(event: Sticker_Event, relay: string) -> (set: Nostr_Emoj
 		}
 	}
 	if !has_d || len(d) > 1024 {return}
-	if title == "" || len(title) > 512 {title = d}
-	if title == "" {title = N_("Untitled emoji set")}
+	if strings.trim_space(title) == "" || len(title) > 512 {title = d}
+	fields := strings.fields(title, context.temp_allocator)
+	title = len(fields) == 0 ? strings.clone(N_("Untitled emoji set")) : strings.join(fields, " ")
 	if len(description) > 4096 {description = ""}
 	set = {
 		coordinate  = fmt.aprintf("30030:%s:%s", event.pubkey, d),
-		title       = strings.clone(title),
+		title       = title,
 		sort_title  = strings.to_lower(title),
 		author      = strings.clone(event.pubkey),
 		event       = strings.clone(event.id),
@@ -343,6 +353,8 @@ emoji_manifest_load :: proc(
 
 @(private)
 emoji_sources_clear :: proc() {
+	for pack in picker_emoji_packs {delete(pack.coordinate); delete(pack.title); delete(pack.slots)}
+	delete(picker_emoji_packs); picker_emoji_packs = nil
 	for source in emoji_sources {delete(source.name); delete(source.title); delete(source.author); delete(source.coordinate)}
 	delete(emoji_sources); emoji_sources = {}
 }
@@ -360,6 +372,7 @@ emoji_scan_files :: proc(
 	directory: string,
 	names: ^[dynamic]string,
 	sources: ^[dynamic]Emoji_Source = nil,
+	packs: ^[dynamic]Picker_Emoji_Pack = nil,
 ) {
 	dir, err := os.open(directory)
 	if err != nil {return}
@@ -379,6 +392,8 @@ emoji_scan_files :: proc(
 	sets, sets_read_err := os.read_dir(sets_dir, -1, context.temp_allocator)
 	if sets_read_err != nil {return}
 	slice.sort_by(sets, proc(a, b: os.File_Info) -> bool {return a.name < b.name})
+	by_coordinate: map[string]int
+	if packs != nil {by_coordinate = make(map[string]int, context.temp_allocator)}
 	for entry in sets {
 		if entry.type != .Directory || !sticker_hex(entry.name) {continue}
 		manifest, valid := emoji_manifest_load(directory, entry.name)
@@ -396,11 +411,29 @@ emoji_scan_files :: proc(
 			manifest.files[:],
 			proc(a, b: Emoji_Set_File) -> bool {return a.name < b.name},
 		)
+		pack: ^Picker_Emoji_Pack
 		for file in manifest.files {
-			if seen[file.code] {continue}
 			if !regular[file.name] {continue}
+			if packs != nil && pack == nil {
+				index, found := by_coordinate[set.coordinate]
+				if !found {
+					index = len(packs^)
+					coordinate := strings.clone(set.coordinate)
+					append(packs, Picker_Emoji_Pack{coordinate = coordinate})
+					by_coordinate[coordinate] = index
+				}
+				pack = &packs^[index]
+				// Event ID order above breaks ties, as it does in discovery.
+				if !found || set.created_at > pack.created_at {
+					delete(pack.title)
+					pack.title = strings.clone(set.title)
+					pack.created_at = set.created_at
+				}
+			}
+			if seen[file.code] {continue}
 			seen[file.code] = true
 			name := fmt.aprintf("sets/%s/%s", entry.name, file.name)
+			if pack != nil {append(&pack.slots, u32(len(names^)))}
 			append(names, name)
 			if sources != nil {
 				append(
@@ -414,6 +447,11 @@ emoji_scan_files :: proc(
 				)
 			}
 		}
+	}
+	if packs != nil {
+		slice.sort_by(packs^[:], proc(a, b: Picker_Emoji_Pack) -> bool {
+			return a.title < b.title || a.title == b.title && a.coordinate < b.coordinate
+		})
 	}
 }
 
@@ -745,5 +783,4 @@ emoji_sets_stop :: proc(ui: ^Ui_State) {
 	delete(ui.emoji_sets_query); ui.emoji_sets_query = {}
 	delete(ui.emoji_sets_notice); ui.emoji_sets_notice = ""
 	ui.emoji_sets_error = ""; ui.emoji_sets_selected = -1; ui.emoji_sets_open = false
-	emoji_sources_clear()
 }

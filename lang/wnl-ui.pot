@@ -4225,6 +4225,9 @@ msgstr ""
 msgid "No devices are linked to this profile yet."
 msgstr ""
 
+msgid "No emoji available."
+msgstr ""
+
 msgid "No emoji match your search."
 msgstr ""
 

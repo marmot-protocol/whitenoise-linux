@@ -3808,6 +3808,9 @@ msgstr "連絡先がまだありません"
 msgid "No description."
 msgstr "説明はありません。"
 
+msgid "No emoji available."
+msgstr "利用できる絵文字がありません。"
+
 msgid "No emoji match your search."
 msgstr "検索に一致する絵文字はありません。"
 

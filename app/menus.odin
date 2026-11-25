@@ -663,7 +663,10 @@ picker_query :: proc(ui: ^Ui_State) -> string {
 @(private)
 picker_matches :: proc(ui: ^Ui_State) -> []int {
 	query := picker_query(ui)
-	if query == "" {return emoji_group_rows[ui.picker_group][:]}
+	if query == "" {
+		if picker_pack_at(ui.picker_pack, ui.picker_pack_revision) != nil {return nil}
+		return emoji_group_rows[ui.picker_group][:]
+	}
 	filter := strings.to_lower(query, context.temp_allocator)
 	shortcode := fmt.tprintf(":%s:", filter)
 	exact, partial :=
@@ -679,13 +682,6 @@ picker_matches :: proc(ui: ^Ui_State) -> []int {
 	}
 	append(&exact, ..partial[:])
 	return exact[:]
-}
-
-@(private)
-picker_custom_matches :: proc(ui: ^Ui_State) -> ([]Picker_Custom, u64) {
-	query := picker_query(ui)
-	if query != "" || ui.picker_group == .Custom {return picker_custom(query)}
-	return nil, 0
 }
 
 // Dock magnification: the tile under the pointer grows, and its
@@ -762,7 +758,7 @@ emoji_picker :: proc(ui: ^Ui_State) {
 	screen_w, screen_h := f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM
 	width := sheet ? screen_w : fit_w(400)
 	height := modal_h(ui.picker_mode == .Group_Image ? 560 : 440)
-	compact := sheet && ui.focus == .Picker && screen_h < 380
+	compact := sheet && ui.focus == .Picker && touch_field.id != 0 && screen_h < 380
 	padding := media ? u16(12) : PICKER_PAD
 	pad := f32(padding)
 	side := picker_side()
@@ -883,32 +879,62 @@ picker_categories :: proc(ui: ^Ui_State) {
 		clip = {x = sheet, y = !sheet, scroll = true},
 	},
 	) {
+		selected := int(ui.picker_group)
+		if picker_pack_at(ui.picker_pack, ui.picker_pack_revision) != nil {
+			selected = len(PICKER_CATEGORIES) + ui.picker_pack - 1
+		}
+		if picker_query(ui) != "" {selected = -1}
+		custom := PICKER_CATEGORIES[.Custom]
+		picker_category_button(
+			int(Emoji_Group.Custom),
+			selected,
+			custom.icon,
+			tr(custom.label),
+			side,
+		)
+		for pack, i in picker_emoji_packs {
+			width :=
+				sheet ? max(side, min(112, rl.MeasureTextLine(FONT_BODY, 12, pack.title, 0).x + 16)) : side
+			picker_category_button(len(PICKER_CATEGORIES) + i, selected, "", pack.title, width)
+		}
 		for group in Emoji_Group {
-			active := group == ui.picker_group && picker_query(ui) == ""
+			if group == .Custom {continue}
 			category := PICKER_CATEGORIES[group]
-			if nendo.box(nendo.id("PickerCategory", u32(group)))(
-			{
-				width = nendo.fixed(side),
-				height = nendo.fixed(side),
-				align = {x = .Center, y = .Center},
-				color = active ? SELECTED : hovered() ? HOVER : {},
-				radius = rr(7),
-			},
-			) {
-				nendo.text(
-					category.icon,
-					{font = FONT_ICON, size = 16, color = active ? ACCENT : TEXT_DIM},
-				)
-				if hovered() &&
-				   !rl.TouchActive() {tooltip(tr(category.label), sheet ? .Above : .Below)}
-			}
+			picker_category_button(int(group), selected, category.icon, tr(category.label), side)
 		}
 	}
 	scrollbar(id, 13)
 }
 
 @(private = "file")
+picker_category_button :: proc(index, selected: int, glyph, label: string, width: f32) {
+	active := index == selected
+	if nendo.box(nendo.id("PickerCategory", u32(index)))(
+	{
+		width = nendo.fixed(width),
+		height = nendo.fixed(picker_side()),
+		align = {x = .Center, y = .Center},
+		color = active ? SELECTED : hovered() ? HOVER : {},
+		radius = rr(7),
+	},
+	) {
+		font, size := u16(FONT_ICON), u16(16)
+		text := glyph
+		if glyph == "" {
+			font, size = FONT_BODY, single_pane() ? 12 : 9
+			text = text_ellipsis(label, width - 8, font, size)
+		}
+		nendo.text(text, {font = font, size = size, color = active ? ACCENT : TEXT_DIM})
+		if hovered() && !rl.TouchActive() {tooltip(label, single_pane() ? .Above : .Below)}
+	}
+}
+
+@(private = "file")
 picker_search :: proc(ui: ^Ui_State) {
+	editing :=
+		ui.focus == .Picker &&
+		ui.picker_selection.id == 0 &&
+		(!rl.HasTouch() || touch_field.id != 0)
 	if nendo.box(nendo.id("PickerSearchRow"))(
 	{width = nendo.grow(), gap = PICKER_PAD, align = {y = .Center}},
 	) {
@@ -921,10 +947,7 @@ picker_search :: proc(ui: ^Ui_State) {
 			align = {y = .Center},
 			color = ROW_BG,
 			radius = rr(8),
-			border = {
-				color = ui.focus == .Picker && ui.picker_selection.id == 0 ? ACCENT : FIELD_BORDER,
-				width = bw(),
-			},
+			border = {color = editing ? ACCENT : FIELD_BORDER, width = bw()},
 		},
 		) {
 			nendo.text(ICON_SEARCH, {font = FONT_ICON, size = 12, color = TEXT_LO})
@@ -933,7 +956,7 @@ picker_search :: proc(ui: ^Ui_State) {
 				"PickerSearch",
 				&ui.picker_filter,
 				tr("Search emoji..."),
-				ui.focus == .Picker && ui.picker_selection.id == 0,
+				editing,
 				13,
 				TEXT_LO,
 			)
@@ -969,8 +992,7 @@ picker_grid :: proc(ui: ^Ui_State, width, height: f32) {
 			ui.picker_browse_scroll = {}
 			if scroll := nendo.scroll(grid);
 			   scroll.found {ui.picker_browse_scroll.y = scroll.position.y}
-			shelf := ui.picker_group == .Custom ? custom_row : nendo.id("PkRecentRow")
-			if scroll := nendo.scroll(shelf);
+			if scroll := nendo.scroll(nendo.id("PkRecentRow"));
 			   scroll.found {ui.picker_browse_scroll.x = scroll.position.x}
 		}
 		if scroll := nendo.scroll(grid); scroll.found {
@@ -999,6 +1021,7 @@ picker_grid :: proc(ui: ^Ui_State, width, height: f32) {
 	cols := max(1, int((width + gap) / (side + gap)))
 	ui.picker_columns = cols
 	cell_w := max(side, (width + gap) / f32(cols) - gap)
+	grid_custom := query == "" ? len(custom) : 0
 	if nendo.box(grid)(
 	{
 		width = nendo.grow(),
@@ -1013,7 +1036,8 @@ picker_grid :: proc(ui: ^Ui_State, width, height: f32) {
 			if nendo.box(nendo.id("PickerBrowseHead"))(
 			{width = nendo.grow(), direction = .Column, gap = 4},
 			) {
-				if ui.picker_group == .Smileys && len(ui.prefs.recent_emoji) != 0 {
+				pack := picker_pack_at(ui.picker_pack, ui.picker_pack_revision)
+				if ui.picker_group == .Custom && pack == nil && len(ui.prefs.recent_emoji) != 0 {
 					eyebrow(tr("RECENT"))
 					recent_row := nendo.id("PkRecentRow")
 					if nendo.box(recent_row)(
@@ -1031,43 +1055,44 @@ picker_grid :: proc(ui: ^Ui_State, width, height: f32) {
 					}
 					scrollbar(recent_row, 13)
 				}
+				label := pack != nil ? pack.title : tr(PICKER_CATEGORIES[ui.picker_group].label)
 				nendo.text(
-					tr(PICKER_CATEGORIES[ui.picker_group].label),
+					text_ellipsis(label, width, FONT_TITLE, 14),
 					{font = FONT_TITLE, size = 14, color = TEXT},
 				)
 			}
 		}
-		if len(custom) != 0 {
-			x: f32
-			if restoring {
-				x = ui.picker_browse_scroll.x
-			} else if scroll := nendo.scroll(custom_row); scroll.found {
-				x = scroll.position.x
-			}
-			picker_custom_row(custom, width, side, x, ui.picker_selection)
+		if len(custom) > grid_custom {
+			x := nendo.scroll(custom_row)
+			picker_custom_row(custom, width, side, x.found ? x.position.x : 0, ui.picker_selection)
 		}
 		if len(matches) == 0 && len(custom) == 0 {
 			nendo.text(
-				tr("No emoji match your search."),
+				query == "" ? tr("No emoji available.") : tr("No emoji match your search."),
 				{font = FONT_BODY, size = 13, color = TEXT_DIM},
 			)
 		}
-		count := (len(matches) + cols - 1) / cols
+		tiles := len(matches) + grid_custom
+		count := (tiles + cols - 1) / cols
 		rows := nendo.virtual_rows(nendo.id("PickerRows"), count, side, gap = PICKER_GAP)
 		for row in rows.first ..< rows.end {
 			start := row * cols
 			if nendo.box(nendo.id("PkRow", u32(start)))(
 			{height = nendo.fixed(side), gap = PICKER_GAP},
 			) {
-				for at in start ..< min(start + cols, len(matches)) {
-					index := matches[at]
-					id := nendo.id("PkCell", u32(index))
-					picker_cell(
-						id,
-						picker_emoji_tex(emoji_catalog[index].emoji),
-						cell_w,
-						ui.picker_selection == id ? kb_ring(ACCENT) : {},
-					)
+				for at in start ..< min(start + cols, tiles) {
+					id: nendo.Id
+					art: Picker_Art
+					if at < grid_custom {
+						slot := custom[at].slot
+						id, art = nendo.id("PkCustom", slot), picker_custom_tex(slot)
+					} else {
+						index := matches[at - grid_custom]
+						id, art =
+							nendo.id("PkCell", u32(index)),
+							picker_emoji_tex(emoji_catalog[index].emoji)
+					}
+					picker_cell(id, art, cell_w, ui.picker_selection == id ? kb_ring(ACCENT) : {})
 				}
 			}
 		}

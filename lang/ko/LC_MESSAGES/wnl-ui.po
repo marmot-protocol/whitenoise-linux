@@ -3573,6 +3573,9 @@ msgstr "아직 연락처 없음"
 msgid "No description."
 msgstr "설명이 없습니다."
 
+msgid "No emoji available."
+msgstr "사용할 수 있는 이모지가 없습니다."
+
 msgid "No emoji match your search."
 msgstr "검색과 일치하는 이모지가 없습니다."
 

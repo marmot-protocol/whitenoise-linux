@@ -671,6 +671,7 @@ app_main :: proc() {
 	defer emoji_pack_unmap()
 	// Before any picker or message needs them, not on first Settings visit.
 	custom_emoji_scan()
+	defer emoji_sources_clear()
 
 	// Every secret lives in $home/vault.db, marmot's account keys
 	// included, so the vault opens before the runtime does; closing the
@@ -1148,6 +1149,7 @@ app_main :: proc() {
 			pointer.y /= UI_ZOOM
 			nendo.set_pointer(pointer, (rl.IsMouseButtonDown(.LEFT)) ? .Down : .Up)
 			ui.picker_hit_revision = ui.picker_custom_revision
+			picker_sample_click(&ui)
 			fwd_sample_pointer(&ui)
 
 			scroll_thumb_tick()

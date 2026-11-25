@@ -51,6 +51,10 @@ emoji_picker_scroll :: proc(t: ^testing.T) {
 	build_layout(&ui, 0)
 	category := nendo.element(nendo.id("PickerCategory", u32(Emoji_Group.People)))
 	if !testing.expect(t, category.found) {return}
+	nendo.set_pointer({category.rect.x + 5, category.rect.y + 5}, .Down)
+	forced_press = true
+	handle_picker(&ui, nil)
+	forced_press = false
 	nendo.set_pointer({category.rect.x + 5, category.rect.y + 5}, .Up)
 	forced_release = true
 	handle_picker(&ui, nil)
@@ -277,4 +281,105 @@ test_cold_custom_emoji :: proc(t: ^testing.T, ui: ^Ui_State) {
 	handle_picker(ui, nil)
 	forced_release = false
 	testing.expect_value(t, string(ui.compose[:]), ":emoji_149880:")
+	test_picker_packs(t, ui, directory)
+}
+
+@(private = "file")
+test_picker_packs :: proc(t: ^testing.T, ui: ^Ui_State, directory: string) {
+	for title, i in ([2]string{"Wood\nland", " \t\n "}) {
+		event := emoji_test_event(i == 0 ? "woodland" : "Party", title)
+		defer emoji_event_free(event)
+		set, ok := emoji_set_parse(event, "")
+		if !testing.expect(t, ok) {return}
+		defer emoji_set_free(set)
+		if !testing.expect(
+			t,
+			emoji_import_asset(directory, set, set.items[i], BUILTIN_EMOJI[4 + i * 3].png, ".png"),
+		) {return}
+	}
+	custom_emoji_scan()
+	defer emoji_sources_clear()
+	emoji_sets_stop(ui) // Vault lock stops the account's workers, not the device's catalog.
+	open_picker(ui, "")
+	build_layout(ui, 0)
+	if !testing.expect_value(t, len(picker_emoji_packs), 2) {return}
+	testing.expect_value(t, picker_emoji_packs[0].title, "Party")
+	testing.expect_value(t, picker_emoji_packs[1].title, "Wood land")
+	custom := nendo.element(nendo.id("PickerCategory", u32(Emoji_Group.Custom))).rect
+	party_id := nendo.id("PickerCategory", u32(len(PICKER_CATEGORIES)))
+	woodland_id := nendo.id("PickerCategory", u32(len(PICKER_CATEGORIES) + 1))
+	party, woodland := nendo.element(party_id), nendo.element(woodland_id)
+	smileys := nendo.element(nendo.id("PickerCategory", u32(Emoji_Group.Smileys))).rect
+	if !testing.expect(
+		t,
+		party.found &&
+		woodland.found &&
+		custom.y < party.rect.y &&
+		party.rect.y < woodland.rect.y &&
+		woodland.rect.y < smileys.y,
+	) {return}
+	testing.expect_value(t, ui.picker_group, Emoji_Group.Custom)
+
+	pointer :: proc(ui: ^Ui_State, rect: nendo.Rect, phase: nendo.Pointer_Button) {
+		nendo.set_pointer({rect.x + rect.width / 2, rect.y + rect.height / 2}, phase)
+		ui.picker_hit_revision = ui.picker_custom_revision
+		forced_press, forced_release = phase == .Down, phase == .Up
+		handle_picker(ui, nil)
+		forced_press, forced_release = false, false
+	}
+	pointer(ui, party.rect, .Down)
+	custom_emoji_scan()
+	build_layout(ui, 0)
+	pointer(ui, party.rect, .Up)
+	testing.expect_value(t, ui.picker_pack, 0)
+	pointer(ui, party.rect, .Down)
+	pointer(ui, party.rect, .Up)
+	build_layout(ui, 0)
+	items, _ := picker_custom_matches(ui)
+	if !testing.expect_value(t, len(items), 1) {return}
+	testing.expect_value(t, items[0].code, "second")
+	ed_set(ui, &ui.picker_filter, "happy-fox")
+	build_layout(ui, 0)
+	items, _ = picker_custom_matches(ui)
+	if !testing.expect_value(t, len(items), 1) {return}
+	testing.expect_value(t, items[0].code, "happy-fox")
+	ed_set(ui, &ui.picker_filter, "")
+	build_layout(ui, 0)
+	pointer(ui, woodland.rect, .Down)
+	pointer(ui, woodland.rect, .Up)
+	if !testing.expect_value(
+		t,
+		os.write_entire_file(fmt.tprintf("%s/second.png", directory), []u8{0}),
+		nil,
+	) {return}
+	custom_emoji_scan()
+	build_layout(ui, 0)
+	if !testing.expect(
+		t,
+		nendo.element(party_id).found,
+		"a local override must not hide its installed pack",
+	) {return}
+	items, _ = picker_custom_matches(ui)
+	if !testing.expect_value(t, len(items), 1) {return}
+	testing.expect_value(t, items[0].code, "happy-fox")
+	tile_id := nendo.id("PkCustom", items[0].slot)
+	for _ in 0 ..< 10 {
+		settings_emoji_tick(ui)
+		emoji_preview_finish(.Publish)
+		build_layout(ui, 0)
+		if custom_emoji_textures[custom_emoji_names[items[0].slot]] != nil {break}
+	}
+	tile := nendo.element(tile_id)
+	if !testing.expect(t, tile.found && !nendo.element(nendo.id("PkCustomRow")).found) {return}
+	rl.SetWindowSize(390, 760)
+	nendo.set_dimensions({390, 760})
+	commands := build_layout(ui, 0)
+	rl.BeginDrawing()
+	draw_frame(commands)
+	rl.TakeScreenshot("/tmp/wn-emoji-picker-pack.png")
+	rl.EndDrawing()
+	clear(&ui.compose)
+	ui.picker_return = 0
+	pointer(ui, nendo.element(tile_id).rect, .Up)
+	testing.expect_value(t, string(ui.compose[:]), ":happy-fox:")
 }

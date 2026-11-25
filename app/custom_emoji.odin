@@ -118,6 +118,12 @@ emoji_remove :: proc(ui: ^Ui_State, name: string) {
 custom_emoji_scan :: proc() {
 	// The worker owns disk publication until drain; never block a frame on IO.
 	if g_ui != nil && g_ui.emoji_sets_job != nil && g_ui.emoji_sets_job.op == .Import {return}
+	coordinate: string
+	if g_ui != nil {
+		if pack := picker_pack_at(g_ui.picker_pack, g_ui.picker_pack_revision); pack != nil {
+			coordinate = strings.clone(pack.coordinate, context.temp_allocator)
+		}
+	}
 	emoji_revision += 1
 	custom_emoji_scanned = true
 	for name in custom_emoji_names {
@@ -125,7 +131,14 @@ custom_emoji_scan :: proc() {
 	}
 	clear(&custom_emoji_names)
 	emoji_sources_clear()
-	emoji_scan_files(emoji_dir(), &custom_emoji_names, &emoji_sources)
+	emoji_scan_files(emoji_dir(), &custom_emoji_names, &emoji_sources, &picker_emoji_packs)
+	if g_ui == nil || coordinate == "" {return}
+	g_ui.picker_pack, g_ui.picker_pack_revision = 0, 0
+	for pack, i in picker_emoji_packs {
+		if pack.coordinate != coordinate {continue}
+		g_ui.picker_pack, g_ui.picker_pack_revision = i + 1, emoji_revision
+		break
+	}
 }
 
 @(private = "file")
@@ -385,6 +398,28 @@ Emoji_Match_Mode :: enum {
 Picker_Custom :: struct {
 	code: string,
 	slot: u32,
+}
+
+@(private)
+picker_pack_at :: proc(index: int, revision: u64) -> ^Picker_Emoji_Pack {
+	if revision != emoji_revision || index <= 0 || index > len(picker_emoji_packs) {return nil}
+	return &picker_emoji_packs[index - 1]
+}
+
+@(private)
+picker_custom_matches :: proc(ui: ^Ui_State) -> ([]Picker_Custom, u64) {
+	if query := picker_query(ui); query != "" {return picker_custom(query)}
+	if pack := picker_pack_at(ui.picker_pack, ui.picker_pack_revision); pack != nil {
+		matches := make([dynamic]Picker_Custom, 0, len(pack.slots), context.temp_allocator)
+		for slot in pack.slots {
+			name := custom_emoji_names[slot]
+			if tex, loaded := custom_emoji_textures[name]; loaded && tex == nil {continue}
+			append(&matches, Picker_Custom{emoji_code(name), slot})
+		}
+		return matches[:], emoji_revision
+	}
+	if ui.picker_group == .Custom {return picker_custom("")}
+	return nil, emoji_revision
 }
 
 // Shortcodes containing `query` (the picker search box, or a composer

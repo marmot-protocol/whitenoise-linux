@@ -3808,6 +3808,9 @@ msgstr "Noch keine Kontakte"
 msgid "No description."
 msgstr "Keine Beschreibung."
 
+msgid "No emoji available."
+msgstr "Keine Emojis verfügbar."
+
 msgid "No emoji match your search."
 msgstr "Keine Emojis passen zu deiner Suche."
 
