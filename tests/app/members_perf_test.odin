@@ -8,6 +8,7 @@ import "core:slice"
 import "core:strings"
 import "core:sync"
 import "core:testing"
+import "core:text/edit"
 import "core:thread"
 import "core:time"
 import "nendo"
@@ -22,22 +23,28 @@ large_group_layout :: proc(t: ^testing.T) {
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1
 	init_fonts()
+	load_themes()
+	apply_theme(0, 0)
 	memory: []u8
 	init_layout(&memory, 131072, {1200, 800})
 	defer delete(memory)
 	ui := Ui_State {
 		show_members     = true,
+		info_tab         = .Members,
 		row_menu         = -1,
 		member_menu      = -1,
 		member_nick      = -1,
 		selected_contact = -1,
 	}
 	ui.prefs.rail_w = RAIL_W_MIN
+	ui.prefs.reduce_motion = true
 	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Large group"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil}
+	edit.init(&ui.ed, context.allocator, context.allocator)
+	defer edit.destroy(&ui.ed)
 	for i in 0 ..< 1000 {
 		id := fmt.aprintf("%064x", i)
 		append(
@@ -48,9 +55,11 @@ large_group_layout :: proc(t: ^testing.T) {
 	defer {
 		for member in ui.members {delete(member.id_hex); delete(member.npub); delete(member.name)}
 		delete(ui.members); delete(ui.chats); delete(ui.accounts)
-		delete(ui.compose); delete(ui.mention_cands)
+		delete(ui.compose); delete(ui.mention_cands); delete(ui.nick_input); delete(ui.rail_rows)
 	}
-	for _ in 0 ..< 5 {build_layout(&ui, 0)}
+	build_layout(&ui, 0)
+	testing.expect(t, nendo.element(nendo.id("MemberRow", 0)).found)
+	testing.expect(t, !nendo.element(nendo.id("MemberRow", 999)).found)
 	samples: [31]f64
 	for &ms in samples {
 		start := time.tick_now()
@@ -59,14 +68,15 @@ large_group_layout :: proc(t: ^testing.T) {
 		free_all(context.temp_allocator)
 	}
 	slice.sort(samples[:])
-	data := nendo.scroll(nendo.id("MembersScroll"))
-	testing.expect(t, data.found && !layout_overflow)
+	owner := nendo.id("MembersScroll")
+	data := nendo.scroll(owner)
+	if !testing.expect(t, data.found && !layout_overflow) {return}
 	full_height := data.content.height
 	for fraction in ([]f32{0, 0.5, 1}) {
 		data.position.y = -fraction * (full_height - data.viewport.height)
 		commands := build_layout(&ui, 0)
 		mounted := 0
-		for _, i in ui.members {if nendo.element(nendo.id("MemberName", u32(i))).found {mounted += 1}}
+		for _, i in ui.members {if nendo.element(nendo.id("MemberRow", u32(i))).found {mounted += 1}}
 		fmt.printf(
 			"members=1000 scroll=%.1f mounted=%d median_ms=%.3f p95_ms=%.3f\n",
 			fraction,
@@ -75,32 +85,113 @@ large_group_layout :: proc(t: ^testing.T) {
 			samples[29],
 		)
 		testing.expect(t, mounted > 0 && mounted < 30)
-		testing.expect(
-			t,
-			abs(nendo.scroll(nendo.id("MembersScroll")).content.height - full_height) < 1,
-		)
+		testing.expect(t, abs(nendo.scroll(owner).content.height - full_height) < 1)
 		rl.BeginDrawing()
 		render_nendo(commands)
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-members-%d.png", int(fraction * 2)))
 		rl.EndDrawing()
 	}
-	testing.expect(t, nendo.element(nendo.id("MemberRow", 999)).found)
+	middle := -(full_height - data.viewport.height) / 2
+	data.position.y = middle
+	build_layout(&ui, 0)
+	click :: proc(t: ^testing.T, ui: ^Ui_State, id: nendo.Id) {
+		box := nendo.element(id)
+		if !testing.expect(t, box.found) {return}
+		b := box.rect
+		pointer := nendo.Vector2{b.x + b.width / 2, b.y + b.height / 2}
+		nendo.set_pointer(pointer, .Down)
+		forced_press = true
+		build_layout(ui, 0)
+		forced_press = false
+		nendo.set_pointer(pointer, .Up)
+		if !testing.expect(t, nendo.pointer_over(id)) {return}
+		forced_release = true
+		handle_members(ui, nil)
+		forced_release = false
+	}
+	defer {menu_press = {}; text_field_live = false}
+	click(t, &ui, nendo.id("MemberMenuBtn", 500))
+	if !testing.expect_value(t, ui.member_menu, 500) {return}
+	anim_tick(1.0 / 60)
+	build_layout(&ui, 0)
+	click(t, &ui, nendo.id("MemberNick"))
+	if !testing.expect_value(t, ui.member_nick, 500) {return}
+	delete(ui.members[500].name)
+	ui.members[500].name = strings.clone(
+		"Member 0500 with a display name long enough to wrap on the group page because people can have several names and the nickname prompt uses their full display name",
+	)
+	anim_tick(1.0 / 60)
+	build_layout(&ui, 0)
+	row := nendo.element(nendo.id("MemberRow", 500)).rect
+	editor := nendo.element(nendo.id("MemberNickBox"))
+	testing.expect(t, editor.found && editor.rect.y > row.y + row.height + 22)
+	delete(ui.members[500].name)
+	ui.members[500].name = strings.clone("Alice\nSmith")
+	build_layout(&ui, 0)
+	without_blank := nendo.element(nendo.id("MemberNickBox")).rect.y
+	delete(ui.members[500].name)
+	ui.members[500].name = strings.clone("Alice\n\nSmith")
+	build_layout(&ui, 0)
+	with_blank := nendo.element(nendo.id("MemberNickBox")).rect.y
+	testing.expect_value(t, with_blank - without_blank, 12 * rl.TextScale)
+	data = nendo.scroll(owner)
+	data.position.y = data.viewport.height - data.content.height
+	build_layout(&ui, 0)
+	testing.expect(t, nendo.element(nendo.id("MemberNickBox")).found)
+	testing.expect(t, !nendo.element(nendo.id("MemberRow", 501)).found)
+	for c in "Draft" {rl.PushChar(c)}
+	edit_text(&ui, active_buf(&ui))
+	data.position.y = middle
+	build_layout(&ui, 0)
+	testing.expect_value(t, ui.focus, Focus.Nick)
+	testing.expect_value(t, string(ui.nick_input[:]), "Draft")
+	click(t, &ui, nendo.id("MemberNickCancel"))
+	build_layout(&ui, 0)
+	testing.expect(t, !nendo.element(nendo.id("MemberNickBox")).found)
+	testing.expect(t, abs(nendo.scroll(owner).content.height - full_height) < 1)
+
+	// Switch from a prompt taller than the viewport without closing it first.
+	delete(ui.members[500].name)
+	ui.members[500].name = strings.repeat("Long member name\n", 80)
 	ui.member_nick = 500
 	build_layout(&ui, 0)
-	testing.expect(t, nendo.element(nendo.id("MemberNickBox", 500)).found)
+	data = nendo.scroll(owner)
+	extra := data.content.height - full_height
+	if !testing.expect(t, extra > data.viewport.height) {return}
+	data.position.y = middle - extra
+	build_layout(&ui, 0)
+	click(t, &ui, nendo.id("MemberMenuBtn", 501))
+	anim_tick(1.0 / 60)
+	build_layout(&ui, 0)
+	click(t, &ui, nendo.id("MemberNick"))
+	if !testing.expect_value(t, ui.member_nick, 501) {return}
+	anim_tick(1.0 / 60)
+	build_layout(&ui, 0)
+	view := nendo.element(owner).rect
+	after_switch := nendo.element(nendo.id("MemberRow", 500 + u32(extra / 54)))
 	testing.expect(
 		t,
-		abs(nendo.scroll(nendo.id("MembersScroll")).content.height - full_height - 34) < 1,
+		after_switch.found &&
+		after_switch.rect.y >= view.y &&
+		after_switch.rect.y + after_switch.rect.height <= view.y + view.height,
 	)
 	ui.member_nick = -1
-	for width in ([]i32{600, 1200}) {
+
+	for width in ([]i32{400, 1200}) {
 		rl.SetWindowSize(width, 800)
 		nendo.set_dimensions({f32(width), 800})
 		for _ in 0 ..< 3 {build_layout(&ui, 0)}
-		data = nendo.scroll(nendo.id("MembersScroll"))
+		data = nendo.scroll(owner)
 		data.position.y = -(data.content.height - data.viewport.height)
 		build_layout(&ui, 0)
-		testing.expect(t, nendo.element(nendo.id("MemberName", 999)).found)
+		last := nendo.element(nendo.id("MemberRow", 999))
+		view := nendo.element(owner).rect
+		testing.expect(
+			t,
+			last.found &&
+			last.rect.y >= view.y &&
+			last.rect.y + last.rect.height <= view.y + view.height + 0.01,
+		)
 		testing.expect(t, !layout_overflow)
 	}
 	ui.focus = .Compose
@@ -176,8 +267,8 @@ large_group_layout :: proc(t: ^testing.T) {
 			thumb := max(24, data.viewport.height * data.viewport.height / data.content.height)
 			travel := data.viewport.height - thumb
 			scroll_drag = {
-				nendo.id("Timeline").id,
-				rl.GetMousePosition().y / UI_ZOOM - fraction * travel,
+				container = nendo.id("Timeline").id,
+				grab      = rl.GetMousePosition().y / UI_ZOOM - fraction * travel,
 			}
 			build_layout(&ui, 0)
 			if abs(data.position.y - timeline_draw_offset) > 0.01 {build_layout(&ui, 0)}

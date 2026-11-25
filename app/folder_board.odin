@@ -43,7 +43,7 @@ BOARD_ROW_H :: f32(40)
 @(private = "file")
 BOARD_EMPTY_H :: f32(32)
 @(private = "file")
-BOARD_GAP :: f32(10)
+BOARD_GAP :: 10
 @(private = "file")
 BOARD_EDGE :: f32(32) // pointer this close to the top or bottom scrolls a drag
 
@@ -56,7 +56,6 @@ Board :: struct {
 	sections: []Folder_Section,
 	grouped:  []Inbox_Row,
 	tops:     []f32,
-	height:   f32,
 }
 
 @(private = "file")
@@ -71,21 +70,19 @@ board_section_h :: proc(count: int) -> f32 {
 @(private = "file")
 board_build :: proc(ui: ^Ui_State) -> Board {
 	sections, grouped := inbox_sections(ui, inbox_all(ui))
-	tops := make([]f32, len(sections), context.temp_allocator)
-	y: f32
+	tops := make([]f32, len(sections) + 1, context.temp_allocator)
 	for section, i in sections {
-		tops[i] = y
-		y += board_section_h(section.count)
+		tops[i + 1] = tops[i] + board_section_h(section.count)
 	}
-	return {sections, grouped, tops, y}
+	return {sections, grouped, tops}
 }
 
 // The section at content y, clamped to the first and last; `row` is the
 // inbox row inside it, -1 for the header and -2 for the empty slot or gap.
 @(private = "file")
 board_at :: proc(board: Board, y: f32) -> (section, row: int) {
-	for top, i in board.tops {
-		if i + 1 < len(board.tops) && y >= board.tops[i + 1] {continue}
+	for top, i in board.tops[:len(board.sections)] {
+		if i + 1 < len(board.sections) && y >= board.tops[i + 1] {continue}
 		local := y - top
 		if local < settings_tap_size(BOARD_HEAD_H) {return i, -1}
 		row = int((local - settings_tap_size(BOARD_HEAD_H)) / settings_tap_size(BOARD_ROW_H))
@@ -227,10 +224,7 @@ handle_folder_board :: proc(ui: ^Ui_State) -> bool {
 		if inside {
 			if drag.kind == .Row {
 				section, _ := board_at(board, y)
-				end :=
-					board.tops[section] +
-					board_section_h(board.sections[section].count) -
-					BOARD_GAP
+				end := board.tops[section + 1] - BOARD_GAP
 				if y < end {drag.target = section}
 			} else {
 				drag.target = board_folder_slot(ui, board, y)
@@ -311,12 +305,6 @@ handle_folder_board :: proc(ui: ^Ui_State) -> bool {
 	return false
 }
 
-@(private = "file")
-board_spacer :: proc(id: u32, height: f32) {
-	if height <= 0 {return}
-	if nendo.box(nendo.id("BoardSpace", id))({height = nendo.fixed(height)}) {}
-}
-
 // Every inbox row under its folder header, windowed to the viewport.
 @(private)
 folder_board :: proc(ui: ^Ui_State) {
@@ -334,9 +322,10 @@ folder_board :: proc(ui: ^Ui_State) {
 		used := actions.rect.y + actions.rect.height - page.rect.y - offset
 		height = max(120, page.rect.height - used - 30)
 	}
-	height = min(height, board.height)
+	content_height := board.tops[len(board.sections)]
+	height = min(height, content_height)
 	phone := single_pane()
-	if phone {height = board.height}
+	if phone {height = content_height}
 	box := nendo.element(nendo.id("FolderBoard"))
 	if board_create_at >= 0 && !ui.folder_open {
 		if board_create_at < len(ui.prefs.folders) && box.found {
@@ -369,42 +358,33 @@ folder_board :: proc(ui: ^Ui_State) {
 		clip = {y = !phone, scroll = !phone},
 	},
 	) {
-		view := nendo.scroll(nendo.id("FolderBoard"))
-		top := view.found ? -view.position.y - 72 : 0
-		bottom := top + height + 144
-		if phone && page.found && box.found {
-			top = page.rect.y - box.rect.y - 72
-			bottom = top + page.rect.height + 144
-		}
-		for section, i in board.sections {
-			id := u32(i) * 4
-			section_top := board.tops[i]
-			section_h := board_section_h(section.count)
-			if section_top + section_h < top || section_top > bottom {
-				board_spacer(id, section_h)
-				continue
-			}
+		sections := nendo.virtual_rows(nendo.id("BoardSections"), board.tops)
+		for i in sections.first ..< sections.end {
+			section := board.sections[i]
 			target := dragging && drag.kind == .Row && drag.target == i
 			insert := dragging && drag.kind == .Folder && drag.target == i
-			board_header(ui, i, section.count, target, insert)
-			if section.count == 0 {
-				board_empty(i, target)
-			} else {
-				rows := board.grouped[section.start:][:section.count]
-				row_top := section_top + settings_tap_size(BOARD_HEAD_H)
-				first := clamp(int((top - row_top) / settings_tap_size(BOARD_ROW_H)), 0, len(rows))
-				last := clamp(
-					int((bottom - row_top) / settings_tap_size(BOARD_ROW_H)) + 1,
-					first,
-					len(rows),
-				)
-				board_spacer(id + 1, f32(first) * settings_tap_size(BOARD_ROW_H))
-				for row in rows[first:last] {
-					board_row(ui, row, i)
+			if nendo.box(nendo.id("BoardSection", u32(i)))(
+			{
+				width = nendo.grow(),
+				height = nendo.fixed(board.tops[i + 1] - board.tops[i]),
+				direction = .Column,
+				padding = {bottom = BOARD_GAP},
+			},
+			) {
+				board_header(ui, i, section.count, target, insert)
+				if section.count == 0 {
+					board_empty(i, target)
+				} else {
+					rows := nendo.virtual_rows(
+						nendo.id("BoardChats", u32(i)),
+						section.count,
+						settings_tap_size(BOARD_ROW_H),
+					)
+					for at in rows.first ..< rows.end {
+						board_row(ui, board.grouped[section.start + at], i)
+					}
 				}
-				board_spacer(id + 2, f32(len(rows) - last) * settings_tap_size(BOARD_ROW_H))
 			}
-			board_spacer(id + 3, BOARD_GAP)
 		}
 	}
 	if !phone {scrollbar(nendo.id("FolderBoard"), settings_float_z(ui))}

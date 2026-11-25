@@ -141,11 +141,17 @@ message_sticker :: proc(index: u32, msg: Msg_Ui) {
 }
 
 @(private)
+sticker_set_page :: proc(ui: ^Ui_State, page: Sticker_Page) {
+	ui.sticker_page = page
+	ui.sticker_scroll_reset = true
+}
+
+@(private)
 sticker_show :: proc(ui: ^Ui_State, ref: Sticker_Ref) {
 	sticker_library_open(ui)
 	if ui.picker_open {close_picker(ui)}
 	ui.sticker_open = true
-	ui.sticker_page = ref.pack != "" ? .Pack : ref.sha != "" ? .Detail : .Library
+	sticker_set_page(ui, ref.pack != "" ? .Pack : ref.sha != "" ? .Detail : .Library)
 	ui.sticker_error = ""
 	sticker_ref_free(ui.sticker_selected)
 	ui.sticker_selected = sticker_ref_clone(ref)
@@ -175,7 +181,7 @@ sticker_open_pack :: proc(ui: ^Ui_State, input: string) {
 	if index := sticker_pack_index(ui, input); index >= 0 {
 		ui.sticker_pack.title = strings.clone(ui.sticker_packs[index].title)
 		for item in ui.stickers {if item.ref.pack == input {append(&ui.sticker_preview, sticker_item_clone(item))}}
-		ui.sticker_page = .Pack
+		sticker_set_page(ui, .Pack)
 		return
 	}
 	job := sticker_job_add(.Pack, ui.account_ref)
@@ -216,13 +222,25 @@ Sticker_Tile_State :: enum {
 	Focused,
 }
 
+@(private = "file")
+STICKER_PICK_TILE :: f32(80)
+@(private = "file")
+STICKER_PICK_GAP :: u16(4)
+@(private = "file")
+STICKER_PICK_STEP :: STICKER_PICK_TILE + f32(STICKER_PICK_GAP)
+
+@(private = "file")
+sticker_columns :: proc(width: f32) -> int {
+	return max(1, int(width / STICKER_PICK_STEP))
+}
+
 @(private)
 sticker_tile :: proc(
 	id: string,
 	index: int,
 	item: Sticker_Item,
 	state: Sticker_Tile_State,
-	size: f32 = 80,
+	size: f32 = STICKER_PICK_TILE,
 ) {
 	if nendo.box(nendo.id(id, u32(index)))(
 	{
@@ -255,7 +273,7 @@ sticker_tile :: proc(
 }
 
 @(private)
-sticker_picker :: proc(ui: ^Ui_State) {
+sticker_picker :: proc(ui: ^Ui_State, size: nendo.Dimensions) {
 	if nendo.box(nendo.id("StickerPacks"))(
 	{
 		width = nendo.grow(),
@@ -302,16 +320,17 @@ sticker_picker :: proc(ui: ^Ui_State) {
 			TEXT_LO,
 		)
 	}
-	if nendo.box(nendo.id("StickerGrid"))(
+	matches := sticker_matches(ui)
+	if len(matches) == 0 {ui.sticker_reveal = false}
+	grid := nendo.id(len(matches) == 0 ? "StickerEmptyGrid" : "StickerGrid")
+	if nendo.box(grid)(
 	{
 		width = nendo.grow(),
-		height = nendo.grow(min = 44),
+		height = nendo.grow(min = 44, max = max(44, size.height)),
 		direction = .Column,
-		gap = 4,
 		clip = {y = true, scroll = true},
 	},
 	) {
-		matches := sticker_matches(ui)
 		if len(matches) == 0 {
 			if sticker_busy(ui, .Load) || sticker_busy(ui, .Sync) {
 				sticker_progress("StickerPickerBusy", tr("Loading your sticker packs…"))
@@ -323,17 +342,42 @@ sticker_picker :: proc(ui: ^Ui_State) {
 					{font = FONT_BODY, size = 13, color = TEXT_DIM},
 				)
 			}
-		}
-		columns := max(1, int((modal_w(nendo.id("PickerPanel"), 400) - 24) / 84))
-		for start := 0; start < len(matches); start += columns {
-			if nendo.box(nendo.id("StickerRow", u32(start)))({gap = 4}) {
-				for at in start ..< min(start + columns, len(matches)) {sticker_tile("StickerPick", matches[at], ui.stickers[matches[at]], at == ui.sticker_focus ? .Focused : .Normal)}
+		} else {
+			columns := sticker_columns(size.width)
+			count := (len(matches) + columns - 1) / columns
+			if ui.sticker_reveal {ui.sticker_focus = clamp(ui.sticker_focus, 0, len(matches) - 1)}
+			rows := nendo.virtual_rows(
+				nendo.id("StickerRows"),
+				count,
+				STICKER_PICK_TILE,
+				gap = STICKER_PICK_GAP,
+			)
+			for row in rows.first ..< rows.end {
+				start := row * columns
+				if nendo.box(nendo.id("StickerRow", u32(start)))(
+				{gap = STICKER_PICK_GAP, height = nendo.fixed(STICKER_PICK_TILE)},
+				) {
+					for at in start ..< min(start + columns, len(matches)) {sticker_tile("StickerPick", matches[at], ui.stickers[matches[at]], at == ui.sticker_focus ? .Focused : .Normal)}
+				}
 			}
 		}
 	}
-	scrollbar(nendo.id("StickerGrid"), 13)
+	scrollbar(grid, 13)
 	if sticker_pack_index(ui, ui.sticker_filter) >=
 	   0 {sticker_control("StickerViewPack", 0, tr("View sticker pack"))}
+}
+
+@(private)
+sticker_resolve_scroll :: proc(ui: ^Ui_State) -> bool {
+	if !ui.sticker_reveal {return false}
+	ui.sticker_reveal = false
+	if !ui.picker_open || !ui.sticker_tab {return false}
+
+	view := nendo.scroll(nendo.id("StickerGrid"))
+	if !view.found || view.viewport.height <= 0 {return false}
+	// The pack footer and window size can change the viewport on this frame.
+	top := f32(ui.sticker_focus / sticker_columns(view.viewport.width)) * STICKER_PICK_STEP
+	return reveal_scroll_span(view, top, STICKER_PICK_TILE)
 }
 
 // A pack sticker goes through MDK with the composer's reply and armed effect.
@@ -408,15 +452,22 @@ handle_sticker_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		) {delete(ui.sticker_filter); ui.sticker_filter = strings.clone(pack.coordinate)}
 	}
 	matches := sticker_matches(ui)
-	if rl.IsKeyPressed(.LEFT) {ui.sticker_focus -= 1}
-	if rl.IsKeyPressed(.RIGHT) {ui.sticker_focus += 1}
-	columns := max(1, int((modal_w(nendo.id("PickerPanel"), 400) - 24) / 84))
-	if rl.IsKeyPressed(.UP) {ui.sticker_focus -= columns}
-	if rl.IsKeyPressed(.DOWN) {ui.sticker_focus += columns}
-	if rl.IsKeyPressed(.TAB) &&
-	   len(matches) >
-		   0 {sticker_show(ui, ui.stickers[matches[clamp(ui.sticker_focus, 0, len(matches) - 1)]].ref); return}
-	ui.sticker_focus = clamp(ui.sticker_focus, 0, max(0, len(matches) - 1))
+	// The search field spans the grid width even when there are no results.
+	columns := sticker_columns(nendo.element(nendo.id("PickerSearch")).rect.width)
+	step :=
+		int(rl.IsKeyPressed(.RIGHT)) -
+		int(rl.IsKeyPressed(.LEFT)) +
+		columns * (int(rl.IsKeyPressed(.DOWN)) - int(rl.IsKeyPressed(.UP)))
+	ui.sticker_focus = clamp(ui.sticker_focus + step, 0, max(0, len(matches) - 1))
+	if rl.IsKeyPressed(.TAB) && len(matches) > 0 {
+		sticker_show(ui, ui.stickers[matches[ui.sticker_focus]].ref)
+		return
+	}
+	if step != 0 && len(matches) > 0 {
+		ui.sticker_reveal = true
+		scroll_residual = {}
+		if fling_id.id == nendo.id("StickerGrid").id {fling_vel = {}}
+	}
 	for index, at in matches {
 		if rl.IsMouseButtonPressed(.RIGHT) &&
 		   nendo.pointer_over(
@@ -430,10 +481,62 @@ handle_sticker_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   mouse_released() && !nendo.pointer_over(nendo.id("PickerPanel")) {close_picker(ui)}
 }
 
+@(private = "file")
+STICKER_GALLERY_TILE :: f32(104)
+@(private = "file")
+STICKER_GALLERY_GAP :: u16(8)
+
+@(private = "file")
+sticker_gallery :: proc(ui: ^Ui_State, width: f32, personal: []int = nil) {
+	preview := ui.sticker_page == .Pack
+	items := preview ? ui.sticker_preview[:] : ui.stickers[:]
+	count := preview ? len(items) : len(personal)
+	if count == 0 {return}
+	tile_id := preview ? "StickerPreviewTile" : "StickerLibraryItem"
+	columns := max(1, int(width / (STICKER_GALLERY_TILE + f32(STICKER_GALLERY_GAP))))
+	// The page scrolls the gallery together with its headings and trailing copy.
+	if nendo.box(nendo.id_local("StickerGallery"))({width = nendo.grow(), direction = .Column}) {
+		rows := nendo.virtual_rows(
+			nendo.id_local("StickerGalleryRows"),
+			(count + columns - 1) / columns,
+			STICKER_GALLERY_TILE,
+			gap = STICKER_GALLERY_GAP,
+		)
+		for row in rows.first ..< rows.end {
+			start := row * columns
+			if nendo.box(nendo.id_local("StickerGalleryRow", u32(row)))(
+			{height = nendo.fixed(STICKER_GALLERY_TILE), gap = STICKER_GALLERY_GAP},
+			) {
+				for at in start ..< min(start + columns, count) {
+					index := preview ? at : personal[at]
+					item := items[index]
+					state: Sticker_Tile_State =
+						preview && item.ref.sha == ui.sticker_selected.sha ? .Focused : .Normal
+					sticker_tile(tile_id, index, item, state, STICKER_GALLERY_TILE)
+				}
+			}
+		}
+	}
+}
+
 @(private)
 sticker_panel :: proc(ui: ^Ui_State) {
-	width := modal_w(nendo.id("StickerPanel"), 640)
-	if nendo.box(nendo.id("StickerPanel"))(
+	panel := nendo.id("StickerPanel")
+	if ui.sticker_scroll_reset {
+		ui.sticker_scroll_reset = false
+		if data := nendo.scroll(panel); data.found {data.position^ = {}}
+		cancel_drag_scroll(panel)
+		if scroll_drag.container == panel.id ||
+		   scroll_thumb_pressed(nendo.id("ScrollThumb", panel.id)) {
+			scroll_drag = {
+				container = panel.id,
+				cancelled = true,
+			}
+		}
+		if nendo.pointer_over(panel) {scroll_residual = {}}
+	}
+	width := modal_w(panel, 640)
+	if nendo.box(panel)(
 	{
 		width = nendo.fixed(width),
 		height = nendo.fixed(
@@ -476,13 +579,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 			}
 		}
 		if nendo.box(nendo.id("StickerContent", u32(ui.sticker_page)))(
-		{
-			width = nendo.grow(),
-			height = nendo.grow(min = 44),
-			direction = .Column,
-			gap = 12,
-			clip = {y = true, scroll = true},
-		},
+		{width = nendo.grow(), height = nendo.grow(min = 44), direction = .Column, gap = 12},
 		) {
 			switch ui.sticker_page {
 			case .Library:
@@ -536,10 +633,14 @@ sticker_panel :: proc(ui: ^Ui_State) {
 						if nendo.box(nendo.id_local("PackLabel"))(
 						{width = nendo.grow(), direction = .Column, gap = 6},
 						) {
-							sticker_copy(0x100 + u32(i), pack.title, width - 156, 15, TEXT)
-							nendo.text(
+							copy_id := 0x100 + u32(i) * 2
+							sticker_copy(copy_id, pack.title, width - 156, 15, TEXT)
+							// The gallery needs this height before nendo arranges the page.
+							sticker_copy(
+								copy_id + 1,
 								fmt.tprintf(tr("Stickers: %d"), counts[i]),
-								{font = FONT_BODY, size = 12, color = TEXT_DIM},
+								width - 156,
+								12,
 							)
 						}
 						nendo.text("›", {font = FONT_BODY, size = 22, color = TEXT_DIM})
@@ -550,12 +651,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 				for item, i in ui.stickers {if item.ref.pack == "" {append(&personal, i)}}
 				if len(personal) ==
 				   0 {sticker_copy(0, tr("Import an image to make your first sticker."), width - 40)}
-				columns := max(1, int((width - 32) / 112))
-				for start := 0; start < len(personal); start += columns {
-					if nendo.box(nendo.id("StickerLibraryRow", u32(start)))({gap = 8}) {
-						for at in start ..< min(start + columns, len(personal)) {sticker_tile("StickerLibraryItem", personal[at], ui.stickers[personal[at]], .Normal, 104)}
-					}
-				}
+				sticker_gallery(ui, width - 32, personal[:])
 			case .AddPack:
 				sticker_copy(
 					1,
@@ -600,12 +696,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 						fmt.tprintf(tr("Stickers: %d"), len(ui.sticker_preview)),
 						{font = FONT_BODY, size = 13, color = TEXT_DIM},
 					)
-					columns := max(1, int((width - 32) / 112))
-					for start := 0; start < len(ui.sticker_preview); start += columns {
-						if nendo.box(nendo.id("StickerPreviewRow", u32(start)))({gap = 8}) {
-							for index in start ..< min(start + columns, len(ui.sticker_preview)) {sticker_tile("StickerPreviewTile", index, ui.sticker_preview[index], ui.sticker_preview[index].ref.sha == ui.sticker_selected.sha ? .Focused : .Normal, 104)}
-						}
-					}
+					sticker_gallery(ui, width - 32)
 					sticker_copy(3, tr("Click a sticker for a larger preview."), width - 40, 13)
 				}
 			case .Detail:
@@ -677,7 +768,6 @@ sticker_panel :: proc(ui: ^Ui_State) {
 				if ui.sticker_page != .AddPack {sticker_control("StickerRetry", 0, tr("Retry"))}
 			}
 		}
-		scrollbar(nendo.id("StickerContent", u32(ui.sticker_page)), 16)
 		if nendo.box(nendo.id("StickerFooter"))(
 		{width = nendo.grow(), gap = 8, align = {y = .Center}},
 		) {
@@ -710,15 +800,16 @@ sticker_panel :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
-	scrollbar(nendo.id("StickerPanel"), 16)
+	scrollbar(panel, 16)
 }
 
 @(private)
 handle_sticker_panel :: proc(ui: ^Ui_State) {
 	if clicked_indexed("StickerBack", 0) ||
 	   rl.IsKeyPressed(.ESCAPE) && ui.sticker_page != .Library {
-		if ui.sticker_page == .Detail &&
-		   ui.sticker_selected.pack != "" {ui.sticker_page = .Pack} else {sticker_show(ui, {})}
+		if ui.sticker_page == .Detail && ui.sticker_selected.pack != "" {
+			sticker_set_page(ui, .Pack)
+		} else {sticker_show(ui, {})}
 		return
 	}
 	if rl.IsKeyPressed(.ESCAPE) ||
@@ -730,7 +821,7 @@ handle_sticker_panel :: proc(ui: ^Ui_State) {
 		if clicked_indexed("StickerRetry", 0) {ui.sticker_error = ""; sticker_library_open(ui)}
 		return
 	}
-	if clicked_indexed("StickerAddPack", 0) {ui.sticker_page = .AddPack; return}
+	if clicked_indexed("StickerAddPack", 0) {sticker_set_page(ui, .AddPack); return}
 	for pack, i in ui.sticker_packs {
 		if clicked_indexed(
 			"StickerLibraryPack",
@@ -744,7 +835,7 @@ handle_sticker_panel :: proc(ui: ^Ui_State) {
 		sticker_ref_free(ui.sticker_selected)
 		ui.sticker_selected = sticker_ref_clone(item.ref)
 		clear(&ui.sticker_name); append(&ui.sticker_name, item.label)
-		ui.sticker_page = .Detail
+		sticker_set_page(ui, .Detail)
 		return
 	}
 	if ui.sticker_page == .AddPack {

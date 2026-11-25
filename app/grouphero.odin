@@ -106,7 +106,7 @@ group_hero :: proc(ui: ^Ui_State) {
 		}
 		if admin && ui.gpic_menu_open {
 			if nendo.box(nendo.id("GpicMenu"))(
-			{direction = single_pane() ? .Column : .Row, gap = 8, align = {x = .Center}},
+			{direction = .Wrap_Row, gap = 8, align = {x = .Center}},
 			) {
 				micro_button("GpicFile", tr("From file"))
 				micro_button("GpicEmoji", tr("From emoji"))

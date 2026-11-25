@@ -5,6 +5,9 @@ import "core:fmt"
 import "core:strings"
 import "nendo"
 
+@(private = "file")
+ARCHIVED_ROW_H :: f32(84)
+
 @(private)
 select_archived_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 	if index < 0 || index >= len(ui.archived) {return}
@@ -190,21 +193,32 @@ archived_pane :: proc(ui: ^Ui_State) {
 		if nendo.box(nendo.id("ArchivedList"))(
 		{
 			width = nendo.grow(),
-			height = nendo.grow(min = single_pane() ? 84 : 0),
+			height = nendo.grow(min = single_pane() ? ARCHIVED_ROW_H : 0),
 			direction = .Column,
-			gap = 8,
 			clip = {y = true, scroll = true},
 		},
 		) {
-			chat_rows_window(
-				ui,
-				ui.archived[:],
-				order[:count],
-				nendo.id("ArchivedList"),
-				.Unarchive,
-				8,
-			)
-			if count == 0 && len(filter) > 0 {
+			if count > 0 {
+				rows := nendo.virtual_rows(
+					nendo.id("ArchivedRows"),
+					count,
+					ARCHIVED_ROW_H,
+					gap = 8,
+				)
+				for i in order[rows.first:rows.end] {
+					chat := ui.archived[i]
+					// Key by chat so restoring one slides the rows below it into place.
+					if nendo.box(nendo.id("ChatRowMove", nendo.id(chat.group_id).id))(
+					{
+						width = nendo.grow(),
+						height = nendo.fixed(ARCHIVED_ROW_H),
+						transition = layout_motion(),
+					},
+					) {
+						chat_row(u32(i), chat, false, .Unarchive)
+					}
+				}
+			} else if len(filter) > 0 {
 				chat_rail_hint(
 					"ArchiveNoMatch",
 					tr("Try a different search."),
@@ -212,8 +226,7 @@ archived_pane :: proc(ui: ^Ui_State) {
 					tr("Clear search"),
 					tr("No matching chats"),
 				)
-			}
-			if count == 0 && len(filter) == 0 {
+			} else {
 				if nendo.box(nendo.id("ArchiveEmpty"))(
 				{
 					width = nendo.grow(),

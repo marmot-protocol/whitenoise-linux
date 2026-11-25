@@ -182,12 +182,26 @@ send_land_y :: proc(ui: ^Ui_State, view: nendo.Rect) -> f32 {
 			continue
 		}
 		if box, ok := element_box(nendo.id("PendingRow", u32(i))); ok {
-			last, found = box.y + box.height + 2, true
+			last, found = box.y + box.height + f32(TIMELINE_GAP), true
 		}
 	}
 	if !found && len(ui.messages) > 0 {
-		if box, ok := element_box(nendo.id("MsgRow", u32(len(ui.messages) - 1))); ok {
-			last = box.y + box.height + 2
+		i := len(ui.messages) - 1
+		if box, ok := element_box(nendo.id("MsgRow", u32(i))); ok {
+			last = box.y + box.height + f32(TIMELINE_GAP)
+		} else {
+			msg := &ui.messages[i]
+			if msg.thread_of == thread_cur(ui) &&
+			   !msg.system &&
+			   msg.row_height > 0 &&
+			   msg.row_measure == ui.timeline_metric {
+				last =
+					view.y +
+					timeline_draw_offset +
+					msg.row_top +
+					msg.row_height +
+					f32(TIMELINE_GAP)
+			}
 		}
 	}
 	return clamp(last, view.y, view.y + view.height - 40)

@@ -91,9 +91,12 @@ settings_row :: proc(stacked: bool = false) -> nendo.Box {
 	}
 }
 
+@(private = "file")
+SETTINGS_CONTENT_MAX :: f32(740)
+
 settings_body_width :: proc(ui: ^Ui_State) -> f32 {
 	available := max(120, settings_main_w(ui) - (settings_main_w(ui) < 560 ? 32 : 56))
-	return ui.settings_gallery ? available : min(available, 740)
+	return ui.settings_gallery ? available : min(available, SETTINGS_CONTENT_MAX)
 }
 
 // A row of choices. On phones it fills the width and scrolls sideways when
@@ -478,7 +481,11 @@ settings_pane :: proc(ui: ^Ui_State) {
 			},
 			) {
 				if nendo.box(nendo.id("SettingsContent"))(
-				{width = nendo.fixed(settings_body_width(ui)), direction = .Column, gap = 12},
+				{
+					width = nendo.percent(1, max = ui.settings_gallery ? 0 : SETTINGS_CONTENT_MAX),
+					direction = .Column,
+					gap = 12,
+				},
 				) {
 					if index {
 						if !wide {
@@ -1183,79 +1190,85 @@ emoji_sets_panel :: proc(ui: ^Ui_State) {
 			)
 		}
 		emoji_sets_feedback(ui)
-		columns := max(1, int((settings_body_width(ui) - 48) / 100))
-		for first := 0; first < len(set.items); first += columns {
-			if nendo.box(nendo.id("EmojiSetGrid", u32(first)))(
-			{width = nendo.grow(), height = nendo.fixed(84), gap = 8},
-			) {
-				for i in first ..< min(first + columns, len(set.items)) {
-					item := &set.items[i]
-					if nendo.box(nendo.id("EmojiSetCell", u32(i)))(
-					{
-						width = nendo.fixed(92),
-						height = nendo.fixed(84),
-						direction = .Column,
-						gap = 6,
-						align = {x = .Center, y = .Center},
-						color = ROW_BG,
-						radius = rr(6),
-					},
+		ART_SIZE :: f32(40)
+		TILE_GAP :: 6
+		LABEL_SIZE :: u16(11)
+		import_size := settings_tap_size(22)
+		label_height := rl.MeasureTextLine(FONT_BODY, LABEL_SIZE, ":", 0).y
+		if nendo.box(nendo.id("EmojiSetGrid"))(
+		{
+			width = nendo.grow(),
+			gap = 8,
+			grid = {
+				min_cell_width = max(92, ART_SIZE + TILE_GAP + import_size),
+				row_height = max(84, max(ART_SIZE, import_size) + TILE_GAP + label_height),
+			},
+		},
+		) {
+			for &item, i in set.items {
+				if nendo.box(nendo.id("EmojiSetCell", u32(i)))(
+				{
+					direction = .Column,
+					gap = TILE_GAP,
+					align = {x = .Center, y = .Center},
+					color = ROW_BG,
+					radius = rr(6),
+				},
+				) {
+					if nendo.box(nendo.id("EmojiSetTileTools", u32(i)))(
+					{gap = TILE_GAP, align = {y = .Center}},
 					) {
-						if nendo.box(nendo.id("EmojiSetTileTools", u32(i)))(
-						{gap = 6, align = {y = .Center}},
+						if nendo.box(nendo.id("EmojiSetArt", u32(i)))(
+						{
+							width = nendo.fixed(ART_SIZE),
+							height = nendo.fixed(ART_SIZE),
+							align = {x = .Center, y = .Center},
+						},
 						) {
-							if nendo.box(nendo.id("EmojiSetArt", u32(i)))(
-							{
-								width = nendo.fixed(40),
-								height = nendo.fixed(40),
-								align = {x = .Center, y = .Center},
-							},
-							) {
-								if item.texture != nil {
-									if nendo.box(nendo.id("EmojiSetImage", u32(i)))(
-									{
-										width = nendo.fixed(40),
-										height = nendo.fixed(40),
-										image = item.texture,
-										aspect = 1,
-									},
-									) {}
-								} else if busy &&
-								   ui.emoji_sets_job.op == .Preview &&
-								   !item.preview_done {
-									emoji_sets_spinner("EmojiSetItemSpinner", u32(i))
-								} else {emoji_set_text("?")}
-							}
-							if nendo.box(nendo.id("EmojiSetImportItem", u32(i)))(
-							{
-								width = nendo.fixed(settings_tap_size(22)),
-								height = nendo.fixed(settings_tap_size(22)),
-								align = {x = .Center, y = .Center},
-								color = busy ? ROW_BG : (hovered() ? ACCENT_DIM : ACCENT),
-								radius = rr(5),
-							},
-							) {
-								if busy &&
-								   ui.emoji_sets_job.op == .Import &&
-								   ui.emoji_sets_job.item_index == i {
-									emoji_sets_spinner("EmojiSetImportSpinner", u32(i))
-								} else {nendo.text(
-										"+",
-										{
-											font = FONT_TITLE,
-											size = 16,
-											color = busy ? TEXT_DIM : ink_on(ACCENT),
-										},
-									)}
-								if hovered() {tooltip(fmt.tprintf(tr("Import :%s:"), item.code))}
-							}
+							if item.texture != nil {
+								if nendo.box(nendo.id("EmojiSetImage", u32(i)))(
+								{
+									width = nendo.fixed(ART_SIZE),
+									height = nendo.fixed(ART_SIZE),
+									image = item.texture,
+									aspect = 1,
+								},
+								) {}
+							} else if busy &&
+							   ui.emoji_sets_job.op == .Preview &&
+							   !item.preview_done {
+								emoji_sets_spinner("EmojiSetItemSpinner", u32(i))
+							} else {emoji_set_text("?")}
 						}
-						nendo.text(
-							text_ellipsis(fmt.tprintf(":%s:", item.code), 80, FONT_BODY, 11),
-							{font = FONT_BODY, size = 11, color = TEXT_DIM, wrap = .None},
-						)
-						if hovered() {tooltip(fmt.tprintf(":%s:", item.code))}
+						if nendo.box(nendo.id("EmojiSetImportItem", u32(i)))(
+						{
+							width = nendo.fixed(import_size),
+							height = nendo.fixed(import_size),
+							align = {x = .Center, y = .Center},
+							color = busy ? ROW_BG : (hovered() ? ACCENT_DIM : ACCENT),
+							radius = rr(5),
+						},
+						) {
+							if busy &&
+							   ui.emoji_sets_job.op == .Import &&
+							   ui.emoji_sets_job.item_index == i {
+								emoji_sets_spinner("EmojiSetImportSpinner", u32(i))
+							} else {nendo.text(
+									"+",
+									{
+										font = FONT_TITLE,
+										size = 16,
+										color = busy ? TEXT_DIM : ink_on(ACCENT),
+									},
+								)}
+							if hovered() {tooltip(fmt.tprintf(tr("Import :%s:"), item.code))}
+						}
 					}
+					nendo.text(
+						text_ellipsis(fmt.tprintf(":%s:", item.code), 80, FONT_BODY, LABEL_SIZE),
+						{font = FONT_BODY, size = LABEL_SIZE, color = TEXT_DIM, wrap = .None},
+					)
+					if hovered() {tooltip(fmt.tprintf(":%s:", item.code))}
 				}
 			}
 		}
@@ -1428,15 +1441,13 @@ theme_tone_button :: proc(ui: ^Ui_State, tone: Theme_Tone, id, label: string) {
 }
 
 @(private)
-theme_gallery_tile :: proc(ui: ^Ui_State, i: int, width: f32) {
+theme_gallery_tile :: proc(ui: ^Ui_State, i: int) {
 	pack := &theme_packs[i]
 	append(&theme_control_order, theme_tile_keys[i])
 	selected := ui.theme == i
 	accent := pack.accent_base[ui.accent]
 	if nendo.box(nendo.id("ThemeOpt", u32(i)))(
 	{
-		width = nendo.fixed(width),
-		height = nendo.fixed(160),
 		direction = .Column,
 		padding = nendo.pad(4),
 		gap = 4,
@@ -1576,12 +1587,10 @@ theme_gallery_tile :: proc(ui: ^Ui_State, i: int, width: f32) {
 }
 
 @(private)
-settings_theme_gallery :: proc(ui: ^Ui_State, width: f32) {
+settings_theme_gallery :: proc(ui: ^Ui_State) {
 	for len(theme_tile_keys) < len(theme_packs) {
 		append(&theme_tile_keys, fmt.aprintf("ThemeOpt%d", len(theme_tile_keys)))
 	}
-	columns := max(1, int((width + 12) / (single_pane() ? 132 : 196)))
-	tile_width := (width - f32(columns - 1) * 12) / f32(columns)
 	if nendo.box(nendo.id("RowTheme"))({width = nendo.grow(), direction = .Column, gap = 12}) {
 		nendo.text(
 			tr("Theme"),
@@ -1604,9 +1613,12 @@ settings_theme_gallery :: proc(ui: ^Ui_State, width: f32) {
 		) {
 			selected := active_theme(ui)
 			if len(theme_packs) > 0 {
+				pack := &theme_packs[selected]
+				name := pack.custom ? pack.name : tr(pack.name)
+				font := gallery_font(ui, FONT_GALLERY_BOLD)
 				nendo.text(
-					theme_packs[selected].custom ? theme_packs[selected].name : tr(theme_packs[selected].name),
-					{font = gallery_font(ui, FONT_GALLERY_BOLD), size = 14, color = TEXT},
+					text_ellipsis(name, settings_body_width(ui), font, 14),
+					{font = font, size = 14, color = TEXT, wrap = .None},
 				)
 			}
 			if len(theme_packs) > 0 && theme_gallery_collection(selected) == .Sidecar {
@@ -1619,32 +1631,26 @@ settings_theme_gallery :: proc(ui: ^Ui_State, width: f32) {
 			}
 		}
 		for collection in ([]Theme_Collection{.System, .White_Noise, .Sidecar, .Custom}) {
-			count := 0
+			first := -1
 			for _, i in theme_packs {
-				if theme_gallery_collection(i) == collection &&
-				   theme_gallery_visible(ui, i) {count += 1}
+				if theme_gallery_collection(i) == collection && theme_gallery_visible(ui, i) {
+					first = i
+					break
+				}
 			}
-			if count == 0 {continue}
+			if first < 0 {continue}
 			theme_collection_header(ui, collection)
-			cursor := 0
-			for row in 0 ..< (count + columns - 1) / columns {
-				if nendo.box(
-					nendo.id(
-						"ThemeGalleryRow",
-						u32(collection) + u32(row) * (u32(Theme_Collection.System) + 1),
-					),
-				)(
-					{width = nendo.grow(), gap = 12},
-				) {
-					placed := 0
-					for cursor < len(theme_packs) && placed < columns {
-						i := cursor
-						cursor += 1
-						if theme_gallery_collection(i) != collection ||
-						   !theme_gallery_visible(ui, i) {continue}
-						theme_gallery_tile(ui, i, tile_width)
-						placed += 1
-					}
+			if nendo.box(nendo.id("ThemeGalleryGrid", u32(collection)))(
+			{
+				width = nendo.grow(),
+				gap = 12,
+				grid = {min_cell_width = single_pane() ? 120 : 184, row_height = 160},
+			},
+			) {
+				for i in first ..< len(theme_packs) {
+					if theme_gallery_collection(i) != collection ||
+					   !theme_gallery_visible(ui, i) {continue}
+					theme_gallery_tile(ui, i)
 				}
 			}
 		}

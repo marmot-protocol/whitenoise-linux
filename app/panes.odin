@@ -36,56 +36,6 @@ chat_row_height :: proc() -> f32 {
 }
 
 @(private)
-ARCHIVED_ROW_H :: f32(84)
-
-// Fixed row geometry lets the first frame skip hidden rows too. Keep the
-// complete order outside this window for keyboard navigation and filtering.
-@(private)
-chat_rows_window :: proc(
-	ui: ^Ui_State,
-	rows: []Chat_Row_Ui,
-	order: []int,
-	container: nendo.Id,
-	chip: Row_Chip,
-	gap: f32,
-	offset_y: f32 = 0,
-	section: u32 = 0,
-) {
-	stride := (chip == .Unarchive ? ARCHIVED_ROW_H : chat_row_height()) + gap
-	data := nendo.scroll(container)
-	height := data.found ? data.viewport.height : f32(rl.GetScreenHeight()) / UI_ZOOM
-	if chip == .Unarchive && data.found {
-		// A restore or a narrower search can shorten the list while scrolled.
-		// Clamp before windowing so the surviving rows mount in this frame.
-		content_height := max(0, f32(len(order)) * stride - gap)
-		data.position.y = -clamp(-data.position.y, 0, max(0, content_height - height))
-	}
-	offset := (data.found ? -data.position.y : 0) - offset_y
-	first := clamp(int(offset / stride) - 2, 0, len(order))
-	last := clamp(int((offset + height) / stride) + 3, first, len(order))
-	if first > 0 {
-		if nendo.box(nendo.id("ChatRowsBefore", section))(
-		{height = nendo.fixed(f32(first) * stride - gap)},
-		) {}
-	}
-	for i in order[first:last] {
-		active := chip == .Archive && ui.selected == i
-		// Keyed by the chat rather than its slot, so a restore that
-		// closes the list up slides the rows below into place.
-		if nendo.box(nendo.id("ChatRowMove", nendo.id(rows[i].group_id).id))(
-		{width = nendo.grow(), transition = layout_motion()},
-		) {
-			chat_row(u32(i), rows[i], active, chip)
-		}
-	}
-	if last < len(order) {
-		if nendo.box(nendo.id("ChatRowsAfter", section))(
-		{height = nendo.fixed(f32(len(order) - last) * stride - gap)},
-		) {}
-	}
-}
-
-@(private)
 Folder_Section :: struct {
 	start, count, unread: int,
 }
@@ -144,20 +94,12 @@ chat_rail_matches :: proc(ui: ^Ui_State) -> (matched: []int, total: int) {
 	return order[:count], total
 }
 
-// One scroll container owns both headers and conversations. Each section
-// windows its rows at its real offset; collapsed rows leave keyboard order.
 @(private)
 chat_rail :: proc(ui: ^Ui_State, ordered: []Inbox_Row, total: int) {
 	clear(&ui.rail_rows)
-	offset_y: f32
 	pending := onboard_pending(ui)
 	if single_pane() && pending && ui.chat_filter == .Chats {
 		get_started_pane(ui, .Inline)
-		// Like the hint below, use the last measured height for row windowing
-		// and keyboard reveal positions without adding another scroll owner.
-		if data := nendo.element(nendo.id("GetStarted")); data.found {
-			offset_y = data.rect.height + 2
-		}
 	}
 	if !pending &&
 	   !ui.prefs.recent_chats &&
@@ -171,57 +113,76 @@ chat_rail :: proc(ui: ^Ui_State, ordered: []Inbox_Row, total: int) {
 			"ChatGroupNewFolder",
 			tr("New folder"),
 		)
-		// The rows below window from where they start; last frame's
-		// height of the hint is close enough.
-		if data := nendo.element(nendo.id("ChatGroupHint")); data.found {
-			offset_y = data.rect.height + 2
-		}
 	}
+	if len(ordered) == 0 {
+		chat_rail_empty_note(ui, 0, total)
+		return
+	}
+
+	row_h := chat_row_height()
+	gap := f32(INBOX_GAP)
+	stride := row_h + gap
 	if ui.prefs.recent_chats || len(ui.prefs.folders) == 0 {
 		for &row, i in ordered {
-			row.top = offset_y + f32(i) * (chat_row_height() + 2)
+			row.top = f32(i) * stride
 			append(&ui.rail_rows, row)
 		}
-		inbox_rows_window(ui, ordered, offset_y)
-		chat_rail_empty_note(ui, len(ordered), total)
+		inbox_draw_rows(ui, nendo.id("InboxRows"), ordered, row_h)
 		return
 	}
 
 	sections, grouped := inbox_sections(ui, ordered)
-	header_h: f32 = tap_size() ? 46 : 36
-	y := offset_y
-	top, view_height := inbox_view()
-	bottom := top + view_height
+	header_h: f32 = tap_size() ? tap_min() : 34
+	visible := make([]int, len(sections), context.temp_allocator)
+	offsets := make([]f32, len(sections) + 1, context.temp_allocator)
+	count := 0
 	for section, i in sections {
 		// Empty folders stay out of the rail; Settings > Chats lists them.
-		if section.count == 0 {continue}
-		name := i < len(ui.prefs.folders) ? ui.prefs.folders[i] : ""
-		collapsed := ui.prefs.collapsed_folders[name]
-		rows := grouped[section.start:section.start + section.count]
-		height := header_h
-		if !collapsed {
-			for &row, pos in rows {
-				row.top = y + header_h + f32(pos) * (chat_row_height() + 2)
-				append(&ui.rail_rows, row)
-			}
-			height += f32(len(rows)) * (chat_row_height() + 2)
-		}
-		// Offscreen headers need no text clips. nendo tracks every clip as
-		// a scroll container, so mounting all folders exhausts its pool.
-		if y + height < top - 72 || y > bottom + 72 {
-			if nendo.box(nendo.id("FolderSectionGap", u32(i)))(
-			{height = nendo.fixed(height - 2)},
-			) {}
-			y += height
+		if section.count == 0 {
 			continue
 		}
-		folder_header(ui, u32(i), name, section.unread, collapsed, section.count)
-		y += header_h // header and the list's 2px gap
-		if collapsed {continue}
-		inbox_rows_window(ui, rows, y, u32(i))
-		y += f32(len(rows)) * (chat_row_height() + 2)
+		visible[count] = i
+		height := header_h
+		name := i < len(ui.prefs.folders) ? ui.prefs.folders[i] : ""
+		if !ui.prefs.collapsed_folders[name] {
+			// Cycling includes expanded conversations outside the mounted window.
+			y := offsets[count] + f32(count) * gap + header_h + gap
+			for &row, pos in grouped[section.start:section.start + section.count] {
+				row.top = y + f32(pos) * stride
+				append(&ui.rail_rows, row)
+			}
+			height += f32(section.count) * stride
+		}
+		offsets[count + 1] = offsets[count] + height
+		count += 1
 	}
-	chat_rail_empty_note(ui, len(ordered), total)
+	window := nendo.virtual_rows(
+		nendo.id("InboxRows"),
+		offsets[:count + 1],
+		gap = INBOX_GAP,
+		overscan = 72,
+	)
+	for pos in window.first ..< window.end {
+		i := visible[pos]
+		section := sections[i]
+		name := i < len(ui.prefs.folders) ? ui.prefs.folders[i] : ""
+		collapsed := ui.prefs.collapsed_folders[name]
+		if nendo.box(nendo.id("InboxSection", u32(i)))(
+		{
+			width = nendo.grow(),
+			height = nendo.fixed(offsets[pos + 1] - offsets[pos]),
+			direction = .Column,
+			gap = INBOX_GAP,
+			transition = layout_motion(),
+		},
+		) {
+			folder_header(ui, u32(i), name, section.unread, collapsed, section.count, header_h)
+			if !collapsed {
+				rows := grouped[section.start:section.start + section.count]
+				inbox_draw_rows(ui, nendo.id("InboxFolderRows", u32(i)), rows, row_h)
+			}
+		}
+	}
 }
 
 @(private = "file")
@@ -289,17 +250,17 @@ folder_header :: proc(
 	unread: int,
 	collapsed: bool,
 	count: int,
+	height: f32,
 ) {
 	if nendo.box(nendo.id("FolderHeader", index))(
 	{
 		width = nendo.grow(),
-		height = nendo.fixed(tap_size() ? tap_min() : 34),
+		height = nendo.fixed(height),
 		padding = {left = 4, right = 4},
 		gap = 8,
 		align = {y = .Center},
 		color = hovered() ? HOVER : {},
 		radius = rr(6),
-		transition = layout_motion(), // follows the rows when a folder above changes
 	},
 	) {
 		if nendo.box(nendo.id("FolderChevron", index))(

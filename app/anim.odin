@@ -575,6 +575,14 @@ fling_id: nendo.Id
 // A press that turned into a drag opens no link on release.
 drag_moved: bool
 
+@(private)
+cancel_drag_scroll :: proc(id: nendo.Id) {
+	if drag_on && drag_id.id == id.id {
+		drag_on, drag_vel, drag_moved = false, {}, true
+	}
+	if fling_id.id == id.id {fling_vel = {}}
+}
+
 update_drag_scroll :: proc(ui: ^Ui_State, blocked: bool) {
 	if mouse_pressed() || rl.GetMouseWheelMoveV() != {} {fling_vel = {}}
 	if fling_vel != {} {

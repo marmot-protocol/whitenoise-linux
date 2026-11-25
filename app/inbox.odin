@@ -6,11 +6,14 @@ import "nendo"
 import rl "sdlrl"
 
 @(private)
+INBOX_GAP :: u16(2)
+
+@(private)
 Inbox_Row :: struct {
 	index:          int,
 	key:            string,
 	activity_at:    u64,
-	top:            f32,
+	top:            f32, // relative to InboxRows, including folder headers
 	pinned, unread: bool,
 }
 
@@ -74,33 +77,9 @@ inbox_sections :: proc(
 }
 
 @(private)
-inbox_view :: proc() -> (top, height: f32) {
-	short := f32(rl.GetScreenHeight()) / UI_ZOOM < 480
-	id := nendo.id(short ? "RailContent" : "ChatList")
-	data := nendo.scroll(id)
-	height = data.found ? data.viewport.height : f32(rl.GetScreenHeight()) / UI_ZOOM
-	top = data.found ? -data.position.y : 0
-	if short && data.found {
-		list := nendo.element(nendo.id("ChatList"))
-		rail := nendo.element(id)
-		if list.found && rail.found {top -= list.rect.y - rail.rect.y - data.position.y}
-	}
-	return
-}
-
-@(private)
-inbox_rows_window :: proc(ui: ^Ui_State, rows: []Inbox_Row, offset_y: f32, section: u32 = 0) {
-	stride := chat_row_height() + 2
-	top, height := inbox_view()
-	offset := top - offset_y
-	first := clamp(int(offset / stride) - 2, 0, len(rows))
-	last := clamp(int((offset + height) / stride) + 3, first, len(rows))
-	if first > 0 {
-		if nendo.box(nendo.id("InboxRowsBefore", section))(
-		{height = nendo.fixed(f32(first) * stride - 2)},
-		) {}
-	}
-	for row in rows[first:last] {
+inbox_draw_rows :: proc(ui: ^Ui_State, id: nendo.Id, rows: []Inbox_Row, height: f32) {
+	window := nendo.virtual_rows(id, len(rows), height, gap = INBOX_GAP)
+	for row in rows[window.first:window.end] {
 		// Keyed by the chat rather than its slot: when activity reorders
 		// the inbox, each row glides to its new place instead of jumping.
 		// Filled like the rail beneath, so a row gliding past another
@@ -110,11 +89,6 @@ inbox_rows_window :: proc(ui: ^Ui_State, rows: []Inbox_Row, offset_y: f32, secti
 		) {
 			chat_row(u32(row.index), ui.chats[row.index], row.index == ui.selected, .Archive)
 		}
-	}
-	if last < len(rows) {
-		if nendo.box(nendo.id("InboxRowsAfter", section))(
-		{height = nendo.fixed(f32(len(rows) - last) * stride - 2)},
-		) {}
 	}
 }
 
@@ -127,12 +101,22 @@ inbox_cycle :: proc(ui: ^Ui_State, client: ^marmot.Client, step: int) {
 		if row.index == ui.selected {at = pos + step; break}
 	}
 	row := ui.rail_rows[(at + len(ui.rail_rows)) %% len(ui.rail_rows)]
-	if view := nendo.scroll(nendo.id("ChatList")); view.found {
-		top := -view.position.y
-		height := view.viewport.height
-		if row.top < top {top = row.top}
-		if row.top + chat_row_height() > top + height {top = row.top + chat_row_height() - height}
-		view.position.y = -clamp(top, 0, max(view.content.height - height, 0))
+	owner := nendo.id("ChatList")
+	view := nendo.scroll(owner)
+	if !view.found {
+		owner = nendo.id("RailContent")
+		view = nendo.scroll(owner)
+	}
+	clip, list := nendo.element(owner), nendo.element(nendo.id("InboxRows"))
+	if view.found && clip.found && list.found {
+		// Recover the content position before applying any unlaid-out scroll input.
+		top := list.rect.y + row.top - clip.rect.y - view.clip.offset.y + view.position.y
+		delta := clamp(top, 0, max(0, view.viewport.height - chat_row_height())) - top
+		view.position.y = clamp(
+			view.position.y + delta,
+			-max(0, view.content.height - view.viewport.height),
+			0,
+		)
 		scroll_residual = {}
 	}
 	ui.page = .Chats

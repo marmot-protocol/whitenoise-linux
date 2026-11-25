@@ -243,9 +243,11 @@ status_bar_viewports :: proc(t: ^testing.T) {
 	ui.prefs.reduce_motion = true
 	ui.account_ref = "viewport"
 	append(&ui.accounts, Account_Row_Ui{id_hex = "viewport", name = "Viewport"})
+	append(&ui.prefs.folders, "Empty folder")
 	for i in 0 ..< 12 {append(&ui.chats, Chat_Row_Ui{group_id = fmt.tprintf("group-%d", i), title = fmt.tprintf("Group %d", i)})}
 	defer {
 		delete(ui.accounts); delete(ui.chats)
+		delete(ui.prefs.folders)
 		for value in ui.prefs.quick_reactions {delete(value)}
 		delete(ui.prefs.quick_reactions)
 		for value in ui.prefs.fetch_relays {delete(value)}
@@ -382,6 +384,24 @@ status_bar_viewports :: proc(t: ^testing.T) {
 					}
 					target := nendo.id(page == .Profile ? "SignOutBtn" : "ZoomMinus")
 					if page == .Settings && section == .Chats {
+						board := nendo.id("FolderBoard")
+						if data := nendo.scroll(viewport); data.found {
+							bounds := nendo.element(board).rect
+							data.position.y = clamp(
+								data.position.y + box.y - bounds.y,
+								-max(data.content.height - data.viewport.height, 0),
+								0,
+							)
+						}
+						if data := nendo.scroll(board); data.found {data.position.y = 0}
+						for _ in 0 ..< 3 {build_layout(&ui, 0)}
+						empty := nendo.element(nendo.id("BoardEmpty", 0))
+						testing.expect(
+							t,
+							empty.found &&
+							empty.rect.y < status.y &&
+							empty.rect.y + empty.rect.height > box.y,
+						)
 						target = nendo.id("BoardChat", 11)
 						for id in ([]string{"SettingsPage", "FolderBoard"}) {
 							data := nendo.scroll(nendo.id(id))

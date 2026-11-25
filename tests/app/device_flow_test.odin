@@ -1194,7 +1194,7 @@ devices_chat_sync :: proc(t: ^testing.T) {
 			timeline_at = 1002,
 		},
 		{
-			kind = 1111,
+			kind = KIND_THREAD,
 			message_id_hex = "thread",
 			direction = "received",
 			plaintext = "off-route",
@@ -1232,6 +1232,7 @@ devices_chat_sync :: proc(t: ^testing.T) {
 	testing.expect_value(t, len(ui.pending), 1)
 	legacy.device_label = "Changed in native storage"
 	text = device_test_frame(&ui)
+	testing.expect(t, !strings.contains(text, "off-route"))
 	testing.expect_value(t, strings.count(text, "Messages above were"), 1)
 	testing.expect(t, strings.contains(text, "Messages above were imported from Old name"))
 	marker := nendo.id("HistoryImportDivider", nendo.id("live").id)

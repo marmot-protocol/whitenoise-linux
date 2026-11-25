@@ -18,11 +18,126 @@ get_element_sizing :: proc(element: ^Layout_Element, x_axis: bool) -> Size {
 	}
 }
 
+@(private)
+grid_content_height :: proc(element: ^Layout_Element) -> f32 {
+	columns := i32(element.grid_columns)
+	rows := (i32(element.grid_count) + columns - 1) / columns
+	return(
+		f32(rows) * element.config.grid.row_height +
+		f32(cmax(rows - 1, 0)) * f32(element.config.gap) \
+	)
+}
+
+@(private)
+resolve_percent :: proc(size: Size, available: f32) -> f32 {
+	length := cmax(f32(0), available) * size.percent
+	return size.max > 0 ? cmin(length, size.max) : length
+}
+
+@(private)
+size_wrapped_item :: proc(child: ^Layout_Element, inner_width: f32) {
+	if child.is_text_element {
+		if child.text_config.wrap == .Words {
+			child.dimensions.width = cmax(
+				child.min_dimensions.width,
+				cmin(child.text_element_data.preferred_dimensions.width, inner_width),
+			)
+		}
+		return
+	}
+	box := &child.config
+	switch box.width.kind {
+	case .Fit, .Grow:
+		child.dimensions.width = cmax(
+			child.min_dimensions.width,
+			cmin(child.dimensions.width, inner_width),
+		)
+	case .Percent:
+		child.dimensions.width = resolve_percent(box.width, inner_width)
+	case .Fixed:
+	}
+	if box.aspect > 0 &&
+	   box.grid.min_cell_width <= 0 &&
+	   box.height.kind != .Percent &&
+	   .Height not_in child.animated_size {
+		child.dimensions.height = child.dimensions.width / box.aspect
+		box.height = fixed(child.dimensions.height)
+	}
+}
+
+@(private)
+measure_wrap_rows :: proc(ctx: ^Context, parent: ^Layout_Element) -> f32 {
+	parent.wrap_first = ctx.wrapped_rows.length
+	box := &parent.config
+	inner_width := parent.dimensions.width - f32(box.padding.left) - f32(box.padding.right)
+	gap := f32(box.gap)
+	row := Dimensions{}
+	height: f32
+	has_item := false
+	count := i32(parent.children.length)
+	for i in 0 ..< count {
+		child := array_get(&ctx.layout_elements, parent.children.elements[i])
+		if child.exiting {continue}
+		size := child.dimensions
+		width := row.width + (has_item ? gap : 0) + size.width
+		if has_item && width > inner_width {
+			array_add(&ctx.wrapped_rows, Wrapped_Row{end = i, dimensions = row})
+			height += row.height + gap
+			row = size
+		} else {
+			row = {width, cmax(row.height, size.height)}
+		}
+		has_item = true
+	}
+	array_add(&ctx.wrapped_rows, Wrapped_Row{end = count, dimensions = row})
+	return height + row.height
+}
+
+@(private)
+align_x_offset :: proc(align: Align_X, space: f32) -> f32 {
+	#partial switch align {
+	case .Center:
+		return space / 2
+	case .Right:
+		return space
+	}
+	return 0
+}
+
+@(private)
+align_y_offset :: proc(align: Align_Y, space: f32) -> f32 {
+	#partial switch align {
+	case .Center:
+		return space / 2
+	case .Bottom:
+		return space
+	}
+	return 0
+}
+
+@(private)
+attach_y :: proc(point: Attach_Point, height: f32) -> f32 {
+	#partial switch point {
+	case .Left_Center, .Center_Center, .Right_Center:
+		return height / 2
+	case .Left_Bottom, .Center_Bottom, .Right_Bottom:
+		return height
+	}
+	return 0
+}
+
+@(private)
+Layout_Pass :: enum {
+	Static,
+	Target,
+	Animated,
+}
+
 // Writes out the location of text elements to layout elements buffer 1
 @(private)
 size_containers_along_axis :: proc(
 	x_axis: bool,
-	delta_time: f32,
+	pass: Layout_Pass,
 	text_elements_out: ^Array(i32),
 	aspect_ratio_elements_out: ^Array(i32),
 ) {
@@ -41,20 +156,25 @@ size_containers_along_axis :: proc(
 			parent_item := get_hash_map_item(floating_element_config.parent)
 			if parent_item != nil && parent_item != default_of(Layout_Element_Hash_Map_Item) {
 				parent_layout_element := parent_item.layout_element
-				#partial switch root_element.config.width.kind {
-				case .Grow:
-					root_element.dimensions.width = parent_layout_element.dimensions.width
-				case .Percent:
-					root_element.dimensions.width =
-						parent_layout_element.dimensions.width * root_element.config.width.percent
+				if x_axis || root_element.config.grid.min_cell_width <= 0 {
+					#partial switch root_element.config.width.kind {
+					case .Grow:
+						root_element.dimensions.width = parent_layout_element.dimensions.width
+					case .Percent:
+						root_element.dimensions.width = resolve_percent(
+							root_element.config.width,
+							parent_layout_element.dimensions.width,
+						)
+					}
 				}
 				#partial switch root_element.config.height.kind {
 				case .Grow:
 					root_element.dimensions.height = parent_layout_element.dimensions.height
 				case .Percent:
-					root_element.dimensions.height =
-						parent_layout_element.dimensions.height *
-						root_element.config.height.percent
+					root_element.dimensions.height = resolve_percent(
+						root_element.config.height,
+						parent_layout_element.dimensions.height,
+					)
 				}
 			}
 		}
@@ -89,24 +209,111 @@ size_containers_along_axis :: proc(
 			resizable_container_buffer.length = 0
 			parent_child_gap := f32(parent_layout_config.gap)
 			is_first_child := true
+			grid := parent_layout_config.grid.min_cell_width > 0
+			wrap := !grid && parent_layout_config.direction == .Wrap_Row
+			in_wrap_flow :=
+				wrap ||
+				parent.in_wrap_flow ||
+				(parent.wrap_subtree && (sizing_along_axis || parent_layout_config.clip.x))
+			preserve_intrinsic :=
+				x_axis && pass != .Static && (in_wrap_flow || parent.wrap_subtree)
+			inner: f32
+			if wrap || (x_axis && grid) {
+				inner = cmax(f32(0), parent_size - parent_padding)
+			}
+			if grid && x_axis {
+				if parent_layout_config.aspect != 0 &&
+				   parent_layout_config.height.kind != .Percent {
+					if .Height not_in parent.animated_size {
+						parent.dimensions.height = parent_size / parent_layout_config.aspect
+					}
+					parent_layout_config.height = fixed(parent.dimensions.height)
+				}
+				stride := parent_layout_config.grid.min_cell_width + parent_child_gap
+				columns := clamp((inner + parent_child_gap) / stride, 1, f32(max(u16)))
+				parent.grid_columns = u16(columns)
+				parent.grid_cell_width =
+					(inner + parent_child_gap) / f32(parent.grid_columns) - parent_child_gap
+				parent.grid_count = 0
+			}
 
+			wrap_row: ^Wrapped_Row
+			wrap_index := parent.wrap_first
 			for child_offset: i32 = 0;
 			    child_offset < i32(parent.children.length);
 			    child_offset += 1 {
 				child_element_index := parent.children.elements[child_offset]
 				child_element := array_get(&ctx.layout_elements, child_element_index)
-				child_sizing := get_element_sizing(child_element, x_axis)
-				child_size :=
-					x_axis ? child_element.dimensions.width : child_element.dimensions.height
+				if preserve_intrinsic &&
+				   (in_wrap_flow || child_element.wrap_subtree) &&
+				   !child_element.exiting {
+					// The target pass can narrow a subtree that has more room during the animation.
+					if pass == .Target {
+						child_element.in_wrap_flow = in_wrap_flow
+						child_element.wrap_intrinsic = child_element.dimensions
+					} else {
+						if .Width not_in
+						   child_element.animated_size {child_element.dimensions.width = child_element.wrap_intrinsic.width}
+						if .Height not_in
+						   child_element.animated_size {child_element.dimensions.height = child_element.wrap_intrinsic.height}
+					}
+				}
 
+				aspect_grid :=
+					child_element.config.grid.min_cell_width > 0 &&
+					child_element.config.aspect != 0
 				if text_elements_out != nil && child_element.is_text_element {
 					array_add(text_elements_out, child_element_index)
-				} else if child_element.children.length > 0 {
+				} else if child_element.children.length > 0 || (x_axis && aspect_grid) {
 					array_add(&bfs_buffer, child_element_index)
+				}
+
+				if grid {
+					if child_element.exiting {continue}
+					if x_axis {
+						parent.grid_count += 1
+						if child_element.is_text_element {
+							if child_element.text_config.wrap == .Words {
+								child_element.dimensions.width = cmax(
+									parent.grid_cell_width,
+									child_element.min_dimensions.width,
+								)
+							}
+						} else if .Width not_in child_element.animated_size {
+							child_element.dimensions.width = parent.grid_cell_width
+						}
+					} else if !child_element.is_text_element &&
+					   .Height not_in child_element.animated_size {
+						child_element.dimensions.height = parent_layout_config.grid.row_height
+					}
+					continue
+				}
+				if wrap {
+					if x_axis {
+						if !child_element.exiting {size_wrapped_item(child_element, inner)}
+					} else {
+						if wrap_row == nil || child_offset == wrap_row.end {
+							wrap_row = array_get(&ctx.wrapped_rows, wrap_index)
+							wrap_row.dimensions.height = 0
+							wrap_index += 1
+						}
+						if !child_element.exiting {
+							height := child_element.config.height
+							if !child_element.is_text_element && height.kind == .Percent {
+								child_element.dimensions.height = resolve_percent(height, inner)
+							}
+							wrap_row.dimensions.height = cmax(
+								wrap_row.dimensions.height,
+								child_element.dimensions.height,
+							)
+						}
+					}
+					continue
 				}
 
 				if !child_element.is_text_element &&
 				   aspect_ratio_elements_out != nil &&
+				   !aspect_grid &&
 				   child_element.config.aspect != 0 {
 					array_add(aspect_ratio_elements_out, child_element_index)
 				}
@@ -116,6 +323,9 @@ size_containers_along_axis :: proc(
 					continue
 				}
 
+				child_sizing := get_element_sizing(child_element, x_axis)
+				child_size :=
+					x_axis ? child_element.dimensions.width : child_element.dimensions.height
 				if child_sizing.kind != .Percent &&
 				   child_sizing.kind != .Fixed &&
 				   (!child_element.is_text_element || child_element.text_config.wrap == .Words) {
@@ -136,6 +346,7 @@ size_containers_along_axis :: proc(
 				}
 				is_first_child = false
 			}
+			if grid || wrap {continue}
 
 			// Expand percentage containers to size
 			for child_offset: i32 = 0;
@@ -143,16 +354,21 @@ size_containers_along_axis :: proc(
 			    child_offset += 1 {
 				child_element_index := parent.children.elements[child_offset]
 				child_element := array_get(&ctx.layout_elements, child_element_index)
+				if child_element.exiting {continue}
 				child_sizing := get_element_sizing(child_element, x_axis)
 				child_size :=
 					x_axis ? &child_element.dimensions.width : &child_element.dimensions.height
 				if child_sizing.kind == .Percent {
-					child_size^ =
-						(parent_size - total_padding_and_child_gaps) * child_sizing.percent
+					child_size^ = resolve_percent(
+						child_sizing,
+						parent_size - total_padding_and_child_gaps,
+					)
 					if sizing_along_axis {
 						inner_content_size += child_size^
 					}
-					update_aspect_ratio_box(child_element)
+					if child_element.config.grid.min_cell_width <= 0 {
+						update_aspect_ratio_box(child_element)
+					}
 				}
 			}
 
@@ -341,19 +557,17 @@ element_is_offscreen :: proc(bounding_box: ^Rect) -> bool {
 }
 
 @(private)
-calculate_final_layout :: proc(
-	delta_time: f32,
-	use_stored_bounding_boxes: bool,
-	generate_render_commands: bool,
-) {
+calculate_final_layout :: proc(pass: Layout_Pass) {
 	ctx := active_context
+	use_stored_bounding_boxes := pass == .Animated
+	generate_render_commands := pass != .Target
 
 	// Calculate sizing along the X axis
 	text_elements := ctx.open_clip_element_stack
 	text_elements.length = 0
 	aspect_ratio_elements := ctx.reusable_element_index_buffer
 	aspect_ratio_elements.length = 0
-	size_containers_along_axis(true, delta_time, &text_elements, &aspect_ratio_elements)
+	size_containers_along_axis(true, pass, &text_elements, &aspect_ratio_elements)
 
 	// Wrap text
 	for text_element_index: i32 = 0;
@@ -383,9 +597,13 @@ calculate_final_layout :: proc(
 		line_start_offset: i32 = 0
 		if !measure_text_cache_item.contains_newlines &&
 		   text_element_data.preferred_dimensions.width <= container_element.dimensions.width {
+			container_element.dimensions.height = line_height
 			array_add(
 				&ctx.wrapped_text_lines,
-				Wrapped_Text_Line{container_element.dimensions, text_element_data.text},
+				Wrapped_Text_Line {
+					{text_element_data.preferred_dimensions.width, line_height},
+					text_element_data.text,
+				},
 			)
 			text_element_data.wrapped_lines.length += 1
 			continue
@@ -467,12 +685,28 @@ calculate_final_layout :: proc(
 			&ctx.layout_elements,
 			array_get_value(&aspect_ratio_elements, i),
 		)
-		aspect_element.dimensions.height =
-			(1 / aspect_element.config.aspect) * aspect_element.dimensions.width
-		aspect_element.config.height.max = aspect_element.dimensions.height
+		box := &aspect_element.config
+		if box.height.kind == .Percent {continue}
+		if box.direction == .Wrap_Row {
+			if .Height not_in aspect_element.animated_size {
+				aspect_element.dimensions.height = aspect_element.dimensions.width / box.aspect
+			}
+			// Width is final. A smaller height would break the ratio without repacking.
+			box.height = fixed(aspect_element.dimensions.height)
+			continue
+		}
+		aspect_element.dimensions.height = (1 / box.aspect) * aspect_element.dimensions.width
+		box.height.max = aspect_element.dimensions.height
+		if box.width.kind == .Percent {
+			aspect_element.min_dimensions.height = cmin(
+				aspect_element.min_dimensions.height,
+				box.height.max,
+			)
+		}
 	}
 
 	// Propagate effect of text wrapping, aspect scaling etc. on height of parents
+	ctx.wrapped_rows.length = 0
 	dfs_buffer := ctx.layout_element_tree_node_array1
 	dfs_buffer.length = 0
 	for i: i32 = 0; i < ctx.layout_element_tree_roots.length; i += 1 {
@@ -490,6 +724,11 @@ calculate_final_layout :: proc(
 		current_element := current_element_tree_node.layout_element
 		if !ctx.tree_node_visited.items[dfs_buffer.length - 1] {
 			ctx.tree_node_visited.items[dfs_buffer.length - 1] = true
+			if !current_element.is_text_element &&
+			   current_element.config.height.kind == .Percent &&
+			   current_element.config.floating.attach_to == .None {
+				current_element.dimensions.height = 0
+			}
 			// If the element has no children or is the container for a text element, don't bother inspecting it
 			if current_element.is_text_element || current_element.children.length == 0 {
 				dfs_buffer.length -= 1
@@ -514,7 +753,29 @@ calculate_final_layout :: proc(
 
 		// DFS node has been visited, this is on the way back up to the root
 		layout_config := &current_element.config
-		if layout_config.direction == .Row {
+		relative_height := layout_config.height.kind == .Percent
+		grid := current_element.grid_columns > 0
+		wrap := !grid && layout_config.direction == .Wrap_Row
+		if grid || wrap {
+			wrap_height := wrap ? measure_wrap_rows(ctx, current_element) : 0
+			if !relative_height && layout_config.aspect == 0 {
+				rows_height := grid ? grid_content_height(current_element) : wrap_height
+				content_height :=
+					rows_height +
+					f32(layout_config.padding.top) +
+					f32(layout_config.padding.bottom)
+				current_element.dimensions.height = clamp(
+					content_height,
+					layout_config.height.min,
+					layout_config.height.max,
+				)
+			}
+			if !relative_height && !layout_config.clip.y {
+				current_element.min_dimensions.height = current_element.dimensions.height
+			}
+		} else if relative_height {
+			continue
+		} else if layout_config.direction == .Row {
 			// Resize any parent containers that have grown in height along their non layout axis
 			for j: i32 = 0; j < i32(current_element.children.length); j += 1 {
 				child_element := array_get(
@@ -555,7 +816,7 @@ calculate_final_layout :: proc(
 	}
 
 	// Calculate sizing along the Y axis
-	size_containers_along_axis(false, delta_time, nil, nil)
+	size_containers_along_axis(false, pass, nil, nil)
 
 	// Scale horizontal widths according to aspect ratio
 	for i: i32 = 0; i < aspect_ratio_elements.length; i += 1 {
@@ -563,8 +824,10 @@ calculate_final_layout :: proc(
 			&ctx.layout_elements,
 			array_get_value(&aspect_ratio_elements, i),
 		)
-		aspect_element.dimensions.width =
-			aspect_element.config.aspect * aspect_element.dimensions.height
+		box := &aspect_element.config
+		if (box.width.kind == .Percent && box.height.kind == .Percent) ||
+		   box.direction == .Wrap_Row {continue}
+		aspect_element.dimensions.width = box.aspect * aspect_element.dimensions.height
 	}
 
 	// Sort tree roots by z-index
@@ -613,21 +876,10 @@ calculate_final_layout :: proc(
 			case .Right_Top, .Right_Center, .Right_Bottom:
 				target_attach_position.x -= root_dimensions.width
 			}
-			switch config.attach.parent { 	// I know I could merge the x and y switch statements, but this is easier to read
-			case .Left_Top, .Right_Top, .Center_Top:
-				target_attach_position.y = parent_bounding_box.y
-			case .Left_Center, .Center_Center, .Right_Center:
-				target_attach_position.y = parent_bounding_box.y + (parent_bounding_box.height / 2)
-			case .Left_Bottom, .Center_Bottom, .Right_Bottom:
-				target_attach_position.y = parent_bounding_box.y + parent_bounding_box.height
-			}
-			switch config.attach.element {
-			case .Left_Top, .Right_Top, .Center_Top:
-			case .Left_Center, .Center_Center, .Right_Center:
-				target_attach_position.y -= (root_dimensions.height / 2)
-			case .Left_Bottom, .Center_Bottom, .Right_Bottom:
-				target_attach_position.y -= root_dimensions.height
-			}
+			target_attach_position.y =
+				parent_bounding_box.y +
+				attach_y(config.attach.parent, parent_bounding_box.height) -
+				attach_y(config.attach.element, root_dimensions.height)
 			target_attach_position.x += config.offset.x
 			target_attach_position.y += config.offset.y
 			root_position = target_attach_position
@@ -679,16 +931,9 @@ calculate_final_layout :: proc(
 				if generate_render_commands &&
 				   !element_is_offscreen(&current_element_data.bounding_box) {
 					// DFS is returning upwards backwards
-					close_clip_element := false
-					if current_element.config.clip.x || current_element.config.clip.y {
-						close_clip_element = true
-						for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
-							mapping := array_get(&ctx.scroll_container_datas, i)
-							if mapping.element_id == current_element.id {
-								scroll_offset = current_element.config.clip.offset
-								break
-							}
-						}
+					close_clip_element := layout_config.clip.x || layout_config.clip.y
+					if close_clip_element {
+						scroll_offset = layout_config.clip.offset
 					}
 
 					if border_has_any_width(&current_element.config.border) {
@@ -709,7 +954,10 @@ calculate_final_layout :: proc(
 							kind = .Border,
 						}
 						add_render_command(render_command)
-						if border_config.width.between > 0 && border_config.color.a > 0 {
+						if current_element.grid_columns == 0 &&
+						   layout_config.direction != .Wrap_Row &&
+						   border_config.width.between > 0 &&
+						   border_config.color.a > 0 {
 							// Integer divisions
 							half_gap := f32(i32(layout_config.gap) / 2)
 							half_width := f32(i32(border_config.width.between) / 2)
@@ -846,16 +1094,12 @@ calculate_final_layout :: proc(
 					current_element_bounding_box.height += expand.height * 2
 				}
 
-				// Apply scroll offsets to container
-				if current_element.config.clip.x || current_element.config.clip.y {
-					// This linear scan could theoretically be slow under very strange conditions, but I can't imagine a real UI with more than a few 10's of scroll containers
-					for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
-						mapping := array_get(&ctx.scroll_container_datas, i)
-						if mapping.element_id == current_element.id {
-							scroll_container_data = mapping
-							mapping.bounding_box = current_element_bounding_box
-							scroll_offset = current_element.config.clip.offset
-							break
+				if layout_config.clip.x || layout_config.clip.y {
+					scroll_offset = layout_config.clip.offset
+					if layout_config.clip.scroll {
+						scroll_container_data = find_scroll_data(current_element.id)
+						if scroll_container_data != nil {
+							scroll_container_data.bounding_box = current_element_bounding_box
 						}
 					}
 				}
@@ -1008,6 +1252,7 @@ calculate_final_layout :: proc(
 
 			hash_map_item := get_hash_map_item(current_element.id)
 			hash_map_item.bounding_box = current_element_bounding_box
+			hash_map_item.declared_height = current_element.declared_height
 
 			if current_element.is_text_element {continue}
 
@@ -1015,7 +1260,18 @@ calculate_final_layout :: proc(
 
 			// On-axis alignment
 			content_size_current := Dimensions{}
-			if layout_config.direction == .Row {
+			grid_columns := i32(current_element.grid_columns)
+			wrap := grid_columns == 0 && layout_config.direction == .Wrap_Row
+			gap := f32(layout_config.gap)
+			if grid_columns > 0 {
+				if scroll_container_data != nil {
+					columns_used := cmin(i32(current_element.grid_count), grid_columns)
+					content_size_current.width =
+						f32(columns_used) * current_element.grid_cell_width +
+						f32(cmax(columns_used - 1, 0)) * gap
+					content_size_current.height = grid_content_height(current_element)
+				}
+			} else if layout_config.direction == .Row {
 				for i: i32 = 0; i < i32(current_element.children.length); i += 1 {
 					child_element := array_get(
 						&ctx.layout_elements,
@@ -1035,14 +1291,10 @@ calculate_final_layout :: proc(
 					current_element.dimensions.width -
 					f32(i32(layout_config.padding.left) + i32(layout_config.padding.right)) -
 					content_size_current.width
-				#partial switch layout_config.align.x {
-				case .Left:
-					extra_space = 0
-				case .Center:
-					extra_space /= 2
-				}
-				extra_space = cmax(f32(0), extra_space)
-				current_element_tree_node.next_child_offset.x += extra_space
+				current_element_tree_node.next_child_offset.x += align_x_offset(
+					layout_config.align.x,
+					cmax(f32(0), extra_space),
+				)
 			} else if layout_config.direction == .Column {
 				for i: i32 = 0; i < i32(current_element.children.length); i += 1 {
 					child_element := array_get(
@@ -1063,14 +1315,10 @@ calculate_final_layout :: proc(
 					current_element.dimensions.height -
 					f32(i32(layout_config.padding.top) + i32(layout_config.padding.bottom)) -
 					content_size_current.height
-				#partial switch layout_config.align.y {
-				case .Top:
-					extra_space = 0
-				case .Center:
-					extra_space /= 2
-				}
-				extra_space = cmax(f32(0), extra_space)
-				current_element_tree_node.next_child_offset.y += extra_space
+				current_element_tree_node.next_child_offset.y += align_y_offset(
+					layout_config.align.y,
+					cmax(f32(0), extra_space),
+				)
 			}
 
 			if scroll_container_data != nil {
@@ -1080,10 +1328,32 @@ calculate_final_layout :: proc(
 					content_size_current.height +
 					f32(i32(layout_config.padding.top) + i32(layout_config.padding.bottom)),
 				}
+				if current_element.virtual_scroll_y {
+					max_scroll := cmax(
+						f32(0),
+						scroll_container_data.content_size.height -
+						current_element_bounding_box.height,
+					)
+					request := current_element.virtual_scroll_request_y
+					scroll_offset.y = clamp(request, -max_scroll, 0)
+					layout_config.clip.offset.y = scroll_offset.y
+					// A scrollbar can write the next request after this frame's rows mounted.
+					if generate_render_commands &&
+					   scroll_container_data.scroll_position.y == request {
+						scroll_container_data.scroll_position.y = scroll_offset.y
+					}
+				}
 			}
+			hash_map_item.laid_out_y = scroll_offset.y
 
 			// Add children to the DFS buffer
 			dfs_buffer.length += i32(current_element.children.length)
+			grid_column, grid_row: i32
+			grid_step_x := current_element.grid_cell_width + gap
+			grid_step_y := layout_config.grid.row_height + gap
+			wrap_row: Wrapped_Row
+			wrap_index := current_element.wrap_first
+			wrap_y: f32
 			for i: i32 = 0; i < i32(current_element.children.length); i += 1 {
 				child_element := array_get(
 					&ctx.layout_elements,
@@ -1091,7 +1361,36 @@ calculate_final_layout :: proc(
 				)
 				_ = get_hash_map_item(child_element.id) // unused lookup, kept for its range check
 				// Alignment along non layout axis
-				if layout_config.direction == .Row {
+				if grid_columns > 0 {
+					current_element_tree_node.next_child_offset = {
+						f32(layout_config.padding.left) + f32(grid_column) * grid_step_x,
+						f32(layout_config.padding.top) + f32(grid_row) * grid_step_y,
+					}
+				} else if wrap {
+					if i == wrap_row.end {
+						wrap_y +=
+							i == 0 ? f32(layout_config.padding.top) : wrap_row.dimensions.height + gap
+						wrap_row = array_get_value(&ctx.wrapped_rows, wrap_index)
+						wrap_index += 1
+						pad_x := f32(layout_config.padding.left) + f32(layout_config.padding.right)
+						spare :=
+							current_element.dimensions.width - pad_x - wrap_row.dimensions.width
+						current_element_tree_node.next_child_offset.x =
+							f32(layout_config.padding.left) +
+							align_x_offset(layout_config.align.x, cmax(f32(0), spare))
+						if scroll_container_data != nil {
+							content := &scroll_container_data.content_size
+							content.width = cmax(content.width, wrap_row.dimensions.width + pad_x)
+							content.height =
+								wrap_y +
+								wrap_row.dimensions.height +
+								f32(layout_config.padding.bottom)
+						}
+					}
+					spare := wrap_row.dimensions.height - child_element.dimensions.height
+					current_element_tree_node.next_child_offset.y =
+						wrap_y + align_y_offset(layout_config.align.y, spare)
+				} else if layout_config.direction == .Row {
 					current_element_tree_node.next_child_offset.y = f32(
 						current_element.config.padding.top,
 					)
@@ -1099,14 +1398,10 @@ calculate_final_layout :: proc(
 						current_element.dimensions.height -
 						f32(i32(layout_config.padding.top) + i32(layout_config.padding.bottom)) -
 						child_element.dimensions.height
-					switch layout_config.align.y {
-					case .Top:
-					case .Center:
-						current_element_tree_node.next_child_offset.y +=
-							white_space_around_child / 2
-					case .Bottom:
-						current_element_tree_node.next_child_offset.y += white_space_around_child
-					}
+					current_element_tree_node.next_child_offset.y += align_y_offset(
+						layout_config.align.y,
+						white_space_around_child,
+					)
 				} else {
 					current_element_tree_node.next_child_offset.x = f32(
 						current_element.config.padding.left,
@@ -1115,23 +1410,25 @@ calculate_final_layout :: proc(
 						current_element.dimensions.width -
 						f32(i32(layout_config.padding.left) + i32(layout_config.padding.right)) -
 						child_element.dimensions.width
-					switch layout_config.align.x {
-					case .Left:
-					case .Center:
-						current_element_tree_node.next_child_offset.x +=
-							white_space_around_child / 2
-					case .Right:
-						current_element_tree_node.next_child_offset.x += white_space_around_child
-					}
+					current_element_tree_node.next_child_offset.x += align_x_offset(
+						layout_config.align.x,
+						white_space_around_child,
+					)
 				}
 
+				child_offset := current_element_tree_node.next_child_offset
+				if wrap &&
+				   !child_element.is_text_element &&
+				   child_element.config.transition.exit.final != nil {
+					if child_element.exiting {
+						child_offset = child_element.wrap_exit_position
+					} else {
+						child_element.wrap_exit_position = child_offset
+					}
+				}
 				child_position := Vector2 {
-					current_element_bounding_box.x +
-					current_element_tree_node.next_child_offset.x +
-					scroll_offset.x,
-					current_element_bounding_box.y +
-					current_element_tree_node.next_child_offset.y +
-					scroll_offset.y,
+					current_element_bounding_box.x + child_offset.x + scroll_offset.x,
+					current_element_bounding_box.y + child_offset.y + scroll_offset.y,
 				}
 
 				// DFS buffer elements need to be added in reverse because stack traversal happens backwards
@@ -1149,9 +1446,31 @@ calculate_final_layout :: proc(
 
 				// Update parent offsets
 				if !child_element.exiting {
-					if layout_config.direction == .Row {
+					if grid_columns > 0 {
+						if scroll_container_data != nil && child_element.is_text_element {
+							content := &scroll_container_data.content_size
+							offset := current_element_tree_node.next_child_offset
+							content.width = cmax(
+								content.width,
+								offset.x +
+								child_element.dimensions.width +
+								f32(layout_config.padding.right),
+							)
+							content.height = cmax(
+								content.height,
+								offset.y +
+								child_element.dimensions.height +
+								f32(layout_config.padding.bottom),
+							)
+						}
+						grid_column += 1
+						if grid_column == grid_columns {
+							grid_column = 0
+							grid_row += 1
+						}
+					} else if wrap || layout_config.direction == .Row {
 						current_element_tree_node.next_child_offset.x +=
-							child_element.dimensions.width + f32(layout_config.gap)
+							child_element.dimensions.width + gap
 					} else {
 						current_element_tree_node.next_child_offset.y +=
 							child_element.dimensions.height + f32(layout_config.gap)

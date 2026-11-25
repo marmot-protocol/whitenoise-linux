@@ -126,6 +126,19 @@ scroll_into_view :: proc(container, field: nendo.Id) {
 	}
 }
 
+// Reveal a content range without requiring a mounted row.
+@(private)
+reveal_scroll_span :: proc(view: nendo.Scroll_Data, top, height: f32) -> bool {
+	bottom := max(0, top - max(0, view.viewport.height - height))
+	offset := min(
+		clamp(-view.position.y, bottom, top),
+		max(0, view.content.height - view.viewport.height),
+	)
+	if abs(offset + view.clip.offset.y) < 0.01 {return false}
+	view.position.y = -offset
+	return true
+}
+
 // Clipboard hooks for core:text/edit. Paste strips control characters
 // but keeps newlines, matching the old Ctrl+V path.
 clip_set :: proc(_: rawptr, text: string) -> (ok: bool) {

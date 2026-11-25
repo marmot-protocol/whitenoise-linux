@@ -128,15 +128,20 @@ gs_clear_hits :: proc(ui: ^Ui_State) {
 		gs_free_hit(h)
 	}
 	clear(&ui.gs_hits)
+	gs_layout_clear(&ui.gs_layout)
 }
 
 @(private)
 gs_forget_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, account, group: string) {
 	if ui.gs_account != account {return}
+	count := len(ui.gs_hits)
 	#reverse for hit, i in ui.gs_hits {
 		if hit.group != group {continue}
 		gs_free_hit(hit)
 		ordered_remove(&ui.gs_hits, i)
+	}
+	if len(ui.gs_hits) != count {
+		gs_layout_clear(&ui.gs_layout)
 	}
 	#reverse for chat, i in ui.gs_chats {
 		if chat.group_id != group {continue}
@@ -629,13 +634,8 @@ gs_filter_options :: proc(ui: ^Ui_State) {
 		},
 	},
 	) {
-		data := nendo.scroll(nendo.id("GsOptions"))
-		first := data.found ? clamp(int(-data.position.y / f32(row_height)), 0, count) : 0
-		last := min(first + 8, count)
-		if nendo.box(nendo.id("GsOptionsBefore"))(
-		{height = nendo.fixed(f32(first) * row_height)},
-		) {}
-		for i in first ..< last {
+		rows := nendo.virtual_rows(nendo.id("GsOptionRows"), count, row_height)
+		for i in rows.first ..< rows.end {
 			label, key := gs_option(ui, i)
 			selected :=
 				ui.gs_picker == 1 ? ui.gs_group == key : ui.gs_picker == 2 ? ui.gs_sender == key : int(ui.gs_attachment) == i
@@ -658,9 +658,6 @@ gs_filter_options :: proc(ui: ^Ui_State) {
 				if hovered() {cursor_raise(.Pointer)}
 			}
 		}
-		if nendo.box(nendo.id("GsOptionsAfter"))(
-		{height = nendo.fixed(f32(count - last) * row_height)},
-		) {}
 	}
 	scrollbar(nendo.id("GsOptions"), 16)
 }
@@ -683,50 +680,16 @@ gs_field :: proc(ui: ^Ui_State, id: string, buf: ^[dynamic]u8, hint: string, foc
 	}
 }
 
-@(private)
-gs_snippet_text :: proc(index: u32, text, query: string, arrived: f32) {
-	match := len(query) > 0 ? strings.index(text, query) : -1
-	if match < 0 && len(query) > 0 {
-		for _, at in text {
-			if at + len(query) <= len(text) &&
-			   strings.equal_fold(text[at:at + len(query)], query) {match = at; break}
-		}
-	}
-	width := max(44, modal_w(nendo.id("GsModal"), 560) - 72)
-	for line, i in wrapped_lines(text, width, 12) {
-		if nendo.box(nendo.id("GsSnippetLine", index * 128 + u32(i)))(
-		{width = nendo.grow(), clip = {x = true}},
-		) {
-			start, end := line.start, line.end
-			if match < 0 || match >= end || match + len(query) <= start {
-				nendo.text(
-					text[start:end],
-					{font = FONT_BODY, size = 12, color = fade(TEXT_DIM, arrived), wrap = .None},
-				)
-			} else {
-				a, b := max(start, match), min(end, match + len(query))
-				if a >
-				   start {nendo.text(text[start:a], {font = FONT_BODY, size = 12, color = fade(TEXT_DIM, arrived), wrap = .None})}
-				nendo.text(
-					text[a:b],
-					{font = FONT_TITLE, size = 12, color = fade(ACCENT, arrived), wrap = .None},
-				)
-				if b <
-				   end {nendo.text(text[b:end], {font = FONT_BODY, size = 12, color = fade(TEXT_DIM, arrived), wrap = .None})}
-			}
-		}
-	}
-}
-
 gsearch_modal :: proc(ui: ^Ui_State) {
 	_, sender_valid := gs_sender_key(ui)
 	_, _, dates_valid := gs_dates(ui)
+	modal_width := modal_w(nendo.id("GsModal"), 560)
 	if nendo.box(nendo.id("GsModal"))(
 	{
-		width = nendo.fixed(modal_w(nendo.id("GsModal"), 560)),
+		width = nendo.fixed(modal_width),
 		height = nendo.fixed(modal_h(660)),
 		direction = .Column,
-		padding = nendo.pad(20),
+		padding = nendo.pad(GS_MODAL_PAD),
 		gap = 8,
 		color = CARD,
 		radius = rr(16),
@@ -755,19 +718,38 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 
-		nendo.text(
-			tr(
-				"Searches only history stored on this device. Older or unsynced messages may be missing.",
-			),
-			{font = FONT_BODY, size = 11, color = TEXT_LO},
-		)
+		if nendo.box(nendo.id("GsNotice"))({width = nendo.grow(), direction = .Column}) {
+			// Keep the wrapped notice's height while progress takes its place.
+			nendo.text(
+				tr(
+					"Searches only history stored on this device. Older or unsynced messages may be missing.",
+				),
+				{font = FONT_BODY, size = 11, color = ui.gs_loading ? {} : TEXT_LO},
+			)
+			if ui.gs_loading {
+				if nendo.box(nendo.id("GsProgress"))(
+				{
+					width = nendo.percent(1),
+					direction = .Column,
+					gap = 2,
+					floating = {attach_to = .Parent, pointer = .Passthrough},
+				},
+				) {
+					nendo.text(
+						tr("Searching local history…"),
+						{font = FONT_BODY, size = 11, color = TEXT_DIM},
+					)
+					busy_bar("GsBusy", modal_width - 2 * GS_MODAL_PAD)
+				}
+			}
+		}
 		if nendo.box(nendo.id("GsBody"))(
 		{
 			width = nendo.grow(),
 			height = nendo.grow(),
 			direction = .Column,
 			gap = 8,
-			padding = {right = 6},
+			padding = {right = GS_BODY_PAD},
 			clip = {y = true, scroll = true},
 		},
 		) {
@@ -864,7 +846,7 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 				if len(ui.gs_until) >
 				   0 {labels[4] = fmt.tprintf(tr("Through: %s"), string(ui.gs_until[:]))}
 				if ui.gs_attachment != 0 {labels[5] = tr(GS_ATTACHMENT_LABELS[ui.gs_attachment])}
-				avail := modal_w(nendo.id("GsModal"), 560) - 46
+				avail := modal_width - 2 * GS_MODAL_PAD - GS_BODY_PAD
 				at := 1
 				for at < len(labels) {
 					if labels[at] == "" {at += 1; continue}
@@ -884,13 +866,7 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 					}
 				}
 			}
-			if ui.gs_loading {
-				nendo.text(
-					tr("Searching local history…"),
-					{font = FONT_BODY, size = 13, color = TEXT_DIM},
-				)
-				busy_bar("GsBusy")
-			} else if ui.gs_error != "" && sender_valid && dates_valid {
+			if !ui.gs_loading && ui.gs_error != "" && sender_valid && dates_valid {
 				nendo.text(ui.gs_error, {font = FONT_BODY, size = 12, color = DANGER})
 				settings_button("GsRetry", tr("Search again"))
 			}
@@ -927,53 +903,11 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 				nendo.text(tr("No matches."), {font = FONT_BODY, size = 13, color = TEXT_DIM})
 			}
 
-			if nendo.box(nendo.id("GsList"))(
-			{
-				width = nendo.grow(),
-				height = nendo.fit(min = 44, max = 300),
-				direction = .Column,
-				gap = 2,
-				clip = {y = true, scroll = true},
-			},
-			) {
-				for hit, i in ui.gs_hits {
-					// Each hit lands a beat after the one above it.
-					arrived := stagger(nendo.id("GsList").id, i)
-					if nendo.box(nendo.id("GsHit", u32(i)))(
-					{
-						width = nendo.grow(),
-						direction = .Column,
-						padding = nendo.pad(10),
-						gap = 3,
-						color = fade(hovered() ? HOVER : {}, arrived),
-						radius = rr(8),
-					},
-					) {
-						if nendo.box(nendo.id("GsHitTop", u32(i)))(
-						{width = nendo.grow(), gap = 8, align = {y = .Center}},
-						) {
-							nendo.text(
-								hit.title,
-								{font = FONT_TITLE, size = 13, color = fade(TEXT, arrived)},
-							)
-							nendo.text(
-								hit.sender,
-								{font = FONT_BODY, size = 12, color = fade(TEXT_DIM, arrived)},
-							)
-							if nendo.box(nendo.id("GsHitGap", u32(i)))({width = nendo.grow()}) {}
-							nendo.text(
-								hit.at,
-								{font = FONT_MONO, size = 10, color = fade(TEXT_LO, arrived)},
-							)
-						}
-						gs_snippet_text(u32(i), hit.snippet, string(ui.gs_input[:]), arrived)
-					}
-				}
+			gs_results(ui, modal_width)
+			if ui.gs_more && ui.gs_error == "" {
+				state: Settings_Control_State = ui.gs_loading ? .Disabled : .Enabled
+				settings_button("GsMore", tr("More results"), state = state)
 			}
-			scrollbar(nendo.id("GsList"), 14) // the modal floats at 13
-			if ui.gs_more &&
-			   !ui.gs_loading &&
-			   ui.gs_error == "" {settings_button("GsMore", tr("More results"))}
 		}
 		scrollbar(nendo.id("GsBody"), 14)
 		gs_filter_options(ui)

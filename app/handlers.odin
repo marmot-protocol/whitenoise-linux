@@ -864,14 +864,14 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				if !msg.deleted &&
 				   nendo.pointer_over(nendo.id("MsgReveal", u32(i) * 4096 + u32(j))) {
 					secret.open = !secret.open
-					ui.messages[i].row_height = 0
+					ui.messages[i].row_measure = {}
 					return
 				}
 				if !secret.open {break}
 			}
 			if nendo.pointer_over(nendo.id("MessageMore", u32(i) * 4096)) {
 				excerpt_toggle(&ui.messages[i].excerpt, u32(i) * 4096)
-				ui.messages[i].row_height = 0
+				ui.messages[i].row_measure = {}
 				return
 			}
 			if len(msg.id) == 0 {
@@ -1341,6 +1341,8 @@ picker_commit_recents :: proc(ui: ^Ui_State) {
 close_picker :: proc(ui: ^Ui_State) {
 	picker_commit_recents(ui)
 	ui.picker_open = false
+	ui.gif_reveal = false
+	ui.sticker_reveal = false
 	ui.focus = .Compose
 	if ui.picker_mode == .Group_Image {
 		ui.focus = ui.gemoji_dest == .New_Chat ? .NC_Name : .Invite
@@ -1390,10 +1392,13 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 	}
-	for code, i in picker_custom(string(ui.picker_filter[:])) {
-		if nendo.pointer_over(nendo.id("PkCustom", u32(i))) {
-			pick_emoji(ui, client, fmt.tprintf(":%s:", code))
-			return
+	custom, revision := picker_custom(string(ui.picker_filter[:]))
+	if revision == ui.picker_hit_revision {
+		for entry in custom {
+			if nendo.pointer_over(nendo.id("PkCustom", entry.slot)) {
+				pick_emoji(ui, client, fmt.tprintf(":%s:", entry.code))
+				return
+			}
 		}
 	}
 	for index in picker_matches(ui) {

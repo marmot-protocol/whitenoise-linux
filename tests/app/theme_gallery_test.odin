@@ -305,6 +305,25 @@ theme_gallery_interactions :: proc(t: ^testing.T) {
 	gallery_frames(&ui)
 	testing.expect(t, ui.theme == custom_index, "Enter must commit the keyboard-focused tile")
 	kb_focus = ""
+	rl.SetWindowSize(390, 500)
+	UI_ZOOM = 1
+	nendo.set_dimensions({390, 500})
+	theme_packs[custom_index].name = "LongUnbrokenCustomThemeNameThatMustNotPushThemeTilesOutsideTheSettingsPage"
+	gallery_open_from_appearance(t, &ui)
+	page_id := nendo.id("SettingsPage")
+	viewport := nendo.element(page_id).rect
+	collection := nendo.element(nendo.id("ThemeGalleryGrid", u32(Theme_Collection.White_Noise)))
+	testing.expect(
+		t,
+		collection.found &&
+		collection.rect.x + collection.rect.width <= viewport.x + viewport.width,
+	)
+	name := nendo.element(nendo.id("ThemeSelectedName")).rect
+	nendo.set_pointer({name.x + name.width / 2, name.y + name.height / 2}, .Up)
+	before_wheel := nendo.scroll(page_id).position.y
+	settings_test_frame(&ui, {1, -1})
+	testing.expect(t, nendo.scroll(page_id).position.y < before_wheel)
+	theme_packs[custom_index].name = custom.name
 	for size in ([]struct {
 			w, h: i32,
 			zoom: f32,

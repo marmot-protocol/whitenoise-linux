@@ -94,16 +94,31 @@ Layout_Element_Data :: struct #raw_union {
 
 @(private)
 Layout_Element :: struct {
-	children:                Layout_Element_Children,
-	dimensions:              Dimensions,
-	min_dimensions:          Dimensions,
-	using data:              Layout_Element_Data,
-	id:                      u32,
-	floating_children_count: u16,
-	is_text_element:         bool,
+	children:                 Layout_Element_Children,
+	dimensions:               Dimensions,
+	min_dimensions:           Dimensions,
+	using data:               Layout_Element_Data,
+	id:                       u32,
+	floating_children_count:  u16,
+	is_text_element:          bool,
 	// True while the element is exit transitioning: a synthetic copy
 	// retained from earlier frames.
-	exiting:                 bool,
+	exiting:                  bool,
+	grid_columns, grid_count: u16,
+	grid_cell_width:          f32,
+	animated_size:            Transition_Properties,
+	in_wrap_flow:             bool,
+	wrap_subtree:             bool,
+	height_reflows:           bool,
+	virtual_scroll_y:         bool,
+	wrap_first:               i32,
+	wrap_intrinsic:           Dimensions,
+	wrap_exit_position:       Vector2,
+	declared_height:          f32,
+	virtual_prefix_height:    f32,
+	virtual_prefix_count:     i32,
+	virtual_scroll_min_y:     f32,
+	virtual_scroll_request_y: f32,
 }
 
 @(private)
@@ -146,6 +161,8 @@ Layout_Element_Hash_Map_Item :: struct {
 	layout_element:      ^Layout_Element,
 	next_index:          i32,
 	generation:          u32,
+	laid_out_y:          f32,
+	declared_height:     f32,
 	appeared_this_frame: bool,
 }
 
@@ -163,6 +180,7 @@ Measure_Text_Cache_Item :: struct {
 	measured_words_start_index: i32,
 	min_width:                  f32,
 	contains_newlines:          bool,
+	multiple_words:             bool,
 	// Hash map data
 	id:                         u32,
 	next_index:                 i32,
@@ -174,6 +192,12 @@ Layout_Element_Tree_Node :: struct {
 	layout_element:    ^Layout_Element,
 	position:          Vector2,
 	next_child_offset: Vector2,
+}
+
+@(private)
+Wrapped_Row :: struct {
+	end:        i32,
+	dimensions: Dimensions,
 }
 
 @(private)
@@ -207,6 +231,7 @@ Context :: struct {
 	layout_element_clip_element_ids:          Array(i32),
 	// Misc data structures
 	wrapped_text_lines:                       Array(Wrapped_Text_Line),
+	wrapped_rows:                             Array(Wrapped_Row),
 	layout_element_tree_node_array1:          Array(Layout_Element_Tree_Node),
 	layout_element_tree_roots:                Array(Layout_Element_Tree_Root),
 	layout_elements_hash_map_internal:        Array(Layout_Element_Hash_Map_Item),
@@ -433,6 +458,7 @@ initialize_ephemeral_memory :: proc(ctx: ^Context) {
 	ctx.layout_element_children_buffer = array_allocate(i32, max_element_count, arena)
 	ctx.layout_elements = array_allocate(Layout_Element, max_element_count, arena)
 	ctx.wrapped_text_lines = array_allocate(Wrapped_Text_Line, max_element_count, arena)
+	ctx.wrapped_rows = array_allocate(Wrapped_Row, max_element_count, arena)
 	ctx.layout_element_tree_node_array1 = array_allocate(
 		Layout_Element_Tree_Node,
 		max_element_count,

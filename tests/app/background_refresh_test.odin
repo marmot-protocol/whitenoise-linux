@@ -131,13 +131,13 @@ incoming_preserves_scroll :: proc(t: ^testing.T) {
 	defer {nendo.set_context(previous); delete(memory)}
 	nendo.begin()
 	if nendo.box(nendo.id("Timeline"))(
-	{width = nendo.fixed(800), height = nendo.fixed(600), clip = {y = true}},
+	{width = nendo.fixed(800), height = nendo.fixed(600), clip = {y = true, scroll = true}},
 	) {
 		if nendo.box(nendo.id("Tall"))({height = nendo.fixed(3000)}) {}
 	}
 	nendo.end(0)
 	data := nendo.scroll(nendo.id("Timeline"))
-	testing.expect(t, data.found)
+	if !testing.expect(t, data.found) {return}
 	ui := Ui_State {
 		account_ref = "account",
 	}

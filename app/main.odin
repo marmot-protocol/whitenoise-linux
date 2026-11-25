@@ -181,7 +181,43 @@ handle_shell_foreground :: proc(ui: ^Ui_State, captured: bool) -> bool {
 }
 
 build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
+	anchored_reveal := (ui.sticker_reveal || ui.gif_reveal) && single_pane()
+	anchor_id: nendo.Id
+	anchor: nendo.Element_Data
+	if anchored_reveal {
+		anchor_id = nendo.id("ComposeBox")
+		anchor = nendo.element(anchor_id)
+	}
+	commands := build_layout_pass(ui, frame_time)
+	if layout_overflow {return commands}
+	reflow := false
+	if ui.page == .Chats {
+		// The inbox needs the rail's full height before clamping its outer clip.
+		rail := nendo.scroll(nendo.id("RailContent"))
+		if rail.found && nendo.element(nendo.id("ChatList")).found {
+			bottom := -max(0, rail.content.height - rail.viewport.height)
+			if rail.clip.offset.y < bottom {
+				rail.position.y = clamp(rail.position.y, bottom, 0)
+				reflow = true
+			}
+		}
+	}
+	// The floating picker reads the composer rectangle from the last pass.
+	if anchored_reveal && anchor != nendo.element(anchor_id) {
+		commands = build_layout_pass(ui, 0)
+		if layout_overflow {return commands}
+		reflow = false
+	}
+	sticker_scroll := sticker_resolve_scroll(ui)
+	gif_scroll := gif_resolve_scroll(ui)
+	return sticker_scroll || gif_scroll || reflow ? build_layout_pass(ui, 0) : commands
+}
+
+@(private = "file")
+build_layout_pass :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 	tab_scroll_save(ui)
+	ui.timeline_entries, ui.timeline_root = nil, -1
+	defer {ui.timeline_entries, ui.timeline_root = nil, -1}
 	timeline_draw_offset = 0
 	if data := nendo.scroll(nendo.id("Timeline")); data.found {
 		timeline_draw_offset = data.position.y
@@ -206,6 +242,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 	settings_full := settings_workspace_visible(ui) && !settings_float
 	page := shell_page(ui)
 	page_backdrop := wash_payload()
+	LOGIN_MARGIN :: 12
 
 	if nendo.box(nendo.id("Root"))(
 	{
@@ -223,7 +260,12 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 		// no status bar).
 		if !logged_in {
 			if nendo.box(nendo.id("LoginCanvas"))(
-			{width = nendo.grow(), height = nendo.grow(), align = {x = .Center, y = .Center}},
+			{
+				width = nendo.grow(),
+				height = nendo.grow(),
+				padding = {left = LOGIN_MARGIN, right = LOGIN_MARGIN},
+				align = {x = .Center, y = .Center},
+			},
 			) {
 				login_pane(ui)
 			}
@@ -293,6 +335,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 								width = nendo.grow(),
 								height = nendo.grow(),
 								direction = .Column,
+								padding = {left = LOGIN_MARGIN, right = LOGIN_MARGIN},
 								align = {x = .Center, y = .Center},
 								gap = 12,
 							},
@@ -1087,6 +1130,8 @@ app_main :: proc() {
 			pointer.x /= UI_ZOOM
 			pointer.y /= UI_ZOOM
 			nendo.set_pointer(pointer, (rl.IsMouseButtonDown(.LEFT)) ? .Down : .Up)
+			ui.picker_hit_revision = ui.picker_custom_revision
+			fwd_sample_pointer(&ui)
 
 			scroll_thumb_tick()
 			// A drag-selection ending with text selected feeds the primary
@@ -1709,7 +1754,7 @@ app_main :: proc() {
 						card := nev_cards[nev_more_hover]
 						excerpt_toggle(&card.excerpt, nev_more_id)
 						nev_cards[nev_more_hover] = card
-						for &msg in ui.messages {msg.row_height = 0}
+						for &msg in ui.messages {msg.row_measure = {}}
 					}
 					if nev_hint_hover != "" && mouse_released() && !modal_open(&ui) {
 						preview_message(nev_cards[nev_hint_hover].geocache.hint)

@@ -14,6 +14,7 @@ import "core:strings"
 import "core:sync"
 import "core:thread"
 import "core:time"
+import "core:unicode"
 
 import "nendo"
 import rl "sdlrl"
@@ -28,24 +29,41 @@ Fwd_Kind :: enum {
 	Add_Member,
 }
 
-// Destination rows: every chat except pending invites, matching the
-// filter against the title, case-insensitive. Forwarding also hides
-// the chat the message is already in; sharing a theme does not, since
-// the open chat is a perfectly good destination for it.
-fwd_visible :: proc(ui: ^Ui_State, index: int) -> bool {
-	chat := ui.chats[index]
+@(private = "file")
+FWD_ROW_H :: f32(44)
+
+@(private)
+Fwd_Row_Hit :: struct {
+	index, key_end: int,
+}
+
+@(private = "file")
+fwd_visible :: proc(ui: ^Ui_State, index: int, filter: string, title: ^strings.Builder) -> bool {
+	chat := &ui.chats[index]
 	if chat.pending || (ui.fwd_kind == .Message && index == ui.selected) {
 		return false
 	}
 	if ui.fwd_kind == .Add_Member && chat.conversation_kind != .GROUP {return false}
+	if filter == "" {return true}
+	strings.builder_reset(title)
+	for r in chat.title {strings.write_rune(title, unicode.to_lower(r))}
+	return strings.contains(strings.to_string(title^), filter)
+}
+
+@(private)
+fwd_destinations :: proc(ui: ^Ui_State) -> []int {
 	filter := strings.to_lower(string(ui.fwd_filter[:]), context.temp_allocator)
-	if len(filter) == 0 {
-		return true
+	title := strings.builder_make(context.temp_allocator)
+	destinations := make([dynamic]int, 0, len(ui.chats), context.temp_allocator)
+	for _, i in ui.chats {
+		if fwd_visible(ui, i, filter, &title) {append(&destinations, i)}
 	}
-	return strings.contains(strings.to_lower(chat.title, context.temp_allocator), filter)
+	return destinations[:]
 }
 
 forward_modal :: proc(ui: ^Ui_State) {
+	clear(&ui.fwd_hit_rows)
+	clear(&ui.fwd_hit_keys)
 	if nendo.box(nendo.id("FwdModal"))(
 	{
 		width = nendo.fixed(modal_w(nendo.id("FwdModal"), 440)),
@@ -135,44 +153,18 @@ forward_modal :: proc(ui: ^Ui_State) {
 			)
 		}
 
-		if nendo.box(nendo.id("FwdList"))(
+		destinations := fwd_destinations(ui)
+		list := nendo.id(len(destinations) == 0 ? "FwdEmptyList" : "FwdList")
+		defer scrollbar(list, 14) // the modal floats at 13
+		if nendo.box(list)(
 		{
 			width = nendo.grow(),
-			height = nendo.fit(max = max(44, min(320, modal_h(480) - 152))),
+			height = nendo.fit(max = max(FWD_ROW_H, min(320, modal_h(480) - 152))),
 			direction = .Column,
-			gap = 2,
 			clip = {y = true, scroll = true},
 		},
 		) {
-			shown := 0
-			for chat, i in ui.chats {
-				if !fwd_visible(ui, i) {
-					continue
-				}
-				shown += 1
-				if nendo.box(nendo.id("FwdRow", u32(i)))(
-				{
-					width = nendo.grow(),
-					height = nendo.fixed(44),
-					padding = {left = 10, right = 10},
-					gap = 10,
-					align = {y = .Center},
-					color = hovered() ? HOVER : {},
-					radius = rr(8),
-				},
-				) {
-					avatar("FwdAvatar", u32(i), chat.avatar_key, chat.title, 30, chat_pic(chat))
-					if nendo.box(nendo.id("FwdTitle", u32(i)))(
-					{width = nendo.grow(), clip = {x = true}},
-					) {
-						nendo.text(
-							chat.title,
-							{font = FONT_TITLE, size = 13, color = TEXT, wrap = .None},
-						)
-					}
-				}
-			}
-			if shown == 0 {
+			if len(destinations) == 0 {
 				if nendo.box(nendo.id("FwdEmpty"))(
 				{
 					width = nendo.grow(),
@@ -185,9 +177,37 @@ forward_modal :: proc(ui: ^Ui_State) {
 						{font = FONT_BODY, size = 13, color = TEXT_DIM},
 					)
 				}
+				return
+			}
+
+			rows := nendo.virtual_rows(nendo.id("FwdRows"), len(destinations), FWD_ROW_H, gap = 2)
+			for i in destinations[rows.first:rows.end] {
+				chat := &ui.chats[i]
+				append(&ui.fwd_hit_keys, chat.group_id)
+				append(&ui.fwd_hit_rows, Fwd_Row_Hit{i, len(ui.fwd_hit_keys)})
+				if nendo.box(nendo.id("FwdRow", u32(i)))(
+				{
+					width = nendo.grow(),
+					height = nendo.fixed(FWD_ROW_H),
+					padding = {left = 10, right = 10},
+					gap = 10,
+					align = {y = .Center},
+					color = hovered() ? HOVER : {},
+					radius = rr(8),
+				},
+				) {
+					avatar("FwdAvatar", u32(i), chat.avatar_key, chat.title, 30, chat_pic(chat^))
+					if nendo.box(nendo.id_local("FwdTitle"))(
+					{width = nendo.grow(), clip = {x = true}},
+					) {
+						nendo.text(
+							chat.title,
+							{font = FONT_TITLE, size = 13, color = TEXT, wrap = .None},
+						)
+					}
+				}
 			}
 		}
-		scrollbar(nendo.id("FwdList"), 14) // the modal floats at 13
 	}
 }
 
@@ -502,6 +522,37 @@ forward_stop :: proc(ui: ^Ui_State) {
 	// send_threads have joined; decoded pixels are outside the tracked heap.
 	for &p in ui.pending {forward_free(p.forward); p.forward = nil}
 	delete(ui.fwd_msg); delete(ui.fwd_source)
+	delete(ui.fwd_hit_rows); ui.fwd_hit_rows = {}
+	session_buffer_forget(&ui.fwd_hit_keys)
+	session_buffer_forget(&ui.fwd_pressed_key)
+}
+
+// Read the painted rows before layout replaces them. Their indices may no
+// longer refer to the same chats after the live refresh.
+@(private)
+fwd_sample_pointer :: proc(ui: ^Ui_State) {
+	if !ui.fwd_open {
+		clear(&ui.fwd_pressed_key)
+		return
+	}
+	pressed := mouse_pressed()
+	if !pressed && !rl.IsMouseButtonReleased(.LEFT) && !forced_release {return}
+
+	start := 0
+	for row in ui.fwd_hit_rows {
+		if nendo.pointer_over(nendo.id("FwdRow", u32(row.index))) {
+			group := ui.fwd_hit_keys[start:row.key_end]
+			if pressed {
+				clear(&ui.fwd_pressed_key)
+				append(&ui.fwd_pressed_key, ..group)
+			} else if string(group) != string(ui.fwd_pressed_key[:]) {
+				clear(&ui.fwd_pressed_key)
+			}
+			return
+		}
+		start = row.key_end
+	}
+	clear(&ui.fwd_pressed_key)
 }
 
 // Click/keyboard handling for the open forward picker; anything
@@ -524,11 +575,17 @@ handle_forward :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.focus = .Fwd
 		return
 	}
-	if !mouse_released() {
+	// A poll can contain the previous release and the next press.
+	if !mouse_released() || rl.IsMouseButtonDown(.LEFT) {
 		return
 	}
-	for _, i in ui.chats {
-		if fwd_visible(ui, i) && nendo.pointer_over(nendo.id("FwdRow", u32(i))) {
+	defer clear(&ui.fwd_pressed_key)
+	if group := string(ui.fwd_pressed_key[:]); group != "" {
+		for &chat, i in ui.chats {
+			if chat.group_id != group {continue}
+			filter := strings.to_lower(string(ui.fwd_filter[:]), context.temp_allocator)
+			title := strings.builder_make(context.temp_allocator)
+			if !fwd_visible(ui, i, filter, &title) {break}
 			ui.fwd_open = false
 			ui.focus = .Compose
 			if ui.fwd_kind == .Theme {

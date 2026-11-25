@@ -172,6 +172,53 @@ See [timing and observability configuration](timings.md).
 
 It reads flat by intent. The layout is immediate-mode: every frame rebuilds the nendo tree by reading one `Ui_State` struct, so there is no retained view tree, no widget objects, and no observer graph to trace. Panes are plain procs.
 
+For an auto-fit grid, set `width = nendo.grow()`, `gap`, and `grid = {min_cell_width = 120, row_height = 80}` on a box. Declare the tiles as direct children without setting their width or height. Nendo uses the allocated inner width to choose the column count and size the tiles. The gap applies on both axes, and a partial row keeps the same column widths as the full rows.
+
+For buttons or chips of different widths, set `direction = .Wrap_Row`. Nendo keeps children in declaration order and starts a new line when the next child would exceed the allocated inner width. `gap` applies between items and between lines. `align.x` aligns each line, and `align.y` aligns items within their line. Items do not grow to absorb gaps in a line. For items with percentage heights, give the container a fixed height, percentage height, or aspect ratio.
+
+Use `nendo.percent(1, max = 480)` to fill the parent up to a cap. A row or column subtracts padding and any gaps on the sizing axis before applying the percentage. A wrapping row applies the percentage to its padded width before packing items with gaps. A floating box uses the full size of its anchor, so `nendo.percent(1)` makes a menu as wide as its trigger. Use `nendo.grow(max = 480)` to share leftover space with siblings.
+
+Set `scroll = true` on a clip to retain a scroll position and accept wheel and drag input on its clipped axes. An ordinary clip still masks its children and applies a declared `offset`, but uses no scroll state.
+
+Use `nendo.virtual_rows` for a run at the end of a top-aligned column. Nendo reserves the full scroll extent and returns the range to build, even if an outer column handles the scroll. A picker with a height cap that fits on the canvas keeps its own row window so keyboard navigation can reveal hidden rows. Give each row a stable ID and the declared row height. Put headers before the run. Nendo starts with the current declared heights and uses the previous layout to estimate adjustments from wrapping or alignment. The run closes at the end of its enclosing block.
+
+```odin
+if nendo.box(nendo.id("Results"))({
+    width = nendo.grow(), height = nendo.fixed(240), direction = .Column,
+    clip = {y = true, scroll = true},
+}) {
+    rows := nendo.virtual_rows(nendo.id("ResultRows"), len(labels), 32, gap = 4)
+    for i in rows.first ..< rows.end {
+        if nendo.box(nendo.id("Result", u32(i)))({width = nendo.grow(), height = nendo.fixed(32)}) {
+            nendo.text(labels[i], {wrap = .None})
+        }
+    }
+}
+```
+
+For unequal heights, pass cumulative heights instead of a count and a row height. For rows of height 32, 56, and 24, set `offsets := []f32{0, 32, 88, 112}` and call `nendo.virtual_rows(id, offsets, gap = 4)`. Build row `i` at height `offsets[i + 1] - offsets[i]`. Leave gaps out of `offsets`: nendo adds them between rows. Supply positive heights known before layout. Nendo searches the slice without copying it or measuring offscreen rows.
+
+The timeline measures messages with their preceding markers and passes measured stretches to `nendo.virtual_rows`. Unmeasured rows, jump targets, and deletion animations stay outside those stretches so they can lay out even offscreen. The timeline still owns the reading anchor and pending sends. It passes one viewport of `overscan` in each direction. When a growing clip has not resolved its height, nendo uses the current canvas or the declared height cap rather than the previous viewport height.
+
+The sidebar uses fixed rows for recent chats and one measured row per folder in the grouped view. An expanded folder contains its own fixed run and inherits the sidebar's scroll position. Keyboard cycling keeps the full order of expanded chats, including rows nendo did not build. The contacts list counts a letter heading as part of its first contact's row.
+
+In short windows, `RailContent` scrolls both the chat list and its controls. If filtering puts that offset past the new end, `build_layout` clamps it and lays out the frame again before drawing. An offset still in range stays put.
+
+Group Members uses fixed rows. The edited member and nickname field stay mounted between two virtual runs. The prompt wraps at the current card width before nendo chooses the lower run's rows.
+
+Global search keeps the line breaks and cumulative heights for its result cards. Appending a page adds to the plan without measuring earlier pages again. Width, font, or timestamp changes rebuild the plan. Nendo uses the heights to mount only the cards near the viewport.
+The loading message and progress bar stay above the scrollable filters and results.
+
+The destination picker passes fixed-height rows to nendo for forwarding, theme sharing, and adding a peer to a group. It reads group IDs from the painted rows before rebuilding the list. A release acts only on the chat that was pressed, even if a live refresh changed its index.
+
+The composer sticker grid mounts fixed-height rows near the viewport. Arrow keys scroll to the focused row by its position in the filtered grid, even when the row has not been built.
+The sticker library and pack previews also mount fixed-height rows. The modal scrolls the rows together with the headings and pack controls.
+
+The GIF picker passes cumulative tile heights to nendo for each column. The tallest column sets the scroll extent. Thumbnail requests still follow reading order and require a visible tile.
+
+The emoji picker keeps the custom shortcode row at the top of the grid. Nendo mounts the Unicode emoji rows near the viewport and preserves the full scroll extent.
+Cold artwork starts as placeholders. The emoji preview worker decodes image files, and the UI uploads a bounded batch of textures after presenting each frame.
+
 | Path | What's there |
 | --- | --- |
 | `app/` | The whole app: panes, layout, state, workers, vault, media viewers |

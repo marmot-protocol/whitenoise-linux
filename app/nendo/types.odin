@@ -77,6 +77,8 @@ Size :: struct {
 Direction :: enum u8 {
 	Row,
 	Column,
+	// Pack intrinsic-width items in order. Gap applies on both axes.
+	Wrap_Row,
 }
 
 Align_X :: enum u8 {
@@ -120,7 +122,7 @@ Text_Style :: struct {
 }
 
 // `x`/`y` clip overflowing children on that axis; `offset` shifts every child,
-// and `scroll` sets it to the element's retained scroll position.
+// and `scroll` enables input and replaces `offset` with the retained position.
 Clip :: struct {
 	x, y:   bool,
 	scroll: bool,
@@ -276,6 +278,11 @@ Box :: struct {
 	// no hover and take no clicks. For static samples of live UI.
 	inert:         bool,
 	user_data:     rawptr,
+	// A positive minimum lays out tiles in equal-width cells with fixed row
+	// heights. The grid owns tile box dimensions and uses gap on both axes.
+	grid:          struct {
+		min_cell_width, row_height: f32,
+	},
 }
 
 Command_Kind :: enum u8 {

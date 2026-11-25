@@ -457,6 +457,9 @@ Msg_Ui :: struct {
 	excerpt:             Excerpt,
 	sticker:             Sticker_Ref,
 	row_height, row_top: f32,
+	row_inset:           f32,
+	row_shape:           Timeline_Shape,
+	// Clear the metrics to remeasure without losing the last height.
 	row_measure:         [4]f32, // width, pixel scale, corner scale, action height
 	visible_since:       time.Tick, // live observation until first presented row
 	id:                  string, // message_id_hex
@@ -606,6 +609,8 @@ Ui_State :: struct {
 	gif_selected:                        Gif_Item,
 	gif_error:                           string,
 	gif_focus:                           int,
+	gif_reveal:                          bool,
+	gif_focus_span:                      nendo.Vector2, // content top and height for a pending reveal
 	gif_page:                            int,
 	gif_more:                            bool,
 	gif_filter:                          string,
@@ -629,8 +634,12 @@ Ui_State :: struct {
 	sticker_loaded:                      bool,
 	picking_sticker:                     bool,
 	sticker_focus:                       int,
+	sticker_reveal:                      bool,
+	sticker_scroll_reset:                bool,
 	sticker_page:                        Sticker_Page,
 	timeline_metric:                     [4]f32,
+	timeline_entries:                    []Timeline_Entry, // only live from declaration to measurement
+	timeline_root:                       int, // pinned row index for the same build, -1 if absent
 	messages_group, messages_account:    string,
 	account_ref:                         string, // active account's full hex; "" when logged out
 	accounts:                            [dynamic]Account_Row_Ui, // switcher rows; non-empty means signed in
@@ -667,7 +676,7 @@ Ui_State :: struct {
 	theme:                               int, // index into theme_packs
 	accent:                              int,
 	selected:                            int, // index into chats, -1 = none
-	rail_rows:                           [dynamic]Inbox_Row, // rendered conversations for Ctrl+Tab
+	rail_rows:                           [dynamic]Inbox_Row, // expanded conversations for Ctrl+Tab, even if unmounted
 	rail_peek:                           bool, // chat list opened by hand in a window too narrow for it; see toggle_rail
 	messages:                            [dynamic]Msg_Ui, // selected chat's timeline
 	reading_places:                      map[string]Reading_Place, // account and group -> message anchor
@@ -698,7 +707,6 @@ Ui_State :: struct {
 	group_files_menu:                    Group_File_Menu,
 	group_files_option:                  int,
 	members:                             [dynamic]Member_Ui,
-	members_scroll_y:                    f32, // scroll offset used by the previous layout
 	member_nick:                         int, // member-row nickname editor, -1 = closed
 	member_menu:                         int, // member-row "⋯" action menu, -1 = closed
 	member_menu_x:                       f32, // its anchor, layout coords
@@ -736,6 +744,8 @@ Ui_State :: struct {
 	fwd_msg:                             string, // stable source message ID (.Message only)
 	fwd_source:                          string, // source group when the picker opened
 	fwd_filter:                          [dynamic]u8, // its chat filter box
+	fwd_hit_rows:                        [dynamic]Fwd_Row_Hit,
+	fwd_hit_keys, fwd_pressed_key:       [dynamic]u8,
 	poll_open:                           bool, // composer is in poll mode
 	poll_question:                       [dynamic]u8,
 	poll_inputs:                         [dynamic][dynamic]u8, // option drafts, blanks skipped
@@ -769,6 +779,7 @@ Ui_State :: struct {
 	gs_open:                             bool, // global cross-chat search modal
 	gs_input:                            [dynamic]u8, // its query box
 	gs_hits:                             [dynamic]Gs_Hit, // its result cards
+	gs_layout:                           Gs_Layout,
 	gs_chats:                            [dynamic]Chat_Row_Ui, // all local chats, including archives
 	gs_senders:                          [dynamic]string, // public keys seen across local chats
 	gs_filters_open:                     bool,
@@ -815,6 +826,8 @@ Ui_State :: struct {
 	picker_x:                            f32, // panel anchor, layout coords
 	picker_y:                            f32,
 	picker_filter:                       [dynamic]u8,
+	picker_custom_revision:              u64,
+	picker_hit_revision:                 u64, // catalog revision of the hit-tested frame
 	picker_used:                         [dynamic]string, // recents commit on close, never move under a finger
 	sidebar_filter:                      [dynamic]u8, // rail chat filter
 	filter_hits:                         [dynamic]bool, // per-chat body match for sidebar_filter

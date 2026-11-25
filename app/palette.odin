@@ -220,8 +220,7 @@ palette_modal :: proc(ui: ^Ui_State) {
 					{font = FONT_BODY, size = 13, color = TEXT_DIM},
 				)
 			}
-			// Only the window around the selection renders: the list is
-			// short and nendo has no virtualization.
+			// On desktop, render a window around the selection rather than a scroll offset.
 			first := clamp(
 				ui.pal_sel - PAL_ROWS_MAX + 1,
 				0,

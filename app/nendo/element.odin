@@ -396,6 +396,9 @@ measure_text_cached :: proc(text: ^String, config: ^Text_Style) -> ^Measure_Text
 	measured_width = cmax(line_width, measured_width) - f32(config.spacing)
 
 	measured.measured_words_start_index = temp_word.next
+	if temp_word.next != -1 {
+		measured.multiple_words = array_get_value(&ctx.measured_words, temp_word.next).next != -1
+	}
 	measured.unwrapped_dimensions.width = measured_width
 	measured.unwrapped_dimensions.height = measured_height
 
@@ -504,10 +507,14 @@ get_hash_map_item :: proc(id: u32) -> ^Layout_Element_Hash_Map_Item {
 @(private)
 update_aspect_ratio_box :: proc(layout_element: ^Layout_Element) {
 	if layout_element.config.aspect != 0 {
-		if layout_element.dimensions.width == 0 && layout_element.dimensions.height != 0 {
+		if layout_element.config.width.kind != .Percent &&
+		   layout_element.dimensions.width == 0 &&
+		   layout_element.dimensions.height != 0 {
 			layout_element.dimensions.width =
 				layout_element.dimensions.height * layout_element.config.aspect
-		} else if layout_element.dimensions.width != 0 && layout_element.dimensions.height == 0 {
+		} else if layout_element.config.height.kind != .Percent &&
+		   layout_element.dimensions.width != 0 &&
+		   layout_element.dimensions.height == 0 {
 			layout_element.dimensions.height =
 				layout_element.dimensions.width * (1 / layout_element.config.aspect)
 		}
@@ -535,9 +542,30 @@ close_element :: proc() {
 
 	// Attach children to the current open element
 	open_layout_element.children.elements = &ctx.layout_element_children.items[ctx.layout_element_children.length]
-	if layout_config.direction == .Row {
+	wrap := layout_config.direction == .Wrap_Row && layout_config.grid.min_cell_width <= 0
+	open_layout_element.wrap_subtree ||= wrap
+	if layout_config.grid.min_cell_width > 0 {
+		// Prefer one column until the width pass can see the parent allocation.
+		open_layout_element.dimensions = {left_right_padding, top_bottom_padding}
+		open_layout_element.min_dimensions = open_layout_element.dimensions
+		count := i32(open_layout_element.children.length)
+		if count > 0 {
+			open_layout_element.dimensions.width += layout_config.grid.min_cell_width
+		}
+		first := ctx.layout_element_children_buffer.length - count
+		for i in first ..< first + count {
+			array_add(
+				&ctx.layout_element_children,
+				array_get_value(&ctx.layout_element_children_buffer, i),
+			)
+		}
+	} else if layout_config.direction == .Row || wrap {
 		open_layout_element.dimensions.width = left_right_padding
 		open_layout_element.min_dimensions.width = left_right_padding
+		if wrap {
+			open_layout_element.dimensions.height = top_bottom_padding
+			open_layout_element.min_dimensions.height = top_bottom_padding
+		}
 		for i: i32 = 0; i < i32(open_layout_element.children.length); i += 1 {
 			child_index := array_get_value(
 				&ctx.layout_element_children_buffer,
@@ -553,7 +581,14 @@ close_element :: proc() {
 			)
 			// Minimum size of child elements doesn't matter to clip containers as they can shrink and hide their contents
 			if !element_has_clip_horizontal {
-				open_layout_element.min_dimensions.width += child.min_dimensions.width
+				if wrap {
+					open_layout_element.min_dimensions.width = cmax(
+						open_layout_element.min_dimensions.width,
+						left_right_padding + child.min_dimensions.width,
+					)
+				} else {
+					open_layout_element.min_dimensions.width += child.min_dimensions.width
+				}
 			}
 			if !element_has_clip_vertical {
 				open_layout_element.min_dimensions.height = cmax(
@@ -567,7 +602,7 @@ close_element :: proc() {
 			cmax(i32(open_layout_element.children.length) - 1, 0) * i32(layout_config.gap),
 		)
 		open_layout_element.dimensions.width += child_gap
-		if !element_has_clip_horizontal {
+		if !element_has_clip_horizontal && !wrap {
 			open_layout_element.min_dimensions.width += child_gap
 		}
 	} else if layout_config.direction == .Column {
@@ -624,6 +659,7 @@ close_element :: proc() {
 		)
 	} else {
 		open_layout_element.dimensions.width = 0
+		open_layout_element.min_dimensions.width = 0
 	}
 
 	// Clamp element min and max height to the values configured in the layout
@@ -641,11 +677,27 @@ close_element :: proc() {
 		)
 	} else {
 		open_layout_element.dimensions.height = 0
+		open_layout_element.min_dimensions.height = 0
 	}
 
 	update_aspect_ratio_box(open_layout_element)
+	open_layout_element.declared_height = open_layout_element.dimensions.height
 
 	element_is_floating := open_layout_element.config.floating.attach_to != .None
+	wrap_subtree := open_layout_element.wrap_subtree
+	width := layout_config.width
+	height := layout_config.height
+	aspect_reflows :=
+		layout_config.aspect != 0 &&
+		width.kind != .Fixed &&
+		(width.kind == .Percent || width.min != width.max)
+	content_reflows :=
+		height.kind != .Fixed &&
+		height.min != height.max &&
+		open_layout_element.children.length > 0 &&
+		(open_layout_element.height_reflows || wrap || layout_config.grid.min_cell_width > 0)
+	reflows := height.kind != .Percent && (aspect_reflows || content_reflows)
+	open_layout_element.height_reflows = reflows
 
 	// Close the currently open element
 	closing_element_index := array_remove_swapback(
@@ -661,6 +713,8 @@ close_element :: proc() {
 			open_layout_element.floating_children_count += 1
 			return
 		}
+		open_layout_element.wrap_subtree ||= wrap_subtree
+		open_layout_element.height_reflows ||= reflows
 		open_layout_element.children.length += 1
 		array_add(&ctx.layout_element_children_buffer, closing_element_index)
 	}
@@ -760,6 +814,11 @@ open_text_element :: proc(text: String, text_config: Text_Style) {
 		height = text_config.line_height > 0 ? f32(text_config.line_height) : text_measured.unwrapped_dimensions.height,
 	}
 	text_element.dimensions = text_dimensions
+	text_element.declared_height = text_dimensions.height
+	text_element.height_reflows =
+		text_measured.contains_newlines ||
+		(text_config.wrap == .Words && text_measured.multiple_words)
+	parent_element.height_reflows ||= text_element.height_reflows
 	text_element.min_dimensions = Dimensions {
 		width  = text_measured.min_width,
 		height = text_dimensions.height,
@@ -876,18 +935,13 @@ configure_open_element_ptr :: proc(declaration: ^Box) {
 
 	if declaration.clip.x || declaration.clip.y {
 		array_add(&ctx.open_clip_element_stack, i32(open_layout_element.id))
-		// Retrieve or create cached data to track scroll position across frames
-		scroll_offset: ^Scroll_Container_Data_Internal = nil
-		for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
-			mapping := array_get(&ctx.scroll_container_datas, i)
-			if open_layout_element.id == mapping.element_id {
-				scroll_offset = mapping
-				scroll_offset.layout_element = open_layout_element
-				scroll_offset.open_this_frame = true
-			}
-		}
-		if scroll_offset == nil {
-			scroll_offset = array_add(
+	}
+	if scroll_enabled(&declaration.clip) {
+		if mapping := find_scroll_data(open_layout_element.id); mapping != nil {
+			mapping.layout_element = open_layout_element
+			mapping.open_this_frame = true
+		} else {
+			array_add(
 				&ctx.scroll_container_datas,
 				Scroll_Container_Data_Internal {
 					layout_element = open_layout_element,

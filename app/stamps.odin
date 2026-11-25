@@ -220,6 +220,7 @@ stamps_refresh :: proc(ui: ^Ui_State) {
 		for &chat in rows {restamp(&chat.at, format_activity(chat.activity_at))}
 	}
 	for &hit in ui.gs_hits {restamp(&hit.at, format_day_clock(hit.when_at))}
+	gs_layout_clear(&ui.gs_layout)
 	for &hit in ui.mi_hits {restamp(&hit.at, format_day_clock(hit.when_at))}
 }
 

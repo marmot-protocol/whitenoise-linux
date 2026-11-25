@@ -156,18 +156,30 @@ pointer :: proc() -> Pointer {
 
 @(private)
 get_scroll_offset :: proc() -> Vector2 {
-	ctx := active_context
-	if ctx.warnings.max_elements_exceeded {
+	if active_context.warnings.max_elements_exceeded {
 		return {}
 	}
-	open_layout_element := get_open_layout_element()
-	for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
-		mapping := array_get(&ctx.scroll_container_datas, i)
-		if mapping.element_id == open_layout_element.id {
-			return mapping.scroll_position
-		}
+	if mapping := find_scroll_data(get_open_layout_element().id); mapping != nil {
+		return mapping.scroll_position
 	}
 	return {}
+}
+
+@(private)
+scroll_enabled :: proc "contextless" (clip: ^Clip) -> bool {
+	return clip.scroll && (clip.x || clip.y)
+}
+
+@(private)
+find_scroll_data :: proc(id: u32) -> ^Scroll_Container_Data_Internal {
+	ctx := active_context
+	for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
+		mapping := array_get(&ctx.scroll_container_datas, i)
+		if mapping.element_id == id {
+			return mapping
+		}
+	}
+	return nil
 }
 
 update_scroll :: proc(drag: Drag_Scroll, scroll_delta: Vector2, delta_time: f32) {
@@ -180,17 +192,16 @@ update_scroll :: proc(drag: Drag_Scroll, scroll_delta: Vector2, delta_time: f32)
 	highest_priority_scroll_data: ^Scroll_Container_Data_Internal = nil
 	for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
 		scroll_data := array_get(&ctx.scroll_container_datas, i)
-		if !scroll_data.open_this_frame {
+		element := get_hash_map_item(scroll_data.element_id).layout_element
+		if !scroll_data.open_this_frame ||
+		   element == nil ||
+		   element.is_text_element ||
+		   !scroll_enabled(&element.config.clip) {
 			array_remove_swapback(&ctx.scroll_container_datas, i)
+			i -= 1
 			continue
 		}
 		scroll_data.open_this_frame = false
-		hash_map_item := get_hash_map_item(scroll_data.element_id)
-		// Element isn't rendered this frame but scroll offset has been retained
-		if hash_map_item == nil {
-			array_remove_swapback(&ctx.scroll_container_datas, i)
-			continue
-		}
 
 		// Touch / click is released
 		if !is_pointer_active && scroll_data.pointer_scroll_active {
@@ -436,6 +447,9 @@ apply_transitioned_properties_to_element :: proc(
 	bounding_box: ^Rect,
 	reparented: bool,
 ) {
+	if !reparented {
+		current_element.animated_size = properties & TRANSITION_DIMENSIONS
+	}
 	if .Width in properties {
 		if !reparented {
 			current_element.dimensions.width = current_transition_data.rect.width
@@ -714,7 +728,7 @@ end :: proc(delta_time: f32) -> []Render_Command {
 		add_render_command(command)
 	} else {
 		if ctx.transition_datas.length > 0 {
-			calculate_final_layout(delta_time, false, false)
+			calculate_final_layout(.Target)
 
 			for i: i32 = 0; i < ctx.transition_datas.length; i += 1 {
 				transition_data := array_get(&ctx.transition_datas, i)
@@ -899,10 +913,10 @@ end :: proc(delta_time: f32) -> []Render_Command {
 				}
 			}
 
-			calculate_final_layout(delta_time, true, true)
+			calculate_final_layout(.Animated)
 			clone_elements_with_exit_transition()
 		} else {
-			calculate_final_layout(delta_time, false, true)
+			calculate_final_layout(.Static)
 		}
 	}
 
@@ -995,26 +1009,24 @@ pointer_over :: proc(id: Id) -> bool { 	// TODO return priority for separating m
 }
 
 scroll :: proc(id: Id) -> Scroll_Data {
-	ctx := active_context
-	for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
-		scroll_container_data := array_get(&ctx.scroll_container_datas, i)
-		if scroll_container_data.element_id == id.id {
-			if scroll_container_data.layout_element == nil { 	// This can happen on the first frame before a scroll container is declared
-				return {}
-			}
-			return Scroll_Data {
-				position = &scroll_container_data.scroll_position,
-				viewport = {
-					scroll_container_data.bounding_box.width,
-					scroll_container_data.bounding_box.height,
-				},
-				content = scroll_container_data.content_size,
-				clip = scroll_container_data.layout_element.config.clip,
-				found = true,
-			}
-		}
+	data := find_scroll_data(id.id)
+	if data == nil {
+		return {}
 	}
-	return {}
+	item := get_hash_map_item(id.id)
+	element := item.layout_element
+	if element == nil ||
+	   (item.generation > active_context.generation &&
+			   (element.is_text_element || !scroll_enabled(&element.config.clip))) {
+		return {}
+	}
+	return Scroll_Data {
+		position = &data.scroll_position,
+		viewport = {data.bounding_box.width, data.bounding_box.height},
+		content = data.content_size,
+		clip = data.layout_element.config.clip,
+		found = true,
+	}
 }
 
 element :: proc(id: Id) -> Element_Data {

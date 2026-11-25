@@ -404,6 +404,30 @@ gs_jump_leaves_settings :: proc(t: ^testing.T) {
 gs_viewport :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "gs_viewport" {return}
 	context.allocator = runtime.default_context().allocator
+	dir, err := os.make_directory_temp("", "wn-search-viewport-*", context.temp_allocator)
+	if !testing.expect_value(t, err, nil) {return}
+	defer os.remove_all(dir)
+	deployment: ^marmot.Deployment
+	if !testing.expect_value(
+		t,
+		marmot.deployment_white_noise(&deployment),
+		marmot.Status.OK,
+	) {return}
+	defer marmot.deployment_free(deployment)
+	client: ^marmot.Client
+	if !testing.expect_value(
+		t,
+		marmot.client_new(
+			strings.clone_to_cstring(dir, context.temp_allocator),
+			nil,
+			0,
+			deployment,
+			&client,
+		),
+		marmot.Status.OK,
+	) {return}
+	defer marmot.client_free(client)
+
 	rl.InitWindow(740, 700, "Global search")
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1
@@ -440,8 +464,9 @@ gs_viewport :: proc(t: ^testing.T) {
 		g_ui, g_prefs = nil, nil
 		delete(ui.gs_input); delete(ui.gs_sender_input); delete(ui.gs_since); delete(ui.gs_until)
 		delete(ui.gs_chats); delete(ui.gs_hits)
+		gs_layout_free(&ui.gs_layout)
 	}
-	for size in ([][2]i32{{740, 700}, {390, 420}, {740, 500}}) {
+	for size in ([][2]i32{{740, 700}, {390, 420}, {740, 500}, {800, 180}, {180, 300}}) {
 		rl.SetWindowSize(size[0], size[1])
 		nendo.set_dimensions({f32(size[0]), f32(size[1])})
 		for _ in 0 ..< 3 {gs_test_frame(&ui)}
@@ -457,33 +482,233 @@ gs_viewport :: proc(t: ^testing.T) {
 		)
 		testing.expect(
 			t,
-			body.height >= 44 && body.y + body.height <= modal.y + modal.height,
+			body.height >= (size[1] == 180 ? 16 : 44) &&
+			body.y + body.height <= modal.y + modal.height,
 			"Short windows must retain a scrollable search body",
 		)
 		nendo.set_pointer({body.x + body.width / 2, body.y + body.height / 2}, .Up)
 		gs_test_frame(&ui, {0, -10000})
 		for _ in 0 ..< 2 {gs_test_frame(&ui)}
-		more := nendo.element(nendo.id("GsMore")).rect
-		testing.expect(
+		thumb_id := nendo.id("ScrollThumb", nendo.id("GsBody").id)
+		prior_thumb := nendo.element(thumb_id)
+		more := nendo.element(nendo.id("GsMore"))
+		if !testing.expect(
 			t,
-			more.y >= body.y && more.y + more.height <= body.y + body.height + 1,
-			"Scrolling must reveal the complete paging action",
+			more.found &&
+			(more.rect.y >= body.y || more.rect.height > body.height) &&
+			more.rect.y + more.rect.height > body.y &&
+			more.rect.y + more.rect.height <= body.y + body.height + 1,
+			"Scrolling must bring the paging action into reach",
+		) {continue}
+		nendo.set_pointer(
+			{
+				more.rect.x + more.rect.width / 2,
+				(max(body.y, more.rect.y) + more.rect.y + more.rect.height) / 2,
+			},
+			.Up,
 		)
-		ui.gs_loading = true
-		for _ in 0 ..< 3 {gs_test_frame(&ui)}
-		body = nendo.element(nendo.id("GsBody")).rect
-		busy := nendo.element(nendo.id("GsBusy"))
-		testing.expect(
-			t,
-			busy.found && busy.rect.y >= modal.y && busy.rect.y + busy.rect.height <= body.y,
-			"Pending feedback must stay visible above the scrolled controls",
-		)
+		forced_release = true
+		handle_gsearch(&ui, client)
+		forced_release = false
+
+		// Leave the page queued so it cannot finish between frames.
+		wheel: nendo.Vector2
+		for frame in 0 ..< 3 {
+			commands := gs_test_frame(&ui, wheel)
+			pending_body := nendo.element(nendo.id("GsBody")).rect
+			busy := nendo.element(nendo.id("GsBusy"))
+			label_visible := false
+			for cmd in commands {
+				if cmd.kind == .Text &&
+				   cmd.text.text == tr("Searching local history…") &&
+				   cmd.rect.y >= modal.y &&
+				   cmd.rect.y + cmd.rect.height <= pending_body.y {
+					label_visible = true
+					break
+				}
+			}
+			testing.expect(
+				t,
+				label_visible &&
+				busy.found &&
+				busy.rect.y >= modal.y &&
+				busy.rect.y + busy.rect.height <= pending_body.y,
+				"Pending feedback must stay visible above the scrolled controls",
+			)
+			testing.expect(
+				t,
+				busy.rect.x >= modal.x && busy.rect.x + busy.rect.width <= modal.x + modal.width,
+				"The progress track must fit in the modal",
+			)
+			testing.expect_value(t, pending_body, body)
+			if frame == 0 {
+				thumb := nendo.element(thumb_id)
+				testing.expect_value(t, thumb.found, prior_thumb.found)
+				testing.expect_value(t, thumb.rect, prior_thumb.rect)
+				rl.BeginDrawing(); render_nendo(commands)
+				rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-gsearch-%d-%d.png", size[0], size[1]))
+				rl.EndDrawing()
+			}
+			nendo.set_pointer({body.x + body.width / 2, body.y + body.height / 2}, .Up)
+			wheel = {0, 20}
+		}
+		search_stop()
 		ui.gs_loading = false
-		commands := gs_test_frame(&ui)
-		rl.BeginDrawing(); render_nendo(commands)
-		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-gsearch-%d-%d.png", size[0], size[1]))
-		rl.EndDrawing()
+		gs_test_frame(&ui)
+		testing.expect(
+			t,
+			!nendo.element(nendo.id("GsBusy")).found,
+			"Completed searches hide progress",
+		)
 	}
+}
+
+@(test)
+gs_virtual_results :: proc(t: ^testing.T) {
+	if !test_isolated("gs_virtual_results") {return}
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(900, 800, "Global search results")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	init_fonts(); load_themes(); apply_theme(0, 0)
+	previous := nendo.current_context()
+	memory: []u8
+	init_layout(&memory, 32768, {900, 800})
+	defer {nendo.set_context(previous); delete(memory)}
+	ui := Ui_State {
+		gs_open          = true,
+		gs_group         = "group",
+		selected         = -1,
+		timeline_loading = true,
+	}
+	ui.prefs.reduce_motion = true
+	append(&ui.gs_input, "needle")
+	append(&ui.chats, Chat_Row_Ui{group_id = "group", title = "History"})
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {
+		g_ui, g_prefs = nil, nil
+		gs_clear_hits(&ui); delete(ui.gs_hits); gs_layout_free(&ui.gs_layout)
+		delete(ui.gs_input); delete(ui.chats); delete(ui.jump_id); delete(ui.prefs.last_chat)
+	}
+	append_page :: proc(ui: ^Ui_State, count: int) {
+		start := len(ui.gs_hits)
+		for i in start ..< start + count {
+			append(
+				&ui.gs_hits,
+				Gs_Hit {
+					group = strings.clone("group"),
+					msg_id = fmt.aprintf("message-%d", i),
+					title = strings.clone(
+						i % 2 == 0 ? "History" : "A long conversation title that keeps going until it wraps into another visible line",
+					),
+					sender = strings.clone("Alice"),
+					at = strings.clone("2026-09-30, 12:34"),
+					snippet = strings.clone(
+						i % 2 == 0 ? "one needle" : "The needle was in a paragraph long enough to wrap. Several more words show whether each result still gets the full snippet.",
+					),
+				},
+			)
+		}
+	}
+	owner := nendo.id("GsList")
+	append_page(&ui, GS_HITS_MAX)
+	commands := gs_test_frame(&ui)
+	first, second := nendo.element(nendo.id("GsHit", 0)), nendo.element(nendo.id("GsHit", 1))
+	testing.expect(t, first.found && second.found && second.rect.height > first.rect.height)
+	accent := false
+	for cmd in commands {
+		if cmd.kind == .Text &&
+		   cmd.text.text == "needle" &&
+		   cmd.text.color == ACCENT {accent = true}
+	}
+	testing.expect(t, accent)
+	data := nendo.scroll(owner)
+	if !testing.expect(t, data.found && data.content.height > data.viewport.height) {return}
+	data.position.y = data.viewport.height - data.content.height
+	gs_test_frame(&ui)
+	end_of_page := nendo.id("GsHit", GS_HITS_MAX - 1)
+	page_tail := nendo.element(end_of_page)
+	before := data.position.y
+	append_page(&ui, 5 * GS_HITS_MAX)
+	gs_test_frame(&ui)
+	testing.expect(t, page_tail.found && nendo.element(end_of_page).rect.y == page_tail.rect.y)
+	testing.expect_value(t, nendo.scroll(owner).position.y, before)
+
+	desktop_height := nendo.scroll(owner).content.height
+	last_id := nendo.id("GsHit", u32(len(ui.gs_hits) - 1))
+	for width in ([]i32{900, 390, 900}) {
+		rl.SetWindowSize(width, 800)
+		nendo.set_dimensions({f32(width), 800})
+		gs_test_frame(&ui)
+		data = nendo.scroll(owner)
+		height := data.content.height
+		testing.expect(t, width == 390 ? height > desktop_height : height == desktop_height)
+		data.position.y = data.viewport.height - height
+		commands = gs_test_frame(&ui)
+		viewport := nendo.element(owner).rect
+		last := nendo.element(last_id)
+		testing.expect(
+			t,
+			last.found &&
+			last.rect.y >= viewport.y &&
+			last.rect.y + last.rect.height <= viewport.y + viewport.height + 0.01,
+		)
+		mounted := 0
+		for _, i in ui.gs_hits {
+			if nendo.element(nendo.id("GsHit", u32(i))).found {mounted += 1}
+		}
+		testing.expect(t, mounted > 0 && mounted < 15)
+		if width == 390 {
+			rl.BeginDrawing(); render_nendo(commands)
+			rl.TakeScreenshot("/tmp/wn-gsearch-results.png")
+			rl.EndDrawing()
+		}
+	}
+
+	clear(&ui.gs_input) // A filter-only click does not write search history.
+	last := nendo.element(last_id).rect
+	nendo.set_pointer({last.x + last.width / 2, last.y + last.height / 2}, .Up)
+	forced_release = true
+	handle_gsearch(&ui, nil)
+	forced_release = false
+	testing.expect(t, !ui.gs_open && ui.gs_jump_pending)
+	testing.expect_value(t, ui.jump_id, "message-239")
+
+	gs_clear_hits(&ui)
+	append_page(&ui, 1)
+	gs_test_frame(&ui)
+	new_hit := nendo.element(nendo.id("GsHit", 0))
+	testing.expect(t, new_hit.found && new_hit.rect.y == nendo.element(owner).rect.y)
+
+	// Use a wide highlight face so measuring in the body face clips visibly.
+	rl.SelectFontStack(FONT_TITLE, FONT_MONO)
+	nendo.reset_measure_cache()
+	rl.SetWindowSize(390, 800)
+	nendo.set_dimensions({390, 800})
+	query := strings.repeat("i", 60, context.temp_allocator)
+	append(&ui.gs_input, query)
+	gs_clear_hits(&ui)
+	append_page(&ui, 1)
+	delete(ui.gs_hits[0].snippet)
+	ui.gs_hits[0].snippet = strings.concatenate({query, "🙂🙂🙂tail"})
+	commands = gs_test_frame(&ui)
+	card := nendo.element(nendo.id("GsHit", 0)).rect
+	header := nendo.element(nendo.id("GsHitTop", 0)).rect
+	end := card.x + card.width - 10
+	match_bytes := 0
+	found_tail := false
+	for cmd in commands {
+		if cmd.kind != .Text ||
+		   cmd.rect.y < header.y + header.height ||
+		   cmd.rect.y >= card.y + card.height {
+			continue
+		}
+		testing.expect(t, cmd.rect.x + cmd.rect.width <= end + 0.01, cmd.text.text)
+		if cmd.text.color == ACCENT {match_bytes += len(cmd.text.text)}
+		found_tail ||= strings.contains(cmd.text.text, "tail")
+	}
+	testing.expect_value(t, match_bytes, len(query))
+	testing.expect(t, found_tail)
 }
 
 @(private)
