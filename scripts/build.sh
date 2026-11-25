@@ -844,7 +844,7 @@ if [ "${1:-}" = test ]; then
   export WN_ODIN_TEST_BUILD_KEY
   din_tests=()
   if [ "$(uname -s)" = Linux ]; then
-    din_tests=(theme_din_live)
+    din_tests=(theme_din_live notify_test_send)
   fi
   env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app --isolated \
     rail_default_window rail_expand_narrow status_bar_viewports \
