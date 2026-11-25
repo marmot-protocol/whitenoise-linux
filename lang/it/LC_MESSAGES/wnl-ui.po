@@ -393,6 +393,9 @@ msgstr "Una riga su di te"
 msgid "A separate secret key or signer lets you use an identity again. It does not restore chats, pending sends or saved collections."
 msgstr "Una chiave segreta conservata altrove o un firmatario ti permettono di usare di nuovo un'identità. Non ripristinano chat, invii in attesa o raccolte salvate."
 
+msgid "A settings backup does not restore accounts, secret keys, or chats."
+msgstr "Un backup delle impostazioni non ripristina account, chiavi segrete o chat."
+
 msgid "ABOUT"
 msgstr "INFORMAZIONI"
 
@@ -521,9 +524,6 @@ msgstr "Aggiungi qualcuno dal suo profilo o incolla il suo npub qui sopra. Puoi 
 
 msgid "Add to group"
 msgstr "Aggiungi a un gruppo"
-
-msgid "Add your Nostr identity"
-msgstr "Aggiungi la tua identità Nostr"
 
 msgid "Added to your stickers"
 msgstr "Aggiunto ai tuoi adesivi"
@@ -1964,6 +1964,9 @@ msgstr "Crea"
 msgid "Create a poll"
 msgstr "Crea un sondaggio"
 
+msgid "Create an account"
+msgstr "Crea un account"
+
 msgid "Create and publish"
 msgstr "Crea e pubblica"
 
@@ -2810,9 +2813,6 @@ msgstr "Termini di Gemma"
 msgid "General"
 msgstr "Generale"
 
-msgid "Generate a new key"
-msgstr "Genera una nuova chiave"
-
 msgid "German"
 msgstr "Tedesco"
 
@@ -3028,8 +3028,8 @@ msgstr "Importa immagine"
 msgid "Import set"
 msgstr "Importa il set"
 
-msgid "Import your key, create one, or connect a signer."
-msgstr "Importa la tua chiave, creane una o collega un firmatario."
+msgid "Import settings backup"
+msgstr "Importa backup delle impostazioni"
 
 msgid "Import..."
 msgstr "Importa..."
@@ -3037,6 +3037,9 @@ msgstr "Importa..."
 #, c-format
 msgid "Imported %d emoji; skipped %d existing shortcodes; failed %d."
 msgstr "%d emoji importate; %d shortcode esistenti saltati; %d errori."
+
+msgid "Importing a secret key stores it in the vault on this device."
+msgstr "Quando importi una chiave segreta, viene salvata nel vault di questo dispositivo."
 
 #, c-format
 msgid "Importing contacts: %d of %d"
@@ -5354,6 +5357,9 @@ msgstr "Disconnetti"
 msgid "Sign out of this account?"
 msgstr "Disconnettersi da questo account?"
 
+msgid "Sign-in is unavailable. Check your connection settings and restart White Noise."
+msgstr "Non puoi accedere al momento. Controlla le impostazioni di connessione e riavvia White Noise."
+
 msgid "Signal call"
 msgstr "Chiamata Signal"
 
@@ -5799,6 +5805,9 @@ msgstr "Questa operazione è irreversibile."
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr "Questa chat è archiviata. Ripristinala dall'Archivio per inviare messaggi."
 
+msgid "This creates a new Nostr identity, separate from any account you already use."
+msgstr "Questa operazione crea una nuova identità Nostr, separata dagli account che usi già."
+
 msgid "This event is no longer available."
 msgstr "Questo evento non è più disponibile."
 
@@ -6143,6 +6152,9 @@ msgstr "Usa un gruppo separato per ogni progetto e inizia indicando dove si trov
 msgid "Use a shorter search."
 msgstr "Usa una ricerca più breve."
 
+msgid "Use an existing account"
+msgstr "Usa un account esistente"
+
 msgid "Use crop circle"
 msgstr "Usa il crop circle"
 
@@ -6172,6 +6184,9 @@ msgstr "Usa parole non correlate o una password generata da un gestore di passwo
 
 msgid "Use username and password"
 msgstr "Usa nome utente e password"
+
+msgid "Use your secret key (nsec). A public address (npub) cannot sign you in."
+msgstr "Usa la tua chiave segreta (nsec). Un indirizzo pubblico (npub) non ti permette di accedere."
 
 msgid "Used for generated user and group avatars."
 msgstr "Usata per gli avatar generati di utenti e gruppi."
@@ -6345,6 +6360,9 @@ msgstr "Wireframe"
 
 msgid "With a keyboard connected"
 msgstr "Con una tastiera collegata"
+
+msgid "With a remote signer, your secret key stays in your signer."
+msgstr "Con un firmatario remoto, la tua chiave segreta resta nel firmatario."
 
 msgid "Word"
 msgstr "Parola"

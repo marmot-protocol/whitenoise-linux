@@ -393,6 +393,9 @@ msgstr "ひとこと自己紹介"
 msgid "A separate secret key or signer lets you use an identity again. It does not restore chats, pending sends or saved collections."
 msgstr "別に保存した秘密鍵または署名ツールがあれば、同じIDを再び使えます。ただし、チャット、送信待ちのメッセージ、保存したライブラリは復元されません。"
 
+msgid "A settings backup does not restore accounts, secret keys, or chats."
+msgstr "設定のバックアップからは、アカウント、秘密鍵、チャットは復元できません。"
+
 msgid "ABOUT"
 msgstr "自己紹介"
 
@@ -521,9 +524,6 @@ msgstr "プロフィールから連絡先を追加するか、上に相手のnpu
 
 msgid "Add to group"
 msgstr "グループに追加"
-
-msgid "Add your Nostr identity"
-msgstr "Nostr の ID を追加"
 
 msgid "Added to your stickers"
 msgstr "ステッカーに追加済み"
@@ -1964,6 +1964,9 @@ msgstr "作成"
 msgid "Create a poll"
 msgstr "投票を作成"
 
+msgid "Create an account"
+msgstr "アカウントを作成"
+
 msgid "Create and publish"
 msgstr "作成して公開"
 
@@ -2810,9 +2813,6 @@ msgstr "Gemmaの利用規約"
 msgid "General"
 msgstr "一般"
 
-msgid "Generate a new key"
-msgstr "新しい鍵を生成"
-
 msgid "German"
 msgstr "ドイツ語"
 
@@ -3028,8 +3028,8 @@ msgstr "画像を読み込む"
 msgid "Import set"
 msgstr "セットをインポート"
 
-msgid "Import your key, create one, or connect a signer."
-msgstr "鍵をインポートするか、新しく作成するか、署名ツールを接続してください。"
+msgid "Import settings backup"
+msgstr "設定のバックアップをインポート"
 
 msgid "Import..."
 msgstr "インポート..."
@@ -3037,6 +3037,9 @@ msgstr "インポート..."
 #, c-format
 msgid "Imported %d emoji; skipped %d existing shortcodes; failed %d."
 msgstr "絵文字を%d件インポートしました。既存のショートコード%d件をスキップし、%d件が失敗しました。"
+
+msgid "Importing a secret key stores it in the vault on this device."
+msgstr "インポートした秘密鍵は、この端末の保管庫に保存されます。"
 
 #, c-format
 msgid "Importing contacts: %d of %d"
@@ -5354,6 +5357,9 @@ msgstr "サインアウト"
 msgid "Sign out of this account?"
 msgstr "このアカウントからサインアウトしますか？"
 
+msgid "Sign-in is unavailable. Check your connection settings and restart White Noise."
+msgstr "サインインできません。接続設定を確認して White Noise を再起動してください。"
+
 msgid "Signal call"
 msgstr "Signal 通話"
 
@@ -5799,6 +5805,9 @@ msgstr "この操作は取り消せません。"
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr "このチャットはアーカイブされています。メッセージを送信するには、アーカイブから復元してください。"
 
+msgid "This creates a new Nostr identity, separate from any account you already use."
+msgstr "今使っているアカウントとは別の、新しい Nostr ID が作成されます。"
+
 msgid "This event is no longer available."
 msgstr "このイベントは利用できなくなりました。"
 
@@ -6143,6 +6152,9 @@ msgstr "プロジェクトごとに別のグループを使い、最初にプロ
 msgid "Use a shorter search."
 msgstr "検索キーワードを短くしてください。"
 
+msgid "Use an existing account"
+msgstr "既存のアカウントを使う"
+
 msgid "Use crop circle"
 msgstr "クロップサークルを使用"
 
@@ -6172,6 +6184,9 @@ msgstr "関連のない単語を組み合わせるか、パスワードマネー
 
 msgid "Use username and password"
 msgstr "ユーザー名とパスワードを使う"
+
+msgid "Use your secret key (nsec). A public address (npub) cannot sign you in."
+msgstr "秘密鍵（nsec）を使ってください。公開アドレス（npub）ではサインインできません。"
 
 msgid "Used for generated user and group avatars."
 msgstr "ユーザーやグループの自動生成アバターに使用します。"
@@ -6345,6 +6360,9 @@ msgstr "ワイヤーフレーム"
 
 msgid "With a keyboard connected"
 msgstr "キーボード接続時に使えます"
+
+msgid "With a remote signer, your secret key stays in your signer."
+msgstr "リモート署名ツールを使う場合、秘密鍵はそのツールに残ります。"
 
 msgid "Word"
 msgstr "単語"

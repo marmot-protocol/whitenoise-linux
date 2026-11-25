@@ -217,7 +217,7 @@ discarding snapshots from before its relays were installed. Initialized,
 pending, and connecting relays show CONNECTING; an empty or disconnected
 pool after setup shows OFFLINE.
 
-Generate a new key prepares an in-memory key and shows the generated
+Create an account prepares an in-memory key and shows the generated
 "Adjective Animal" name and picture before creating the account. Back discards
 the draft without saving the key or sending anything for the account. Create
 and publish sets up the account, uploads the previewed picture to Blossom, and
@@ -228,7 +228,8 @@ result cards and publishes the generated name.
 
 Sign out keeps a local key in the vault and its chats on disk.
 `accounts_adopt` keeps such accounts in `ui.signed_out_accounts`. They appear
-as "Sign in as <name>" on the sign-in card and under SIGNED OUT in Accounts.
+as "Sign in as <name>" under Use an existing account and under SIGNED OUT in
+Accounts.
 Choosing one runs `marmot_sign_in_account` on the account worker, so no nsec
 is needed. Remote-signer accounts are left out of that list. Their sign-out
 copy says to connect the signer again.

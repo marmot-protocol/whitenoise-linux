@@ -13,11 +13,15 @@ import rl "sdlrl"
 @(private)
 Login_Method :: enum {
 	Menu,
+	Existing,
 	Import,
 	Create,
 	Bunker,
 	Pair,
 }
+@(private)
+LOGIN_FIELD_METHODS :: bit_set[Login_Method]{.Import, .Bunker, .Pair}
+
 @(private)
 Nip46_State :: struct {
 	state, detail, auth_url: string,

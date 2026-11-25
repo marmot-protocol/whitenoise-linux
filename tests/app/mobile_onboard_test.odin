@@ -11,6 +11,7 @@ import rl "sdlrl"
 @(private)
 Mobile_Onboard_Surface :: enum {
 	Login_Menu,
+	Login_Existing,
 	Login_Form,
 	Login_Bunker,
 	Login_Pair,
@@ -42,7 +43,7 @@ mobile_onboard_frame :: proc(ui: ^Ui_State, surface: Mobile_Onboard_Surface) {
 	{width = nendo.grow(), height = nendo.grow(), align = {x = .Center, y = .Center}},
 	) {
 		switch surface {
-		case .Login_Menu, .Login_Form, .Login_Bunker, .Login_Pair:
+		case .Login_Menu, .Login_Existing, .Login_Form, .Login_Bunker, .Login_Pair:
 			login_pane(ui)
 		case .Password:
 			vault_pw_modal(ui)
@@ -94,8 +95,10 @@ mobile_onboard_viewport :: proc(t: ^testing.T) {
 	}
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
+	client: marmot.Client
 	g_ui, g_prefs = &ui, &ui.prefs
-	defer {g_ui, g_prefs = nil, nil}
+	g_client = &client
+	defer {g_ui, g_prefs, g_client = nil, nil, nil}
 	ui.confirm = {
 		kind = .Delete_All,
 		name = "A message you are about to delete",
@@ -124,12 +127,15 @@ mobile_onboard_viewport :: proc(t: ^testing.T) {
 			case:
 			}
 			ui.login_method = surface == .Login_Menu ? .Menu : .Import
+			if surface == .Login_Existing {ui.login_method = .Existing}
 			if surface == .Login_Bunker {ui.login_method = .Bunker}
 			if surface == .Login_Pair {ui.login_method = .Pair}
 			for _ in 0 ..< 3 {mobile_onboard_frame(&ui, surface)}
 			container, action := nendo.id("LoginCard"), nendo.id("LoginProxy")
 			switch surface {
 			case .Login_Menu:
+			case .Login_Existing:
+				action = nendo.id("LoginBack")
 			case .Login_Form, .Login_Bunker, .Login_Pair:
 				action = nendo.id("LoginGo")
 			case .Gate_Intro:
