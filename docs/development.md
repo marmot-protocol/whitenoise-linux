@@ -243,6 +243,7 @@ Cold artwork starts as placeholders. The emoji preview worker decodes visible pa
 - **Two upload paths.** Chat attachments go through Marmot's encrypted MIP-04 path, readable only by group members. Profile pictures take the deliberately public Blossom path.
 - **Data-driven themes.** Every color, metric, and capability flag comes from a `themes/*.toml` pack. The parser and editor share one token-to-field table in `app/theme.odin`; `app/state.odin` owns the live colors. A new component reads the globals; it never branches on which theme is active. Fullscreen media uses `media-backdrop` and `media-chip-bg` for its backdrop and floating header.
 - **Antialiasing stays at the edge.** `app/sdlrl/` blends rounded fills and border arcs over a narrow band measured in output pixels. Straight edges and text keep their own drawing paths.
+- **Mesh rendering.** Each worker in `app/stl.odin` takes a checked slice of its vertices or triangles before entering the loop. Fixed-size coordinates avoid calling into Odin's runtime for every scalar index when LLVM compiles the app as separate modules.
 - **Standard math.** Motion, decoration and sound synthesis call `core:math` directly, evaluating `f64` phases before narrowing to `f32`. Checkmark strokes use `math.sqrt` with a minimum normalization length of 0.001.
 
 ## Sidecar themes are pinned to one commit
