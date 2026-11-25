@@ -152,10 +152,6 @@ msgid "%d people couldn't be added. Ask them to open White Noise, then invite th
 msgstr "Impossibile aggiungere %d persone. Chiedi loro di aprire White Noise, poi invitale di nuovo."
 
 #, c-format
-msgid "%d people will be added to the group."
-msgstr "%d persone verranno aggiunte al gruppo."
-
-#, c-format
 msgid "%d person couldn't be added. Ask them to open White Noise, then invite them again."
 msgstr "Impossibile aggiungere %d persona. Chiedile di aprire White Noise, poi invitala di nuovo."
 
@@ -268,6 +264,10 @@ msgid "%s is no longer an admin"
 msgstr "%s non è più admin"
 
 #, c-format
+msgid "%s is still in your old device list. Link it from that device."
+msgstr "Il dispositivo %s è ancora nel tuo vecchio elenco dei dispositivi. Avvia il collegamento da quel dispositivo."
+
+#, c-format
 msgid "%s left the group"
 msgstr "%s ha lasciato il gruppo"
 
@@ -300,6 +300,10 @@ msgid "%s was added to the group"
 msgstr "%s è stato aggiunto al gruppo"
 
 #, c-format
+msgid "%s was linked by %s."
+msgstr "Il dispositivo %s è stato collegato da %s."
+
+#, c-format
 msgid "%s was made an admin"
 msgstr "%s è stato nominato admin"
 
@@ -308,8 +312,12 @@ msgid "%s was removed from the group"
 msgstr "%s è stato rimosso dal gruppo"
 
 #, c-format
-msgid "%s will be added to the group."
-msgstr "%s verrà aggiunto al gruppo."
+msgid "%s was removed from this device."
+msgstr "%s è stato rimosso da questo dispositivo."
+
+#, c-format
+msgid "%s was unlinked from this device. Remove its local keys and chats before signing in again. Other devices keep their chats."
+msgstr "Il profilo %s è stato scollegato da questo dispositivo. Rimuovi le chiavi e le chat locali prima di accedere di nuovo. Gli altri dispositivi conservano le loro chat."
 
 #, c-format
 msgid "%s · Click to download."
@@ -351,6 +359,9 @@ msgstr "1 voto"
 msgid "1 voter"
 msgstr "1 votante"
 
+msgid "1. Install White Noise on the other device and sign in to this profile."
+msgstr "1. Installa White Noise sull'altro dispositivo e accedi a questo profilo."
+
 msgid "2. In Settings, open Account & devices, then Linked devices. Choose Link to another device."
 msgstr "2. Nelle impostazioni, apri Account e dispositivi, poi Dispositivi collegati. Scegli Collega a un altro dispositivo."
 
@@ -359,6 +370,9 @@ msgstr "2,5 GB"
 
 msgid "25 European languages, including English and Italian."
 msgstr "25 lingue europee, tra cui inglese e italiano."
+
+msgid "3. When the request appears here, check that both screens show the same emoji."
+msgstr "3. Quando la richiesta compare qui, verifica che entrambi gli schermi mostrino le stesse emoji."
 
 msgid "3D models"
 msgstr "Modelli 3D"
@@ -372,14 +386,18 @@ msgstr "Una casella spuntata indica che hai messo la chat a mano. Togli la spunt
 msgid "A client for private group chat. Messages are sealed with MLS on this device, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "Un client per chat di gruppo private. I messaggi vengono sigillati con MLS su questo dispositivo, passati ai relay Nostr come dati opachi e riaperti solo all'interno del gruppo."
 
-msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
-msgstr "Un client desktop per chat di gruppo private. I messaggi vengono sigillati con MLS su questa macchina, consegnati ai relay Nostr come blob opachi e riaperti solo all'interno del gruppo."
-
 msgid "A device hasn't reported support."
 msgstr "Un dispositivo non ha ancora segnalato il supporto."
 
+#, c-format
+msgid "A device is asking to link to %s."
+msgstr "Un dispositivo chiede di collegarsi al profilo %s."
+
 msgid "A device needs to be replaced."
 msgstr "Un dispositivo deve essere sostituito."
+
+msgid "A different code can mean someone else is trying to link. Don't approve unless both codes match exactly."
+msgstr "Se il codice è diverso, qualcun altro potrebbe tentare di collegarsi. Approva solo se i due codici corrispondono esattamente."
 
 msgid "A display name is required."
 msgstr "È necessario un nome visualizzato."
@@ -387,14 +405,19 @@ msgstr "È necessario un nome visualizzato."
 msgid "A key package lets people invite you to encrypted chats."
 msgstr "Un pacchetto chiavi permette agli altri di invitarti nelle chat crittografate."
 
-msgid "A line about you"
-msgstr "Una riga su di te"
+#, c-format
+msgid "A key package this device didn't make was found and replaced: %s."
+msgstr "È stato trovato e sostituito un pacchetto chiavi che questo dispositivo non aveva creato: %s."
 
 msgid "A separate secret key or signer lets you use an identity again. It does not restore chats, pending sends or saved collections."
 msgstr "Una chiave segreta conservata altrove o un firmatario ti permettono di usare di nuovo un'identità. Non ripristinano chat, invii in attesa o raccolte salvate."
 
 msgid "A settings backup does not restore accounts, secret keys, or chats."
 msgstr "Un backup delle impostazioni non ripristina account, chiavi segrete o chat."
+
+#, c-format
+msgid "A sign-in was marked as not you: %s."
+msgstr "È stato segnalato un accesso non effettuato da te: %s."
 
 msgid "ABOUT"
 msgstr "INFORMAZIONI"
@@ -460,15 +483,15 @@ msgstr "Accesso agli account"
 msgid "Account keys stored here, remote signer sessions and the local encryption key."
 msgstr "Le chiavi degli account salvate qui, le sessioni dei firmatari remoti e la chiave di cifratura locale."
 
-msgid "Account secrets and the local encryption key."
-msgstr "I segreti degli account e la chiave di crittografia locale."
-
 msgid "Accounts"
 msgstr "Account"
 
 #, c-format
 msgid "Action failed: %s"
 msgstr "Azione non riuscita: %s"
+
+msgid "Active"
+msgstr "Attivo"
 
 #, c-format
 msgid "Active theme: %s"
@@ -480,17 +503,14 @@ msgstr "Attività"
 msgid "Add"
 msgstr "Aggiungi"
 
-msgid "Add a question and at least two options."
-msgstr "Aggiungi una domanda e almeno due opzioni."
+msgid "Add a new device"
+msgstr "Aggiungi un nuovo dispositivo"
 
 msgid "Add a question for your poll."
 msgstr "Aggiungi una domanda per il tuo sondaggio."
 
 msgid "Add account"
 msgstr "Aggiungi account"
-
-msgid "Add an option..."
-msgstr "Aggiungi un'opzione..."
 
 msgid "Add another account"
 msgstr "Aggiungi un altro account"
@@ -528,6 +548,9 @@ msgstr "Aggiungi qualcuno tramite npub, oppure crea un gruppo tutto tuo."
 msgid "Add someone from their profile or paste their npub above. You can also import a contacts CSV or JSON export."
 msgstr "Aggiungi qualcuno dal suo profilo o incolla il suo npub qui sopra. Puoi anche importare i contatti da un file CSV o JSON."
 
+msgid "Add to all chats"
+msgstr "Aggiungi a tutte le chat"
+
 msgid "Add to group"
 msgstr "Aggiungi a un gruppo"
 
@@ -546,6 +569,9 @@ msgstr "Gli admin possono aggiungere e rimuovere membri e modificare i dettagli 
 msgid "Advanced"
 msgstr "Avanzate"
 
+msgid "Affected members may miss the change. Turning on linked devices now dismisses the relay refusals for those earlier changes."
+msgstr "I membri interessati potrebbero non ricevere la modifica. Se attivi ora i dispositivi collegati, ignori i rifiuti dei relay per quelle modifiche precedenti."
+
 msgid "After signing in, open Account & devices in Settings to link another device."
 msgstr "Dopo l’accesso, apri Account e dispositivi nelle impostazioni per collegare un altro dispositivo."
 
@@ -560,9 +586,6 @@ msgstr "Tutte"
 
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "Tutti gli account restano connessi. Il passaggio cambia solo quale stai visualizzando."
-
-msgid "All categories"
-msgstr "Tutte le categorie"
 
 msgid "All chats"
 msgstr "Tutte le chat"
@@ -609,6 +632,19 @@ msgstr "Animali e natura"
 msgid "Animations are distracting"
 msgstr "Le animazioni distraggono"
 
+msgid "Another device approved this request."
+msgstr "Un altro dispositivo ha approvato questa richiesta."
+
+msgid "Another device change is still in progress. Wait a moment and try again."
+msgstr "Un'altra modifica ai dispositivi è ancora in corso. Attendi un momento e riprova."
+
+msgid "Another device is still linking. Let it finish before moving this device."
+msgstr "È ancora in corso il collegamento di un altro dispositivo. Attendi che finisca prima di spostare questo dispositivo."
+
+#, c-format
+msgid "Another device removed this one from %s. This device no longer gets that profile's messages."
+msgstr "Un altro dispositivo ha rimosso questo dispositivo dal profilo %s. Da qui non riceverai più i messaggi di quel profilo."
+
 msgid "Another group change took precedence. Review your group settings."
 msgstr "Un'altra modifica del gruppo ha avuto la precedenza. Controlla le impostazioni del gruppo."
 
@@ -636,8 +672,11 @@ msgstr "Si applica al testo dei messaggi e al campo di scrittura."
 msgid "Applies to the picker, reactions and emoji in messages."
 msgstr "Si applica al selettore, alle reazioni e alle emoji nei messaggi."
 
-msgid "Approve the request in your signer to continue."
-msgstr "Approva la richiesta nel tuo firmatario per continuare."
+msgid "Approve from the device with your chats."
+msgstr "Approva dal dispositivo che contiene le tue chat."
+
+msgid "Approving the other device…"
+msgstr "Approvazione dell'altro dispositivo…"
 
 msgid "Apps"
 msgstr "App"
@@ -769,9 +808,6 @@ msgstr "Torna alle chat"
 msgid "Back to connectors"
 msgstr "Torna ai connettori"
 
-msgid "Back to issues"
-msgstr "Torna alle segnalazioni"
-
 msgid "Back to sets"
 msgstr "Torna ai set"
 
@@ -845,6 +881,15 @@ msgstr "Spessore bordo"
 msgid "Bracket labels"
 msgstr "Etichette tra parentesi"
 
+msgid "Bring chat history"
+msgstr "Importa la cronologia delle chat"
+
+msgid "Bring chats to this device."
+msgstr "Porta le chat su questo dispositivo."
+
+msgid "Bringing earlier messages from your other device…"
+msgstr "Recupero dei messaggi precedenti dall'altro tuo dispositivo…"
+
 msgid "Browse emoji sets"
 msgstr "Sfoglia i set di emoji"
 
@@ -908,6 +953,9 @@ msgstr "Annulla connessione"
 msgid "Cancel edit / reply, close panels"
 msgstr "Annulla modifica / risposta, chiudi i pannelli"
 
+msgid "Cancel linking"
+msgstr "Annulla collegamento"
+
 msgid "Cancel preview"
 msgstr "Annulla anteprima"
 
@@ -919,6 +967,9 @@ msgstr "Annulla modifica del testo"
 
 msgid "Cancel translation"
 msgstr "Annulla traduzione"
+
+msgid "Cancelling the link attempt…"
+msgstr "Annullamento del tentativo di collegamento…"
 
 msgid "Card border"
 msgstr "Bordo scheda"
@@ -955,9 +1006,6 @@ msgstr "Cambia il formato della data"
 
 msgid "Change the interface language"
 msgstr "Cambia la lingua dell'interfaccia"
-
-msgid "Change the message text size"
-msgstr "Cambia la dimensione del testo dei messaggi"
 
 msgid "Change the scroll speed"
 msgstr "Cambia la velocità di scorrimento"
@@ -1012,8 +1060,20 @@ msgstr "Chat: %s"
 msgid "Chats"
 msgstr "Chat"
 
+#, c-format
+msgid "Chats left or asked to leave: %d. Chats handed off to other linked devices: %d."
+msgstr "Chat abbandonate o con richiesta di uscita: %d. Chat trasferite ad altri dispositivi collegati: %d."
+
+#, c-format
+msgid "Chats still holding a device you removed: %d. A chat admin can remove it."
+msgstr "Chat che includono ancora un dispositivo che hai rimosso: %d. Un admin della chat può rimuoverlo."
+
+#, c-format
+msgid "Chats that can't add linked devices: %d."
+msgstr "Chat che non possono aggiungere dispositivi collegati: %d."
+
 msgid "Chats that match file here automatically. People counts include you. Anything you move by hand stays where you put it."
-msgstr ""
+msgstr "Le chat che rispettano le regole vengono spostate qui automaticamente. Il conteggio delle persone include anche te. Le chat che sposti a mano restano dove le metti."
 
 msgid "Chats you archive will appear here."
 msgstr "Le chat che archivi appariranno qui."
@@ -1033,6 +1093,9 @@ msgstr "Cerca una versione più recente."
 msgid "Check now"
 msgstr "Verifica ora"
 
+msgid "Check status"
+msgstr "Controlla lo stato"
+
 msgid "Check the spelling, or paste their public key."
 msgstr "Controlla l'ortografia o incolla la sua chiave pubblica."
 
@@ -1041,6 +1104,15 @@ msgstr "Verifica il tuo pacchetto chiavi"
 
 msgid "Check your system notifications for the test alert."
 msgstr "Cerca l'avviso di prova nelle notifiche di sistema."
+
+msgid "Checking device information…"
+msgstr "Verifica delle informazioni sui dispositivi…"
+
+msgid "Checking for chat history…"
+msgstr "Ricerca della cronologia delle chat…"
+
+msgid "Checking for sign-ins…"
+msgstr "Ricerca di accessi…"
 
 msgid "Checking for updates."
 msgstr "Controllo degli aggiornamenti in corso."
@@ -1051,11 +1123,17 @@ msgstr "Controllo dei relay..."
 msgid "Checking the original message…"
 msgstr "Verifica del messaggio originale in corso…"
 
+msgid "Checking whether linked devices are on…"
+msgstr "Verifica dello stato dei dispositivi collegati…"
+
+msgid "Checking whether this chat supports linked devices…"
+msgstr "Verifica del supporto per i dispositivi collegati in questa chat…"
+
+msgid "Checking which chats can add linked devices…"
+msgstr "Verifica delle chat che possono aggiungere dispositivi collegati…"
+
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "Verifica della tua chiave con i relay. Richiede qualche secondo."
-
-msgid "Checking your password and decrypting the vault."
-msgstr "Verifica della password e decifratura della cassaforte in corso."
 
 msgid "Checking your password and decrypting your local vault."
 msgstr "Verifica della tua password e decifratura della tua cassaforte locale."
@@ -1081,20 +1159,14 @@ msgstr "Contorno chip"
 msgid "Chip text"
 msgstr "Testo chip"
 
-msgid "Choose a contact or paste a Nostr address."
-msgstr "Scegli un contatto o incolla un indirizzo Nostr."
-
-msgid "Choose a contact or paste public keys separated by commas."
-msgstr "Scegli un contatto o incolla le chiavi pubbliche separate da virgole."
+msgid "Choose a chat to open its settings. Nothing changes until you confirm it there."
+msgstr "Scegli una chat per aprirne le impostazioni. Nulla cambia finché non confermi lì la modifica."
 
 msgid "Choose a contacts CSV or JSON export to import."
 msgstr "Scegli un'esportazione dei contatti CSV o JSON da importare."
 
 msgid "Choose a destination for this chat."
 msgstr "Scegli una destinazione per questa chat."
-
-msgid "Choose a known sender or enter a 64-character hex public key."
-msgstr "Scegli un mittente conosciuto o inserisci una chiave pubblica esadecimale di 64 caratteri."
 
 msgid "Choose a known sender or enter a public key."
 msgstr "Scegli un mittente conosciuto o inserisci una chiave pubblica."
@@ -1114,14 +1186,14 @@ msgstr "Scegli la lingua di destinazione per la traduzione"
 msgid "Choose a vault password"
 msgstr "Scegli una password per la cassaforte"
 
+msgid "Choose an account"
+msgstr "Scegli un account"
+
 msgid "Choose an emoji style"
 msgstr "Scegli uno stile per le emoji"
 
 msgid "Choose at most two emoji."
 msgstr "Scegli al massimo due emoji."
-
-msgid "Choose how your conversations look and feel."
-msgstr "Scegli l'aspetto e lo stile delle tue conversazioni."
 
 msgid "Choose image"
 msgstr "Scegli immagine"
@@ -1131,9 +1203,6 @@ msgstr "Scegli una o due emoji. Tutti i membri vedono la stessa immagine."
 
 msgid "Choose one-tap reactions"
 msgstr "Scegli le reazioni rapide"
-
-msgid "Choose someone or paste public keys separated by commas."
-msgstr "Scegli qualcuno o incolla le chiavi pubbliche separate da virgole."
 
 msgid "Choose someone to talk to."
 msgstr "Scegli con chi parlare."
@@ -1147,14 +1216,8 @@ msgstr "Scegli la forma predefinita degli avatar"
 msgid "Choose the renderer"
 msgstr "Scegli il renderer"
 
-msgid "Choose what gets your attention."
-msgstr "Scegli cosa merita la tua attenzione."
-
 msgid "Choose what you'd like to change."
 msgstr "Scegli cosa vuoi cambiare."
-
-msgid "Choose when and how White Noise alerts you."
-msgstr "Scegli quando e come White Noise ti avvisa."
 
 msgid "Choose where events open"
 msgstr "Scegli dove si aprono gli eventi"
@@ -1213,14 +1276,8 @@ msgstr "Fai clic per modificare, trascina per riordinare."
 msgid "Close"
 msgstr "Chiudi"
 
-msgid "Close White Noise"
-msgstr "Chiudi White Noise"
-
 msgid "Close to tray"
 msgstr "Chiudi nell'area di notifica"
-
-msgid "Closed"
-msgstr "Chiusa"
 
 msgid "Closing connections and clearing this session."
 msgstr "Chiusura delle connessioni e cancellazione di questa sessione."
@@ -1264,8 +1321,8 @@ msgstr "Tavolozza dei comandi"
 msgid "Comment"
 msgstr "Commento"
 
-msgid "Composer"
-msgstr "Compositore"
+msgid "Compare the codes on both devices"
+msgstr "Confronta i codici su entrambi i dispositivi"
 
 msgid "Composer preview"
 msgstr "Anteprima del compositore"
@@ -1278,9 +1335,6 @@ msgstr "Configurazione"
 
 msgid "Configure a SOCKS5 proxy"
 msgstr "Configura un proxy SOCKS5"
-
-msgid "Confirm"
-msgstr "Conferma"
 
 msgid "Confirm clear"
 msgstr "Conferma e svuota"
@@ -1300,14 +1354,11 @@ msgstr "Conferma e mostra"
 msgid "Confirm your password"
 msgstr "Conferma la tua password"
 
-msgid "Confirm: delete this vault"
-msgstr "Conferma: elimina questa cassaforte"
+msgid "Confirming that the codes match…"
+msgstr "Conferma della corrispondenza dei codici…"
 
 msgid "Connect an AI agent"
 msgstr "Collega un agente IA"
-
-msgid "Connect an AI agent using your public key and a setup prompt."
-msgstr "Collega un agente IA usando la tua chiave pubblica e un prompt di configurazione."
 
 msgid "Connect an agent you run and trust."
 msgstr "Collega un agente che gestisci e di cui ti fidi."
@@ -1318,11 +1369,11 @@ msgstr "Connettiti ai relay"
 msgid "Connect with a bunker link"
 msgstr "Connettiti con un link bunker"
 
-msgid "Connect with the relays you choose."
-msgstr "Connettiti ai relay che scegli."
-
 msgid "Connect your remote signer"
 msgstr "Connetti il tuo firmatario remoto"
+
+msgid "Connect your signer again to sign in."
+msgstr "Connetti di nuovo il tuo firmatario per accedere."
 
 msgid "Connected to relays"
 msgstr "Connesso ai relay"
@@ -1332,9 +1383,6 @@ msgstr "Connessione ai relay"
 
 msgid "Connecting to your signer"
 msgstr "Connessione al tuo firmatario"
-
-msgid "Connecting to your signer through its relays."
-msgstr "Connessione al tuo firmatario tramite i suoi relay."
 
 msgid "Connecting your remote signer. Approve the connection there before using this account."
 msgstr "Connessione al tuo firmatario remoto in corso. Approva la connessione nel firmatario prima di usare questo account."
@@ -1370,8 +1418,8 @@ msgstr "Solo contatti"
 msgid "Continue"
 msgstr "Continua"
 
-msgid "Continue to account setup"
-msgstr "Continua con la configurazione dell'account"
+msgid "Continue with moving this device"
+msgstr "Procedi con lo spostamento di questo dispositivo"
 
 msgid "Control background"
 msgstr "Sfondo controlli"
@@ -1450,9 +1498,6 @@ msgstr "Impossibile aggiungere il record %d. %s Controlla le impostazioni dei tu
 msgid "Couldn't add that relay. Enter an address that starts with wss:// and try again."
 msgstr "Impossibile aggiungere questo relay. Inserisci un indirizzo che inizia con wss:// e riprova."
 
-msgid "Couldn't add the pack. No supported stickers are available."
-msgstr "Impossibile aggiungere il pacchetto. Non ci sono adesivi supportati disponibili."
-
 msgid "Couldn't add the pack. Please try again."
 msgstr "Impossibile aggiungere il pacchetto. Riprova."
 
@@ -1465,6 +1510,9 @@ msgstr "Impossibile archiviare la chat. %s"
 
 msgid "Couldn't cache your transcription. Please try again."
 msgstr "Impossibile salvare la trascrizione nella cache. Riprova."
+
+msgid "Couldn't cancel linking. Please try again."
+msgstr "Impossibile annullare il collegamento. Riprova."
 
 #, c-format
 msgid "Couldn't change audit logs. %s"
@@ -1479,8 +1527,17 @@ msgstr "Impossibile modificare i messaggi effimeri. Riprova."
 msgid "Couldn't change the password. Please try again."
 msgstr "Impossibile cambiare la password. Riprova."
 
+msgid "Couldn't check chat history. Please try again."
+msgstr "Impossibile controllare la cronologia delle chat. Riprova."
+
+msgid "Couldn't check for sign-ins. Check your relay settings and try again."
+msgstr "Impossibile cercare gli accessi. Controlla le impostazioni dei relay e riprova."
+
 msgid "Couldn't check for updates. Please try again."
 msgstr "Impossibile controllare gli aggiornamenti. Riprova."
+
+msgid "Couldn't check linked devices for this chat. Please try again."
+msgstr "Impossibile controllare i dispositivi collegati per questa chat. Riprova."
 
 msgid "Couldn't check the original message. Please try again."
 msgstr "Impossibile verificare il messaggio originale. Riprova."
@@ -1488,8 +1545,14 @@ msgstr "Impossibile verificare il messaggio originale. Riprova."
 msgid "Couldn't check the translation model. Please try again."
 msgstr "Impossibile verificare il modello di traduzione. Riprova."
 
+msgid "Couldn't check which chats can add linked devices. Please try again."
+msgstr "Impossibile verificare quali chat possono aggiungere dispositivi collegati. Riprova."
+
 msgid "Couldn't choose a photo. Close your open file picker and try again."
 msgstr "Impossibile scegliere una foto. Chiudi la finestra di selezione dei file aperta e riprova."
+
+msgid "Couldn't complete the account action."
+msgstr "Impossibile completare l'azione sull'account."
 
 msgid "Couldn't complete the signer request. Please try again."
 msgstr "Impossibile completare la richiesta al firmatario. Riprova."
@@ -1509,6 +1572,9 @@ msgstr "Impossibile configurare il proxy. Riprova."
 
 msgid "Couldn't confirm picture publication. Your picture was uploaded. Please try again."
 msgstr "Impossibile confermare la pubblicazione dell'immagine. L'immagine è stata caricata. Riprova."
+
+msgid "Couldn't confirm the emoji code. Please try again."
+msgstr "Impossibile confermare il codice emoji. Riprova."
 
 #, c-format
 msgid "Couldn't copy %s. Please try again."
@@ -1532,6 +1598,9 @@ msgstr "Impossibile creare la cassaforte. Riprova."
 msgid "Couldn't crop the picture. Please try again."
 msgstr "Impossibile ritagliare l'immagine. Riprova."
 
+msgid "Couldn't decline the request. Please try again."
+msgstr "Impossibile rifiutare la richiesta. Riprova."
+
 msgid "Couldn't decode the image. Choose a PNG or JPEG."
 msgstr "Impossibile decodificare l'immagine. Scegli un PNG o un JPEG."
 
@@ -1543,11 +1612,25 @@ msgid "Couldn't delete %s. Please try again."
 msgstr "Impossibile eliminare %s. Riprova."
 
 #, c-format
+msgid "Couldn't delete key package %s from relays: %s"
+msgstr "Impossibile eliminare il pacchetto chiavi %s dai relay: %s"
+
+#, c-format
 msgid "Couldn't delete the audit log file. %s"
 msgstr "Impossibile eliminare il file di log di audit. %s"
 
 msgid "Couldn't delete the conversation. Review its members and try again."
 msgstr "Impossibile eliminare la conversazione. Controlla i membri e riprova."
+
+#, c-format
+msgid "Couldn't delete this device's key package from relays: %s"
+msgstr "Impossibile eliminare dai relay il pacchetto chiavi di questo dispositivo: %s"
+
+msgid "Couldn't dismiss the device hint. Please try again."
+msgstr "Impossibile ignorare il suggerimento sul dispositivo. Riprova."
+
+msgid "Couldn't dismiss the warning. Please try again."
+msgstr "Impossibile ignorare l'avviso. Riprova."
 
 msgid "Couldn't download speech files. Please try again."
 msgstr "Impossibile scaricare i file vocali. Riprova."
@@ -1583,9 +1666,6 @@ msgstr "Impossibile inoltrare a %s. Apri la chat per riprovare."
 
 msgid "Couldn't forward. Please try again."
 msgstr "Impossibile inoltrare. Riprova."
-
-msgid "Couldn't get your location. Check your desktop location permissions or pick a point on the map."
-msgstr "Impossibile ottenere la tua posizione. Controlla i permessi di localizzazione del desktop o scegli un punto sulla mappa."
 
 msgid "Couldn't get your location. Check your device's location permissions and try again."
 msgstr "Impossibile ottenere la tua posizione. Controlla le autorizzazioni di localizzazione del tuo dispositivo e riprova."
@@ -1629,15 +1709,19 @@ msgstr "Impossibile importare l'adesivo. Scegli un'immagine inferiore a 4 MiB."
 msgid "Couldn't invite the member. Enter a public key or verified address and try again."
 msgstr "Non è stato possibile invitare il membro. Inserisci una chiave pubblica o un indirizzo verificato e riprova."
 
-msgid "Couldn't invite the member. Enter an npub or nprofile and try again."
-msgstr "Impossibile invitare il membro. Inserisci un npub o nprofile e riprova."
-
 msgid "Couldn't invite them. They have no key package White Noise can use. Ask them to open White Noise, then try again."
 msgstr "Impossibile invitare questa persona. Non ha un pacchetto chiavi che White Noise possa usare. Chiedile di aprire White Noise, poi riprova."
 
 #, c-format
 msgid "Couldn't keep %s running. Please try again."
 msgstr "Impossibile mantenere in esecuzione %s. Riprova."
+
+#, c-format
+msgid "Couldn't leave chat %s: %s"
+msgstr "Impossibile abbandonare la chat %s: %s"
+
+msgid "Couldn't link the device. Please try again."
+msgstr "Impossibile collegare il dispositivo. Riprova."
 
 msgid "Couldn't load GIFs. Please try again."
 msgstr "Impossibile caricare le GIF. Riprova."
@@ -1656,9 +1740,6 @@ msgstr "Impossibile caricare i membri del gruppo. Riprova."
 
 msgid "Couldn't load image. Click to retry."
 msgstr "Impossibile caricare l'immagine. Clicca per riprovare."
-
-msgid "Couldn't load issues. Please try again."
-msgstr "Impossibile caricare le segnalazioni. Riprova."
 
 msgid "Couldn't load messages. Please try again."
 msgstr "Impossibile caricare i messaggi. Riprova."
@@ -1697,10 +1778,6 @@ msgstr "Impossibile caricare i tuoi contatti. Riprova."
 msgid "Couldn't load your stickers. Please try again."
 msgstr "Impossibile caricare i tuoi adesivi. Riprova."
 
-#, c-format
-msgid "Couldn't log in. %s"
-msgstr "Impossibile accedere. %s"
-
 msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
 msgstr "Impossibile trovare questo indirizzo NIP-05. Ricontrollalo e riprova."
 
@@ -1710,6 +1787,9 @@ msgstr "Impossibile contrassegnare la chat come letta. %s"
 
 msgid "Couldn't mark the chat read. Please try again."
 msgstr "Impossibile contrassegnare la chat come letta. Riprova."
+
+msgid "Couldn't move to your other device group. Try linking again."
+msgstr "Impossibile passare al tuo altro gruppo di dispositivi. Riprova a collegare il dispositivo."
 
 #, c-format
 msgid "Couldn't open %s. Please try again."
@@ -1739,9 +1819,6 @@ msgstr "Impossibile mostrare l'anteprima dell'immagine. Riprova."
 #, c-format
 msgid "Couldn't publish the photo. %s"
 msgstr "Impossibile pubblicare la foto. %s"
-
-msgid "Couldn't reach the Namecoin resolvers. Please try again."
-msgstr "Impossibile raggiungere i resolver Namecoin. Riprova."
 
 msgid "Couldn't reach your signer. Please try again."
 msgstr "Impossibile raggiungere il tuo firmatario. Riprova."
@@ -1794,8 +1871,20 @@ msgstr "Impossibile leggere la tua ora locale. Controlla l'orologio del disposit
 msgid "Couldn't refresh automatic folders. Please try again."
 msgstr "Impossibile aggiornare le cartelle automatiche. Riprova."
 
+msgid "Couldn't refresh device information."
+msgstr "Impossibile aggiornare le informazioni sui dispositivi."
+
+msgid "Couldn't refresh device information. Previously loaded information may be out of date."
+msgstr "Impossibile aggiornare le informazioni sui dispositivi. Le informazioni caricate in precedenza potrebbero non essere più aggiornate."
+
+msgid "Couldn't refresh the link request. Please try again."
+msgstr "Impossibile aggiornare la richiesta di collegamento. Riprova."
+
 msgid "Couldn't remove the GIF. Please try again."
 msgstr "Impossibile rimuovere la GIF. Riprova."
+
+msgid "Couldn't remove the device. Please try again."
+msgstr "Impossibile rimuovere il dispositivo. Riprova."
 
 msgid "Couldn't remove the pack. Please try again."
 msgstr "Impossibile rimuovere il pacchetto. Riprova."
@@ -1806,6 +1895,9 @@ msgstr "Impossibile rimuovere il file salvato. Riprova."
 msgid "Couldn't remove the translation model. Please try again."
 msgstr "Impossibile rimuovere il modello di traduzione. Riprova."
 
+msgid "Couldn't rename the device. Please try again."
+msgstr "Impossibile rinominare il dispositivo. Riprova."
+
 msgid "Couldn't rename the group. Enter a name and try again."
 msgstr "Impossibile rinominare il gruppo. Inserisci un nome e riprova."
 
@@ -1815,13 +1907,8 @@ msgstr "Impossibile disegnare questa emoji. Scegline un'altra."
 msgid "Couldn't render the QR code. Please try again."
 msgstr "Impossibile generare il codice QR. Riprova."
 
-#, c-format
-msgid "Couldn't resolve %s on Namecoin. Double-check it and try again."
-msgstr "Impossibile risolvere %s su Namecoin. Ricontrollalo e riprova."
-
-#, c-format
-msgid "Couldn't reveal your private key. %s"
-msgstr "Impossibile mostrare la tua chiave privata. %s"
+msgid "Couldn't reset the device list. Please try again."
+msgstr "Impossibile reimpostare l'elenco dei dispositivi. Riprova."
 
 msgid "Couldn't reveal your secret key. Please try again."
 msgstr "Impossibile mostrare la tua chiave segreta. Riprova."
@@ -1835,6 +1922,9 @@ msgstr "Impossibile salvare le credenziali del proxy. Riprova."
 
 msgid "Couldn't save the GIF. Please try again."
 msgstr "Impossibile salvare la GIF. Riprova."
+
+msgid "Couldn't save the device setting. Please try again."
+msgstr "Impossibile salvare l'impostazione del dispositivo. Riprova."
 
 msgid "Couldn't save the edit. Please try again."
 msgstr "Impossibile salvare la modifica. Riprova."
@@ -1853,9 +1943,6 @@ msgstr "Impossibile salvare la tua emoji. Riprova."
 
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
 msgstr "Impossibile salvare la sessione del tuo firmatario nella cassaforte cifrata. Riprova."
-
-msgid "Couldn't save your signer session. Please try again."
-msgstr "Impossibile salvare la sessione del tuo firmatario. Riprova."
 
 msgid "Couldn't save your stickers. Please try again."
 msgstr "Impossibile salvare i tuoi adesivi. Riprova."
@@ -1897,12 +1984,18 @@ msgstr "Impossibile condividere il tema. Riprova."
 msgid "Couldn't share the theme. Please try again. %s"
 msgstr "Impossibile condividere il tema. Riprova. %s"
 
-msgid "Couldn't show a notification. Check your system notification settings and try again."
-msgstr "Impossibile mostrare una notifica. Controlla le impostazioni delle notifiche di sistema e riprova."
+msgid "Couldn't sign in with that key. Double-check it and try again."
+msgstr "Impossibile accedere con quella chiave. Ricontrollala e riprova."
 
 #, c-format
 msgid "Couldn't start %s. Its cartridge type isn't supported."
 msgstr "Impossibile avviare %s. Il tipo di cartuccia non è supportato."
+
+msgid "Couldn't start fresh. Check for sign-ins and try again."
+msgstr "Impossibile ricominciare da zero. Controlla se ci sono accessi e riprova."
+
+msgid "Couldn't start linking. Please try again."
+msgstr "Impossibile avviare il collegamento. Riprova."
 
 msgid "Couldn't start reading aloud. Please try again."
 msgstr "Impossibile avviare la lettura. Riprova."
@@ -1918,6 +2011,9 @@ msgstr "Impossibile avviare la trascrizione. Riprova."
 
 msgid "Couldn't start translation. Reinstall White Noise and try again."
 msgstr "Impossibile avviare la traduzione. Reinstalla White Noise e riprova."
+
+msgid "Couldn't switch profiles. Please try again."
+msgstr "Impossibile cambiare profilo. Riprova."
 
 msgid "Couldn't sync your sticker packs. Check your relay settings and try again."
 msgstr "Impossibile sincronizzare i tuoi pacchetti di adesivi. Controlla le impostazioni dei relay e riprova."
@@ -1937,6 +2033,9 @@ msgstr "Impossibile tradurre questo messaggio. Scegli un messaggio di testo più
 msgid "Couldn't translate this message. Please try again."
 msgstr "Impossibile tradurre questo messaggio. Riprova."
 
+msgid "Couldn't turn on linked devices. Please try again."
+msgstr "Impossibile attivare i dispositivi collegati. Riprova."
+
 #, c-format
 msgid "Couldn't unarchive. %s"
 msgstr "Impossibile rimuovere la chat dall'archivio. %s"
@@ -1944,8 +2043,8 @@ msgstr "Impossibile rimuovere la chat dall'archivio. %s"
 msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr "Impossibile sbloccare la cassaforte. Ricontrolla la password e riprova."
 
-msgid "Couldn't update issues. Please try again."
-msgstr "Impossibile aggiornare le segnalazioni. Riprova."
+msgid "Couldn't update that sign-in. Please try again."
+msgstr "Impossibile aggiornare quell'accesso. Riprova."
 
 msgid "Couldn't upload the picture. Please try again."
 msgstr "Impossibile caricare l'immagine. Riprova."
@@ -1968,14 +2067,14 @@ msgstr "Impossibile usare questo indirizzo Lightning. Controllalo e riprova."
 msgid "Couldn't use this Nostr address. Double-check it and try again."
 msgstr "Impossibile usare questo indirizzo Nostr. Controllalo e riprova."
 
+msgid "Couldn't verify that this profile was unlinked. Please try again."
+msgstr "Impossibile verificare che questo profilo sia stato scollegato. Riprova."
+
 msgid "Couldn't verify the update. Please try again."
 msgstr "Impossibile verificare l’aggiornamento. Riprova."
 
 msgid "Couldn't verify your signer. Reconnect to the intended signer."
 msgstr "Impossibile verificare il tuo firmatario. Riconnettiti al firmatario desiderato."
-
-msgid "Create"
-msgstr "Crea"
 
 msgid "Create a poll"
 msgstr "Crea un sondaggio"
@@ -2000,12 +2099,6 @@ msgstr "Crea da emoji"
 
 msgid "Create group"
 msgstr "Crea gruppo"
-
-msgid "Create issue"
-msgstr "Crea segnalazione"
-
-msgid "Create or use an account"
-msgstr "Crea o usa un account"
 
 msgid "Create pairing link"
 msgstr "Crea link di abbinamento"
@@ -2043,9 +2136,6 @@ msgstr "Ritaglia"
 msgid "Crop circle shape"
 msgstr "Forma dei cerchi nel grano"
 
-msgid "Ctrl + + to zoom in, Ctrl + - to zoom out, Ctrl + 0 to reset."
-msgstr "Ctrl + + per ingrandire, Ctrl + - per ridurre, Ctrl + 0 per ripristinare."
-
 msgid "Current"
 msgstr "Attuale"
 
@@ -2057,9 +2147,6 @@ msgstr "Colore personalizzato"
 
 msgid "Custom emoji"
 msgstr "Emoji personalizzate"
-
-msgid "Customize"
-msgstr "Personalizza"
 
 msgid "Customize composer"
 msgstr "Personalizza il compositore"
@@ -2075,9 +2162,6 @@ msgstr "PROFONDITÀ"
 
 msgid "DETAILS"
 msgstr "DETTAGLI"
-
-msgid "DEVELOPER TOOLS"
-msgstr "STRUMENTI PER SVILUPPATORI"
 
 msgid "DISPLAY NAME"
 msgstr "NOME VISUALIZZATO"
@@ -2121,6 +2205,9 @@ msgstr "Rifiuta"
 msgid "Decline this invitation?"
 msgstr "Rifiutare questo invito?"
 
+msgid "Declining the link request…"
+msgstr "Rifiuto della richiesta di collegamento…"
+
 msgid "Declining your invitation"
 msgstr "Rifiuto del tuo invito"
 
@@ -2151,9 +2238,6 @@ msgstr "Elimina per tutti"
 msgid "Delete for me"
 msgstr "Elimina per me"
 
-msgid "Delete for you?"
-msgstr "Eliminare per te?"
-
 msgid "Delete group"
 msgstr "Elimina gruppo"
 
@@ -2175,9 +2259,6 @@ msgstr "Eliminare questo messaggio?"
 msgid "Delete this theme?"
 msgstr "Eliminare questo tema?"
 
-msgid "Delete this vault"
-msgstr "Elimina questa cassaforte"
-
 msgid "Delete vault"
 msgstr "Elimina cassaforte"
 
@@ -2198,9 +2279,6 @@ msgstr "Derivazione di una chiave di crittografia dalla tua password."
 
 msgid "Describe the group"
 msgstr "Descrivi il gruppo"
-
-msgid "Describe the issue (Markdown)"
-msgstr "Descrivi il problema (Markdown)"
 
 msgid "Description"
 msgstr "Descrizione"
@@ -2232,11 +2310,26 @@ msgstr "Modalità sviluppatore disattivata"
 msgid "Developer mode on"
 msgstr "Modalità sviluppatore attivata"
 
-msgid "Developer tools"
-msgstr "Strumenti per sviluppatori"
+msgid "Device details"
+msgstr "Dettagli del dispositivo"
+
+msgid "Device linked"
+msgstr "Dispositivo collegato"
+
+msgid "Device linking isn't available in this session."
+msgstr "Il collegamento dei dispositivi non è disponibile in questa sessione."
+
+msgid "Device name"
+msgstr "Nome del dispositivo"
+
+msgid "Device unlinked"
+msgstr "Dispositivo scollegato"
 
 msgid "Device vault"
 msgstr "Cassaforte del dispositivo"
+
+msgid "Devices"
+msgstr "Dispositivi"
 
 msgid "Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate."
 msgstr "La diagnostica include un identificatore casuale di installazione fino a quando disattivi la condivisione, dettagli su app e dispositivo ed etichette dei relay. Il servizio di raccolta riceve il tuo indirizzo IP. Sono esclusi i contenuti dei messaggi e gli identificatori di account o gruppi. Disattivare la condivisione interrompe gli invii futuri; i dati già inviati non possono essere ritirati. I log di audit sono separati."
@@ -2247,20 +2340,11 @@ msgstr "La diagnostica viene inviata al gestore di otlp.ipf.dev, a meno che tu a
 msgid "Dictate"
 msgstr "Detta"
 
-msgid "Dictate and listen on this device."
-msgstr "Detta e ascolta su questo dispositivo."
-
 msgid "Dictate drafts and transcribe audio messages on your device."
 msgstr "Detta bozze e trascrivi messaggi audio sul tuo dispositivo."
 
-msgid "Dictate messages and listen to them aloud."
-msgstr "Detta i messaggi e ascoltali ad alta voce."
-
 msgid "Dictate your messages"
 msgstr "Detta i tuoi messaggi"
-
-msgid "Dictation"
-msgstr "Dettatura"
 
 msgid "Dictation doesn't work"
 msgstr "La dettatura non funziona"
@@ -2271,9 +2355,6 @@ msgstr "Difficoltà: %d/5"
 
 msgid "Dimensions"
 msgstr "Dimensioni"
-
-msgid "Disabled for this group."
-msgstr "Disattivato per questo gruppo."
 
 msgid "Disappearing messages"
 msgstr "Messaggi effimeri"
@@ -2300,8 +2381,17 @@ msgstr "Scartare la bozza di testo non annulla il caricamento o la pubblicazione
 msgid "Discover"
 msgstr "Scopri"
 
-msgid "Discussion"
-msgstr "Discussione"
+msgid "Dismiss"
+msgstr "Ignora"
+
+msgid "Dismissing the device hint…"
+msgstr "Rimozione del suggerimento sul dispositivo…"
+
+msgid "Dismissing the warning on this device…"
+msgstr "Rimozione dell'avviso su questo dispositivo…"
+
+msgid "Dismissing this warning only affects this device."
+msgstr "Se ignori questo avviso, sparirà solo da questo dispositivo."
 
 msgid "Divider"
 msgstr "Divisore"
@@ -2387,6 +2477,17 @@ msgstr "CHIAVE CRITTOGRAFATA (NCRYPTSEC)"
 msgid "ENCRYPTION REVISION"
 msgstr "REVISIONE DELLA CRITTOGRAFIA"
 
+#, c-format
+msgid "Earlier messages are still arriving in %d chat."
+msgstr "C'è ancora %d chat in cui stanno arrivando i messaggi precedenti."
+
+#, c-format
+msgid "Earlier messages are still arriving in %d chats."
+msgstr "Ci sono ancora %d chat in cui stanno arrivando i messaggi precedenti."
+
+msgid "Earlier sign-ins stop prompting you. Until you link, only future invitations will appear here."
+msgstr "Non riceverai più richieste per gli accessi precedenti. Finché non colleghi il dispositivo, qui vedrai solo i nuovi inviti."
+
 msgid "Edit"
 msgstr "Modifica"
 
@@ -2443,9 +2544,6 @@ msgstr "Per usare questa scorciatoia, attiva la dettatura nelle impostazioni voc
 msgid "Enable local translation"
 msgstr "Abilita la traduzione locale"
 
-msgid "Enabled for this group."
-msgstr "Attivato per questo gruppo."
-
 msgid "Encrypt with NIP-44"
 msgstr "Cifrare con NIP-44"
 
@@ -2473,6 +2571,9 @@ msgstr "Inserisci un nome visualizzato."
 msgid "Enter a folder name."
 msgstr "Inserisci un nome per la cartella."
 
+msgid "Enter a name of 1 to 64 UTF-8 bytes for each device."
+msgstr "Inserisci un nome da 1 a 64 byte UTF-8 per ogni dispositivo."
+
 msgid "Enter a number of people."
 msgstr "Inserisci un numero di persone."
 
@@ -2494,9 +2595,6 @@ msgstr "Inserisci un URL del relay prima di aggiungerlo."
 msgid "Enter a sticker name of 1 to 64 characters."
 msgstr "Inserisci un nome per l'adesivo da 1 a 64 caratteri."
 
-msgid "Enter a username and password, each between 1 and 255 UTF-8 bytes."
-msgstr "Inserisci nome utente e password, ciascuno da 1 a 255 byte UTF-8."
-
 msgid "Enter a username and password, each up to 255 characters."
 msgstr "Inserisci un nome utente e una password, ciascuno di massimo 255 caratteri."
 
@@ -2509,18 +2607,12 @@ msgstr "Inserisci un naddr valido per un set di emoji."
 msgid "Enter a valid pack link or address."
 msgstr "Inserisci un link o un indirizzo valido per il pacchetto."
 
-msgid "Enter an issue title and description."
-msgstr "Inserisci un titolo e una descrizione."
-
 msgid "Enter at least 2 people. Counts include you."
 msgstr "Inserisci almeno 2 persone. Il conteggio include te."
 
 #, c-format
 msgid "Enter dates like %s, with the start on or before the end."
 msgstr "Inserisci date come %s. La data iniziale non deve essere successiva a quella finale."
-
-msgid "Enter publishes, Escape cancels."
-msgstr "Invio pubblica, Esc annulla."
 
 msgid "Enter the backup password."
 msgstr "Inserisci la password del backup."
@@ -2545,9 +2637,6 @@ msgstr "Inserisci il link del tuo bunker per continuare."
 
 msgid "Enter your nsec to continue."
 msgstr "Inserisci il tuo nsec per continuare."
-
-msgid "Enter your password to unlock the vault on this device."
-msgstr "Inserisci la password per sbloccare la cassaforte su questo dispositivo."
 
 msgid "Enter your password to unlock your local vault on this device."
 msgstr "Inserisci la tua password per sbloccare la tua cassaforte locale su questo dispositivo."
@@ -2606,17 +2695,11 @@ msgstr "Esporta come Markdown"
 msgid "Export chat"
 msgstr "Esporta chat"
 
-msgid "Export encrypted key"
-msgstr "Esporta chiave crittografata"
-
 msgid "Export encrypted key (ncryptsec)"
 msgstr "Esporta chiave crittografata (ncryptsec)"
 
 msgid "Export key"
 msgstr "Esporta chiave"
-
-msgid "Export key first"
-msgstr "Prima esporta la chiave"
 
 msgid "External browsers and other apps do not use this setting."
 msgstr "I browser esterni e le altre app non usano questa impostazione."
@@ -2678,9 +2761,6 @@ msgstr "Filtri"
 msgid "Final render"
 msgstr "Render finale"
 
-msgid "Find a setting..."
-msgstr "Cerca un'impostazione..."
-
 msgid "Finish dictation"
 msgstr "Termina dettatura"
 
@@ -2689,9 +2769,6 @@ msgstr "Chiusura della connessione annullata."
 
 msgid "Finnish"
 msgstr "Finlandese"
-
-msgid "First member"
-msgstr "Primo membro"
 
 msgid "First, protect your saved keys."
 msgstr "Per prima cosa, proteggi le tue chiavi salvate."
@@ -2755,9 +2832,6 @@ msgstr "Dimentica tutti"
 
 msgid "Forgot password?"
 msgstr "Password dimenticata?"
-
-msgid "Forgot your password?"
-msgstr "Hai dimenticato la password?"
 
 msgid "Format"
 msgstr "Formato"
@@ -2832,23 +2906,11 @@ msgstr "Norme di Gemma sugli usi vietati"
 msgid "Gemma terms"
 msgstr "Termini di Gemma"
 
-msgid "General"
-msgstr "Generale"
-
 msgid "German"
 msgstr "Tedesco"
 
 msgid "Get an alert when a message arrives in a chat you're not viewing."
 msgstr "Ricevi un avviso quando arriva un messaggio in una chat che non stai guardando."
-
-msgid "Get desktop notifications"
-msgstr "Ricevi le notifiche sul desktop"
-
-msgid "Get message notifications"
-msgstr "Ricevi notifiche per i messaggi"
-
-msgid "Get started"
-msgstr "Inizia"
 
 msgid "Gift"
 msgstr "Regalo"
@@ -2897,9 +2959,6 @@ msgstr "Nome del gruppo"
 
 msgid "Group settings"
 msgstr "Impostazioni del gruppo"
-
-msgid "Grouped"
-msgstr "Raggruppate"
 
 msgid "Grouped sorts your chats into folders, and you have none yet."
 msgstr "Raggruppate ordina le tue chat in cartelle, ma non ne hai ancora nessuna."
@@ -3009,8 +3068,8 @@ msgstr "Islandese"
 msgid "Ideas"
 msgstr "Idee"
 
-msgid "Identity"
-msgstr "Identità"
+msgid "If the codes don't match, don't link. Only try again if you control both devices."
+msgstr "Se i codici non corrispondono, non collegare i dispositivi. Riprova solo se hai il controllo di entrambi."
 
 msgid "If you forgot this password, you can try again or close White Noise without deleting anything. Starting over deletes the vault and its protected local data, including chats and pending sends. Review the deletion before deciding."
 msgstr "Se hai dimenticato questa password, puoi riprovare o chiudere White Noise senza eliminare nulla. Ricominciare elimina la cassaforte e i dati locali che protegge, comprese le chat e gli invii in attesa. Prima di decidere, controlla cosa verrà eliminato."
@@ -3073,9 +3132,6 @@ msgstr "Quando importi una chiave segreta, viene salvata nel vault di questo dis
 msgid "Importing contacts: %d of %d"
 msgstr "Importazione dei contatti: %d di %d"
 
-msgid "Importing emoji"
-msgstr "Importazione delle emoji"
-
 msgid "Importing emoji..."
 msgstr "Importazione delle emoji..."
 
@@ -3086,8 +3142,8 @@ msgstr "In uso: %s."
 msgid "In-app sounds"
 msgstr "Suoni nell’app"
 
-msgid "Incoming messages"
-msgstr "Messaggi in arrivo"
+msgid "Inactive"
+msgstr "Inattivo"
 
 msgid "Increase contrast"
 msgstr "Aumenta il contrasto"
@@ -3113,23 +3169,11 @@ msgstr "Inserisci data e ora"
 msgid "Inspect"
 msgstr "Esamina"
 
-msgid "Inspect MLS key packages."
-msgstr "Esamina i pacchetti chiavi MLS."
-
-msgid "Inspect application state and events."
-msgstr "Esamina lo stato e gli eventi dell'applicazione."
-
 msgid "Inspect key packages"
 msgstr "Esamina i pacchetti chiavi"
 
-msgid "Inspect published MLS key packages."
-msgstr "Esamina i pacchetti chiavi MLS pubblicati."
-
 msgid "Inspect the current session"
 msgstr "Esamina la sessione corrente"
-
-msgid "Inspect the current session."
-msgstr "Esamina la sessione corrente."
 
 msgid "Install and verify"
 msgstr "Installa e verifica"
@@ -3149,9 +3193,6 @@ msgstr "Lingua dell'interfaccia (%s)"
 
 msgid "Interface language (English)"
 msgstr "Lingua dell'interfaccia (inglese)"
-
-msgid "Interface sounds"
-msgstr "Suoni dell'interfaccia"
 
 msgid "Interface zoom"
 msgstr "Zoom dell'interfaccia"
@@ -3189,23 +3230,14 @@ msgstr "È silenziata"
 msgid "Is pinned"
 msgstr "È fissata in alto"
 
-msgid "Issue title"
-msgstr "Titolo della segnalazione"
-
-msgid "Issue tracking"
-msgstr "Tracciamento delle segnalazioni"
-
-msgid "Issue tracking is unavailable."
-msgstr "Il tracciamento delle segnalazioni non è disponibile."
-
-msgid "Issues"
-msgstr "Segnalazioni"
-
 msgid "It disappears for everyone in the chat. This can't be undone."
 msgstr "Scompare per tutti nella chat. Non si può annullare."
 
 msgid "It stays for everyone else. You won't see it on this device again."
 msgstr "Resta visibile per tutti gli altri. Non lo vedrai più su questo dispositivo."
+
+msgid "It will stop receiving this profile's messages. A chat admin may need to remove it from chats that don't support linked devices."
+msgstr "Non riceverà più i messaggi di questo profilo. Nelle chat che non supportano i dispositivi collegati, potrebbe doverlo rimuovere un admin."
 
 msgid "Italian"
 msgstr "Italiano"
@@ -3218,9 +3250,6 @@ msgstr "Il suo file viene rimosso da questo dispositivo. I temi condivisi in una
 
 msgid "Its key and chats stay on this device. You can sign back in from Accounts or the sign-in screen without your secret key."
 msgstr "La sua chiave e le sue chat restano su questo dispositivo. Puoi accedere di nuovo da Account o dalla schermata di accesso senza la tua chiave segreta."
-
-msgid "Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."
-msgstr "Le sue chiavi e le sue chat vengono eliminate da questo dispositivo. Per tutti gli altri resta membro dei suoi gruppi. Non si può annullare."
 
 msgid "Jan"
 msgstr "gen"
@@ -3237,6 +3266,12 @@ msgstr "Partecipa in %s"
 
 msgid "Join in browser"
 msgstr "Partecipa nel browser"
+
+msgid "Joining the other device…"
+msgstr "Unione all'altro dispositivo…"
+
+msgid "Joining your other device group…"
+msgstr "Ingresso nel tuo altro gruppo di dispositivi…"
 
 msgid "Jul"
 msgstr "lug"
@@ -3260,27 +3295,29 @@ msgstr "Ispettore KP"
 msgid "Kannada"
 msgstr "Kannada"
 
+msgid "Keep"
+msgstr "Mantieni"
+
+msgid "Keep White Noise open and online so your devices can sync. If this continues, people may not be able to add this device to chats."
+msgstr "Tieni White Noise aperto e online per sincronizzare i tuoi dispositivi. Se il problema persiste, gli altri potrebbero non riuscire ad aggiungere questo dispositivo alle chat."
+
+msgid "Keep both devices online. Eligible chats can appear before their earlier messages arrive."
+msgstr "Tieni entrambi i dispositivi online. Le chat che puoi aprire potrebbero comparire prima che arrivino i loro messaggi precedenti."
+
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr "Mantieni la conversazione aperta su una comoda larghezza di lettura invece di riempire tutta la larghezza."
-
-msgid "Keep this vault"
-msgstr "Mantieni questa cassaforte"
 
 msgid "Keep vault"
 msgstr "Mantieni cassaforte"
 
+msgid "Keep while inactive"
+msgstr "Mantieni anche se inattivo"
+
 msgid "Keep your chat list focused without deleting conversations."
 msgstr "Tieni in ordine il tuo elenco di chat senza eliminare le conversazioni."
 
-msgid "Keep your conversations in order."
-msgstr "Tieni in ordine le tue conversazioni."
-
 msgid "Keep your signer open. Approve the connection and requested signatures there."
 msgstr "Tieni aperto il tuo firmatario. Approva lì la connessione e le firme richieste."
-
-#, c-format
-msgid "Key package accepted by %d relays."
-msgstr "Pacchetto chiavi accettato da %d relay."
 
 msgid "Key package published"
 msgstr "Pacchetto chiavi pubblicato"
@@ -3292,11 +3329,15 @@ msgstr "Pacchetto chiave pubblicato e trovato su %d relay."
 msgid "Key package ref"
 msgstr "Riferimento pacchetto chiavi"
 
+msgid "Key package refresh overdue"
+msgstr "Aggiornamento del pacchetto chiavi in ritardo"
+
 msgid "Key packages"
 msgstr "Pacchetti chiavi"
 
-msgid "Key packages are published to your key package relays."
-msgstr "I pacchetti chiavi vengono pubblicati sui tuoi relay per i pacchetti chiavi."
+#, c-format
+msgid "Key packages deleted: %d."
+msgstr "Pacchetti chiavi eliminati: %d."
 
 msgid "Key packages let people invite you. Refresh checks the app's default relays for published copies."
 msgstr "I pacchetti chiave permettono agli altri di invitarti. Aggiorna controlla i relay predefiniti dell'app per le copie pubblicate."
@@ -3322,20 +3363,8 @@ msgstr "LIGHTNING"
 msgid "LINES"
 msgstr "LINEE"
 
-msgid "LOCAL"
-msgstr "LOCALE"
-
 msgid "LOCATION"
 msgstr "POSIZIONE"
-
-msgid "Labels"
-msgstr "Etichette"
-
-msgid "Labels, separated by commas"
-msgstr "Etichette, separate da virgole"
-
-msgid "Language"
-msgstr "Lingua"
 
 msgid "Language & speech"
 msgstr "Lingua e voce"
@@ -3343,11 +3372,12 @@ msgstr "Lingua e voce"
 msgid "Language and formats"
 msgstr "Lingua e formati"
 
-msgid "Language, startup, and everyday preferences."
-msgstr "Lingua, avvio e preferenze di tutti i giorni."
-
 msgid "Large"
 msgstr "Grande"
+
+#, c-format
+msgid "Last active: %s"
+msgstr "Ultima attività: %s"
 
 msgid "Last backup"
 msgstr "Ultimo backup"
@@ -3363,9 +3393,6 @@ msgstr "Avvia all'accesso"
 
 msgid "Layout"
 msgstr "Disposizione"
-
-msgid "Learn about White Noise."
-msgstr "Scopri White Noise."
 
 msgid "Leave"
 msgstr "Lascia"
@@ -3400,14 +3427,67 @@ msgstr "Lightning"
 msgid "Lime"
 msgstr "Lime"
 
+msgid "Link a device"
+msgstr "Collega un dispositivo"
+
+msgid "Link a new device?"
+msgstr "Collegare un nuovo dispositivo?"
+
 msgid "Link copied"
 msgstr "Link copiato"
 
 msgid "Link previews"
 msgstr "Anteprime dei link"
 
-msgid "Linked events"
-msgstr "Eventi collegati"
+msgid "Link requests"
+msgstr "Richieste di collegamento"
+
+msgid "Link this device"
+msgstr "Collega questo dispositivo"
+
+msgid "Link this device to the one that has your chats. You’ll compare the same seven emoji on both screens."
+msgstr "Collega questo dispositivo a quello che contiene le tue chat. Confronterai le stesse sette emoji su entrambi gli schermi."
+
+msgid "Link to another device"
+msgstr "Collega a un altro dispositivo"
+
+#, c-format
+msgid "Linked by: %s"
+msgstr "Collegato da: %s"
+
+msgid "Linked devices"
+msgstr "Dispositivi collegati"
+
+msgid "Linked devices are ready"
+msgstr "I dispositivi collegati sono pronti"
+
+msgid "Linked devices are turned on for this chat."
+msgstr "I dispositivi collegati sono attivi per questa chat."
+
+msgid "Linked devices weren't turned on for this chat."
+msgstr "I dispositivi collegati non sono stati attivati per questa chat."
+
+msgid "Linked on another device"
+msgstr "Collegato su un altro dispositivo"
+
+#, c-format
+msgid "Linked: %s"
+msgstr "Collegato il: %s"
+
+msgid "Linking ended."
+msgstr "Collegamento terminato."
+
+msgid "Linking moves only this device. The other devices stay in their current device group."
+msgstr "Il collegamento sposta solo questo dispositivo. Gli altri dispositivi restano nel loro gruppo attuale."
+
+msgid "Linking starts on the new device. Keep White Noise open here while you set it up."
+msgstr "Avvia il collegamento sul nuovo dispositivo. Tieni White Noise aperto qui mentre lo configuri."
+
+msgid "Linking the other device…"
+msgstr "Collegamento dell'altro dispositivo…"
+
+msgid "Linking was cancelled."
+msgstr "Collegamento annullato."
 
 msgid "Links"
 msgstr "Link"
@@ -3418,29 +3498,23 @@ msgstr "I link esattamente a questi siti si aprono senza conferma."
 msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr "In ascolto... Termina quando hai finito (massimo 30 secondi)."
 
-msgid "Literal message text"
-msgstr "Testo letterale del messaggio"
-
 msgid "Lithuanian"
 msgstr "Lituano"
 
 msgid "Loading YouTube video…"
 msgstr "Caricamento del video di YouTube…"
 
-msgid "Loading emoji previews"
-msgstr "Caricamento delle anteprime delle emoji"
-
 msgid "Loading emoji previews..."
 msgstr "Caricamento delle anteprime delle emoji..."
-
-msgid "Loading emoji sets"
-msgstr "Caricamento dei set di emoji"
 
 msgid "Loading emoji sets..."
 msgstr "Caricamento dei set di emoji..."
 
 msgid "Loading full resolution…"
 msgstr "Caricamento della risoluzione completa…"
+
+msgid "Loading linked devices…"
+msgstr "Caricamento dei dispositivi collegati…"
 
 msgid "Loading map"
 msgstr "Caricamento della mappa"
@@ -3450,9 +3524,6 @@ msgstr "Caricamento dei messaggi da esportare..."
 
 msgid "Loading messages…"
 msgstr "Caricamento dei messaggi…"
-
-msgid "Loading more matches from local history…"
-msgstr "Caricamento di altri risultati dalla cronologia locale…"
 
 msgid "Loading your accounts"
 msgstr "Caricamento dei tuoi account"
@@ -3475,14 +3546,15 @@ msgstr "Caricamento..."
 msgid "Loading…"
 msgstr "Caricamento…"
 
-msgid "Local data & backups"
-msgstr "Dati locali e backup"
+msgid "Local cleanup did not report completion."
+msgstr "La pulizia locale non ha segnalato il completamento."
+
+#, c-format
+msgid "Local cleanup reported a problem: %s"
+msgstr "La pulizia locale ha segnalato un problema: %s"
 
 msgid "Local date and time (YYYY-MM-DD HH:MM[:SS])."
 msgstr "Data e ora locali (AAAA-MM-GG hh:mm[:ss])."
-
-msgid "Local files, cached media, and encrypted backups."
-msgstr "File locali, contenuti multimediali in cache e backup crittografati."
 
 msgid "Location"
 msgstr "Posizione"
@@ -3501,9 +3573,6 @@ msgstr "Blocco in corso…"
 
 msgid "Look up"
 msgstr "Cerca"
-
-msgid "Looking up the Namecoin name."
-msgstr "Ricerca del nome Namecoin in corso."
 
 msgid "Looking up the pack…"
 msgstr "Ricerca del pacchetto…"
@@ -3529,12 +3598,6 @@ msgstr "METRICHE"
 msgid "Magnet link copied"
 msgstr "Link magnet copiato"
 
-msgid "Make White Noise work your way."
-msgstr "Adatta White Noise alle tue esigenze."
-
-msgid "Make everything larger or smaller."
-msgstr "Ingrandisci o riduci tutta l'interfaccia."
-
 msgid "Make text and borders easier to see."
 msgstr "Rende più visibili il testo e i bordi."
 
@@ -3550,14 +3613,11 @@ msgstr "Voce maschile. Supporta tutte le lingue di lettura."
 msgid "Manage"
 msgstr "Gestisci"
 
-msgid "Manage connections and published relay lists."
-msgstr "Gestisci le connessioni e gli elenchi relay pubblicati."
-
 msgid "Manage contacts"
 msgstr "Gestisci contatti"
 
-msgid "Manage local files and encrypted backups."
-msgstr "Gestisci i file locali e i backup crittografati."
+msgid "Manage linked devices"
+msgstr "Gestisci i dispositivi collegati"
 
 msgid "Manage the devices linked to this account."
 msgstr "Gestisci i dispositivi collegati a questo account."
@@ -3570,6 +3630,9 @@ msgstr "Marathi"
 
 msgid "Mark read"
 msgstr "Segna come letta"
+
+msgid "Mark this sign-in as not you?"
+msgstr "Segnalare che non hai effettuato tu questo accesso?"
 
 msgid "Mark unread"
 msgstr "Segna come non letta"
@@ -3610,6 +3673,9 @@ msgstr "Membri"
 msgid "Members to check"
 msgstr "Membri da contattare"
 
+msgid "Members' linked devices can join without an admin."
+msgstr "I dispositivi collegati dei membri possono entrare nella chat senza l'intervento di un admin."
+
 msgid "Mentions"
 msgstr "Menzioni"
 
@@ -3624,9 +3690,6 @@ msgstr "Limite di righe dei messaggi"
 
 msgid "Message menu"
 msgstr "Menu del messaggio"
-
-msgid "Message notifications"
-msgstr "Notifiche dei messaggi"
 
 msgid "Message previews"
 msgstr "Anteprima dei messaggi"
@@ -3646,6 +3709,13 @@ msgstr "Traduzione dei messaggi"
 msgid "Message translation is available in native Linux builds."
 msgstr "La traduzione dei messaggi è disponibile nelle versioni native per Linux."
 
+#, c-format
+msgid "Messages above were imported from %s"
+msgstr "I messaggi qui sopra sono stati importati da %s"
+
+msgid "Messages above were restored from a backup"
+msgstr "I messaggi qui sopra sono stati ripristinati da un backup"
+
 msgid "Messages already in the chat are affected, not only new ones. Everyone in the group sees the change."
 msgstr "La modifica riguarda anche i messaggi già presenti nella chat, non solo quelli nuovi. Tutti nel gruppo vedono la modifica."
 
@@ -3661,14 +3731,14 @@ msgstr "I messaggi restano sul tuo dispositivo. Alla prima traduzione vengono sc
 msgid "Messages waiting to be sent."
 msgstr "I messaggi in attesa di essere spediti."
 
-msgid "Messaging"
-msgstr "Messaggistica"
-
 msgid "Metalness"
 msgstr "Metallicità"
 
 msgid "Micro"
 msgstr "Micro"
+
+msgid "Missing capabilities:"
+msgstr "Funzionalità mancanti:"
 
 msgid "Model inspector"
 msgstr "Ispettore del modello"
@@ -3703,11 +3773,14 @@ msgstr "Sposta dopo"
 msgid "Move to folder"
 msgstr "Sposta nella cartella"
 
-msgid "Multi-device is coming very soon™."
-msgstr "Il multi-dispositivo arriverà molto presto™."
+msgid "Moved to another device group"
+msgstr "Spostato in un altro gruppo di dispositivi"
 
-msgid "Multi-device isn't built yet. Each device that signs in with this key keeps its own separate chats. Groups and messages from your other devices won't appear here, and new invites reach only one of your devices."
-msgstr "Il multi-dispositivo non è ancora disponibile. Ogni dispositivo che accede con questa chiave ha le proprie chat separate. I gruppi e i messaggi dei tuoi altri dispositivi non compariranno qui, e i nuovi inviti arrivano solo a uno dei tuoi dispositivi."
+msgid "Moved to your other device group."
+msgstr "Questo dispositivo è passato all'altro tuo gruppo di dispositivi."
+
+msgid "Moving this device"
+msgstr "Spostamento di questo dispositivo"
 
 msgid "Multilingual. Detects your language automatically."
 msgstr "Multilingue. Rileva automaticamente la tua lingua."
@@ -3730,17 +3803,11 @@ msgstr "Gioco NES"
 msgid "NEW PASSWORD"
 msgstr "NUOVA PASSWORD"
 
-msgid "NEXT"
-msgstr "DOPO"
-
 msgid "NOSTR EVENT"
 msgstr "EVENTO NOSTR"
 
 msgid "NOTE"
 msgstr "NOTA"
-
-msgid "NOW"
-msgstr "ORA"
 
 msgid "Name"
 msgstr "Nome"
@@ -3748,17 +3815,14 @@ msgstr "Nome"
 msgid "Name A to Z"
 msgstr "Nome dalla A alla Z"
 
+msgid "Name for this device"
+msgstr "Nome per questo dispositivo"
+
 msgid "Name includes"
 msgstr "Il nome contiene"
 
 msgid "Name the shortcode. Type it in messages as :name:."
 msgstr "Dai un nome allo shortcode. Scrivilo nei messaggi come :name:."
-
-msgid "Namecoin lookup took too long; try again."
-msgstr "La ricerca Namecoin ha impiegato troppo tempo; riprova."
-
-msgid "Namecoin name resolved. Invite sent."
-msgstr "Nome Namecoin risolto. Invito inviato."
 
 msgid "Nature"
 msgstr "Natura"
@@ -3778,20 +3842,26 @@ msgstr "Non condividerla mai. È la tua identità."
 msgid "New chat"
 msgstr "Nuova chat"
 
+msgid "New device"
+msgstr "Nuovo dispositivo"
+
+msgid "New device name"
+msgstr "Nome del nuovo dispositivo"
+
 msgid "New folder"
 msgstr "Nuova cartella"
 
 msgid "New group"
 msgstr "Nuovo gruppo"
 
-msgid "New issue"
-msgstr "Nuova segnalazione"
-
 msgid "New message"
 msgstr "Nuovo messaggio"
 
 msgid "New name"
 msgstr "Nuovo nome"
+
+msgid "New sign-in"
+msgstr "Nuovo accesso"
 
 msgid "News"
 msgstr "Notizie"
@@ -3830,8 +3900,14 @@ msgstr "Ancora nessun backup creato da questo dispositivo."
 msgid "No chat is open. Select one and refresh."
 msgstr "Nessuna chat aperta. Selezionane una e aggiorna."
 
+msgid "No chats are available in your inbox yet."
+msgstr "Nel tuo elenco non ci sono ancora chat disponibili."
+
 msgid "No chats match your filter."
 msgstr "Nessuna chat corrisponde al tuo filtro."
+
+msgid "No chats to review right now."
+msgstr "Al momento non ci sono chat da controllare."
 
 msgid "No chats to share with yet."
 msgstr "Ancora nessuna chat con cui condividere."
@@ -3847,6 +3923,9 @@ msgstr "Ancora nessun contatto"
 
 msgid "No description."
 msgstr "Nessuna descrizione."
+
+msgid "No devices are linked to this profile yet."
+msgstr "Nessun dispositivo è ancora collegato a questo profilo."
 
 msgid "No emoji available."
 msgstr "Non ci sono emoji disponibili."
@@ -3884,12 +3963,6 @@ msgstr "Ancora nessun gruppo"
 msgid "No inbox relays."
 msgstr "Nessun relay in entrata."
 
-msgid "No issues found."
-msgstr "Nessuna segnalazione trovata."
-
-msgid "No issues yet"
-msgstr "Ancora nessuna segnalazione"
-
 msgid "No key package on this device or its relays."
 msgstr "Nessun pacchetto chiavi su questo dispositivo o sui suoi relay."
 
@@ -3916,9 +3989,6 @@ msgstr "Nessun contatto corrispondente"
 
 msgid "No matching messages"
 msgstr "Nessun messaggio corrispondente"
-
-msgid "No matching settings."
-msgstr "Nessuna impostazione corrispondente."
 
 msgid "No matching stickers."
 msgstr "Nessun adesivo corrispondente."
@@ -3959,8 +4029,8 @@ msgstr "Nessuna regola"
 msgid "No settings match ‘%s’."
 msgstr "Nessuna impostazione corrisponde a «%s»."
 
-msgid "No stickers here yet."
-msgstr "Qui non ci sono ancora adesivi."
+msgid "No sign-ins to review."
+msgstr "Nessun accesso da controllare."
 
 msgid "No stickers here yet. Choose Manage to add stickers or sticker packs."
 msgstr "Non ci sono ancora adesivi. Scegli Gestisci per aggiungere adesivi o pacchetti di adesivi."
@@ -3970,6 +4040,9 @@ msgstr "Nessun sito affidabile."
 
 msgid "No unread chats"
 msgstr "Nessuna chat non letta"
+
+msgid "No, start fresh"
+msgstr "No, ricomincia da zero"
 
 msgid "Noir film treatment"
 msgstr "Effetto film noir"
@@ -3985,6 +4058,9 @@ msgstr "Evento Nostr"
 
 msgid "Not downloaded"
 msgstr "Non scaricato"
+
+msgid "Not every device in this chat has reported support for linked devices. If everyone's app is up to date, keep the apps online so the chat can sync."
+msgstr "Non tutti i dispositivi in questa chat hanno confermato il supporto per i dispositivi collegati. Se tutti hanno aggiornato l'app, assicurati che resti online su tutti i dispositivi per sincronizzare la chat."
 
 msgid "Not found"
 msgstr "Non trovato"
@@ -4016,9 +4092,6 @@ msgstr "Note per te"
 msgid "Nothing is read aloud"
 msgstr "Non viene letto niente ad alta voce"
 
-msgid "Nothing is saved until you continue."
-msgstr "Non viene salvato nulla finché non continui."
-
 msgid "Nothing loads until you accept. You can change this in Settings > Connection."
 msgstr "Non viene caricato nulla finché non accetti. Puoi cambiare questa scelta in Impostazioni > Connessione."
 
@@ -4040,9 +4113,6 @@ msgstr "Solo IP numerico e porta: 127.0.0.1:9050 o [::1]:9050. Non inserire URL 
 msgid "OFFLINE"
 msgstr "OFFLINE"
 
-msgid "OK"
-msgstr "Va bene"
-
 msgid "ONLINE"
 msgstr "ONLINE"
 
@@ -4057,6 +4127,9 @@ msgstr "Off"
 
 msgid "Off shows only \"New message\" without the text."
 msgstr "Se disattivata, mostra solo \"Nuovo messaggio\" senza il testo."
+
+msgid "Old queued messages were kept, but can't be assigned to a profile."
+msgstr "I vecchi messaggi in coda sono stati conservati, ma non possono essere assegnati a un profilo."
 
 msgid "On"
 msgstr "On"
@@ -4098,8 +4171,14 @@ msgstr "Quando l'agente ti fornisce il suo npub, usa Nuova chat per avviare una 
 msgid "One-tap reactions"
 msgstr "Reazioni con un tocco"
 
-msgid "Only group admins can change this setting."
-msgstr "Solo gli admin del gruppo possono modificare questa impostazione."
+msgid "Only a chat admin can turn on linked devices."
+msgstr "Solo un admin della chat può attivare i dispositivi collegati."
+
+msgid "Only future invitations will appear here until you link this device."
+msgstr "Finché non colleghi questo dispositivo, qui vedrai solo i nuovi inviti."
+
+msgid "Only link if both screens show the same seven emoji in the same order."
+msgstr "Collega solo se entrambi gli schermi mostrano le stesse sette emoji nello stesso ordine."
 
 msgid "Only the folder is removed. Its chats stay in your chat list."
 msgstr "Viene rimossa solo la cartella. Le sue chat restano nell'elenco delle chat."
@@ -4110,11 +4189,14 @@ msgstr "Solo tu vedi questo nome."
 msgid "Open"
 msgstr "Apri"
 
-msgid "Open a chat before inviting someone."
-msgstr "Apri una chat prima di invitare qualcuno."
+msgid "Open White Noise on the device that has your chats. Keep both devices online so you can compare the codes they show."
+msgstr "Apri White Noise sul dispositivo che contiene le tue chat. Tieni entrambi i dispositivi online per confrontare i codici che mostrano."
 
 msgid "Open chat"
 msgstr "Apri chat"
+
+msgid "Open chats"
+msgstr "Apri le chat"
 
 msgid "Open events in"
 msgstr "Apri eventi in"
@@ -4151,9 +4233,6 @@ msgstr "Apri link"
 
 msgid "Open locations in"
 msgstr "Apri le posizioni in"
-
-msgid "Open the first issue to share a problem with your group."
-msgstr "Apri la prima segnalazione per condividere un problema con il tuo gruppo."
 
 msgid "Open this link?"
 msgstr "Aprire questo link?"
@@ -4204,9 +4283,6 @@ msgstr "Facoltativo. Puoi configurare un proxy prima di scegliere un account, op
 msgid "Orange"
 msgstr "Arancione"
 
-msgid "Organize your conversations."
-msgstr "Organizza le tue conversazioni."
-
 msgid "Organize your folders"
 msgstr "Organizza le tue cartelle"
 
@@ -4224,6 +4300,15 @@ msgstr "Gli altri dispositivi, i profili pubblici e l'appartenenza ai gruppi res
 
 msgid "Other files"
 msgstr "Altri file"
+
+msgid "Other linked devices could not be reached for cleanup."
+msgstr "Non è stato possibile contattare gli altri dispositivi collegati per completare la pulizia."
+
+msgid "Other members' linked devices can join without an admin. This can't be turned off."
+msgstr "I dispositivi collegati degli altri membri possono entrare nella chat senza l'intervento di un admin. Non puoi disattivare questa funzione."
+
+msgid "Other profiles"
+msgstr "Altri profili"
 
 msgid "Out of stock"
 msgstr "Esaurito"
@@ -4301,9 +4386,6 @@ msgstr "Incolla il link di un pacchetto per vedere gli adesivi prima di aggiunge
 msgid "Paste an emoji set naddr, then choose Refresh."
 msgstr "Incolla il naddr di un set di emoji, poi scegli Aggiorna."
 
-msgid "Paste someone's public key to start a chat."
-msgstr "Incolla la chiave pubblica di qualcuno per avviare una chat."
-
 #, c-format
 msgid "Paste this into %s. Review the installation plan before approving changes."
 msgstr "Incolla questo prompt in %s. Verifica il piano di installazione prima di approvare le modifiche."
@@ -4332,9 +4414,6 @@ msgstr "Gli altri non riescono a invitarti"
 msgid "People you follow show up here."
 msgstr "Qui compaiono le persone che segui."
 
-msgid "People you follow show up here. To start a chat now, paste someone's public key in the field above."
-msgstr "Qui compaiono le persone che segui. Per avviare subito una chat, incolla la chiave pubblica di qualcuno nel campo qui sopra."
-
 msgid "People you follow show up here. To start a chat now, search for someone by name or paste their public key above."
 msgstr "Qui compaiono le persone che segui. Per avviare subito una chat, cerca qualcuno per nome o incolla la sua chiave pubblica qui sopra."
 
@@ -4349,9 +4428,6 @@ msgstr "Animali"
 
 msgid "Photos"
 msgstr "Foto"
-
-msgid "Pick a category"
-msgstr "Scegli una categoria"
 
 msgid "Pick a chat to send it to. They choose whether to use it."
 msgstr "Scegli una chat a cui inviarlo. Gli altri decidono se usarlo."
@@ -4371,14 +4447,8 @@ msgstr "Scegli una password con cui crittografare il backup. Senza di essa il fi
 msgid "Pick a password to encrypt the key with. You will need it to import the key anywhere else."
 msgstr "Scegli una password con cui crittografare la chiave. Ti servirà per importare la chiave altrove."
 
-msgid "Pick a task..."
-msgstr "Scegli un'attività..."
-
 msgid "Pick the whole app's look."
 msgstr "Scegli l'aspetto di tutta l'app."
-
-msgid "Picture"
-msgstr "Immagine"
 
 msgid "Picture published to your profile."
 msgstr "Immagine pubblicata sul tuo profilo."
@@ -4410,17 +4480,8 @@ msgstr "Riproduci"
 msgid "Play YouTube video"
 msgstr "Riproduci il video di YouTube"
 
-msgid "Play a sound"
-msgstr "Riproduci un suono"
-
-msgid "Play a sound for new messages"
-msgstr "Riproduci un suono per i nuovi messaggi"
-
 msgid "Play game"
 msgstr "Gioca"
-
-msgid "Play interface sounds"
-msgstr "Riproduci i suoni dell'interfaccia"
 
 msgid "Polish"
 msgstr "Polacco"
@@ -4462,6 +4523,9 @@ msgstr "Preparazione della lettura..."
 msgid "Preparing the cropped picture…"
 msgstr "Preparazione dell'immagine ritagliata…"
 
+msgid "Preparing the link request…"
+msgstr "Preparazione della richiesta di collegamento…"
+
 msgid "Preparing transcription..."
 msgstr "Preparazione della trascrizione..."
 
@@ -4501,14 +4565,11 @@ msgstr "Precedente / successivo nel visualizzatore media"
 msgid "Previous chat"
 msgstr "Chat precedente"
 
-msgid "Privacy"
-msgstr "Privacy"
+msgid "Previously linked on this device"
+msgstr "Già collegato in passato su questo dispositivo"
 
 msgid "Privacy & storage"
 msgstr "Privacy e archiviazione"
-
-msgid "Privacy, diagnostics, and developer tools."
-msgstr "Privacy, diagnostica e strumenti per sviluppatori."
 
 msgid "Private"
 msgstr "Privato"
@@ -4528,8 +4589,15 @@ msgstr "Anteprima dell'immagine del profilo"
 msgid "Profile text changes published."
 msgstr "Modifiche al testo del profilo pubblicate."
 
+#, c-format
+msgid "Profile: %s"
+msgstr "Profilo: %s"
+
 msgid "Progress is indeterminate."
 msgstr "L'avanzamento è indeterminato."
+
+msgid "Projects"
+msgstr "Progetti"
 
 msgid "Promote"
 msgstr "Promuovi"
@@ -4539,12 +4607,6 @@ msgstr "Prompt copiato. Incollalo nel tuo agente."
 
 msgid "Protect this computer"
 msgstr "Proteggi questo computer"
-
-msgid "Protect this device"
-msgstr "Proteggi questo dispositivo"
-
-msgid "Protecting this device…"
-msgstr "Protezione del dispositivo…"
 
 msgid "Public key"
 msgstr "Chiave pubblica"
@@ -4618,9 +4680,6 @@ msgstr "EVENTI GREZZI"
 msgid "RECENT"
 msgstr "RECENTI"
 
-msgid "RELAYS"
-msgstr "RELAY"
-
 msgid "RELAYS IN COMMON"
 msgstr "RELAY IN COMUNE"
 
@@ -4678,6 +4737,9 @@ msgstr "Set recenti dai tuoi relay di recupero eventi. Le anteprime contattano g
 msgid "Recenter"
 msgstr "Ricentra"
 
+msgid "Recognized on this device. Not linked."
+msgstr "Accesso riconosciuto su questo dispositivo. Nessun collegamento."
+
 msgid "Reconnecting to your signer"
 msgstr "Riconnessione al tuo firmatario"
 
@@ -4705,6 +4767,9 @@ msgstr "Aggiorna"
 
 msgid "Regular"
 msgstr "Normale"
+
+msgid "Rejected on another device"
+msgstr "Rifiutato su un altro dispositivo"
 
 msgid "Relative time"
 msgstr "Tempo relativo"
@@ -4736,17 +4801,29 @@ msgstr "Bordi in rilievo"
 msgid "Reload previews"
 msgstr "Ricarica le anteprime"
 
+msgid "Removal from this device could not be confirmed."
+msgstr "Non è stato possibile confermare la rimozione da questo dispositivo."
+
+msgid "Removal pending"
+msgstr "In attesa di rimozione"
+
 msgid "Remove"
 msgstr "Rimuovi"
-
-msgid "Remove account"
-msgstr "Rimuovi account"
 
 msgid "Remove admin rights?"
 msgstr "Rimuovere i diritti di admin?"
 
+msgid "Remove and sign in"
+msgstr "Rimuovi e accedi"
+
 msgid "Remove contact"
 msgstr "Rimuovi contatto"
+
+msgid "Remove device"
+msgstr "Rimuovi dispositivo"
+
+msgid "Remove from this device"
+msgstr "Rimuovi da questo dispositivo"
 
 msgid "Remove group"
 msgstr "Rimuovi gruppo"
@@ -4769,17 +4846,29 @@ msgstr "Rimuovi adesivo"
 msgid "Remove the conversation from this device."
 msgstr "Rimuovi la conversazione da questo dispositivo."
 
-msgid "Remove this account?"
-msgstr "Rimuovere questo account?"
-
 msgid "Remove this contact?"
 msgstr "Rimuovere questo contatto?"
+
+msgid "Remove this device?"
+msgstr "Rimuovere questo dispositivo?"
 
 msgid "Remove this member?"
 msgstr "Rimuovere questo membro?"
 
 msgid "Remove this relay?"
 msgstr "Rimuovere questo relay?"
+
+msgid "Remove this unlinked profile?"
+msgstr "Rimuovere questo profilo scollegato?"
+
+msgid "Remove unlinked profile?"
+msgstr "Rimuovere il profilo scollegato?"
+
+msgid "Removing the linked device…"
+msgstr "Rimozione del dispositivo collegato…"
+
+msgid "Removing the profile from this device…"
+msgstr "Rimozione del profilo da questo dispositivo…"
 
 msgid "Removing your account from this device"
 msgstr "Rimozione del tuo account da questo dispositivo"
@@ -4790,14 +4879,14 @@ msgstr "Rimozione…"
 msgid "Rename"
 msgstr "Rinomina"
 
+msgid "Rename this device"
+msgstr "Rinomina questo dispositivo"
+
 msgid "Renderer"
 msgstr "Renderer"
 
 msgid "Rendering toolpaths"
 msgstr "Visualizzazione dei percorsi di stampa"
-
-msgid "Reopen"
-msgstr "Riapri"
 
 msgid "Replaces the settings, drafts, custom emoji, and themes on this device."
 msgstr "Sostituisce impostazioni, bozze, emoji personalizzate e temi su questo dispositivo."
@@ -4814,10 +4903,6 @@ msgstr "Rispondi nel thread…"
 msgid "Replying"
 msgstr "Risposta"
 
-#, c-format
-msgid "Replying to: %s"
-msgstr "In risposta a: %s"
-
 msgid "Republish"
 msgstr "Ripubblica"
 
@@ -4827,23 +4912,23 @@ msgstr "Ripubblica elenchi relay"
 msgid "Republish your relay lists"
 msgstr "Ripubblica le tue liste di relay"
 
-msgid "Requesting your location. Approve the desktop permission prompt if shown."
-msgstr "Richiesta della tua posizione in corso. Autorizza l'accesso nella finestra dei permessi del desktop, se viene mostrata."
-
 msgid "Requesting your location. Approve the permission prompt if shown."
 msgstr "Richiesta della tua posizione in corso. Approva la richiesta di autorizzazione, se viene mostrata."
 
 msgid "Reset"
 msgstr "Ripristina"
 
+msgid "Reset and link again"
+msgstr "Reimposta e collega di nuovo"
+
+msgid "Reset this device list?"
+msgstr "Reimpostare questo elenco dei dispositivi?"
+
 msgid "Reset zoom"
 msgstr "Ripristina lo zoom"
 
-msgid "Resolve"
-msgstr "Segna come risolta"
-
-msgid "Resolved"
-msgstr "Risolta"
+msgid "Resetting the device list and publishing a key package…"
+msgstr "Reimpostazione dell'elenco dei dispositivi e pubblicazione di un pacchetto chiavi…"
 
 msgid "Restart now"
 msgstr "Riavvia ora"
@@ -4863,6 +4948,9 @@ msgstr "Ripristina le reazioni predefinite"
 msgid "Restore the last chat on launch"
 msgstr "Riapri l'ultima chat all'avvio"
 
+msgid "Resume device linking"
+msgstr "Riprendi il collegamento del dispositivo"
+
 msgid "Retry"
 msgstr "Riprova"
 
@@ -4872,20 +4960,29 @@ msgstr "Mostra"
 msgid "Reveal hidden message"
 msgstr "Mostra il messaggio nascosto"
 
-msgid "Reveal private key (nsec)"
-msgstr "Mostra chiave privata (nsec)"
-
 msgid "Reveal secret key (nsec)"
 msgstr "Mostra chiave segreta (nsec)"
 
 msgid "Reveal your secret key"
 msgstr "Mostra la tua chiave segreta"
 
+msgid "Review"
+msgstr "Controlla"
+
 msgid "Review and approve"
 msgstr "Verifica e approva"
 
+msgid "Review chats"
+msgstr "Controlla le chat"
+
 msgid "Review local data deletion"
 msgstr "Controlla l'eliminazione dei dati locali"
+
+msgid "Review postponed"
+msgstr "Verifica rimandata"
+
+msgid "Review request"
+msgstr "Controlla la richiesta"
 
 msgid "Review signer approval link"
 msgstr "Controlla il link di approvazione del firmatario"
@@ -4893,8 +4990,8 @@ msgstr "Controlla il link di approvazione del firmatario"
 msgid "Review signer permissions"
 msgstr "Controlla i permessi del firmatario"
 
-msgid "Review starting over"
-msgstr "Valuta di ricominciare"
+msgid "Review unlinked profiles"
+msgstr "Controlla i profili scollegati"
 
 msgid "Review your public profile"
 msgstr "Controlla il tuo profilo pubblico"
@@ -4942,17 +5039,11 @@ msgstr "Russo"
 msgid "SEARCH"
 msgstr "CERCA"
 
-msgid "SEE ALSO"
-msgstr "VEDI ANCHE"
-
 msgid "SEEDS"
 msgstr "COLORI BASE"
 
 msgid "SEND WITH EFFECT"
 msgstr "INVIA CON EFFETTO"
-
-msgid "SETTINGS"
-msgstr "IMPOSTAZIONI"
 
 msgid "SHARED THEME"
 msgstr "TEMA CONDIVISO"
@@ -5030,6 +5121,9 @@ msgstr "Salva le modifiche, poi riavvia White Noise per applicarle."
 msgid "Save file"
 msgstr "Salva file"
 
+msgid "Save name"
+msgstr "Salva nome"
+
 msgid "Save sticker"
 msgstr "Salva adesivo"
 
@@ -5051,6 +5145,12 @@ msgstr "Salvato su questo dispositivo. In attesa di consegna ai relay."
 
 msgid "Saved. Restart White Noise to apply this connection setting."
 msgstr "Salvato. Riavvia White Noise per applicare questa impostazione di connessione."
+
+msgid "Saving the device name…"
+msgstr "Salvataggio del nome del dispositivo…"
+
+msgid "Saving the device setting…"
+msgstr "Salvataggio dell'impostazione del dispositivo…"
 
 msgid "Saving vote…"
 msgstr "Salvataggio del voto…"
@@ -5106,12 +5206,6 @@ msgstr "Cerca per nome o indirizzo Nostr, oppure incolla una chiave pubblica..."
 msgid "Search by name or paste public keys..."
 msgstr "Cerca per nome o incolla chiavi pubbliche..."
 
-msgid "Search contacts or paste a public key..."
-msgstr "Cerca contatti o incolla una chiave pubblica..."
-
-msgid "Search contacts or paste public keys..."
-msgstr "Cerca contatti o incolla chiavi pubbliche..."
-
 msgid "Search contacts..."
 msgstr "Cerca contatti..."
 
@@ -5129,9 +5223,6 @@ msgstr "Cerca qualcuno o incolla la sua chiave pubblica per avviare una chat."
 
 msgid "Search images"
 msgstr "Cerca immagini"
-
-msgid "Search issues"
-msgstr "Cerca segnalazioni"
 
 msgid "Search messages"
 msgstr "Cerca messaggi"
@@ -5172,20 +5263,8 @@ msgstr "Chiave segreta copiata"
 msgid "Security"
 msgstr "Sicurezza"
 
-msgid "Security & privacy"
-msgstr "Sicurezza e privacy"
-
 msgid "Security actions"
 msgstr "Azioni di sicurezza"
-
-msgid "See also"
-msgstr "Vedi anche"
-
-msgid "See and hear it with today's sound and preview settings."
-msgstr "Guardala e ascoltala con le impostazioni attuali di suono e anteprima."
-
-msgid "See and hear it with your current sound and preview settings."
-msgstr "Guardala e ascoltala con le tue impostazioni attuali di audio e anteprima."
 
 msgid "See where your data is stored"
 msgstr "Vedi dove sono salvati i tuoi dati"
@@ -5201,12 +5280,6 @@ msgstr "Seleziona un contatto dall'elenco."
 
 msgid "Select a model to download it for dictation and audio messages."
 msgstr "Seleziona un modello da scaricare per la dettatura e i messaggi audio."
-
-msgid "Select an issue"
-msgstr "Seleziona una segnalazione"
-
-msgid "Select an issue to read its discussion."
-msgstr "Seleziona una segnalazione per leggere la discussione."
 
 msgid "Self-hosted personal AI assistant"
 msgstr "Assistente IA personale ospitato sul tuo computer o server"
@@ -5248,9 +5321,6 @@ msgstr "Invia con un effetto"
 msgid "Send your daily GM to this chat?"
 msgstr "Vuoi inviare il tuo GM giornaliero a questa chat?"
 
-msgid "Sender name or hex public key"
-msgstr "Nome del mittente o chiave pubblica esadecimale"
-
 msgid "Sender name or public key"
 msgstr "Nome del mittente o chiave pubblica"
 
@@ -5269,9 +5339,6 @@ msgstr "set"
 
 msgid "Serbian"
 msgstr "Serbo"
-
-msgid "Set"
-msgstr "Impostata"
 
 #, c-format
 msgid "Set up %s"
@@ -5314,8 +5381,8 @@ msgstr "Impostazioni: notifiche"
 msgid "Settings: privacy and storage"
 msgstr "Impostazioni: privacy e archiviazione"
 
-msgid "Setup prompts for connecting an AI agent to White Noise."
-msgstr "Prompt di configurazione per collegare un agente IA a White Noise."
+msgid "Several devices are trying to link. Cancel the other attempts to continue."
+msgstr "Più dispositivi stanno tentando di collegarsi. Annulla gli altri tentativi per continuare."
 
 msgid "Shadow card"
 msgstr "Ombra scheda"
@@ -5328,9 +5395,6 @@ msgstr "Ombra popover"
 
 msgid "Shadow soft"
 msgstr "Ombra morbida"
-
-msgid "Share a problem with your group."
-msgstr "Condividi un problema con il tuo gruppo."
 
 msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
 msgstr "Condividi tempi di esecuzione aggregati e diagnostica dei relay. Non viene inviato nulla quando questa opzione è disattivata."
@@ -5380,9 +5444,6 @@ msgstr "Mostra una mappa per ogni posizione condivisa. Le immagini della mappa v
 msgid "Show all chats"
 msgstr "Mostra tutte le chat"
 
-msgid "Show as QR"
-msgstr "Mostra come QR"
-
 msgid "Show contact list"
 msgstr "Mostra l'elenco contatti"
 
@@ -5410,17 +5471,14 @@ msgstr "Mostra meno"
 msgid "Show maps from OpenStreetMap?"
 msgstr "Mostrare le mappe di OpenStreetMap?"
 
-msgid "Show message preview"
-msgstr "Mostra anteprima del messaggio"
-
-msgid "Show or hide message previews"
-msgstr "Mostra o nascondi l'anteprima dei messaggi"
-
 msgid "Show original"
 msgstr "Mostra originale"
 
 msgid "Show passwords"
 msgstr "Mostra password"
+
+msgid "Show this profile's keys"
+msgstr "Mostra le chiavi di questo profilo"
 
 msgid "Show translation"
 msgstr "Mostra traduzione"
@@ -5439,11 +5497,14 @@ msgstr "Firmare eventi di questi tipi: %s"
 msgid "Sign in as %s"
 msgstr "Accedi come %s"
 
-msgid "Sign in to your Nostr identity"
-msgstr "Accedi alla tua identità Nostr"
-
 msgid "Sign out"
 msgstr "Disconnetti"
+
+msgid "Sign out and wipe"
+msgstr "Disconnetti e cancella"
+
+msgid "Sign out and wipe your profile?"
+msgstr "Disconnettersi e cancellare il tuo profilo?"
 
 msgid "Sign out of this account?"
 msgstr "Disconnettersi da questo account?"
@@ -5451,8 +5512,26 @@ msgstr "Disconnettersi da questo account?"
 msgid "Sign-in is unavailable. Check your connection settings and restart White Noise."
 msgstr "Non puoi accedere al momento. Controlla le impostazioni di connessione e riavvia White Noise."
 
+msgid "Sign-ins"
+msgstr "Accessi"
+
+msgid "Sign-out and wipe report"
+msgstr "Resoconto di disconnessione e cancellazione"
+
+msgid "Sign-out on this device could not be confirmed."
+msgstr "Non è stato possibile confermare la disconnessione su questo dispositivo."
+
 msgid "Signal call"
 msgstr "Chiamata Signal"
+
+msgid "Signed in before this device"
+msgstr "Accesso precedente a quello su questo dispositivo"
+
+msgid "Signed in on another device?"
+msgstr "Hai effettuato l'accesso su un altro dispositivo?"
+
+msgid "Signed out"
+msgstr "Disconnesso"
 
 msgid "Signed out. Choose it to sign back in."
 msgstr "Disconnesso. Sceglilo per accedere di nuovo."
@@ -5475,8 +5554,14 @@ msgstr "Firmatario non disponibile"
 msgid "Signer unavailable. Reconnect from Add account."
 msgstr "Firmatario non disponibile. Riconnettiti da Aggiungi account."
 
+msgid "Signing out"
+msgstr "Disconnessione in corso"
+
 msgid "Signing out and removing your signer session"
 msgstr "Disconnessione e rimozione della sessione del tuo firmatario"
+
+msgid "Signing out and wiping this device's copy of the profile"
+msgstr "Disconnessione e cancellazione della copia del profilo su questo dispositivo"
 
 msgid "Signing you in"
 msgstr "Accesso in corso"
@@ -5509,8 +5594,20 @@ msgstr "Faccine ed emozioni"
 msgid "Sold"
 msgstr "Venduto"
 
+msgid "Some chat changes weren't delivered"
+msgstr "Alcune modifiche alla chat non sono state recapitate"
+
+msgid "Some chats couldn't be checked. Please try again."
+msgstr "Impossibile controllare alcune chat. Riprova."
+
+msgid "Some devices need to be replaced before linked devices can be turned on."
+msgstr "Alcuni dispositivi devono essere sostituiti prima di poter attivare i dispositivi collegati."
+
 msgid "Some network results may be missing."
 msgstr "Alcuni risultati della rete potrebbero mancare."
+
+msgid "Someone may have your private key"
+msgstr "Qualcuno potrebbe avere la tua chiave privata"
 
 msgid "Sort chats by"
 msgstr "Ordina chat per"
@@ -5539,9 +5636,6 @@ msgstr "Spagnolo"
 msgid "Sparkle manages update checks and downloads."
 msgstr "Sparkle gestisce il controllo e il download degli aggiornamenti."
 
-msgid "Speech"
-msgstr "Voce"
-
 msgid "Speech model"
 msgstr "Modello vocale"
 
@@ -5557,9 +5651,6 @@ msgstr "Avvia"
 msgid "Start a chat"
 msgstr "Avvia una chat"
 
-msgid "Start a chat with this public key"
-msgstr "Avvia una chat con questa chiave pubblica"
-
 msgid "Start a group and invite people."
 msgstr "Crea un gruppo e invita altre persone."
 
@@ -5569,8 +5660,17 @@ msgstr "Avvia chat"
 msgid "Start day"
 msgstr "Giorno iniziale"
 
+msgid "Start fresh"
+msgstr "Ricomincia da zero"
+
+msgid "Start fresh on this device?"
+msgstr "Ricominciare da zero su questo dispositivo?"
+
 msgid "Start group"
 msgstr "Crea gruppo"
+
+msgid "Start linking"
+msgstr "Avvia il collegamento"
 
 msgid "Start minimized to tray"
 msgstr "Avvia ridotto a icona nell'area di notifica"
@@ -5585,11 +5685,14 @@ msgstr "Avviato offline: %s"
 msgid "Starting a chat does not add someone to People. You can also import a contacts CSV or JSON export."
 msgstr "Avviare una chat non aggiunge la persona ai Contatti. Puoi anche importare un'esportazione dei contatti in formato CSV o JSON."
 
+msgid "Starting device linking…"
+msgstr "Avvio del collegamento del dispositivo…"
+
+msgid "Starting fresh on this device…"
+msgstr "Ripartenza da zero su questo dispositivo…"
+
 msgid "Starting microphone…"
 msgstr "Avvio del microfono…"
-
-msgid "Starting over deletes the vault on this device and everything sealed with it: account keys stored here, remote signer sessions, unsent messages, saved stickers and GIFs, and cached media. This can't be undone. Signing in again later can give you your account back, but not what was deleted, and your chats may not return."
-msgstr "Ricominciare elimina la cassaforte su questo dispositivo e tutto ciò che è sigillato con essa: le chiavi degli account salvate qui, le sessioni dei firmatari remoti, i messaggi non inviati, gli sticker e le GIF salvati e i media nella cache. Non si può annullare. Accedere di nuovo in seguito può restituirti l'account, ma non ciò che è stato eliminato, e le tue chat potrebbero non tornare."
 
 msgid "Starting the runtime"
 msgstr "Avvio del runtime"
@@ -5631,18 +5734,15 @@ msgstr "Adesivi"
 msgid "Stickers: %d"
 msgstr "Adesivi: %d"
 
+msgid "Still trying to bring earlier messages from your other device…"
+msgstr "Sto ancora cercando di recuperare i messaggi precedenti dall'altro tuo dispositivo…"
+
 #, c-format
 msgid "Stock: %s"
 msgstr "Disponibilità: %s"
 
 msgid "Stop reading"
 msgstr "Interrompi lettura"
-
-msgid "Storage"
-msgstr "Archiviazione"
-
-msgid "Store it in a password manager. It is separate from your nsec, remote signer, and backup file passwords."
-msgstr "Conservala in un gestore di password. È distinta dal tuo nsec, dal tuo firmatario remoto e dalle password dei file di backup."
 
 msgid "Store it somewhere safe and close this dialog. Anyone who imports it will need the password you just entered to decrypt it."
 msgstr "Conservala in un posto sicuro e chiudi questa finestra. Chiunque la importi avrà bisogno della password che hai appena inserito per decifrarla."
@@ -5652,9 +5752,6 @@ msgstr "Salvato su questo dispositivo, non ancora pubblicato su alcun relay."
 
 msgid "Stripes"
 msgstr "Righe"
-
-msgid "Strong"
-msgstr "Robusta"
 
 msgid "Strong enough"
 msgstr "Abbastanza robusta"
@@ -5676,6 +5773,9 @@ msgstr "Swahili (Tanzania)"
 
 msgid "Swedish"
 msgstr "Svedese"
+
+msgid "Switching profiles and checking the request…"
+msgstr "Cambio di profilo e verifica della richiesta…"
 
 msgid "Switching your account"
 msgstr "Cambio del tuo account in corso"
@@ -5703,9 +5803,6 @@ msgstr "TESTO"
 
 msgid "TIMINGS"
 msgstr "TEMPI"
-
-msgid "TROUBLESHOOTERS"
-msgstr "RISOLUZIONE DEI PROBLEMI"
 
 msgid "Tab to focus Publish. Press Enter or Space to activate it."
 msgstr "Premi Tab per raggiungere il pulsante di pubblicazione. Premi Invio o Spazio per attivarlo."
@@ -5751,9 +5848,6 @@ msgstr "Terreno: %d/5"
 msgid "Test notification"
 msgstr "Notifica di prova"
 
-msgid "Test notification sent."
-msgstr "Notifica di prova inviata."
-
 msgid "Text"
 msgstr "Testo"
 
@@ -5774,10 +5868,6 @@ msgstr "Testo medio"
 
 msgid "Text uses the typeface this theme ships with."
 msgstr "Il testo usa il carattere incluso in questo tema."
-
-#, c-format
-msgid "Text: %s"
-msgstr "Testo: %s"
 
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
 msgstr "Tratti con texture e avatar abbozzati. Le forme restano fisse."
@@ -5806,11 +5896,20 @@ msgstr "La chiamata si svolge fuori da White Noise."
 msgid "The chat leaves your list. Joining later needs a new invite."
 msgstr "La chat esce dal tuo elenco. Per unirti più avanti serve un nuovo invito."
 
+msgid "The codes didn't match. Only link devices whose codes match exactly."
+msgstr "I codici non corrispondevano. Collega solo i dispositivi i cui codici corrispondono esattamente."
+
 msgid "The colors and settings you changed in the editor are lost."
 msgstr "I colori e le impostazioni che hai cambiato nell'editor andranno persi."
 
+msgid "The comparison code is missing or invalid. Don't approve this request."
+msgstr "Il codice da confrontare manca o non è valido. Non approvare questa richiesta."
+
 msgid "The conversation and its messages are removed from this device. This can't be undone."
 msgstr "La conversazione e i suoi messaggi vengono rimossi da questo dispositivo. Non puoi annullare questa azione."
+
+msgid "The device list was reset, but the key package couldn't be published. Start linking to try again."
+msgstr "L'elenco dei dispositivi è stato reimpostato, ma non è stato possibile pubblicare il pacchetto chiavi. Avvia il collegamento per riprovare."
 
 msgid "The group name was removed"
 msgstr "Il nome del gruppo è stato rimosso"
@@ -5819,11 +5918,17 @@ msgstr "Il nome del gruppo è stato rimosso"
 msgid "The group was renamed to %s"
 msgstr "Il gruppo è stato rinominato in %s"
 
+msgid "The link attempt ended."
+msgstr "Il tentativo di collegamento è terminato."
+
+msgid "The link request expired."
+msgstr "La richiesta di collegamento è scaduta."
+
+msgid "The linked devices change isn't confirmed yet."
+msgstr "La modifica ai dispositivi collegati non è ancora confermata."
+
 msgid "The new password re-encrypts the vault on this device. White Noise still can't reset it. If you forget it, the only way forward is to delete this vault and start over."
 msgstr "La nuova password cifra di nuovo la cassaforte su questo dispositivo. White Noise non può comunque reimpostarla. Se la dimentichi, l'unica strada è eliminare questa cassaforte e ricominciare."
-
-msgid "The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec."
-msgstr "La nuova password crittografa di nuovo le chiavi di questo dispositivo. Non c'è comunque modo di recuperarla: se la dimentichi dovrai ripartire dal tuo nsec."
 
 msgid "The ngit web client a patch card opens. That site receives the patch link."
 msgstr "Il client web ngit in cui si apre una scheda patch. Quel sito riceve il link alla patch."
@@ -5834,8 +5939,17 @@ msgstr "Il servizio di notifica ha accettato il test. Controlla le notifiche di 
 msgid "The original message isn't loaded in this view."
 msgstr "Il messaggio originale non è caricato in questa vista."
 
+msgid "The other device cancelled linking."
+msgstr "L'altro dispositivo ha annullato il collegamento."
+
+msgid "The other device declined the request."
+msgstr "L'altro dispositivo ha rifiutato la richiesta."
+
 msgid "The passwords don't match. Type them again."
 msgstr "Le password non corrispondono. Digitale di nuovo."
+
+msgid "The signer record could not be removed from the encrypted vault."
+msgstr "Non è stato possibile rimuovere il record del firmatario dalla cassaforte cifrata."
 
 msgid "The signer request was cancelled."
 msgstr "La richiesta al firmatario è stata annullata."
@@ -5843,15 +5957,9 @@ msgstr "La richiesta al firmatario è stata annullata."
 msgid "The updated list is published to your relays."
 msgstr "L'elenco aggiornato viene pubblicato sui tuoi relay."
 
-msgid "The vault on this device was deleted. Pick a new password to start over."
-msgstr "La cassaforte su questo dispositivo è stata eliminata. Scegli una nuova password per ricominciare."
-
 #, c-format
 msgid "The web client an event card opens. For example %s. %s is replaced with the event id."
 msgstr "Il client web in cui si apre una scheda evento. Per esempio %s. %s viene sostituito con l'id dell'evento."
-
-msgid "Their messages stay hidden until you show them, and you can't message them directly. Nothing is published, and you can undo it here."
-msgstr "I suoi messaggi restano nascosti finché non li mostri e non puoi scrivergli direttamente. Non viene pubblicato nulla e puoi annullare da qui."
 
 msgid "Their messages stay hidden until you show them. Nothing is published, and you can unblock them here."
 msgstr "I suoi messaggi restano nascosti finché non li mostri. Non viene pubblicato nulla e puoi sbloccare questa persona qui."
@@ -5878,9 +5986,6 @@ msgstr "Tema salvato"
 msgid "Theme shared with %s"
 msgstr "Tema condiviso con %s"
 
-msgid "Themes, text size, and the look of your conversations."
-msgstr "Temi, dimensione del testo e aspetto delle tue conversazioni."
-
 msgid "These are installation prompts. Choose your agent, review its prompt, and paste it into that agent to connect it to White Noise. The prompt includes your public npub, never your private key, and asks the agent to explain the connector before requesting your approval to install it. Use only an agent you run and trust."
 msgstr "Questi sono prompt di installazione. Scegli il tuo agente, leggi il suo prompt e incollalo nell'agente per collegarlo a White Noise. Il prompt include il tuo npub pubblico, mai la tua chiave privata, e chiede all'agente di spiegare il connettore prima di richiedere la tua approvazione per installarlo. Usa solo un agente che gestisci e di cui ti fidi."
 
@@ -5893,11 +5998,20 @@ msgstr "Può essere aggiunto a una chat."
 msgid "They come off your published contact list. Groups you already share stay as they are."
 msgstr "Viene tolto dal tuo elenco contatti pubblicato. I gruppi che avete già in comune restano come sono."
 
+msgid "They don't match"
+msgstr "Non corrispondono"
+
 msgid "They haven't published a relay list."
 msgstr "Non ha pubblicato un elenco relay."
 
 msgid "They lose access to new messages in this group."
 msgstr "Perde l'accesso ai nuovi messaggi di questo gruppo."
+
+msgid "They match"
+msgstr "Corrispondono"
+
+msgid "They match, link device"
+msgstr "Corrispondono, collega il dispositivo"
 
 msgid "They stay in the group as a regular member."
 msgstr "Resta nel gruppo come membro normale."
@@ -5905,11 +6019,47 @@ msgstr "Resta nel gruppo come membro normale."
 msgid "This can't be undone."
 msgstr "Questa operazione è irreversibile."
 
+msgid "This chat doesn't support linked devices."
+msgstr "Questa chat non supporta i dispositivi collegati."
+
+msgid "This chat exceeds the device limit."
+msgstr "Questa chat supera il limite di dispositivi."
+
+msgid "This chat has no relays for inviting linked devices."
+msgstr "Questa chat non ha relay per invitare i dispositivi collegati."
+
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr "Questa chat è archiviata. Ripristinala dall'Archivio per inviare messaggi."
 
 msgid "This creates a new Nostr identity, separate from any account you already use."
 msgstr "Questa operazione crea una nuova identità Nostr, separata dagli account che usi già."
+
+msgid "This deletes the keys and chats for this profile from this device. It doesn't remove the profile or its chats from other devices. This can't be undone."
+msgstr "Le chiavi e le chat di questo profilo vengono eliminate da questo dispositivo. Il profilo e le sue chat non vengono rimossi dagli altri dispositivi. Non si può annullare."
+
+msgid "This device"
+msgstr "Questo dispositivo"
+
+msgid "This device can't be linked."
+msgstr "Questo dispositivo non può essere collegato."
+
+msgid "This device can't catch up with your other devices."
+msgstr "Questo dispositivo non riesce a sincronizzarsi con gli altri tuoi dispositivi."
+
+msgid "This device can't link because it doesn't support everything this profile needs."
+msgstr "Questo dispositivo non può collegarsi perché non supporta tutte le funzioni necessarie per questo profilo."
+
+msgid "This device forgets its local device list and unfinished sync. Your chats and keys stay. Link again to get a new device list."
+msgstr "Questo dispositivo cancella l'elenco locale dei dispositivi e la sincronizzazione incompleta. Le tue chat e le tue chiavi restano. Collegalo di nuovo per ottenere un nuovo elenco dei dispositivi."
+
+msgid "This device is no longer in your device list."
+msgstr "Questo dispositivo non è più nel tuo elenco dei dispositivi."
+
+msgid "This device tries to leave its chats, then deletes its local copy of the profile, including its keys and chats. This can't be undone."
+msgstr "Questo dispositivo prova a uscire dalle chat, poi cancella la sua copia del profilo, comprese le chiavi e le chat. Non si può annullare."
+
+msgid "This device was unlinked. Remove the unlinked profile before signing in again."
+msgstr "Questo dispositivo è stato scollegato. Rimuovi il profilo scollegato prima di accedere di nuovo."
 
 msgid "This event is no longer available."
 msgstr "Questo evento non è più disponibile."
@@ -5968,14 +6118,8 @@ msgstr "Questo numero aumenta quando cambiano le chiavi di crittografia del grup
 msgid "This pairing link is too long for a QR code. Use Copy pairing link."
 msgstr "Questo link di abbinamento è troppo lungo per un codice QR. Usa Copia link di abbinamento."
 
-msgid "This password encrypts the vault on this device. It doesn't create an account, and White Noise can't reset it."
-msgstr "Questa password cifra la cassaforte su questo dispositivo. Non crea un account e White Noise non può reimpostarla."
-
 msgid "This password is easy to guess. Someone with this device could guess it and open the vault."
 msgstr "Questa password è facile da indovinare. Chi ha questo dispositivo potrebbe indovinarla e aprire la cassaforte."
-
-msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
-msgstr "Questa password è troppo facile da indovinare. Usa parole non correlate o una password generata da un gestore di password."
 
 msgid "This password protects sensitive local data. It is not a service login or a password to share with contacts. Save it in your password manager."
 msgstr "Questa password protegge i dati sensibili locali. Non serve per accedere a un servizio e non va condivisa con i tuoi contatti. Salvala nel tuo gestore di password."
@@ -5983,8 +6127,26 @@ msgstr "Questa password protegge i dati sensibili locali. Non serve per accedere
 msgid "This preview stays on your device. Publishing uploads the picture and adds it to your public profile, separately from your text draft."
 msgstr "L'anteprima resta sul tuo dispositivo. Quando pubblichi, l'immagine viene caricata e aggiunta al tuo profilo pubblico, separatamente dalla bozza di testo."
 
+msgid "This profile has reached its device limit. Unlink an existing device before trying again."
+msgstr "Questo profilo ha raggiunto il limite di dispositivi. Scollega un dispositivo prima di riprovare."
+
+msgid "This profile has too many linked devices. Remove a device and try again."
+msgstr "Questo profilo ha troppi dispositivi collegati. Rimuovi un dispositivo e riprova."
+
+msgid "This profile is no longer unlinked."
+msgstr "Questo profilo non è più scollegato."
+
 msgid "This relay is already in your list."
 msgstr "Questo relay è già nel tuo elenco."
+
+msgid "This request is no longer active."
+msgstr "Questa richiesta non è più attiva."
+
+msgid "This request was answered on another device."
+msgstr "Questa richiesta ha già ricevuto una risposta su un altro dispositivo."
+
+msgid "This sign-in was rejected on one of your devices."
+msgstr "Questo accesso è stato rifiutato su uno dei tuoi dispositivi."
 
 msgid "This step does not publish your chats."
 msgstr "Questo passaggio non pubblica le tue chat."
@@ -5992,11 +6154,14 @@ msgstr "Questo passaggio non pubblica le tue chat."
 msgid "This sticker is not in the current pack."
 msgstr "Questo adesivo non è nel pacchetto attuale."
 
+msgid "This was me, don't link"
+msgstr "Ero io, non collegare"
+
+msgid "This wasn't me"
+msgstr "Non ero io"
+
 msgid "Thread"
 msgstr "Thread"
-
-msgid "Three things and you can send your first message."
-msgstr "Tre passaggi e puoi inviare il tuo primo messaggio."
 
 #, c-format
 msgid "Through: %s"
@@ -6029,9 +6194,6 @@ msgstr "Carattere del titolo"
 msgid "Title wash"
 msgstr "Sfumatura del titolo"
 
-msgid "To start a chat with someone new, paste their public key."
-msgstr "Per avviare una chat con una persona nuova, incolla la sua chiave pubblica."
-
 msgid "To use the same identity after starting over, you need its secret key saved elsewhere or access to its remote signer. The signer's private key stays with that signer. Without either, you cannot sign in to that identity. Signing in again does not restore this device's chats. A settings backup does not contain account keys or message history."
 msgstr "Per usare la stessa identità dopo aver ricominciato, devi avere la sua chiave segreta salvata altrove o poter accedere al suo firmatario remoto. La chiave privata del firmatario rimane presso quel firmatario. Senza l'una né l'altro, non puoi accedere a quell'identità. Accedere di nuovo non ripristina le chat di questo dispositivo. Un backup delle impostazioni non contiene le chiavi degli account né la cronologia dei messaggi."
 
@@ -6044,8 +6206,8 @@ msgstr "Attiva/disattiva la modalità sviluppatore"
 msgid "Too easy to guess"
 msgstr "Troppo facile da indovinare"
 
-msgid "Too weak"
-msgstr "Troppo debole"
+msgid "Too many recent attempts. Try again later."
+msgstr "Troppi tentativi in poco tempo. Riprova più tardi."
 
 msgid "Toolbar button"
 msgstr "Pulsante della barra degli strumenti"
@@ -6110,9 +6272,6 @@ msgstr "Viaggi e luoghi"
 msgid "Trophy"
 msgstr "Trofeo"
 
-msgid "Troubleshooters"
-msgstr "Risoluzione dei problemi"
-
 msgid "Troubleshooting"
 msgstr "Risoluzione dei problemi"
 
@@ -6128,6 +6287,10 @@ msgstr "Prova un'altra ricerca."
 msgid "Try again"
 msgstr "Riprova"
 
+#, c-format
+msgid "Try again after %s."
+msgstr "Riprova dopo %s."
+
 msgid "Tuesday"
 msgstr "martedì"
 
@@ -6137,11 +6300,29 @@ msgstr "Turco"
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "Disattiva transizioni animate, voli ed effetti. Lo stato cambia comunque, ma nulla si muove."
 
+msgid "Turn on anyway"
+msgstr "Attiva comunque"
+
 msgid "Turn on desktop notifications to change these options or send a test."
 msgstr "Attiva le notifiche sul desktop per modificare queste opzioni o inviare una prova."
 
 msgid "Turn on developer mode"
 msgstr "Attiva la modalità sviluppatore"
+
+msgid "Turn on linked devices"
+msgstr "Attiva i dispositivi collegati"
+
+msgid "Turn on linked devices?"
+msgstr "Attivare i dispositivi collegati?"
+
+msgid "Turning on linked devices…"
+msgstr "Attivazione dei dispositivi collegati…"
+
+msgid "Turning this off doesn't leave any chats."
+msgstr "Se disattivi questa opzione, il dispositivo resta nelle chat a cui partecipa."
+
+msgid "Turning this on doesn't bring history to chats this device already joined."
+msgstr "Se attivi questa opzione, la cronologia non viene importata per le chat a cui questo dispositivo partecipa già."
 
 msgid "Type a command"
 msgstr "Digita un comando"
@@ -6179,9 +6360,15 @@ msgstr "Sblocca"
 msgid "Unfiled"
 msgstr "Senza cartella"
 
+msgid "Unknown app"
+msgstr "App sconosciuta"
+
 #, c-format
 msgid "Unknown event kind %d"
 msgstr "Tipo di evento sconosciuto %d"
+
+msgid "Unknown link request state."
+msgstr "Stato della richiesta di collegamento sconosciuto."
 
 msgid "Unlock"
 msgstr "Sblocca"
@@ -6195,6 +6382,9 @@ msgstr "Sblocco…"
 msgid "Unmute"
 msgstr "Riattiva"
 
+msgid "Unnamed device"
+msgstr "Dispositivo senza nome"
+
 msgid "Unnamed group"
 msgstr "Gruppo senza nome"
 
@@ -6207,8 +6397,12 @@ msgstr "Non lette"
 msgid "Unread first"
 msgstr "Prima le non lette"
 
-msgid "Unresolved"
-msgstr "Aperta"
+#, c-format
+msgid "Unrecognized activity: %s."
+msgstr "Attività non riconosciuta: %s."
+
+msgid "Unrecognized sign-in"
+msgstr "Accesso non riconosciuto"
 
 msgid "Unsupported attachment format."
 msgstr "Formato dell'allegato non supportato."
@@ -6228,8 +6422,8 @@ msgstr "Aggiornamenti"
 msgid "Updates are disabled while a SOCKS5 proxy is configured. Sparkle cannot safely use the app's explicit proxy. Disable the proxy and restart to update, or install an authenticated release manually."
 msgstr "Gli aggiornamenti sono disattivati mentre è configurato un proxy SOCKS5. Sparkle non può usare il proxy dell’app in modo sicuro. Disattiva il proxy e riavvia per aggiornare, oppure installa manualmente una versione autenticata."
 
-msgid "Updating issue tracking..."
-msgstr "Aggiornamento del tracciamento delle segnalazioni..."
+msgid "Updating the sign-in…"
+msgstr "Aggiornamento dell'accesso…"
 
 msgid "Updating your contacts"
 msgstr "Aggiornamento dei tuoi contatti"
@@ -6273,8 +6467,8 @@ msgstr "Usa una ricerca più breve."
 msgid "Use an existing account"
 msgstr "Usa un account esistente"
 
-msgid "Use crop circle"
-msgstr "Usa il crop circle"
+msgid "Use at most 64 bytes for the device name."
+msgstr "Usa al massimo 64 byte per il nome del dispositivo."
 
 msgid "Use current location"
 msgstr "Usa la posizione attuale"
@@ -6351,9 +6545,6 @@ msgstr "Visualizza in esadecimale"
 msgid "View event data"
 msgstr "Visualizza dati dell’evento"
 
-msgid "View keyboard shortcuts"
-msgstr "Vedi le scorciatoie da tastiera"
-
 msgid "View profile"
 msgstr "Vedi il profilo"
 
@@ -6387,11 +6578,35 @@ msgstr "VERRANNO ELIMINATI"
 msgid "WIREFRAME"
 msgstr "WIREFRAME"
 
+msgid "Wait"
+msgstr "Attendi"
+
+msgid "Wait for sign-out to finish before sending."
+msgstr "Attendi che la disconnessione sia completata prima di inviare."
+
+msgid "Wait for this chat to finish catching up, then try again."
+msgstr "Attendi che questa chat finisca di sincronizzarsi, poi riprova."
+
+msgid "Waiting for a link request…"
+msgstr "In attesa di una richiesta di collegamento…"
+
+msgid "Waiting for every device to report support."
+msgstr "In attesa che tutti i dispositivi confermino il supporto."
+
 msgid "Waiting for signer approval"
 msgstr "In attesa dell'approvazione del firmatario"
 
+msgid "Waiting for the other device to answer. Open White Noise there to review the request."
+msgstr "In attesa di una risposta dall'altro dispositivo. Apri White Noise su quel dispositivo per controllare la richiesta."
+
 msgid "Waiting for your signer"
 msgstr "In attesa del tuo firmatario"
+
+msgid "Waiting to join the other device group…"
+msgstr "In attesa di entrare nell'altro gruppo di dispositivi…"
+
+msgid "Waiting to join your other device group."
+msgstr "In attesa di entrare nel tuo altro gruppo di dispositivi."
 
 msgid "Waiting to translate..."
 msgstr "In attesa di tradurre..."
@@ -6445,20 +6660,20 @@ msgstr "Dove pubblichi."
 msgid "White Noise %s is ready to install."
 msgstr "White Noise %s è pronto per l'installazione."
 
-msgid "White Noise can't reset this password, and no one else has a copy. Without it, the vault on this device can't be opened."
-msgstr "White Noise non può reimpostare questa password e nessun altro ne ha una copia. Senza di essa, la cassaforte su questo dispositivo non può essere aperta."
-
 msgid "White Noise cannot reset this password to unlock your existing vault."
 msgstr "White Noise non può reimpostare questa password per sbloccare la tua cassaforte esistente."
+
+msgid "White Noise couldn't finish linking the device."
+msgstr "White Noise non ha potuto completare il collegamento del dispositivo."
+
+msgid "White Noise couldn't verify the other device."
+msgstr "White Noise non ha potuto verificare l'altro dispositivo."
 
 msgid "White Noise doesn't open at login"
 msgstr "White Noise non si apre all'accesso"
 
 msgid "White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control."
 msgstr "White Noise non è affiliato a GifSnap. Non c'è motivo di pensare che GifSnap faccia un uso improprio di questi dati, ma è una terza parte fuori dal controllo di White Noise."
-
-msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
-msgstr "White Noise non vede mai la tua chiave privata. Resta solo su questo dispositivo e su qualsiasi firmatario collegato."
 
 msgid "White Noise uploads your picture to this public image server:"
 msgstr "White Noise carica la tua immagine su questo server pubblico:"
@@ -6491,9 +6706,6 @@ msgstr "Lavoro"
 msgid "World"
 msgstr "Mondo"
 
-msgid "Write a comment"
-msgstr "Scrivi un commento"
-
 msgid "YOU"
 msgstr "TU"
 
@@ -6515,14 +6727,20 @@ msgstr "Ieri"
 msgid "You"
 msgstr "Tu"
 
-msgid "You are signed out, but your signer record could not be removed from the encrypted vault."
-msgstr "Hai effettuato la disconnessione, ma non è stato possibile rimuovere il record del tuo firmatario dalla cassaforte cifrata."
-
 msgid "You can find it in Archived and restore it to your chat list there."
 msgstr "La trovi in Archiviate, dove puoi ripristinarla nella tua lista delle chat."
 
+msgid "You can open the chats already on this device."
+msgstr "Puoi aprire le chat già presenti su questo dispositivo."
+
+msgid "You can turn on linked devices."
+msgstr "Puoi attivare i dispositivi collegati."
+
 msgid "You can't send messages to someone you blocked."
 msgstr "Non puoi inviare messaggi a qualcuno che hai bloccato."
+
+msgid "You confirmed the code. Waiting for the other device to approve the request."
+msgstr "Hai confermato il codice. In attesa che l'altro dispositivo approvi la richiesta."
 
 msgid "You follow"
 msgstr "Segui già"
@@ -6582,9 +6800,6 @@ msgstr "Il tuo GM"
 msgid "Your account has a pending action. Complete it before reconnecting your signer."
 msgstr "Il tuo account ha un'azione in sospeso. Completala prima di riconnettere il tuo firmatario."
 
-msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
-msgstr "Il tuo account è stato rimosso, ma non è stato possibile rimuovere il record del suo firmatario dalla cassaforte cifrata."
-
 msgid "Your account key was saved on this device."
 msgstr "La chiave del tuo account è stata salvata su questo dispositivo."
 
@@ -6597,11 +6812,11 @@ msgstr "Le tue chat appariranno qui quando ne avrai."
 msgid "Your current password"
 msgstr "La tua password attuale"
 
-msgid "Your desktop location service handles the permission request. Nothing is sent to the chat until you choose Send location."
-msgstr "Il servizio di localizzazione del desktop gestisce la richiesta di autorizzazione. Nulla viene inviato alla chat finché non scegli Invia posizione."
-
 msgid "Your device asks for permission. Nothing is sent to the chat until you choose Send location."
 msgstr "Il tuo dispositivo richiede l'autorizzazione. Non viene inviato nulla alla chat finché non scegli Invia posizione."
+
+msgid "Your devices"
+msgstr "I tuoi dispositivi"
 
 msgid "Your disk is filling up"
 msgstr "Il disco si sta riempiendo"
@@ -6612,20 +6827,11 @@ msgstr "Il tuo nome visualizzato e il tuo profilo sono pubblici."
 msgid "Your existing and new notes are deleted after this time."
 msgstr "Le tue note già presenti e quelle nuove vengono eliminate dopo questo tempo."
 
-msgid "Your identity and the secrets on this device."
-msgstr "La tua identità e i segreti su questo dispositivo."
-
-msgid "Your identity is sovereign"
-msgstr "La tua identità è sovrana"
-
-msgid "Your identity, key packages, and device security."
-msgstr "La tua identità, i pacchetti chiavi e la sicurezza del dispositivo."
-
 msgid "Your key stays on this device"
 msgstr "La tua chiave resta su questo dispositivo"
 
-msgid "Your name"
-msgstr "Il tuo nome"
+msgid "Your keys and chats are deleted from this device. Other linked devices keep their chats. Asking them to help with cleanup can take about 30 seconds. This can't be undone."
+msgstr "Le tue chiavi e le tue chat vengono eliminate da questo dispositivo. Gli altri dispositivi collegati conservano le loro chat. Chiedere loro di contribuire alla pulizia può richiedere circa 30 secondi. Non si può annullare."
 
 msgid "Your name and a link to your picture go to public Nostr relays so people can recognize you."
 msgstr "Il tuo nome e un link alla tua immagine vengono inviati ai relay Nostr pubblici per permettere agli altri di riconoscerti."
@@ -6633,8 +6839,8 @@ msgstr "Il tuo nome e un link alla tua immagine vengono inviati ai relay Nostr p
 msgid "Your new password"
 msgstr "La tua nuova password"
 
-msgid "Your nsec or remote signer can let you use your account again, but it can't open this vault, and your chats on this device may not return. A backup file has its own password and holds only settings, drafts, custom emoji, and themes."
-msgstr "Il tuo nsec o il tuo firmatario remoto possono permetterti di usare di nuovo l'account, ma non aprono questa cassaforte, e le tue chat su questo dispositivo potrebbero non tornare. Un file di backup ha una propria password e contiene solo impostazioni, bozze, emoji personalizzate e temi."
+msgid "Your other linked devices will refuse this sign-in's link request and warn you about it. Someone may have your private key."
+msgstr "Gli altri dispositivi collegati rifiuteranno la richiesta di collegamento per questo accesso e ti avviseranno. Qualcuno potrebbe avere la tua chiave privata."
 
 msgid "Your own notepad"
 msgstr "Il tuo blocco note"
@@ -6654,11 +6860,11 @@ msgstr "La tua precedente azione sull'account è ancora in corso."
 msgid "Your previous account action is still waiting. Check your signer for approval."
 msgstr "La tua precedente azione sull'account è ancora in attesa. Controlla il tuo firmatario per approvarla."
 
-msgid "Your private key stays in your remote signer. Reveal and export are unavailable on this device."
-msgstr "La tua chiave privata resta nel tuo firmatario remoto. Su questo dispositivo non puoi visualizzarla o esportarla."
-
 msgid "Your profile"
 msgstr "Il tuo profilo"
+
+msgid "Your profile has reached the device limit in this chat."
+msgstr "Il tuo profilo ha raggiunto il limite di dispositivi in questa chat."
 
 msgid "Your profile publication wasn't confirmed."
 msgstr "La pubblicazione del tuo profilo non è stata confermata."
@@ -6681,9 +6887,6 @@ msgstr "I tuoi adesivi e le tue GIF salvati."
 msgid "Your secret key stays in your remote signer, so this device can't reveal or export it. Back it up and recover it through your signer. A White Noise backup file doesn't include it."
 msgstr "La tua chiave segreta resta nel tuo firmatario remoto, quindi questo dispositivo non può mostrarla né esportarla. Fanne il backup e recuperala tramite il tuo firmatario. Un file di backup di White Noise non la contiene."
 
-msgid "Your secret key stays in your remote signer. Reveal and export are unavailable on this device."
-msgstr "La tua chiave segreta resta nel tuo firmatario remoto. Mostra ed esporta non sono disponibili su questo dispositivo."
-
 msgid "Your secret key stays in your signer, and this device only asks it to sign. Approve the connection and each signature there, so keep your signer open. This device can't reveal or export the key, so back it up and recover it through your signer."
 msgstr "La tua chiave segreta resta nel tuo firmatario e questo dispositivo gli chiede solo di firmare. Approva lì la connessione e ogni firma, quindi tieni aperto il tuo firmatario. Questo dispositivo non può mostrare né esportare la chiave, quindi fanne il backup e recuperala tramite il tuo firmatario."
 
@@ -6692,9 +6895,6 @@ msgstr "La tua chiave segreta resta su questo dispositivo o nel tuo firmatario c
 
 msgid "Your signer is connected, but its old record could not be removed from the encrypted vault."
 msgstr "Il tuo firmatario è connesso, ma il suo vecchio record non è stato rimosso dalla cassaforte cifrata."
-
-msgid "Your signer is connected."
-msgstr "Il tuo firmatario è connesso."
 
 msgid "Your signer is disconnected."
 msgstr "Il tuo firmatario è disconnesso."
@@ -6726,9 +6926,6 @@ msgstr "Riduci lo zoom"
 msgid "Zoom out or enlarge the window to review what will be public."
 msgstr "Riduci lo zoom o ingrandisci la finestra per vedere cosa verrà reso pubblico."
 
-msgid "Zoom the interface"
-msgstr "Ingrandisci l'interfaccia"
-
 msgid "Zulu"
 msgstr "Zulu"
 
@@ -6754,6 +6951,9 @@ msgstr "e altre %d righe"
 #, c-format
 msgid "and %s more"
 msgstr "e altri %s"
+
+msgid "another device"
+msgstr "un altro dispositivo"
 
 msgid "audio notifications mute"
 msgstr "audio notifiche silenzia muto"
@@ -6839,9 +7039,6 @@ msgstr "npub copiato"
 msgid "npub or hex pubkey"
 msgstr "npub o chiave pubblica esadecimale"
 
-msgid "or pick a page"
-msgstr "oppure scegli una pagina"
-
 msgid "people"
 msgstr "persone"
 
@@ -6856,9 +7053,6 @@ msgstr "scala dimensioni ingrandisci riduci accessibilità"
 
 msgid "silence quiet chat notifications"
 msgstr "silenzia silenzioso chat notifiche"
-
-msgid "you"
-msgstr "tu"
 
 msgid "© OpenStreetMap contributors"
 msgstr "© Collaboratori di OpenStreetMap"
