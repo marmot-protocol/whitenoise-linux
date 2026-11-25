@@ -609,6 +609,8 @@ Ui_State :: struct {
 	gif_selected:                        Gif_Item,
 	gif_error:                           string,
 	gif_focus:                           int,
+	gif_reveal:                          bool,
+	gif_focus_span:                      nendo.Vector2, // content top and height for a pending reveal
 	gif_page:                            int,
 	gif_more:                            bool,
 	gif_filter:                          string,

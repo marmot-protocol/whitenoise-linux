@@ -371,14 +371,7 @@ sticker_resolve_scroll :: proc(ui: ^Ui_State) -> bool {
 	if !view.found || view.viewport.height <= 0 {return false}
 	// The pack footer and window size can change the viewport on this frame.
 	top := f32(ui.sticker_focus / sticker_columns(view.viewport.width)) * STICKER_PICK_STEP
-	bottom := max(0, top - max(0, view.viewport.height - STICKER_PICK_TILE))
-	offset := min(
-		clamp(-view.position.y, bottom, top),
-		max(0, view.content.height - view.viewport.height),
-	)
-	if abs(offset + view.clip.offset.y) < 0.01 {return false}
-	view.position.y = -offset
-	return true
+	return reveal_scroll_span(view, top, STICKER_PICK_TILE)
 }
 
 // A pack sticker goes through MDK with the composer's reply and armed effect.

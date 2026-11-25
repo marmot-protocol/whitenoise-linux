@@ -213,6 +213,8 @@ The destination picker passes fixed-height rows to nendo for forwarding, theme s
 
 The composer sticker grid mounts fixed-height rows near the viewport. Arrow keys scroll to the focused row by its position in the filtered grid, even when the row has not been built.
 
+The GIF picker passes cumulative tile heights to nendo for each column. The tallest column sets the scroll extent. Thumbnail requests still follow reading order and require a visible tile.
+
 | Path | What's there |
 | --- | --- |
 | `app/` | The whole app: panes, layout, state, workers, vault, media viewers |

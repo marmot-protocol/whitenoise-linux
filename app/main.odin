@@ -181,7 +181,7 @@ handle_shell_foreground :: proc(ui: ^Ui_State, captured: bool) -> bool {
 }
 
 build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
-	anchored_reveal := ui.sticker_reveal && single_pane()
+	anchored_reveal := (ui.sticker_reveal || ui.gif_reveal) && single_pane()
 	anchor_id: nendo.Id
 	anchor: nendo.Element_Data
 	if anchored_reveal {
@@ -208,7 +208,9 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 		if layout_overflow {return commands}
 		reflow = false
 	}
-	return sticker_resolve_scroll(ui) || reflow ? build_layout_pass(ui, 0) : commands
+	sticker_scroll := sticker_resolve_scroll(ui)
+	gif_scroll := gif_resolve_scroll(ui)
+	return sticker_scroll || gif_scroll || reflow ? build_layout_pass(ui, 0) : commands
 }
 
 @(private = "file")

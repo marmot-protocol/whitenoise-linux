@@ -360,7 +360,7 @@ gif_keyboard :: proc(t: ^testing.T) {
 			Gif_Item {
 				title = fmt.aprintf("Result %d", i),
 				thumb = fmt.aprintf("https://gifsnap.com/fixture%d", i),
-				width = 200,
+				width = i % 2 == 0 ? 300 : 100,
 				height = 200,
 			},
 		)
@@ -374,8 +374,58 @@ gif_keyboard :: proc(t: ^testing.T) {
 	nendo.set_pointer({0, 0}, .Up)
 	handle_gif_picker(&ui, nil)
 	testing.expect(t, ui.gif_job == nil, "do not fetch more metadata at the top")
-	scroll := nendo.scroll(nendo.id("GifGrid"))
+	grid_id := nendo.id("GifGrid")
+	short := nendo.element(nendo.id("GifTile", 0)).rect
+	tall := nendo.element(nendo.id("GifTile", 1)).rect
+	testing.expect(t, short.height > 0 && short.height < tall.height && short.y == tall.y)
+	testing.expect_value(
+		t,
+		nendo.element(nendo.id("GifTile", 2)).rect.y,
+		short.y + short.height + 6,
+	)
+	testing.expect_value(t, nendo.element(nendo.id("GifTile", 3)).rect.y, tall.y + tall.height + 6)
+	target := nendo.id("GifTile", 19)
+	testing.expect(t, !nendo.element(target).found, "the distant GIF should not be mounted")
+	ui.gif_focus = 17
+	rl.PushKey(.DOWN, true); handle_gif_picker(&ui, nil); rl.PushKey(.DOWN, false)
+	commands := build_layout(&ui, 0)
+	view, focused := nendo.element(grid_id).rect, nendo.element(target)
+	testing.expect(
+		t,
+		focused.found &&
+		focused.rect.y >= view.y &&
+		focused.rect.y + focused.rect.height <= view.y + view.height + 0.01,
+	)
+	rl.BeginDrawing(); draw_frame(commands)
+	rl.TakeScreenshot("/tmp/wn-gifs-masonry-focus.png")
+	rl.EndDrawing()
+	scroll := nendo.scroll(grid_id)
 	scroll.position.y = scroll.viewport.height - scroll.content.height
+	build_layout(&ui, 0)
+	rl.PushKey(.LEFT, true); handle_gif_picker(&ui, nil); rl.PushKey(.LEFT, false)
+	if !testing.expect(
+		t,
+		ui.gif_job == nil,
+		"Don't prefetch before revealing the shorter column",
+	) {
+		gif_job_free(ui.gif_job); ui.gif_job = nil
+		return
+	}
+	build_layout(&ui, 0)
+	handle_gif_picker(&ui, nil)
+	if !testing.expect(t, ui.gif_job == nil, "The shorter column is above the paging threshold") {
+		gif_job_free(ui.gif_job); ui.gif_job = nil
+		return
+	}
+	ui.gif_focus = -1
+	scroll.position.y = scroll.viewport.height - scroll.content.height
+	build_layout(&ui, 0)
+	view = nendo.element(grid_id).rect
+	last := nendo.element(nendo.id("GifTile", GIF_PAGE_SIZE - 1))
+	testing.expect(
+		t,
+		last.found && abs(last.rect.y + last.rect.height - (view.y + view.height)) < 0.01,
+	)
 	position := scroll.position.y
 	handle_gif_picker(&ui, nil)
 	testing.expect(t, ui.gif_job != nil, "reaching the end requests the next page")
@@ -400,11 +450,13 @@ gif_keyboard :: proc(t: ^testing.T) {
 	testing.expect(t, ui.gif_hits[0].failed)
 	testing.expect_value(t, len(gif_matches(&ui)), GIF_PAGE_SIZE)
 	testing.expect_value(t, ui.gif_error, "")
+	scroll.position.y = position
 	for &item in ui.gif_hits {item.failed = true}
-	for _ in 0 ..< 8 {anim_frame += 1; build_layout(&ui, 0)}
+	build_layout(&ui, 0)
 	testing.expect_value(t, len(gif_matches(&ui)), 0)
 	empty_box := nendo.element(nendo.id("GifEmpty")).rect
 	grid_box := nendo.element(nendo.id("GifGrid")).rect
+	testing.expect(t, empty_box.y >= grid_box.y, "The empty message is visible on the first frame")
 	testing.expect(t, empty_box.width >= grid_box.width - 1, "the error uses the full grid width")
 	testing.expect(
 		t,

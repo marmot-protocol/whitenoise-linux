@@ -21,6 +21,8 @@ GIF_BYTES_LIMIT :: 24 * 1024 * 1024
 GIF_PAGE_SIZE :: 24
 @(private)
 GIF_SEARCH_DELAY :: f64(0.3)
+@(private = "file")
+GIF_TILE_GAP :: u16(6)
 @(private)
 Gif_Item :: struct {
 	title, url, thumb, sha: string,
@@ -664,12 +666,21 @@ gif_visible :: proc(index: int) -> bool {
 	)
 }
 
+@(private = "file")
+gif_columns :: proc(width: f32) -> int {
+	return width >= 440 ? 3 : 2
+}
+
+@(private = "file")
+gif_ratio :: proc(item: ^Gif_Item) -> f32 {
+	return item.width > 0 && item.height > 0 ? f32(item.width) / f32(item.height) : 1
+}
+
 @(private)
-gif_picker :: proc(ui: ^Ui_State) {
+gif_picker :: proc(ui: ^Ui_State, size: nendo.Dimensions) {
 	if !ui.prefs.gif_consent {gif_consent_panel(); return}
-	width := (single_pane() ? fit_w(400, 8) : modal_w(nendo.id("PickerPanel"), 560)) - 24
-	columns := width >= 440 ? 3 : 2
-	cell := (width - f32(columns - 1) * 6) / f32(columns)
+	columns := gif_columns(size.width)
+	cell := (size.width - f32((columns - 1) * int(GIF_TILE_GAP))) / f32(columns)
 	input_box(
 		ui,
 		"PickerSearch",
@@ -708,10 +719,20 @@ gif_picker :: proc(ui: ^Ui_State) {
 	items := ui.gif_saved ? ui.gif_library[:] : ui.gif_hits[:]
 	matches := gif_matches(ui)
 	// Queue in reading order, so the first visible rows load before lower columns.
-	thumbs := make([]^rl.Texture2D, len(items), context.temp_allocator)
-	loading := make([]bool, len(items), context.temp_allocator)
-	for i in matches {thumbs[i], loading[i], items[i].failed = gif_thumb(items[i], i)}
-	matches = gif_matches(ui)
+	thumbs := make([]^rl.Texture2D, len(matches), context.temp_allocator)
+	loading := make([]bool, len(matches), context.temp_allocator)
+	shown := 0
+	for i in matches {
+		tex, queued, failed := gif_thumb(items[i], i)
+		if failed {items[i].failed = true; continue}
+		matches[shown], thumbs[shown], loading[shown] = i, tex, queued
+		shown += 1
+	}
+	matches = matches[:shown]
+	if ui.gif_reveal {
+		ui.gif_focus = clamp(ui.gif_focus, -1, len(matches) - 1)
+		ui.gif_focus_span = {}
+	}
 	failed := 0
 	for item in items {if item.failed {failed += 1}}
 	all_failed := len(items) > 0 && failed == len(items) && (ui.gif_saved || !ui.gif_more)
@@ -720,11 +741,13 @@ gif_picker :: proc(ui: ^Ui_State) {
 	}
 	saved_urls := make(map[string]bool, context.temp_allocator)
 	for item in ui.gif_library {if item.url != "" {saved_urls[item.url] = true}}
+	// Each column owns its heights. The outer grid scrolls the tallest one.
+	storage := make([]f32, len(matches) + columns, context.temp_allocator)
 	if nendo.box(nendo.id("GifGrid"))(
 	{
 		width = nendo.grow(),
-		height = nendo.grow(min = 44),
-		gap = 6,
+		height = nendo.grow(min = 44, max = max(44, size.height)),
+		gap = GIF_TILE_GAP,
 		clip = {y = true, scroll = true},
 	},
 	) {
@@ -740,22 +763,37 @@ gif_picker :: proc(ui: ^Ui_State) {
 		}
 		for column in 0 ..< columns {
 			if len(matches) == 0 {break}
+			count := (len(matches) + columns - 1 - column) / columns
+			offsets := storage[:count + 1]
+			storage = storage[count + 1:]
+			for row in 0 ..< count {
+				at := row * columns + column
+				height := clamp(cell / gif_ratio(&items[matches[at]]), 72, 210)
+				offsets[row + 1] = offsets[row] + height
+				if ui.gif_reveal && at == ui.gif_focus {
+					ui.gif_focus_span = {offsets[row] + f32(row * int(GIF_TILE_GAP)), height}
+				}
+			}
 			if nendo.box(nendo.id("GifColumn", u32(column)))(
-			{width = nendo.fixed(cell), direction = .Column, gap = 6},
+			{width = nendo.fixed(cell), direction = .Column},
 			) {
-				for at := column; at < len(matches); at += columns {
-					i := matches[at]; item := items[i]
-					tex := thumbs[i]
+				rows := nendo.virtual_rows(
+					nendo.id_local("GifColumnRows"),
+					offsets,
+					gap = GIF_TILE_GAP,
+				)
+				for row in rows.first ..< rows.end {
+					at := row * columns + column
+					i := matches[at]; item := &items[i]
+					tex := thumbs[at]
 					// A fresh stream texture is black; keep the still until mpv draws.
 					playing :=
 						ui.gif_view != nil &&
 						!ui.gif_view.failed &&
 						ui.gif_view.framed &&
-						gif_same(item, ui.gif_selected)
+						gif_same(item^, ui.gif_selected)
 					if playing {tex = &ui.gif_view.tex}
-					ratio :=
-						item.width > 0 && item.height > 0 ? f32(item.width) / f32(item.height) : f32(1)
-					height := clamp(cell / ratio, 72, 210)
+					height := offsets[row + 1] - offsets[row]
 					if nendo.box(nendo.id("GifTile", u32(i)))(
 					{
 						width = nendo.fixed(cell),
@@ -771,6 +809,7 @@ gif_picker :: proc(ui: ^Ui_State) {
 					) {
 						if hovered() {cursor_raise(.Pointer); tooltip(item.title)}
 						if tex != nil && tex.width > 0 {
+							ratio := gif_ratio(item)
 							if nendo.box(nendo.id_local("GifThumb"))(
 							{
 								width = nendo.fixed(min(cell, height * ratio)),
@@ -779,7 +818,7 @@ gif_picker :: proc(ui: ^Ui_State) {
 								radius = rr(7),
 							},
 							) {}
-						} else if loading[i] {
+						} else if loading[at] {
 							progress_dots(fmt.tprintf("GifTileLoading%d", i)); anim_moving += 1
 						} else {nendo.text("GIF", {font = FONT_BODY, size = 18, color = TEXT_LO})}
 						saved := item.sha != "" || saved_urls[item.url]
@@ -828,6 +867,27 @@ gif_picker :: proc(ui: ^Ui_State) {
 		if (ui.gif_error != "" || all_failed) &&
 		   ui.gif_job == nil {micro_button("GifRetry", tr("Retry"))}
 	}
+}
+
+@(private)
+gif_resolve_scroll :: proc(ui: ^Ui_State) -> bool {
+	reveal := ui.gif_reveal
+	ui.gif_reveal = false
+	if !ui.picker_open ||
+	   !ui.gif_tab ||
+	   !ui.prefs.gif_consent ||
+	   ui.picker_mode != .Message ||
+	   ui.picker_target != "" {return false}
+	view := nendo.scroll(nendo.id("GifGrid"))
+	if !view.found || view.viewport.height <= 0 {return false}
+	if reveal && ui.gif_focus_span.y > 0 {
+		return reveal_scroll_span(view, ui.gif_focus_span.x, ui.gif_focus_span.y)
+	}
+	// Filtering can shorten either column while the old scroll offset is still live.
+	bottom := -max(0, view.content.height - view.viewport.height)
+	if view.clip.offset.y >= bottom {return false}
+	view.position.y = bottom
+	return true
 }
 
 // First-use disclosure shown in place of the GIF tab until accepted.
@@ -891,6 +951,7 @@ handle_gif_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.gif_due = saved ? 0 : rl.GetTime() + GIF_SEARCH_DELAY
 		return
 	}
+	old_focus := ui.gif_focus
 	if field_mouse(ui, &ui.picker_filter, "PickerSearch") {ui.gif_focus = -1; ui.focus = .Picker}
 	if rl.IsKeyPressed(.TAB) {ui.gif_focus = ui.gif_focus < 0 ? 0 : -1}
 	if ui.focus == .Picker && ui.gif_focus < 0 {edit_text(ui, &ui.picker_filter)}
@@ -901,8 +962,7 @@ handle_gif_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if ui.gif_job != nil {return}
 	matches := gif_matches(ui)
-	old_focus := ui.gif_focus
-	columns := modal_w(nendo.id("PickerPanel"), 560) - 24 >= 440 ? 3 : 2
+	columns := gif_columns(nendo.element(nendo.id("PickerSearch")).rect.width)
 	if rl.IsKeyPressed(.DOWN) {ui.gif_focus = ui.gif_focus < 0 ? 0 : ui.gif_focus + columns}
 	if ui.gif_focus >= 0 {
 		if rl.IsKeyPressed(.UP) {ui.gif_focus -= columns}
@@ -911,15 +971,9 @@ handle_gif_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.gif_focus = clamp(ui.gif_focus, -1, len(matches) - 1)
 	}
 	if ui.gif_focus >= 0 && ui.gif_focus != old_focus {
-		grid := nendo.element(nendo.id("GifGrid")).rect
-		tile := nendo.element(nendo.id("GifTile", u32(matches[ui.gif_focus]))).rect
-		scroll := nendo.scroll(nendo.id("GifGrid"))
-		if scroll.found {
-			if tile.y < grid.y {scroll.position.y += grid.y - tile.y}
-			if tile.y + tile.height >
-			   grid.y +
-				   grid.height {scroll.position.y -= tile.y + tile.height - grid.y - grid.height}
-		}
+		ui.gif_reveal = true
+		scroll_residual = {}
+		if fling_id.id == nendo.id("GifGrid").id {fling_vel = {}}
 	}
 	if rl.IsKeyPressed(.ENTER) && ui.gif_focus < 0 && !ui.gif_saved {gif_search(ui); return}
 	items := ui.gif_saved ? ui.gif_library[:] : ui.gif_hits[:]
@@ -939,6 +993,8 @@ handle_gif_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   rl.GetTime() - ui.gif_hover_at >= GIF_SEARCH_DELAY {
 		gif_choose(ui, items[hover], .Preview)
 	}
+	// A reveal can move away from the paging threshold before the next draw.
+	if ui.gif_reveal {return}
 	if !ui.gif_saved && ui.gif_more && ui.gif_due == 0 && ui.gif_job == nil && ui.gif_error == "" {
 		scroll := nendo.scroll(nendo.id("GifGrid"))
 		if scroll.found &&
