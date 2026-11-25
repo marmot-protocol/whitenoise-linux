@@ -299,7 +299,7 @@ jobs:
         with:
           path: |
             build/cross/${{ matrix.target }}/fbx/ufbx.o
-            build/cross/${{ matrix.target }}/fbx/ufbx.stamp
+            build/cross/${{ matrix.target }}/ufbx.cache
             build/cross/${{ matrix.target }}/mpv-stage
             build/cross/${{ matrix.target }}/mpv.stamp
             build/cross/${{ matrix.target }}/sherpa-onnx
@@ -333,12 +333,12 @@ jobs:
             ~/.rustup/toolchains
           key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
       - name: Save C dependencies
-        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && hashFiles(format('build/cross/{0}/fbx/ufbx.stamp', matrix.target)) != ''
+        if: success() && steps.cdeps-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
             build/cross/${{ matrix.target }}/fbx/ufbx.o
-            build/cross/${{ matrix.target }}/fbx/ufbx.stamp
+            build/cross/${{ matrix.target }}/ufbx.cache
             build/cross/${{ matrix.target }}/mpv-stage
             build/cross/${{ matrix.target }}/mpv.stamp
             build/cross/${{ matrix.target }}/sherpa-onnx
