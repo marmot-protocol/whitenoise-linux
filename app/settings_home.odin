@@ -723,10 +723,9 @@ settings_search_field :: proc(ui: ^Ui_State) {
 	if ui.focus == .Compose && !rl.HasTouch() && rl.HasTypedText() {
 		ui.focus = .SettingsSearch
 		kb_focus = "SettingsSearchBox"
-	} else if !visible {
-		return
 	}
 	if ui.focus != .SettingsSearch {return}
+	if !visible && (rl.HasTouch() || rl.IsKeyPressed(.ESCAPE)) {return}
 	settings_theme_preview_reset(ui)
 	before := avatar_hash(string(ui.settings_search[:]))
 	edit_text(ui, &ui.settings_search)
