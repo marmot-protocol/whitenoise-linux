@@ -25,8 +25,38 @@ env:
   APPIMAGE_EXTRACT_AND_RUN: "1"
 
 jobs:
+  pr-gate:
+    name: Classify PR head
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    outputs:
+      lane: ${{ steps.classify.outputs.lane }}
+    steps:
+      - uses: actions/checkout@v4
+        id: policy
+        continue-on-error: true
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check base-owned signature policy
+        id: classify
+        env:
+          POLICY_CHECKOUT: ${{ steps.policy.outcome }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$POLICY_CHECKOUT" != success ] || [ ! -f scripts/pr-gate.sh ] ||
+             [ ! -f packaging/ci/team-signers.asc ] || ! git fetch --no-tags origin "$PR_HEAD"; then
+            echo 'lane=build' >> "$GITHUB_OUTPUT"
+          else
+            bash scripts/pr-gate.sh "$PR_BASE" "$PR_HEAD"
+          fi
+
   build:
     name: build + test
+    needs: pr-gate
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.pr-gate.outputs.lane == 'build') }}
     runs-on: ubuntu-24.04
     environment: ${{ github.event_name == 'pull_request' && 'wn-github-pr' || 'wn-boat-build' }}
     env:
@@ -99,5 +129,11 @@ jobs:
         run: bash scripts/ci-boat.sh stop
 
   cross:
+    needs: pr-gate
+    if: needs.pr-gate.outputs.lane == 'build'
+    uses: ./.github/workflows/cross.yml
+
+  cross-integration:
+    if: github.event_name != 'pull_request'
     uses: ./.github/workflows/cross.yml
     secrets: inherit

@@ -13,13 +13,89 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           persist-credentials: false
 
+      - name: Load public mirror policy
+        id: policy
+        run: |
+          if ! git fetch --no-tags https://github.com/marmot-protocol/whitenoise-linux.git \
+            refs/heads/master:refs/remotes/pr-policy/master; then
+            exit 0
+          fi
+          base=$(git rev-parse refs/remotes/pr-policy/master)
+          if ! git cat-file -e "$base:scripts/pr-gate.sh" ||
+             ! git cat-file -e "$base:packaging/ci/team-signers.asc"; then
+            exit 0
+          fi
+          policy=$(mktemp -d)
+          git archive "$base" scripts/pr-gate.sh packaging/ci/team-signers.asc | tar -x -C "$policy"
+          if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
+            git fetch --no-tags --unshallow origin "$GITHUB_SHA" || true
+          fi
+          if [ "$(git rev-parse --is-shallow-repository)" = true ] ||
+             [ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ]; then
+            echo 'recover=true' >> "$GITHUB_OUTPUT"
+          fi
+          printf 'base=%s\nroot=%s\n' "$base" "$policy" >> "$GITHUB_OUTPUT"
+
+      - uses: danconwaydev/setup-ngit@v3
+        id: ngit
+        if: steps.policy.outputs.recover == 'true'
+        continue-on-error: true
+
+      - name: Check base-owned signature policy
+        id: classify
+        env:
+          PR_BASE: ${{ steps.policy.outputs.base }}
+          POLICY_ROOT: ${{ steps.policy.outputs.root }}
+          RECOVER: ${{ steps.policy.outputs.recover }}
+          NGIT_SETUP: ${{ steps.ngit.outcome }}
+        run: |
+          set -o pipefail
+          if [ -z "$POLICY_ROOT" ]; then
+            echo 'PR gate: mirror policy unavailable, using build lane'
+            exit 0
+          fi
+          trap 'rm -rf "$POLICY_ROOT"' EXIT
+          if [ "$RECOVER" = true ]; then
+            if [ "$NGIT_SETUP" != success ] || [ -z "${NGIT_CI_TRIGGER_EVENT:-}" ]; then
+              echo 'PR gate: exact full history unavailable, using build lane'
+              exit 0
+            fi
+            mkdir "$POLICY_ROOT/proposal"
+            cd "$POLICY_ROOT/proposal"
+            git init -q -b master
+            repo=nostr://cyberguy.fyi/relay.ngit.dev/darkmatter-linux
+            if ! git fetch --no-tags https://github.com/marmot-protocol/whitenoise-linux.git "$PR_BASE" ||
+               ! git checkout -q -B master "$PR_BASE"; then
+              echo 'PR gate: cannot fetch mirror base, using build lane'
+              exit 0
+            fi
+            if ! { proposal=$(ngit --repo "$repo" --json ci status "$NGIT_CI_TRIGGER_EVENT" |
+                     jq -er '.target | select(.kind == "pr") | .pr') &&
+                   ngit --repo "$repo" pr checkout "$proposal" &&
+                   [ "$(git rev-parse HEAD)" = "$GITHUB_SHA" ]; } &&
+               ! { git -c nostr.auto-pr-branches=true fetch --no-tags "$repo" "$GITHUB_SHA" &&
+                   git checkout -q --detach FETCH_HEAD; }; then
+              echo 'PR gate: ngit checkout unavailable, using build lane'
+              exit 0
+            fi
+          fi
+          if [ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ] ||
+             [ "$(git rev-parse --is-shallow-repository)" != false ]; then
+            echo 'PR gate: exact full history unavailable, using build lane'
+            exit 0
+          fi
+          bash "$POLICY_ROOT/scripts/pr-gate.sh" "$PR_BASE" "$GITHUB_SHA"
+
       - name: Restore the exact source revision and build state
+        if: steps.classify.outputs.lane != 'static'
         working-directory: ${{ github.workspace }}
         run: bash scripts/ngit-stage.sh
 
       - name: Install LLD on workers without it
+        if: steps.classify.outputs.lane != 'static'
         run: |
           if ! test -x "$(clang -print-prog-name=ld.lld)"; then
             apt-get update -qq
@@ -27,6 +103,7 @@ jobs:
           fi
 
       - name: Build and test
+        if: steps.classify.outputs.lane != 'static'
         working-directory: /var/cache/wn-ci/worktree
         run: |
           set -o pipefail
