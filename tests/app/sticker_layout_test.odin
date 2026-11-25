@@ -574,6 +574,7 @@ sticker_picker_virtual_rows :: proc(t: ^testing.T) {
 		frame(&ui)
 		grid = nendo.element(grid_id).rect
 		tile := nendo.element(nendo.id("StickerPick", 6))
+		testing.expect_value(t, grid.height >= tile.rect.height, height == 620)
 		visible :=
 			min(grid.y + grid.height, tile.rect.y + tile.rect.height) - max(grid.y, tile.rect.y)
 		// A viewport shorter than a tile can only reveal one viewport's worth.
