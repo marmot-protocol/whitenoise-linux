@@ -114,6 +114,7 @@ Keep `build/cargo/native` and `build/cross/<target>/cargo` between builds. Cargo
 - **Windows CI.** GitHub `master` builds save vcpkg binary archives for the Boat SDK and dependency recipe. Tag builds can restore them. vcpkg checks each package's ABI before reuse; packaging, signing, and smoke checks still run as before.
 - **OpenBSD CI.** Successful GitHub `master` builds save MDK sources and Cargo state for the matching guest SDK. Tag builds can restore the cache. Cargo still checks the staged source, and every run builds and boots the package.
 - **Orchard CI.** GitHub `master` saves the publisher executable by source digest, Rust version, and build recipe. Push jobs reuse it on a cache hit. The Flatpak job still builds the bundle and boots the app from both release formats.
+- **Flatpak CI.** The module cache key uses the resolved manifest, the builder version, and the installed runtime commits. Workflow-only edits no longer invalidate it. Only `master` saves the cache, before the app module runs.
 - **C/C++ helpers and Odin outputs.** Native and cross builds cache these by input contents, compiler, target, and flags. Output manifests detect missing or corrupted files and reject dangling links.
 - **SDK symlinks.** Dangling SDK symlinks contribute their link metadata to input keys; resolving or retargeting them invalidates the cache.
 - **Odin objects.** Native Linux/OpenBSD and cross builds cache Odin objects separately from linking.
