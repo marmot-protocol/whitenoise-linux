@@ -42,6 +42,7 @@ jobs:
       BOAT_CI_KEY: ${{ github.event_name != 'pull_request' && secrets.BOAT_CI_KEY || '' }}
       WN_RELEASE_VERSION: ${{ inputs.version }}
       RELEASE: ${{ matrix.target == 'windows-amd64' && github.event_name == 'push' && github.ref_type == 'tag' && inputs.version != '' }}
+      VCPKG_BINARY_SOURCES: ${{ matrix.target == 'windows-amd64' && github.event_name == 'push' && 'clear;files,/work/build/ci-vcpkg,readwrite' || '' }}
       # ARM64 release codegen can exceed the container's memory at six jobs.
       CARGO_BUILD_JOBS: ${{ matrix.target == 'linux-arm64' && 2 || 6 }}
       WN_BUILD_JOBS: 6
@@ -60,6 +61,28 @@ jobs:
         id: start
         shell: bash
         run: bash scripts/ci-boat.sh start cross '${{ matrix.target == 'linux-arm64' && 'xlarge' || 'large' }}'
+      - name: Identify Windows cross SDK
+        if: env.VCPKG_BINARY_SOURCES != ''
+        id: windows-sdk
+        continue-on-error: true
+        shell: bash
+        run: |
+          sdk=$(WN_BOAT_HOST_STEP=1 bash scripts/ci-boat.sh run <(echo 'bash scripts/ci-container.sh debian-sdk-key'))
+          [[ $sdk =~ ^[0-9a-f]{64}$ ]]
+          echo "fingerprint=$sdk" >> "$GITHUB_OUTPUT"
+      - name: Restore Windows vcpkg archives
+        if: steps.windows-sdk.outputs.fingerprint != ''
+        id: windows-cache
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: build/ci-vcpkg
+          key: windows-vcpkg-v1-${{ steps.windows-sdk.outputs.fingerprint }}-${{ hashFiles('DEPS_PIN', 'packaging/cross/**', 'scripts/cross-toolchain.sh', 'scripts/cross-deps.sh') }}
+      - name: Send Windows vcpkg archives to Boat
+        if: steps.windows-cache.outputs.cache-hit == 'true'
+        continue-on-error: true
+        shell: bash
+        run: bash scripts/ci-boat.sh push build/ci-vcpkg
       - name: Clear previous packages and smoke evidence
         run: rm -rf dist build/cross-smoke build/cross-evidence
       - name: Cross compile and package
@@ -142,6 +165,19 @@ jobs:
           name: smoke-${{ matrix.target }}
           path: build/cross-evidence/${{ matrix.target }}.png
           if-no-files-found: error
+      - name: Retrieve new Windows vcpkg archives
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.windows-cache.outputs.cache-primary-key != '' && steps.windows-cache.outputs.cache-hit != 'true'
+        id: windows-cache-export
+        continue-on-error: true
+        shell: bash
+        run: bash scripts/ci-boat.sh pull build/ci-vcpkg
+      - name: Save Windows vcpkg archives
+        if: steps.windows-cache-export.outcome == 'success'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: build/ci-vcpkg
+          key: ${{ steps.windows-cache.outputs.cache-primary-key }}
       - name: Stop cross build environment
         if: always()
         shell: bash
