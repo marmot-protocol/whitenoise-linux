@@ -2377,7 +2377,7 @@ auth_worker :: proc(t: ^thread.Thread) {
 				marmot.account_summary_free(summary)
 			}
 		}
-	case .Menu:
+	case .Menu, .Existing:
 		job.err = strings.clone(tr("Choose a sign-in method."))
 	}
 	free_all(context.temp_allocator)

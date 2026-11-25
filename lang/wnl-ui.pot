@@ -426,6 +426,9 @@ msgstr ""
 msgid "A separate secret key or signer lets you use an identity again. It does not restore chats, pending sends or saved collections."
 msgstr ""
 
+msgid "A settings backup does not restore accounts, secret keys, or chats."
+msgstr ""
+
 #, c-format
 msgid "A sign-in was marked as not you: %s."
 msgstr ""
@@ -2178,6 +2181,9 @@ msgstr ""
 msgid "Create a poll"
 msgstr ""
 
+msgid "Create an account"
+msgstr ""
+
 msgid "Create and publish"
 msgstr ""
 
@@ -3071,9 +3077,6 @@ msgstr ""
 msgid "General"
 msgstr ""
 
-msgid "Generate a new key"
-msgstr ""
-
 msgid "German"
 msgstr ""
 
@@ -3292,7 +3295,7 @@ msgstr ""
 msgid "Import set"
 msgstr ""
 
-msgid "Import your key, create one, or connect a signer."
+msgid "Import settings backup"
 msgstr ""
 
 msgid "Import..."
@@ -3300,6 +3303,9 @@ msgstr ""
 
 #, c-format
 msgid "Imported %d emoji; skipped %d existing shortcodes; failed %d."
+msgstr ""
+
+msgid "Importing a secret key stores it in the vault on this device."
 msgstr ""
 
 #, c-format
@@ -5892,6 +5898,9 @@ msgstr ""
 msgid "Sign out of this account?"
 msgstr ""
 
+msgid "Sign-in is unavailable. Check your connection settings and restart White Noise."
+msgstr ""
+
 msgid "Sign-ins"
 msgstr ""
 
@@ -6436,6 +6445,9 @@ msgstr ""
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr ""
 
+msgid "This creates a new Nostr identity, separate from any account you already use."
+msgstr ""
+
 msgid "This deletes the keys and chats for this profile from this device. It doesn't remove the profile or its chats from other devices. This can't be undone."
 msgstr ""
 
@@ -6869,6 +6881,9 @@ msgstr ""
 msgid "Use a shorter search."
 msgstr ""
 
+msgid "Use an existing account"
+msgstr ""
+
 msgid "Use at most 64 bytes for the device name."
 msgstr ""
 
@@ -6900,6 +6915,9 @@ msgid "Use unrelated words or a password-manager password."
 msgstr ""
 
 msgid "Use username and password"
+msgstr ""
+
+msgid "Use your secret key (nsec). A public address (npub) cannot sign you in."
 msgstr ""
 
 msgid "Used for generated user and group avatars."
@@ -7103,6 +7121,9 @@ msgid "Wireframe"
 msgstr ""
 
 msgid "With a keyboard connected"
+msgstr ""
+
+msgid "With a remote signer, your secret key stays in your signer."
 msgstr ""
 
 msgid "Word"

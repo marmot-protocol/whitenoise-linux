@@ -123,6 +123,30 @@ handle_starter_review :: proc(ui: ^Ui_State) {
 	if starter_focus() == "LoginInput" {edit_text(ui, &ui.login_input)}
 }
 
+@(private)
+login_clear_form :: proc(ui: ^Ui_State) {
+	if ui.ed_target == &ui.login_input {editor_forget(ui)}
+	session_buffer_forget(&ui.login_input)
+	delete(ui.login_error)
+	ui.login_error = ""
+	login_show = false
+	login_input_error = false
+}
+
+@(private)
+login_back :: proc(ui: ^Ui_State) {
+	switch ui.login_method {
+	case .Menu:
+		ui.add_account_open = false
+	case .Existing, .Create:
+		ui.login_method = .Menu
+	case .Import, .Bunker, .Pair:
+		ui.login_method = .Existing
+	}
+	login_clear_form(ui)
+	login_pair_clear(ui)
+}
+
 handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for item, i in nip46_accounts {
 		if mouse_released() &&
@@ -156,6 +180,12 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		   (ui.focus in SOCKS5_FIELDS && rl.IsKeyPressed(.ENTER)) {save_socks5(ui)}
 		return
 	}
+	if ui.picking_backup {return}
+	if auth_job == nil && ui.login_method == .Menu && clicked("LoginBackup") {
+		ui.picking_backup = true
+		rl.OpenFileDialog(false)
+		return
+	}
 	if client == nil {return}
 	if auth_job != nil && auth_job.method == .Create {
 		switch auth_job.starter_phase {
@@ -187,7 +217,13 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return // a sign-in is in flight; the pane shows its progress
 	}
 
-	if ui.login_method != .Menu {
+	if clicked("LoginBack") ||
+	   (rl.IsKeyPressed(.ESCAPE) && (ui.add_account_open || ui.login_method != .Menu)) {
+		login_back(ui)
+		return
+	}
+
+	if ui.login_method in LOGIN_FIELD_METHODS {
 		field_mouse(ui, &ui.login_input, "LoginInput", 16)
 		before_len := len(ui.login_input)
 		before_edit := ui.ed.last_edit_time
@@ -217,51 +253,38 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if ui.add_account_open && ui.login_method == .Menu && rl.IsKeyPressed(.ESCAPE) {
-		ui.add_account_open = false
-		clear(&ui.login_input)
-		return
-	}
-
-	if ui.login_method == .Menu && account_signing_in() == "" {
-		for account, i in ui.signed_out_accounts {
-			if !clicked(fmt.tprintf("LoginResume%d", i)) {continue}
+	if ui.login_method == .Menu {
+		if clicked("LoginCreate") {
+			login_input_error = false
+			start_auth(ui, client, "", .Create)
+		} else if clicked("LoginExisting") {
+			ui.login_method = .Existing
+			delete(ui.login_error)
 			ui.login_error = ""
-			account_job_start(account_job_new(ui, client, .Sign_In, account.id_hex))
-			return
 		}
-	}
-	if clicked("LoginBackup") {
-		ui.picking_backup = true
-		rl.OpenFileDialog(false)
 		return
 	}
-	if clicked("LoginImportBtn") {
-		ui.login_method = .Import
-		return
-	}
-	if clicked("LoginBunkerBtn") {
-		ui.login_method = .Bunker
-		clear(&ui.login_input)
-		return
-	}
-	if clicked("LoginPairBtn") {
-		ui.login_method = .Pair
-		clear(&ui.login_input)
-		append(&ui.login_input, ..transmute([]u8)string(DEFAULT_RELAYS[0]))
-		return
-	}
-	if clicked("LoginBack") || (ui.login_method != .Menu && rl.IsKeyPressed(.ESCAPE)) {
-		ui.login_method = .Menu
-		ui.login_error = ""
-		login_show = false
-		login_input_error = false
-		login_pair_clear(ui)
-		clear(&ui.login_input)
+	if ui.login_method == .Existing {
+		if account_signing_in() == "" {
+			for account, i in ui.signed_out_accounts {
+				if !clicked(fmt.tprintf("LoginResume%d", i)) {continue}
+				ui.login_error = ""
+				account_job_start(account_job_new(ui, client, .Sign_In, account.id_hex))
+				return
+			}
+		}
+		if clicked("LoginImportBtn") {
+			ui.login_method = .Import
+		} else if clicked("LoginBunkerBtn") {
+			ui.login_method = .Bunker
+		} else if clicked("LoginPairBtn") {
+			ui.login_method = .Pair
+			append(&ui.login_input, ..transmute([]u8)string(DEFAULT_RELAYS[0]))
+		}
 		return
 	}
 
-	submitted := ui.login_method != .Menu && (rl.IsKeyPressed(.ENTER) || clicked("LoginGo"))
+	submitted := rl.IsKeyPressed(.ENTER) || clicked("LoginGo")
 	if submitted {login_input_error = true}
 	if submitted &&
 	   ui.login_method == .Bunker &&
@@ -302,9 +325,6 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		login_input_error = false
 		if ui.login_method ==
 		   .Import {start_auth(ui, client, string(ui.login_input[:]), .Import)} else {start_remote_auth(ui, client, ui.login_method, string(ui.login_input[:]))}
-	} else if ui.login_method == .Menu && clicked("LoginCreate") {
-		login_input_error = false
-		start_auth(ui, client, "", .Create)
 	}
 }
 

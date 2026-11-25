@@ -120,7 +120,9 @@ Run the app as your normal user. Running as root or directly from an unprivilege
 ## First run
 
 1. Set a vault password.
-2. Choose Generate a new key to create your identity. If you already have a secret key, choose Import a secret key (nsec). You can also paste a bunker link or pair with a remote signer.
+2. Choose **Create an account** for a new Nostr identity, then review your public profile before you publish it. If you already have an account, choose **Use an existing account**, then import your secret key (`nsec`), connect with a bunker link, or pair with your remote signer.
+
+**Import settings backup** restores settings, not your account, secret keys, or chats.
 
 Later launches unlock the same vault. A wrong password cannot decrypt it. **Use another key** deletes the vault and its sealed data and returns to account setup.
 

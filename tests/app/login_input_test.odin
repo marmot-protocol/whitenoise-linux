@@ -37,6 +37,7 @@ login_input_required :: proc(t: ^testing.T) {
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
 	edit.init(&ui.ed, context.allocator, context.allocator)
+	defer edit.destroy(&ui.ed)
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {
 		g_ui, g_prefs = nil, nil
@@ -47,22 +48,42 @@ login_input_required :: proc(t: ^testing.T) {
 	}
 	// Rejected input must never dereference the opaque runtime handle.
 	client: marmot.Client
+	defer {g_client = nil}
 	frame :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
 		nendo.set_pointer({-100, -100}, .Up)
 		anim_tick(1.0 / 60)
 		return build_layout(ui, 0)
 	}
-	click :: proc(t: ^testing.T, ui: ^Ui_State, client: ^marmot.Client, name: string) {
+	click :: proc(
+		t: ^testing.T,
+		ui: ^Ui_State,
+		client: ^marmot.Client,
+		name: string,
+		handler: proc(_: ^Ui_State, _: ^marmot.Client) = handle_login,
+	) {
 		data := nendo.element(nendo.id(name))
 		if !testing.expect(t, data.found, "button exists") {return}
 		b := data.rect
 		nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
 		if !testing.expect(t, nendo.pointer_over(nendo.id(name)), "button is reachable") {return}
 		forced_release = true
-		handle_login(ui, client)
+		handler(ui, client)
 		forced_release = false
 	}
 	for _ in 0 ..< 3 {frame(&ui)}
+	for name in ([]string{"LoginCreate", "LoginExisting", "LoginInput"}) {
+		testing.expect(t, !nendo.element(nendo.id(name)).found, name)
+	}
+	testing.expect(t, nendo.element(nendo.id("LoginProxy")).found)
+	g_client = &client
+	for _ in 0 ..< 3 {frame(&ui)}
+	testing.expect(t, nendo.element(nendo.id("LoginCreate")).found)
+	testing.expect(t, !nendo.element(nendo.id("LoginImportBtn")).found)
+	testing.expect(t, nendo.element(nendo.id("LoginBackup")).found)
+	click(t, &ui, &client, "LoginExisting")
+	testing.expect(t, auth_job == nil)
+	for _ in 0 ..< 3 {frame(&ui)}
+	testing.expect(t, !nendo.element(nendo.id("LoginBackup")).found)
 	click(t, &ui, &client, "LoginImportBtn")
 	testing.expect_value(t, ui.login_method, Login_Method.Import)
 	for _ in 0 ..< 3 {frame(&ui)}
@@ -98,9 +119,11 @@ login_input_required :: proc(t: ^testing.T) {
 		testing.expect(t, auth_job == nil)
 	}
 	set_locale("en")
-	// A nonempty malformed key retains the existing correction, without auth.
+	// A valid public address still cannot sign in.
 	delete(ui.login_error); ui.login_error = ""
-	append(&ui.login_input, "not-an-nsec")
+	public_key: [32]u8
+	public_key[0] = 1
+	append(&ui.login_input, bech32_encode("npub", public_key[:]))
 	frame(&ui)
 	click(t, &ui, &client, "LoginGo")
 	testing.expect_value(
@@ -115,6 +138,8 @@ login_input_required :: proc(t: ^testing.T) {
 		ui.account_ref = adding ? "offline-fixture" : ""
 		if !adding {clear(&ui.accounts)} else {append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})}
 		ui.login_method = .Menu
+		for _ in 0 ..< 3 {frame(&ui)}
+		click(t, &ui, &client, "LoginExisting")
 		for _ in 0 ..< 3 {frame(&ui)}
 		click(t, &ui, &client, "LoginBunkerBtn")
 		testing.expect_value(t, ui.login_method, Login_Method.Bunker)
@@ -156,14 +181,42 @@ login_input_required :: proc(t: ^testing.T) {
 	}
 	set_locale("en")
 	// Pair retains its existing empty-input behavior, without Bunker feedback.
+	phone_back_action(&ui)
+	testing.expect_value(t, ui.login_method, Login_Method.Existing)
+	for _ in 0 ..< 3 {frame(&ui)}
+	click(t, &ui, &client, "LoginPairBtn")
+	testing.expect_value(t, string(ui.login_input[:]), string(DEFAULT_RELAYS[0]))
 	clear(&ui.login_input)
-	delete(ui.login_error); ui.login_error = ""
-	ui.login_method = .Pair
 	rl.PushKey(.ENTER, true)
 	handle_login(&ui, &client)
 	rl.PushKey(.ENTER, false)
 	testing.expect_value(t, ui.login_error, "")
 	testing.expect(t, auth_job == nil)
+	for expected in ([]Login_Method{.Existing, .Menu}) {
+		for _ in 0 ..< 3 {frame(&ui)}
+		click(t, &ui, &client, "LoginBack")
+		testing.expect_value(t, ui.login_method, expected)
+		testing.expect(t, ui.add_account_open)
+	}
+	for _ in 0 ..< 3 {frame(&ui)}
+	click(t, &ui, &client, "LoginBack")
+	testing.expect(t, !ui.add_account_open)
+
+	ui.page = .Profile
+	for _ in 0 ..< 3 {frame(&ui)}
+	click(t, &ui, &client, "PrAddAccount", handle_pages)
+	for _ in 0 ..< 3 {frame(&ui)}
+	click(t, &ui, &client, "LoginExisting")
+	// Desktop navigation dismisses Add account without walking the Back stack.
+	ui.add_account_open = false
+	for _ in 0 ..< 3 {frame(&ui)}
+	click(t, &ui, &client, "PrAddAccount", handle_pages)
+	for _ in 0 ..< 3 {frame(&ui)}
+	testing.expect(
+		t,
+		nendo.element(nendo.id("LoginCreate")).found,
+		"reopening Add account offers both account choices",
+	)
 
 	home, err := os.make_directory_temp("", "wn-starter-review", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}
@@ -193,6 +246,7 @@ login_input_required :: proc(t: ^testing.T) {
 	defer marmot.client_free(runtime_client)
 	defer auth_stop()
 
+	g_client = runtime_client
 	ui.account_ref, ui.add_account_open, ui.login_method = "", false, .Menu
 	clear(&ui.accounts)
 	for _ in 0 ..< 3 {frame(&ui)}
@@ -287,7 +341,7 @@ login_input_required :: proc(t: ^testing.T) {
 	rl.PushKey(.ENTER, false)
 	testing.expect(t, auth_job == nil && ui.account_ref == "")
 	frame(&ui)
-	testing.expect(t, nendo.element(nendo.id("LoginImportBtn")).found)
+	testing.expect(t, nendo.element(nendo.id("LoginExisting")).found)
 	accounts: ^marmot.Account_Summary_List
 	if testing.expect_value(
 		   t,

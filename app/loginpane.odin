@@ -247,11 +247,17 @@ login_starter_phase: Starter_Phase
 @(private = "file")
 login_had_error: bool
 
+@(private = "file")
+login_caption :: proc(label: string) {
+	nendo.text(label, {font = FONT_BODY, size = 13, color = TEXT_DIM, align = .Center})
+}
+
 login_pane :: proc(ui: ^Ui_State) {
 	viewport := rl.Vector2{f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())}
 	starter := auth_job != nil && auth_job.method == .Create
 	starter_phase := starter ? auth_job.starter_phase : .Prepare
-	if starter_phase != login_starter_phase {
+	method_changed := ui.login_method != login_form
+	if method_changed || starter_phase != login_starter_phase {
 		login_starter_phase = starter_phase
 		if scroll := nendo.scroll(nendo.id("LoginCard")); scroll.found {scroll.position.y = 0}
 	}
@@ -259,7 +265,7 @@ login_pane :: proc(ui: ^Ui_State) {
 		login_had_error = ui.login_error != ""
 		login_reveal_frames = 2
 	}
-	if viewport != login_viewport || ui.login_method != login_form {
+	if viewport != login_viewport || method_changed {
 		login_viewport, login_form = viewport, ui.login_method
 		// The first pass still sees nendo's previous viewport; the next
 		// sees the keyboard-reduced layout and reveals the focused box.
@@ -269,7 +275,7 @@ login_pane :: proc(ui: ^Ui_State) {
 		if starter_phase == .Review {
 			if field := starter_focus(); field != "" {onboard_reveal_field("LoginCard", field)}
 			login_reveal_frames -= 1
-		} else if auth_job == nil && ui.login_method != .Menu {
+		} else if auth_job == nil && ui.login_method in LOGIN_FIELD_METHODS {
 			onboard_reveal_field("LoginCard", login_had_error ? "LoginFieldError" : "LoginInput")
 			if login_had_error {onboard_reveal_field("LoginCard", "LoginButtons")}
 			login_reveal_frames -= 1
@@ -295,11 +301,13 @@ login_pane :: proc(ui: ^Ui_State) {
 	},
 	) {
 		scrollbar(nendo.id("LoginCard"))
-		if first_account {
-			onboard_steps(.Account)
-		} else if !ui.socks5_login_open {
-			if !pairing {logo_mark()}
-			nendo.text("White Noise", {font = FONT_TITLE, size = 28, color = TEXT})
+		if menu && !ui.socks5_login_open && !ui.add_account_open {
+			if first_account {
+				onboard_steps(.Account)
+			} else {
+				logo_mark()
+				nendo.text("White Noise", {font = FONT_TITLE, size = 28, color = TEXT})
+			}
 		}
 
 		if ui.socks5_login_open {
@@ -438,12 +446,56 @@ login_pane :: proc(ui: ^Ui_State) {
 			}
 			if !pairing {if nendo.box(nendo.id("LoginGapB"))({height = nendo.fixed(10)}) {}}
 			if !remote {nendo.text(tr("Checking your key with the relays. This takes a few seconds."), {font = FONT_BODY, size = 12, color = TEXT_LO})}
-		} else if ui.login_method == .Menu {
-			nendo.text(
-				ui.add_account_open ? tr("Add another account") : first_account ? tr("Import your key, create one, or connect a signer.") : tr("Add your Nostr identity"),
-				{font = FONT_BODY, size = 15, color = TEXT_DIM},
-			)
-			if nendo.box(nendo.id("LoginGapA"))({height = nendo.fixed(10)}) {}
+		} else if g_client == nil || menu {
+			if g_client == nil {
+				login_caption(
+					tr(
+						"Sign-in is unavailable. Check your connection settings and restart White Noise.",
+					),
+				)
+			} else {
+				if ui.add_account_open {
+					nendo.text(
+						tr("Add another account"),
+						{font = FONT_TITLE, size = 18, color = TEXT},
+					)
+				}
+				if nendo.box(nendo.id("LoginNewAccount"))(
+				{
+					width = nendo.grow(max = 560),
+					direction = .Column,
+					align = {x = .Center},
+					gap = 6,
+				},
+				) {
+					login_big_button("LoginCreate", tr("Create an account"), false)
+					login_caption(
+						tr(
+							"This creates a new Nostr identity, separate from any account you already use.",
+						),
+					)
+				}
+				login_big_button("LoginExisting", tr("Use an existing account"), false)
+				if ui.add_account_open {login_button("LoginBack", tr("Back"))}
+			}
+			if nendo.box(nendo.id("LoginExtras"))(
+			{
+				width = nendo.grow(max = 560),
+				direction = .Column,
+				align = {x = .Center},
+				gap = 8,
+				padding = {top = 12},
+				border = {color = DIVIDER, width = {top = u16(BORDER_W)}},
+			},
+			) {
+				login_caption(
+					tr("A settings backup does not restore accounts, secret keys, or chats."),
+				)
+				micro_button("LoginBackup", tr("Import settings backup"))
+				micro_button("LoginProxy", tr("Connection settings (SOCKS5 proxy)"))
+			}
+		} else if ui.login_method == .Existing {
+			nendo.text(tr("Use an existing account"), {font = FONT_TITLE, size = 18, color = TEXT})
 			if ui.account_ref == "" && len(ui.accounts) != 0 {
 				login_big_button("LoginChooseAccount", tr("Choose an account"), false)
 			}
@@ -463,31 +515,12 @@ login_pane :: proc(ui: ^Ui_State) {
 				)
 				if busy {busy_bar("LoginResumeBusy")}
 			}
-			if nendo.box(nendo.id("LoginLocalMethods"))(
-			{
-				width = nendo.grow(),
-				direction = first_account || single_pane() ? .Column : .Row,
-				gap = 14,
-			},
-			) {
-				login_big_button("LoginImportBtn", tr("Import a secret key (nsec)"), false)
-				login_big_button("LoginCreate", tr("Generate a new key"), true)
-			}
-			if nendo.box(nendo.id("LoginRemoteMethods"))(
-			{
-				width = nendo.grow(),
-				direction = first_account || single_pane() ? .Column : .Row,
-				gap = 14,
-			},
-			) {
-				login_big_button("LoginBunkerBtn", tr("Connect with a bunker link"), false)
-				login_big_button("LoginPairBtn", tr("Pair with a remote signer"), false)
-			}
-			if nendo.box(nendo.id("LoginGapB"))({height = nendo.fixed(10)}) {}
-			if nendo.box(nendo.id("LoginExtras"))({gap = 10}) {
-				micro_button("LoginBackup", tr("Import backup"))
-				micro_button("LoginProxy", tr("Connection settings (SOCKS5 proxy)"))
-			}
+			login_caption(tr("Importing a secret key stores it in the vault on this device."))
+			login_big_button("LoginImportBtn", tr("Import a secret key (nsec)"), false)
+			login_caption(tr("With a remote signer, your secret key stays in your signer."))
+			login_big_button("LoginBunkerBtn", tr("Connect with a bunker link"), false)
+			login_big_button("LoginPairBtn", tr("Pair with a remote signer"), false)
+			login_button("LoginBack", tr("Back"))
 		} else {
 			nendo.text(
 				ui.login_method == .Bunker ? tr("Connect your remote signer") : ui.login_method == .Pair ? tr("Pair with your remote signer") : tr("Import a key"),
@@ -502,6 +535,10 @@ login_pane :: proc(ui: ^Ui_State) {
 						"Your secret key stays in your signer, and this device only asks it to sign. Approve the connection and each signature there, so keep your signer open. This device can't reveal or export the key, so back it up and recover it through your signer.",
 					),
 					{font = FONT_BODY, size = 13, color = TEXT_DIM, align = .Center},
+				)
+			} else {
+				login_caption(
+					tr("Use your secret key (nsec). A public address (npub) cannot sign you in."),
 				)
 			}
 			if nendo.box(nendo.id("LoginGapA"))({height = nendo.fixed(10)}) {}
@@ -549,7 +586,8 @@ login_pane :: proc(ui: ^Ui_State) {
 			)
 		}
 
-		if len(ui.login_error) > 0 && (auth_job != nil || ui.login_method == .Menu) {
+		if len(ui.login_error) > 0 &&
+		   (auth_job != nil || ui.login_method not_in LOGIN_FIELD_METHODS) {
 			nendo.text(nip46_detail(ui.login_error), {font = FONT_BODY, size = 14, color = DANGER})
 			if !login_input_error {micro_button("LoginErrorCopy", tr("Copy error"))}
 		}

@@ -381,6 +381,9 @@ msgstr "표시 이름을 입력해야 합니다."
 msgid "A key package lets people invite you to encrypted chats."
 msgstr "키 패키지가 있으면 다른 사람이 암호화된 채팅에 초대할 수 있습니다."
 
+msgid "A settings backup does not restore accounts, secret keys, or chats."
+msgstr "설정 백업으로는 계정, 비밀 키, 채팅을 복원할 수 없습니다."
+
 msgid "ABOUT"
 msgstr "소개"
 
@@ -1859,6 +1862,9 @@ msgstr "만들기"
 msgid "Create a poll"
 msgstr "투표 만들기"
 
+msgid "Create an account"
+msgstr "계정 만들기"
+
 msgid "Create and publish"
 msgstr "생성 및 게시"
 
@@ -2642,9 +2648,6 @@ msgstr "Gemma 약관"
 msgid "General"
 msgstr "일반"
 
-msgid "Generate a new key"
-msgstr "새 키 생성"
-
 msgid "German"
 msgstr "독일어"
 
@@ -2851,12 +2854,18 @@ msgstr "이미지 가져오기"
 msgid "Import set"
 msgstr "세트 가져오기"
 
+msgid "Import settings backup"
+msgstr "설정 백업 가져오기"
+
 msgid "Import..."
 msgstr "가져오기..."
 
 #, c-format
 msgid "Imported %d emoji; skipped %d existing shortcodes; failed %d."
 msgstr "이모지 %d개를 가져왔습니다. 기존 단축 코드 %d개를 건너뛰었고 %d개는 실패했습니다."
+
+msgid "Importing a secret key stores it in the vault on this device."
+msgstr "가져온 비밀 키는 이 기기의 보관함에 저장됩니다."
 
 #, c-format
 msgid "Importing contacts: %d of %d"
@@ -5001,6 +5010,9 @@ msgstr "로그아웃"
 msgid "Sign out of this account?"
 msgstr "이 계정에서 로그아웃하시겠습니까?"
 
+msgid "Sign-in is unavailable. Check your connection settings and restart White Noise."
+msgstr "로그인할 수 없습니다. 연결 설정을 확인한 후 White Noise를 다시 시작하세요."
+
 msgid "Signal call"
 msgstr "Signal 통화"
 
@@ -5433,6 +5445,9 @@ msgstr "일반 멤버로 그룹에 남습니다."
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr "이 채팅은 보관되었습니다. 메시지를 보내려면 보관함에서 복원하세요."
 
+msgid "This creates a new Nostr identity, separate from any account you already use."
+msgstr "이미 사용 중인 계정과 별개로 새 Nostr 계정을 만듭니다."
+
 msgid "This event is no longer available."
 msgstr "이 이벤트를 더 이상 볼 수 없습니다."
 
@@ -5750,6 +5765,9 @@ msgstr "프로젝트마다 별도의 그룹을 사용하고, 먼저 프로젝트
 msgid "Use a shorter search."
 msgstr "더 짧은 검색어를 사용하세요."
 
+msgid "Use an existing account"
+msgstr "기존 계정 사용"
+
 msgid "Use crop circle"
 msgstr "크롭 서클 사용"
 
@@ -5779,6 +5797,9 @@ msgstr "관련 없는 단어 조합이나 비밀번호 관리자의 비밀번호
 
 msgid "Use username and password"
 msgstr "사용자 이름과 비밀번호 사용"
+
+msgid "Use your secret key (nsec). A public address (npub) cannot sign you in."
+msgstr "비밀 키(nsec)를 사용하세요. 공개 주소(npub)로는 로그인할 수 없습니다."
 
 msgid "Used for generated user and group avatars."
 msgstr "자동 생성되는 사용자 및 그룹 아바타에 사용됩니다."
@@ -5952,6 +5973,9 @@ msgstr "와이어프레임"
 
 msgid "With a keyboard connected"
 msgstr "키보드 연결 시"
+
+msgid "With a remote signer, your secret key stays in your signer."
+msgstr "원격 서명기를 사용하면 비밀 키는 서명기에 남습니다."
 
 msgid "Word"
 msgstr "단어"

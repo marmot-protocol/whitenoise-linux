@@ -605,6 +605,13 @@ profile_fields :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 }
 
+@(private = "file")
+open_add_account :: proc(ui: ^Ui_State) {
+	ui.add_account_open = ui.account_ref != ""
+	ui.login_method = .Menu
+	login_clear_form(ui)
+}
+
 handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 
@@ -621,9 +628,7 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			}
 		}
 		if clicked("PrAddAccount") {
-			ui.add_account_open = true
-			clear(&ui.login_input)
-			ui.login_error = ""
+			open_add_account(ui)
 			return
 		}
 		if clicked("PrKeys") || clicked("PrNetwork") {
@@ -1027,10 +1032,7 @@ handle_accounts :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if clicked("AddAccountBtn") {
 		ui.accounts_open = false
-		ui.add_account_open = ui.account_ref != ""
-		ui.login_method = .Menu
-		clear(&ui.login_input)
-		ui.login_error = ""
+		open_add_account(ui)
 		return
 	}
 	if clicked("AcctClose") ||

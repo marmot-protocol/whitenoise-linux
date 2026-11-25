@@ -540,10 +540,8 @@ phone_back_action :: proc(ui: ^Ui_State) {
 	}
 	if ui.add_account_open {
 		if ui.socks5_login_open {ui.socks5_login_open = false; return}
-		if auth_job == nil && ui.login_method != .Menu {
-			ui.login_method = .Menu
-			clear(&ui.login_input)
-			ui.login_error = ""
+		if auth_job == nil {
+			login_back(ui)
 			return
 		}
 		starter := auth_job != nil && auth_job.method == .Create

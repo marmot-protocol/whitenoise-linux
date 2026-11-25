@@ -393,6 +393,9 @@ msgstr "Eine Zeile über dich"
 msgid "A separate secret key or signer lets you use an identity again. It does not restore chats, pending sends or saved collections."
 msgstr "Mit einem separat gespeicherten geheimen Schlüssel oder Signer kannst du eine Identität wieder verwenden. Chats, ausstehende Nachrichten oder gespeicherte Sammlungen werden dadurch nicht wiederhergestellt."
 
+msgid "A settings backup does not restore accounts, secret keys, or chats."
+msgstr "Eine Einstellungssicherung stellt keine Konten, geheimen Schlüssel oder Chats wieder her."
+
 msgid "ABOUT"
 msgstr "ÜBER DICH"
 
@@ -521,9 +524,6 @@ msgstr "Füge jemanden über sein Profil hinzu oder füge oben seinen npub ein. 
 
 msgid "Add to group"
 msgstr "Zu einer Gruppe hinzufügen"
-
-msgid "Add your Nostr identity"
-msgstr "Deine Nostr-Identität hinzufügen"
 
 msgid "Added to your stickers"
 msgstr "Zu deinen Stickern hinzugefügt"
@@ -1964,6 +1964,9 @@ msgstr "Erstellen"
 msgid "Create a poll"
 msgstr "Umfrage erstellen"
 
+msgid "Create an account"
+msgstr "Konto erstellen"
+
 msgid "Create and publish"
 msgstr "Erstellen und veröffentlichen"
 
@@ -2810,9 +2813,6 @@ msgstr "Gemma-Nutzungsbedingungen"
 msgid "General"
 msgstr "Allgemein"
 
-msgid "Generate a new key"
-msgstr "Neuen Schlüssel erzeugen"
-
 msgid "German"
 msgstr "Deutsch"
 
@@ -3028,8 +3028,8 @@ msgstr "Bild importieren"
 msgid "Import set"
 msgstr "Set importieren"
 
-msgid "Import your key, create one, or connect a signer."
-msgstr "Importiere deinen Schlüssel, erstelle einen neuen oder verbinde einen Signer."
+msgid "Import settings backup"
+msgstr "Einstellungssicherung importieren"
 
 msgid "Import..."
 msgstr "Importieren..."
@@ -3037,6 +3037,9 @@ msgstr "Importieren..."
 #, c-format
 msgid "Imported %d emoji; skipped %d existing shortcodes; failed %d."
 msgstr "%d Emojis importiert; %d vorhandene Shortcodes übersprungen; %d fehlgeschlagen."
+
+msgid "Importing a secret key stores it in the vault on this device."
+msgstr "Beim Import wird dein geheimer Schlüssel im Tresor auf diesem Gerät gespeichert."
 
 #, c-format
 msgid "Importing contacts: %d of %d"
@@ -5354,6 +5357,9 @@ msgstr "Abmelden"
 msgid "Sign out of this account?"
 msgstr "Von diesem Konto abmelden?"
 
+msgid "Sign-in is unavailable. Check your connection settings and restart White Noise."
+msgstr "Die Anmeldung ist nicht verfügbar. Prüfe deine Verbindungseinstellungen und starte White Noise neu."
+
 msgid "Signal call"
 msgstr "Signal-Anruf"
 
@@ -5799,6 +5805,9 @@ msgstr "Das kann nicht rückgängig gemacht werden."
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr "Dieser Chat ist archiviert. Stelle ihn im Archiv wieder her, um Nachrichten zu senden."
 
+msgid "This creates a new Nostr identity, separate from any account you already use."
+msgstr "Dadurch erstellst du eine neue Nostr-Identität, getrennt von deinen bisherigen Konten."
+
 msgid "This event is no longer available."
 msgstr "Dieses Ereignis ist nicht mehr verfügbar."
 
@@ -6143,6 +6152,9 @@ msgstr "Verwende für jedes Projekt eine eigene Gruppe und beginne mit dem Speic
 msgid "Use a shorter search."
 msgstr "Verwende einen kürzeren Suchbegriff."
 
+msgid "Use an existing account"
+msgstr "Vorhandenes Konto verwenden"
+
 msgid "Use crop circle"
 msgstr "Kornkreis verwenden"
 
@@ -6172,6 +6184,9 @@ msgstr "Verwende unzusammenhängende Wörter oder ein von einem Passwortmanager 
 
 msgid "Use username and password"
 msgstr "Benutzername und Passwort verwenden"
+
+msgid "Use your secret key (nsec). A public address (npub) cannot sign you in."
+msgstr "Verwende deinen geheimen Schlüssel (nsec). Mit einer öffentlichen Adresse (npub) kannst du dich nicht anmelden."
 
 msgid "Used for generated user and group avatars."
 msgstr "Wird für generierte Benutzer- und Gruppenavatare verwendet."
@@ -6345,6 +6360,9 @@ msgstr "Drahtgitter"
 
 msgid "With a keyboard connected"
 msgstr "Mit angeschlossener Tastatur"
+
+msgid "With a remote signer, your secret key stays in your signer."
+msgstr "Wenn du einen externen Signierer verwendest, bleibt dein geheimer Schlüssel dort."
 
 msgid "Word"
 msgstr "Wort"
