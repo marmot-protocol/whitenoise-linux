@@ -152,10 +152,6 @@ msgid "%d people couldn't be added. Ask them to open White Noise, then invite th
 msgstr "%d명을 추가할 수 없습니다. White Noise를 열도록 요청한 뒤 다시 초대하세요."
 
 #, c-format
-msgid "%d people will be added to the group."
-msgstr "%d명이 그룹에 추가됩니다."
-
-#, c-format
 msgid "%d person couldn't be added. Ask them to open White Noise, then invite them again."
 msgstr "%d명을 추가할 수 없습니다. White Noise를 열도록 요청한 뒤 다시 초대하세요."
 
@@ -268,6 +264,10 @@ msgid "%s is no longer an admin"
 msgstr "%s 님은 더 이상 관리자가 아닙니다"
 
 #, c-format
+msgid "%s is still in your old device list. Link it from that device."
+msgstr "이전 기기 목록에 %s 기기가 아직 남아 있습니다. 해당 기기에서 연결을 시작하세요."
+
+#, c-format
 msgid "%s left the group"
 msgstr "%s 님이 그룹에서 나갔습니다"
 
@@ -300,6 +300,10 @@ msgid "%s was added to the group"
 msgstr "%s 님이 그룹에 추가되었습니다"
 
 #, c-format
+msgid "%s was linked by %s."
+msgstr "연결된 기기: %s. 연결을 승인한 기기: %s."
+
+#, c-format
 msgid "%s was made an admin"
 msgstr "%s 님이 관리자가 되었습니다"
 
@@ -308,8 +312,12 @@ msgid "%s was removed from the group"
 msgstr "%s 님이 그룹에서 제거되었습니다"
 
 #, c-format
-msgid "%s will be added to the group."
-msgstr "%s 님이 그룹에 추가됩니다."
+msgid "%s was removed from this device."
+msgstr "%s 프로필이 이 기기에서 제거되었습니다."
+
+#, c-format
+msgid "%s was unlinked from this device. Remove its local keys and chats before signing in again. Other devices keep their chats."
+msgstr "이 기기에서 %s 프로필의 연결이 해제되었습니다. 다시 로그인하기 전에 이 기기에 저장된 키와 채팅을 제거하세요. 다른 기기의 채팅은 그대로 유지됩니다."
 
 #, c-format
 msgid "%s · Click to download."
@@ -351,6 +359,9 @@ msgstr "1표"
 msgid "1 voter"
 msgstr "투표자 1명"
 
+msgid "1. Install White Noise on the other device and sign in to this profile."
+msgstr "1. 다른 기기에 White Noise를 설치하고 이 프로필로 로그인하세요."
+
 msgid "2. In Settings, open Account & devices, then Linked devices. Choose Link to another device."
 msgstr "2. 설정에서 계정 및 기기를 연 다음 연결된 기기로 이동합니다. 다른 기기에 연결을 선택합니다."
 
@@ -360,8 +371,14 @@ msgstr "2.5 GB"
 msgid "25 European languages, including English and Italian."
 msgstr "영어와 이탈리아어를 포함한 25개 유럽 언어를 지원합니다."
 
+msgid "3. When the request appears here, check that both screens show the same emoji."
+msgstr "3. 여기에 요청이 표시되면 두 화면의 이모지가 같은지 확인하세요."
+
 msgid "3D models"
 msgstr "3D 모델"
+
+msgid "A backup-file password opens only that backup file. Your identity key or remote signer cannot unlock this vault."
+msgstr "백업 파일 비밀번호로는 해당 백업 파일만 열 수 있습니다. 신원 키나 원격 서명자로는 이 금고의 잠금을 해제할 수 없습니다."
 
 msgid "A checked box means you placed the chat by hand. Clear it to let folder rules decide."
 msgstr "체크 표시는 채팅을 직접 배치했다는 뜻입니다. 체크를 해제하면 폴더 규칙에 따릅니다."
@@ -372,8 +389,15 @@ msgstr "비공개 그룹 채팅을 위한 클라이언트입니다. 메시지는
 msgid "A device hasn't reported support."
 msgstr "아직 지원 여부를 알리지 않은 기기가 있습니다."
 
+#, c-format
+msgid "A device is asking to link to %s."
+msgstr "%s 프로필에 연결을 요청한 기기가 있습니다."
+
 msgid "A device needs to be replaced."
 msgstr "교체해야 하는 기기가 있습니다."
+
+msgid "A different code can mean someone else is trying to link. Don't approve unless both codes match exactly."
+msgstr "코드가 다르면 다른 사람이 연결을 시도하고 있을 수 있습니다. 두 코드가 정확히 일치할 때만 승인하세요."
 
 msgid "A display name is required."
 msgstr "표시 이름을 입력해야 합니다."
@@ -381,8 +405,19 @@ msgstr "표시 이름을 입력해야 합니다."
 msgid "A key package lets people invite you to encrypted chats."
 msgstr "키 패키지가 있으면 다른 사람이 암호화된 채팅에 초대할 수 있습니다."
 
+#, c-format
+msgid "A key package this device didn't make was found and replaced: %s."
+msgstr "이 기기에서 만들지 않은 키 패키지를 찾아 교체했습니다: %s."
+
+msgid "A separate secret key or signer lets you use an identity again. It does not restore chats, pending sends or saved collections."
+msgstr "별도로 보관한 비밀 키나 서명자가 있으면 신원을 다시 사용할 수 있습니다. 채팅, 전송 대기 중인 메시지, 저장된 모음은 복원되지 않습니다."
+
 msgid "A settings backup does not restore accounts, secret keys, or chats."
 msgstr "설정 백업으로는 계정, 비밀 키, 채팅을 복원할 수 없습니다."
+
+#, c-format
+msgid "A sign-in was marked as not you: %s."
+msgstr "본인 로그인이 아닌 것으로 표시된 기록: %s."
 
 msgid "ABOUT"
 msgstr "소개"
@@ -412,6 +447,9 @@ msgstr "정보"
 msgid "About White Noise"
 msgstr "White Noise 정보"
 
+msgid "About this password"
+msgstr "비밀번호 안내"
+
 #, c-format
 msgid "Accent %s color"
 msgstr "강조 %s 색상"
@@ -438,12 +476,21 @@ msgstr "계정"
 msgid "Account & devices"
 msgstr "계정 및 기기"
 
+msgid "Account access"
+msgstr "계정 접근 정보"
+
+msgid "Account keys stored here, remote signer sessions and the local encryption key."
+msgstr "이 기기에 저장된 계정 키, 원격 서명자 세션, 로컬 암호화 키입니다."
+
 msgid "Accounts"
 msgstr "계정"
 
 #, c-format
 msgid "Action failed: %s"
 msgstr "작업 실패: %s"
+
+msgid "Active"
+msgstr "활성"
 
 #, c-format
 msgid "Active theme: %s"
@@ -455,14 +502,14 @@ msgstr "활동"
 msgid "Add"
 msgstr "추가"
 
+msgid "Add a new device"
+msgstr "새 기기 추가"
+
 msgid "Add a question for your poll."
 msgstr "투표 질문을 입력하세요."
 
 msgid "Add account"
 msgstr "계정 추가"
-
-msgid "Add an option..."
-msgstr "선택지 추가..."
 
 msgid "Add another account"
 msgstr "다른 계정 추가"
@@ -500,6 +547,9 @@ msgstr "npub으로 상대를 추가하거나 직접 그룹을 만드세요."
 msgid "Add someone from their profile or paste their npub above. You can also import a contacts CSV or JSON export."
 msgstr "프로필에서 연락처를 추가하거나 위에 npub을 붙여넣으세요. 연락처 CSV 또는 JSON 내보내기 파일도 가져올 수 있습니다."
 
+msgid "Add to all chats"
+msgstr "모든 채팅에 추가"
+
 msgid "Add to group"
 msgstr "그룹에 추가"
 
@@ -518,6 +568,9 @@ msgstr "관리자는 멤버를 추가하거나 제거하고 그룹 정보를 변
 msgid "Advanced"
 msgstr "고급"
 
+msgid "Affected members may miss the change. Turning on linked devices now dismisses the relay refusals for those earlier changes."
+msgstr "일부 멤버는 변경 사항을 받지 못할 수 있습니다. 지금 연결된 기기 기능을 켜면 이전 변경 사항을 릴레이에서 거절한 기록이 지워집니다."
+
 msgid "After signing in, open Account & devices in Settings to link another device."
 msgstr "로그인한 후 다른 기기를 연결하려면 설정에서 계정 및 기기를 엽니다."
 
@@ -532,9 +585,6 @@ msgstr "전체"
 
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "모든 계정은 연결된 상태로 유지됩니다. 전환하면 표시되는 계정만 바뀝니다."
-
-msgid "All categories"
-msgstr "모든 카테고리"
 
 msgid "All chats"
 msgstr "모든 채팅"
@@ -581,6 +631,19 @@ msgstr "동물과 자연"
 msgid "Animations are distracting"
 msgstr "애니메이션이 방해됩니다"
 
+msgid "Another device approved this request."
+msgstr "다른 기기에서 이 요청을 승인했습니다."
+
+msgid "Another device change is still in progress. Wait a moment and try again."
+msgstr "다른 기기 변경 작업이 아직 진행 중입니다. 잠시 기다렸다가 다시 시도하세요."
+
+msgid "Another device is still linking. Let it finish before moving this device."
+msgstr "다른 기기가 아직 연결 중입니다. 연결이 끝난 뒤 이 기기를 옮기세요."
+
+#, c-format
+msgid "Another device removed this one from %s. This device no longer gets that profile's messages."
+msgstr "다른 기기에서 %s 프로필에 연결된 이 기기를 제거했습니다. 이 기기는 더 이상 해당 프로필의 메시지를 받지 않습니다."
+
 msgid "Another group change took precedence. Review your group settings."
 msgstr "다른 그룹 변경이 우선 적용되었습니다. 그룹 설정을 확인하세요."
 
@@ -607,6 +670,12 @@ msgstr "메시지 본문과 입력창에 적용됩니다."
 
 msgid "Applies to the picker, reactions and emoji in messages."
 msgstr "선택기, 반응, 메시지 속 이모지에 적용됩니다."
+
+msgid "Approve from the device with your chats."
+msgstr "채팅이 있는 기기에서 승인하세요."
+
+msgid "Approving the other device…"
+msgstr "상대 기기의 연결을 승인하는 중…"
 
 msgid "Apps"
 msgstr "앱"
@@ -638,6 +707,9 @@ msgstr "방향키로 이동합니다. X는 A, Z는 B, Enter는 Start, Shift는 S
 msgid "Art deco"
 msgstr "아르데코"
 
+msgid "Ask a question, report a problem, or share a suggestion in a private chat with White Noise support."
+msgstr "White Noise 지원팀과의 비공개 채팅에서 질문하거나 문제를 신고하거나 의견을 보낼 수 있습니다."
+
 msgid "Ask a question..."
 msgstr "질문 입력..."
 
@@ -652,6 +724,9 @@ msgstr "파일 첨부"
 
 msgid "Attachment"
 msgstr "첨부 파일"
+
+msgid "Attachments, avatars, transcripts and map tiles."
+msgstr "첨부 파일, 아바타, 받아쓴 내용, 지도 타일입니다."
 
 msgid "Audio"
 msgstr "오디오"
@@ -805,6 +880,15 @@ msgstr "테두리 두께"
 msgid "Bracket labels"
 msgstr "대괄호 레이블"
 
+msgid "Bring chat history"
+msgstr "채팅 기록 가져오기"
+
+msgid "Bring chats to this device."
+msgstr "채팅을 이 기기로 가져옵니다."
+
+msgid "Bringing earlier messages from your other device…"
+msgstr "다른 기기에서 이전 메시지를 가져오는 중…"
+
 msgid "Browse emoji sets"
 msgstr "이모지 세트 둘러보기"
 
@@ -822,9 +906,6 @@ msgstr "불가리아어"
 
 msgid "By rule"
 msgstr "규칙별"
-
-msgid "CHATS"
-msgstr "채팅"
 
 msgid "COLOR"
 msgstr "색상"
@@ -853,6 +934,9 @@ msgstr "현재 비밀번호"
 msgid "Cached attachments"
 msgstr "캐시된 첨부 파일"
 
+msgid "Cached media"
+msgstr "캐시된 미디어"
+
 msgid "Calendar"
 msgstr "캘린더"
 
@@ -868,6 +952,9 @@ msgstr "연결 취소"
 msgid "Cancel edit / reply, close panels"
 msgstr "수정/답장 취소, 패널 닫기"
 
+msgid "Cancel linking"
+msgstr "연결 취소"
+
 msgid "Cancel preview"
 msgstr "미리 보기 취소"
 
@@ -879,6 +966,9 @@ msgstr "텍스트 편집 취소"
 
 msgid "Cancel translation"
 msgstr "번역 취소"
+
+msgid "Cancelling the link attempt…"
+msgstr "연결 시도를 취소하는 중…"
 
 msgid "Card border"
 msgstr "카드 테두리"
@@ -915,9 +1005,6 @@ msgstr "날짜 형식 변경"
 
 msgid "Change the interface language"
 msgstr "인터페이스 언어 변경"
-
-msgid "Change the message text size"
-msgstr "메시지 글자 크기 변경"
 
 msgid "Change the scroll speed"
 msgstr "스크롤 속도 변경"
@@ -972,8 +1059,20 @@ msgstr "채팅: %s"
 msgid "Chats"
 msgstr "채팅"
 
+#, c-format
+msgid "Chats left or asked to leave: %d. Chats handed off to other linked devices: %d."
+msgstr "나갔거나 나가기를 요청한 채팅: %d개. 다른 연결된 기기로 넘긴 채팅: %d개."
+
+#, c-format
+msgid "Chats still holding a device you removed: %d. A chat admin can remove it."
+msgstr "제거한 기기가 아직 남아 있는 채팅: %d개. 채팅 관리자가 그 기기를 제거할 수 있습니다."
+
+#, c-format
+msgid "Chats that can't add linked devices: %d."
+msgstr "연결된 기기를 추가할 수 없는 채팅: %d개."
+
 msgid "Chats that match file here automatically. People counts include you. Anything you move by hand stays where you put it."
-msgstr ""
+msgstr "규칙에 맞는 채팅은 이 폴더에 자동으로 분류됩니다. 인원수에는 본인도 포함됩니다. 직접 옮긴 채팅은 옮긴 위치에 그대로 남습니다."
 
 msgid "Chats you archive will appear here."
 msgstr "보관한 채팅이 여기에 표시됩니다."
@@ -993,6 +1092,9 @@ msgstr "새 버전을 확인합니다."
 msgid "Check now"
 msgstr "지금 확인"
 
+msgid "Check status"
+msgstr "상태 확인"
+
 msgid "Check the spelling, or paste their public key."
 msgstr "철자를 확인하거나 상대의 공개 키를 붙여넣으세요."
 
@@ -1001,6 +1103,15 @@ msgstr "키 패키지 확인"
 
 msgid "Check your system notifications for the test alert."
 msgstr "시스템 알림에서 테스트 알림을 확인하세요."
+
+msgid "Checking device information…"
+msgstr "기기 정보를 확인하는 중…"
+
+msgid "Checking for chat history…"
+msgstr "채팅 기록을 확인하는 중…"
+
+msgid "Checking for sign-ins…"
+msgstr "로그인 기록을 확인하는 중…"
 
 msgid "Checking for updates."
 msgstr "업데이트를 확인하고 있습니다."
@@ -1011,11 +1122,20 @@ msgstr "릴레이 확인 중..."
 msgid "Checking the original message…"
 msgstr "원본 메시지를 확인하고 있습니다…"
 
+msgid "Checking whether linked devices are on…"
+msgstr "연결된 기기 기능이 켜져 있는지 확인하는 중…"
+
+msgid "Checking whether this chat supports linked devices…"
+msgstr "이 채팅에서 연결된 기기 기능을 지원하는지 확인하는 중…"
+
+msgid "Checking which chats can add linked devices…"
+msgstr "연결된 기기를 추가할 수 있는 채팅을 확인하는 중…"
+
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "릴레이에서 키를 확인하고 있습니다. 몇 초 정도 걸립니다."
 
-msgid "Checking your password and decrypting the vault."
-msgstr "비밀번호를 확인하고 금고를 복호화하고 있습니다."
+msgid "Checking your password and decrypting your local vault."
+msgstr "비밀번호를 확인하고 로컬 금고를 복호화하는 중입니다."
 
 msgid "Checking..."
 msgstr "확인 중..."
@@ -1038,6 +1158,9 @@ msgstr "칩 윤곽선"
 msgid "Chip text"
 msgstr "칩 텍스트"
 
+msgid "Choose a chat to open its settings. Nothing changes until you confirm it there."
+msgstr "채팅을 선택하면 설정이 열립니다. 설정에서 확인하기 전에는 아무것도 변경되지 않습니다."
+
 msgid "Choose a contacts CSV or JSON export to import."
 msgstr "가져올 연락처 CSV 또는 JSON 내보내기 파일을 선택하세요."
 
@@ -1059,14 +1182,17 @@ msgstr "번역 원본 언어 선택"
 msgid "Choose a translation target language"
 msgstr "번역 대상 언어 선택"
 
+msgid "Choose a vault password"
+msgstr "금고 비밀번호 설정"
+
+msgid "Choose an account"
+msgstr "계정 선택"
+
 msgid "Choose an emoji style"
 msgstr "이모지 스타일 선택"
 
 msgid "Choose at most two emoji."
 msgstr "이모지는 최대 2개까지 선택할 수 있습니다."
-
-msgid "Choose how your conversations look and feel."
-msgstr "대화의 모양과 사용감을 설정합니다."
 
 msgid "Choose image"
 msgstr "이미지 선택"
@@ -1076,9 +1202,6 @@ msgstr "이모지를 1개 또는 2개 선택하세요. 모든 멤버에게 같�
 
 msgid "Choose one-tap reactions"
 msgstr "원탭 반응 선택"
-
-msgid "Choose someone or paste public keys separated by commas."
-msgstr "사람을 선택하거나 공개 키를 쉼표로 구분해 붙여넣으세요."
 
 msgid "Choose someone to talk to."
 msgstr "대화할 상대를 선택하세요."
@@ -1092,14 +1215,8 @@ msgstr "기본 아바타 모양 선택"
 msgid "Choose the renderer"
 msgstr "렌더러 선택"
 
-msgid "Choose what gets your attention."
-msgstr "알림을 받을 항목을 선택합니다."
-
 msgid "Choose what you'd like to change."
 msgstr "변경할 항목을 선택하세요."
-
-msgid "Choose when and how White Noise alerts you."
-msgstr "White Noise의 알림 시점과 방식을 설정합니다."
 
 msgid "Choose where events open"
 msgstr "이벤트를 열 위치 선택"
@@ -1118,6 +1235,9 @@ msgstr "게시할 위치 선택"
 
 msgid "Choose which shortcuts appear beside your draft."
 msgstr "초안 옆에 표시할 바로가기를 선택합니다."
+
+msgid "Choose your account"
+msgstr "계정 선택"
 
 msgid "Circle"
 msgstr "원"
@@ -1154,9 +1274,6 @@ msgstr "클릭하여 편집하고, 드래그하여 순서를 바꿉니다."
 
 msgid "Close"
 msgstr "닫기"
-
-msgid "Close White Noise"
-msgstr "White Noise 닫기"
 
 msgid "Close to tray"
 msgstr "닫을 때 트레이로 최소화"
@@ -1203,8 +1320,8 @@ msgstr "명령 팔레트"
 msgid "Comment"
 msgstr "댓글"
 
-msgid "Composer"
-msgstr "메시지 작성창"
+msgid "Compare the codes on both devices"
+msgstr "두 기기의 코드 비교"
 
 msgid "Composer preview"
 msgstr "작성창 미리보기"
@@ -1233,11 +1350,14 @@ msgstr "가져오기 확인"
 msgid "Confirm reveal"
 msgstr "표시 확인"
 
+msgid "Confirm your password"
+msgstr "비밀번호 확인"
+
+msgid "Confirming that the codes match…"
+msgstr "코드가 일치하는지 확인하는 중…"
+
 msgid "Connect an AI agent"
 msgstr "AI 에이전트 연결"
-
-msgid "Connect an AI agent using your public key and a setup prompt."
-msgstr "공개 키와 설정 프롬프트로 AI 에이전트를 연결합니다."
 
 msgid "Connect an agent you run and trust."
 msgstr "직접 운영하고 신뢰하는 에이전트를 연결합니다."
@@ -1248,11 +1368,11 @@ msgstr "릴레이에 연결"
 msgid "Connect with a bunker link"
 msgstr "bunker 링크로 연결"
 
-msgid "Connect with the relays you choose."
-msgstr "선택한 릴레이로 연결합니다."
-
 msgid "Connect your remote signer"
 msgstr "원격 서명자 연결"
+
+msgid "Connect your signer again to sign in."
+msgstr "로그인하려면 서명자를 다시 연결하세요."
 
 msgid "Connected to relays"
 msgstr "릴레이에 연결됨"
@@ -1297,8 +1417,8 @@ msgstr "연락처만"
 msgid "Continue"
 msgstr "계속"
 
-msgid "Continue to account setup"
-msgstr "계정 설정으로 계속"
+msgid "Continue with moving this device"
+msgstr "기기 이동 계속"
 
 msgid "Control background"
 msgstr "컨트롤 배경"
@@ -1390,6 +1510,9 @@ msgstr "보관할 수 없습니다. %s"
 msgid "Couldn't cache your transcription. Please try again."
 msgstr "받아쓰기 결과를 캐시할 수 없습니다. 다시 시도하세요."
 
+msgid "Couldn't cancel linking. Please try again."
+msgstr "연결을 취소할 수 없습니다. 다시 시도하세요."
+
 #, c-format
 msgid "Couldn't change audit logs. %s"
 msgstr "감사 로그를 변경할 수 없습니다. %s"
@@ -1403,8 +1526,17 @@ msgstr "사라지는 메시지 설정을 변경할 수 없습니다. 다시 시�
 msgid "Couldn't change the password. Please try again."
 msgstr "비밀번호를 변경할 수 없습니다. 다시 시도하세요."
 
+msgid "Couldn't check chat history. Please try again."
+msgstr "채팅 기록을 확인할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't check for sign-ins. Check your relay settings and try again."
+msgstr "로그인 기록을 확인할 수 없습니다. 릴레이 설정을 확인하고 다시 시도하세요."
+
 msgid "Couldn't check for updates. Please try again."
 msgstr "업데이트를 확인할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't check linked devices for this chat. Please try again."
+msgstr "이 채팅의 연결된 기기 상태를 확인할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't check the original message. Please try again."
 msgstr "원본 메시지를 확인할 수 없습니다. 다시 시도하세요."
@@ -1412,8 +1544,14 @@ msgstr "원본 메시지를 확인할 수 없습니다. 다시 시도하세요."
 msgid "Couldn't check the translation model. Please try again."
 msgstr "번역 모델을 확인할 수 없습니다. 다시 시도하세요."
 
+msgid "Couldn't check which chats can add linked devices. Please try again."
+msgstr "연결된 기기를 추가할 수 있는 채팅을 확인할 수 없습니다. 다시 시도하세요."
+
 msgid "Couldn't choose a photo. Close your open file picker and try again."
 msgstr "사진을 선택할 수 없습니다. 열려 있는 파일 선택기를 닫고 다시 시도하세요."
+
+msgid "Couldn't complete the account action."
+msgstr "계정 작업을 완료할 수 없습니다."
 
 msgid "Couldn't complete the signer request. Please try again."
 msgstr "서명자 요청을 완료할 수 없습니다. 다시 시도하세요."
@@ -1433,6 +1571,9 @@ msgstr "프록시를 구성할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't confirm picture publication. Your picture was uploaded. Please try again."
 msgstr "사진 게시를 확인하지 못했습니다. 사진은 업로드되었습니다. 다시 시도해 주세요."
+
+msgid "Couldn't confirm the emoji code. Please try again."
+msgstr "이모지 코드를 확인할 수 없습니다. 다시 시도하세요."
 
 #, c-format
 msgid "Couldn't copy %s. Please try again."
@@ -1456,6 +1597,9 @@ msgstr "금고를 만들 수 없습니다. 다시 시도하세요."
 msgid "Couldn't crop the picture. Please try again."
 msgstr "사진을 자를 수 없습니다. 다시 시도하세요."
 
+msgid "Couldn't decline the request. Please try again."
+msgstr "요청을 거절할 수 없습니다. 다시 시도하세요."
+
 msgid "Couldn't decode the image. Choose a PNG or JPEG."
 msgstr "이미지를 디코딩할 수 없습니다. PNG 또는 JPEG를 선택하세요."
 
@@ -1467,11 +1611,25 @@ msgid "Couldn't delete %s. Please try again."
 msgstr "%s을(를) 삭제할 수 없습니다. 다시 시도하세요."
 
 #, c-format
+msgid "Couldn't delete key package %s from relays: %s"
+msgstr "키 패키지 %s을(를) 릴레이에서 삭제할 수 없습니다: %s"
+
+#, c-format
 msgid "Couldn't delete the audit log file. %s"
 msgstr "감사 로그 파일을 삭제할 수 없습니다. %s"
 
 msgid "Couldn't delete the conversation. Review its members and try again."
 msgstr "대화를 삭제할 수 없습니다. 멤버를 확인한 후 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't delete this device's key package from relays: %s"
+msgstr "이 기기의 키 패키지를 릴레이에서 삭제할 수 없습니다: %s"
+
+msgid "Couldn't dismiss the device hint. Please try again."
+msgstr "기기 안내를 닫을 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't dismiss the warning. Please try again."
+msgstr "경고를 닫을 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't download speech files. Please try again."
 msgstr "음성 파일을 다운로드할 수 없습니다. 다시 시도하세요."
@@ -1557,6 +1715,13 @@ msgstr "초대할 수 없습니다. 상대에게 White Noise가 사용할 수 �
 msgid "Couldn't keep %s running. Please try again."
 msgstr "%s을(를) 계속 실행할 수 없습니다. 다시 시도하세요."
 
+#, c-format
+msgid "Couldn't leave chat %s: %s"
+msgstr "채팅 %s에서 나갈 수 없습니다: %s"
+
+msgid "Couldn't link the device. Please try again."
+msgstr "기기를 연결할 수 없습니다. 다시 시도하세요."
+
 msgid "Couldn't load GIFs. Please try again."
 msgstr "GIF를 불러올 수 없습니다. 다시 시도하세요."
 
@@ -1612,10 +1777,6 @@ msgstr "연락처를 불러올 수 없습니다. 다시 시도하세요."
 msgid "Couldn't load your stickers. Please try again."
 msgstr "스티커를 불러올 수 없습니다. 다시 시도하세요."
 
-#, c-format
-msgid "Couldn't log in. %s"
-msgstr "로그인할 수 없습니다. %s"
-
 msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
 msgstr "해당 NIP-05 주소를 조회할 수 없습니다. 다시 확인하고 다시 시도하세요."
 
@@ -1625,6 +1786,9 @@ msgstr "채팅을 읽음으로 표시할 수 없습니다. %s"
 
 msgid "Couldn't mark the chat read. Please try again."
 msgstr "채팅을 읽음으로 표시할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't move to your other device group. Try linking again."
+msgstr "다른 기기 그룹으로 옮길 수 없습니다. 다시 연결해 보세요."
 
 #, c-format
 msgid "Couldn't open %s. Please try again."
@@ -1706,8 +1870,20 @@ msgstr "현지 시간을 확인할 수 없습니다. 기기의 시계를 확인�
 msgid "Couldn't refresh automatic folders. Please try again."
 msgstr "자동 폴더를 새로 고치지 못했습니다. 다시 시도해 주세요."
 
+msgid "Couldn't refresh device information."
+msgstr "기기 정보를 새로 고칠 수 없습니다."
+
+msgid "Couldn't refresh device information. Previously loaded information may be out of date."
+msgstr "기기 정보를 새로 고칠 수 없습니다. 이전에 불러온 정보는 최신이 아닐 수 있습니다."
+
+msgid "Couldn't refresh the link request. Please try again."
+msgstr "연결 요청을 새로 고칠 수 없습니다. 다시 시도하세요."
+
 msgid "Couldn't remove the GIF. Please try again."
 msgstr "GIF를 제거할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't remove the device. Please try again."
+msgstr "기기를 제거할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't remove the pack. Please try again."
 msgstr "팩을 제거할 수 없습니다. 다시 시도하세요."
@@ -1718,6 +1894,9 @@ msgstr "저장된 파일을 제거할 수 없습니다. 다시 시도하세요."
 msgid "Couldn't remove the translation model. Please try again."
 msgstr "번역 모델을 제거할 수 없습니다. 다시 시도하세요."
 
+msgid "Couldn't rename the device. Please try again."
+msgstr "기기 이름을 변경할 수 없습니다. 다시 시도하세요."
+
 msgid "Couldn't rename the group. Enter a name and try again."
 msgstr "그룹 이름을 변경할 수 없습니다. 이름을 입력하고 다시 시도하세요."
 
@@ -1726,6 +1905,9 @@ msgstr "해당 이모지를 표시할 수 없습니다. 다른 이모지를 선�
 
 msgid "Couldn't render the QR code. Please try again."
 msgstr "QR 코드를 표시할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't reset the device list. Please try again."
+msgstr "기기 목록을 초기화할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't reveal your secret key. Please try again."
 msgstr "비밀 키를 표시할 수 없습니다. 다시 시도하세요."
@@ -1739,6 +1921,9 @@ msgstr "프록시 인증 정보를 저장할 수 없습니다. 다시 시도하�
 
 msgid "Couldn't save the GIF. Please try again."
 msgstr "GIF를 저장할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't save the device setting. Please try again."
+msgstr "기기 설정을 저장할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't save the edit. Please try again."
 msgstr "수정 내용을 저장할 수 없습니다. 다시 시도하세요."
@@ -1798,12 +1983,18 @@ msgstr "테마를 공유할 수 없습니다. 다시 시도하세요."
 msgid "Couldn't share the theme. Please try again. %s"
 msgstr "테마를 공유할 수 없습니다. 다시 시도하세요. %s"
 
-msgid "Couldn't show a notification. Check your system notification settings and try again."
-msgstr "알림을 표시할 수 없습니다. 시스템 알림 설정을 확인하고 다시 시도하세요."
+msgid "Couldn't sign in with that key. Double-check it and try again."
+msgstr "해당 키로 로그인할 수 없습니다. 키를 다시 확인하고 다시 시도하세요."
 
 #, c-format
 msgid "Couldn't start %s. Its cartridge type isn't supported."
 msgstr "%s을(를) 시작할 수 없습니다. 이 카트리지 유형은 지원되지 않습니다."
+
+msgid "Couldn't start fresh. Check for sign-ins and try again."
+msgstr "새로 시작할 수 없습니다. 로그인 기록을 확인하고 다시 시도하세요."
+
+msgid "Couldn't start linking. Please try again."
+msgstr "연결을 시작할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't start reading aloud. Please try again."
 msgstr "소리 내어 읽기를 시작할 수 없습니다. 다시 시도하세요."
@@ -1819,6 +2010,9 @@ msgstr "받아쓰기를 시작할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't start translation. Reinstall White Noise and try again."
 msgstr "번역을 시작할 수 없습니다. White Noise를 다시 설치하고 다시 시도하세요."
+
+msgid "Couldn't switch profiles. Please try again."
+msgstr "프로필을 전환할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't sync your sticker packs. Check your relay settings and try again."
 msgstr "스티커 팩을 동기화할 수 없습니다. 릴레이 설정을 확인하고 다시 시도하세요."
@@ -1838,12 +2032,18 @@ msgstr "이 메시지를 번역할 수 없습니다. 더 짧은 텍스트 메시
 msgid "Couldn't translate this message. Please try again."
 msgstr "이 메시지를 번역할 수 없습니다. 다시 시도하세요."
 
+msgid "Couldn't turn on linked devices. Please try again."
+msgstr "연결된 기기 기능을 켤 수 없습니다. 다시 시도하세요."
+
 #, c-format
 msgid "Couldn't unarchive. %s"
 msgstr "보관을 해제할 수 없습니다. %s"
 
 msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr "금고 잠금을 해제할 수 없습니다. 비밀번호를 다시 확인하고 다시 시도하세요."
+
+msgid "Couldn't update that sign-in. Please try again."
+msgstr "해당 로그인 기록을 갱신할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't upload the picture. Please try again."
 msgstr "사진을 업로드하지 못했습니다. 다시 시도해 주세요."
@@ -1866,14 +2066,14 @@ msgstr "이 Lightning 주소를 사용할 수 없습니다. 다시 확인하고 
 msgid "Couldn't use this Nostr address. Double-check it and try again."
 msgstr "이 Nostr 주소를 사용할 수 없습니다. 다시 확인하고 다시 시도하세요."
 
+msgid "Couldn't verify that this profile was unlinked. Please try again."
+msgstr "이 프로필의 연결이 해제되었는지 확인할 수 없습니다. 다시 시도하세요."
+
 msgid "Couldn't verify the update. Please try again."
 msgstr "업데이트를 검증할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't verify your signer. Reconnect to the intended signer."
 msgstr "서명자를 검증할 수 없습니다. 원래 사용하려던 서명자에 다시 연결하세요."
-
-msgid "Create"
-msgstr "만들기"
 
 msgid "Create a poll"
 msgstr "투표 만들기"
@@ -1899,14 +2099,14 @@ msgstr "이모지로 만들기"
 msgid "Create group"
 msgstr "그룹 만들기"
 
-msgid "Create or use an account"
-msgstr "계정 만들기 또는 사용"
-
 msgid "Create pairing link"
 msgstr "페어링 링크 만들기"
 
 msgid "Create poll"
 msgstr "투표 만들기"
+
+msgid "Create vault"
+msgstr "금고 만들기"
 
 msgid "Created"
 msgstr "생성일"
@@ -1923,6 +2123,9 @@ msgstr "계정 생성 및 프로필 게시 중"
 msgid "Creating your chat"
 msgstr "채팅 만드는 중"
 
+msgid "Creating your vault…"
+msgstr "금고를 만드는 중…"
+
 msgid "Croatian"
 msgstr "크로아티아어"
 
@@ -1931,9 +2134,6 @@ msgstr "자르기"
 
 msgid "Crop circle shape"
 msgstr "크롭 서클 모양"
-
-msgid "Ctrl + + to zoom in, Ctrl + - to zoom out, Ctrl + 0 to reset."
-msgstr "Ctrl + +로 확대, Ctrl + -로 축소, Ctrl + 0으로 초기화합니다."
 
 msgid "Current"
 msgstr "현재"
@@ -1946,9 +2146,6 @@ msgstr "사용자 지정 색상"
 
 msgid "Custom emoji"
 msgstr "사용자 지정 이모지"
-
-msgid "Customize"
-msgstr "맞춤 설정"
 
 msgid "Customize composer"
 msgstr "작성창 맞춤 설정"
@@ -1964,9 +2161,6 @@ msgstr "깊이"
 
 msgid "DETAILS"
 msgstr "세부 정보"
-
-msgid "DEVELOPER TOOLS"
-msgstr "개발자 도구"
 
 msgid "DISPLAY NAME"
 msgstr "표시 이름"
@@ -2010,6 +2204,9 @@ msgstr "거절"
 msgid "Decline this invitation?"
 msgstr "이 초대를 거절하시겠습니까?"
 
+msgid "Declining the link request…"
+msgstr "연결 요청을 거절하는 중…"
+
 msgid "Declining your invitation"
 msgstr "초대를 거절하는 중"
 
@@ -2043,6 +2240,9 @@ msgstr "나에게서 삭제"
 msgid "Delete group"
 msgstr "그룹 삭제"
 
+msgid "Delete this device's vault?"
+msgstr "이 기기의 금고를 삭제하시겠습니까?"
+
 msgid "Delete this folder?"
 msgstr "이 폴더를 삭제하시겠습니까?"
 
@@ -2058,8 +2258,8 @@ msgstr "이 메시지를 삭제하시겠습니까?"
 msgid "Delete this theme?"
 msgstr "이 테마를 삭제하시겠습니까?"
 
-msgid "Delete this vault"
-msgstr "이 금고 삭제"
+msgid "Delete vault"
+msgstr "금고 삭제"
 
 msgid "Deleted. Recording continues in a fresh file."
 msgstr "삭제했습니다. 기록은 새 파일에서 계속됩니다."
@@ -2078,6 +2278,9 @@ msgstr "비밀번호에서 암호화 키를 생성하는 중입니다."
 
 msgid "Describe the group"
 msgstr "그룹 설명 입력"
+
+msgid "Description"
+msgstr "설명"
 
 msgid "Design"
 msgstr "디자인"
@@ -2106,8 +2309,26 @@ msgstr "개발자 모드 꺼짐"
 msgid "Developer mode on"
 msgstr "개발자 모드 켜짐"
 
+msgid "Device details"
+msgstr "기기 세부 정보"
+
+msgid "Device linked"
+msgstr "기기 연결됨"
+
+msgid "Device linking isn't available in this session."
+msgstr "이 세션에서는 기기를 연결할 수 없습니다."
+
+msgid "Device name"
+msgstr "기기 이름"
+
+msgid "Device unlinked"
+msgstr "기기 연결 해제됨"
+
 msgid "Device vault"
 msgstr "기기 금고"
+
+msgid "Devices"
+msgstr "기기"
 
 msgid "Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate."
 msgstr "진단 정보에는 공유를 끌 때까지 사용되는 임의의 설치 식별자, 앱 및 기기 정보, 릴레이 레이블이 포함됩니다. 수집 서비스는 IP 주소를 받습니다. 메시지 내용과 계정 또는 그룹 식별자는 제외됩니다. 공유를 끄면 이후 업로드는 중단되지만 이미 전송된 데이터는 회수할 수 없습니다. 감사 로그는 별도 설정입니다."
@@ -2118,20 +2339,11 @@ msgstr "다른 수집 서비스를 설정하지 않은 경우 진단 정보는 o
 msgid "Dictate"
 msgstr "받아쓰기"
 
-msgid "Dictate and listen on this device."
-msgstr "이 기기에서 받아쓰기와 듣기를 사용합니다."
-
 msgid "Dictate drafts and transcribe audio messages on your device."
 msgstr "기기에서 받아쓰기로 메시지를 작성하고 음성 메시지를 받아씁니다."
 
-msgid "Dictate messages and listen to them aloud."
-msgstr "메시지를 받아쓰고 소리 내어 들을 수 있습니다."
-
 msgid "Dictate your messages"
 msgstr "메시지 받아쓰기"
-
-msgid "Dictation"
-msgstr "받아쓰기"
 
 msgid "Dictation doesn't work"
 msgstr "받아쓰기가 작동하지 않음"
@@ -2167,6 +2379,18 @@ msgstr "텍스트 초안을 폐기해도 사진 업로드나 게시가 취소되
 
 msgid "Discover"
 msgstr "둘러보기"
+
+msgid "Dismiss"
+msgstr "닫기"
+
+msgid "Dismissing the device hint…"
+msgstr "기기 안내를 닫는 중…"
+
+msgid "Dismissing the warning on this device…"
+msgstr "이 기기에서 경고를 닫는 중…"
+
+msgid "Dismissing this warning only affects this device."
+msgstr "이 경고를 닫아도 다른 기기에는 영향을 주지 않습니다."
 
 msgid "Divider"
 msgstr "구분선"
@@ -2252,6 +2476,17 @@ msgstr "암호화된 키 (NCRYPTSEC)"
 msgid "ENCRYPTION REVISION"
 msgstr "암호화 버전"
 
+#, c-format
+msgid "Earlier messages are still arriving in %d chat."
+msgstr "채팅 %d개에서 이전 메시지를 아직 받는 중입니다."
+
+#, c-format
+msgid "Earlier messages are still arriving in %d chats."
+msgstr "채팅 %d개에서 이전 메시지를 아직 받는 중입니다."
+
+msgid "Earlier sign-ins stop prompting you. Until you link, only future invitations will appear here."
+msgstr "이전 로그인에 대한 알림이 더 이상 표시되지 않습니다. 기기를 연결하기 전까지는 새로 받은 초대만 여기에 표시됩니다."
+
 msgid "Edit"
 msgstr "편집"
 
@@ -2335,6 +2570,9 @@ msgstr "표시 이름을 입력하세요."
 msgid "Enter a folder name."
 msgstr "폴더 이름을 입력하세요."
 
+msgid "Enter a name of 1 to 64 UTF-8 bytes for each device."
+msgstr "각 기기의 이름을 UTF-8 기준으로 1~64바이트 길이로 입력하세요."
+
 msgid "Enter a number of people."
 msgstr "인원 수를 입력하세요."
 
@@ -2399,8 +2637,8 @@ msgstr "계속하려면 bunker 링크를 입력하세요."
 msgid "Enter your nsec to continue."
 msgstr "계속하려면 nsec를 입력하세요."
 
-msgid "Enter your password to unlock the vault on this device."
-msgstr "이 기기의 금고를 잠금 해제하려면 비밀번호를 입력하세요."
+msgid "Enter your password to unlock your local vault on this device."
+msgstr "이 기기의 로컬 금고 잠금을 해제하려면 비밀번호를 입력하세요."
 
 msgid "Erase avatar reveal"
 msgstr "지워서 아바타 드러내기"
@@ -2419,6 +2657,9 @@ msgstr "이벤트 조회 릴레이"
 
 msgid "Event id"
 msgstr "이벤트 ID"
+
+msgid "Every account in this vault. This computer only."
+msgstr "이 컴퓨터의 금고에 있는 모든 계정에 적용됩니다. 다른 기기에는 적용되지 않습니다."
 
 msgid "Everyone in the group sees the new name."
 msgstr "그룹의 모든 사람에게 새 이름이 표시됩니다."
@@ -2458,9 +2699,6 @@ msgstr "암호화된 키(ncryptsec) 내보내기"
 
 msgid "Export key"
 msgstr "키 내보내기"
-
-msgid "Export key first"
-msgstr "먼저 키 내보내기"
 
 msgid "External browsers and other apps do not use this setting."
 msgstr "외부 브라우저와 다른 앱에는 이 설정이 적용되지 않습니다."
@@ -2522,9 +2760,6 @@ msgstr "필터"
 msgid "Final render"
 msgstr "최종 렌더링"
 
-msgid "Find a setting..."
-msgstr "설정 찾기..."
-
 msgid "Finish dictation"
 msgstr "받아쓰기 완료"
 
@@ -2533,6 +2768,9 @@ msgstr "취소한 연결을 마무리하는 중입니다."
 
 msgid "Finnish"
 msgstr "핀란드어"
+
+msgid "First, protect your saved keys."
+msgstr "먼저 저장된 키를 보호하세요."
 
 msgid "Fit"
 msgstr "맞춤"
@@ -2591,7 +2829,7 @@ msgstr "음식과 음료"
 msgid "Forget all"
 msgstr "모두 삭제"
 
-msgid "Forgot your password?"
+msgid "Forgot password?"
 msgstr "비밀번호를 잊으셨습니까?"
 
 msgid "Format"
@@ -2667,20 +2905,11 @@ msgstr "Gemma 금지된 사용 정책"
 msgid "Gemma terms"
 msgstr "Gemma 약관"
 
-msgid "General"
-msgstr "일반"
-
 msgid "German"
 msgstr "독일어"
 
 msgid "Get an alert when a message arrives in a chat you're not viewing."
 msgstr "보고 있지 않은 채팅에 메시지가 도착하면 알림을 받습니다."
-
-msgid "Get message notifications"
-msgstr "메시지 알림 받기"
-
-msgid "Get started"
-msgstr "시작하기"
 
 msgid "Gift"
 msgstr "선물"
@@ -2838,8 +3067,11 @@ msgstr "아이슬란드어"
 msgid "Ideas"
 msgstr "아이디어"
 
-msgid "Identity"
-msgstr "신원"
+msgid "If the codes don't match, don't link. Only try again if you control both devices."
+msgstr "코드가 일치하지 않으면 연결하지 마세요. 두 기기 모두 직접 조작할 수 있을 때만 다시 시도하세요."
+
+msgid "If you forgot this password, you can try again or close White Noise without deleting anything. Starting over deletes the vault and its protected local data, including chats and pending sends. Review the deletion before deciding."
+msgstr "이 비밀번호를 잊었다면 다시 시도하거나 아무것도 삭제하지 않고 White Noise를 닫을 수 있습니다. 새로 시작하면 금고와 금고에서 보호하는 로컬 데이터가 삭제됩니다. 채팅과 전송 대기 중인 메시지도 삭제됩니다. 결정하기 전에 삭제되는 항목을 확인하세요."
 
 msgid "Image didn't load. Click to retry."
 msgstr "이미지를 불러오지 못했습니다. 클릭하여 다시 시도하세요."
@@ -2909,8 +3141,8 @@ msgstr "사용 중: %s."
 msgid "In-app sounds"
 msgstr "앱 내 소리"
 
-msgid "Incoming messages"
-msgstr "수신 메시지"
+msgid "Inactive"
+msgstr "비활성"
 
 msgid "Increase contrast"
 msgstr "대비 높이기"
@@ -2936,23 +3168,11 @@ msgstr "타임스탬프 삽입"
 msgid "Inspect"
 msgstr "조회"
 
-msgid "Inspect MLS key packages."
-msgstr "MLS 키 패키지를 조회합니다."
-
-msgid "Inspect application state and events."
-msgstr "앱 상태와 이벤트를 조회합니다."
-
 msgid "Inspect key packages"
 msgstr "키 패키지 조회"
 
-msgid "Inspect published MLS key packages."
-msgstr "게시된 MLS 키 패키지를 조회합니다."
-
 msgid "Inspect the current session"
 msgstr "현재 세션 조회"
-
-msgid "Inspect the current session."
-msgstr "현재 세션을 조회합니다."
 
 msgid "Install and verify"
 msgstr "설치 및 확인"
@@ -2972,9 +3192,6 @@ msgstr "인터페이스 언어(%s)"
 
 msgid "Interface language (English)"
 msgstr "인터페이스 언어(English)"
-
-msgid "Interface sounds"
-msgstr "인터페이스 효과음"
 
 msgid "Interface zoom"
 msgstr "인터페이스 확대/축소"
@@ -3018,6 +3235,9 @@ msgstr "채팅의 모든 사람에게서 사라집니다. 이 작업은 되돌�
 msgid "It stays for everyone else. You won't see it on this device again."
 msgstr "다른 사람에게는 남아 있습니다. 이 기기에서는 다시 표시되지 않습니다."
 
+msgid "It will stop receiving this profile's messages. A chat admin may need to remove it from chats that don't support linked devices."
+msgstr "이 기기는 더 이상 이 프로필의 메시지를 받지 않습니다. 연결된 기기 기능을 지원하지 않는 채팅에서는 관리자가 이 기기를 제거해야 할 수 있습니다."
+
 msgid "Italian"
 msgstr "이탈리아어"
 
@@ -3029,9 +3249,6 @@ msgstr "이 기기에서 파일이 제거됩니다. 채팅에 공유한 테마�
 
 msgid "Its key and chats stay on this device. You can sign back in from Accounts or the sign-in screen without your secret key."
 msgstr "키와 채팅은 이 기기에 남아 있습니다. 비밀 키 없이 계정 또는 로그인 화면에서 다시 로그인할 수 있습니다."
-
-msgid "Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."
-msgstr "키와 채팅이 이 기기에서 삭제됩니다. 다른 사람에게는 계속 그룹 멤버로 표시됩니다. 이 작업은 되돌릴 수 없습니다."
 
 msgid "Jan"
 msgstr "1월"
@@ -3048,6 +3265,12 @@ msgstr "%s에서 참여"
 
 msgid "Join in browser"
 msgstr "브라우저에서 참여"
+
+msgid "Joining the other device…"
+msgstr "상대 기기에 연결하는 중…"
+
+msgid "Joining your other device group…"
+msgstr "다른 기기 그룹에 합류하는 중…"
 
 msgid "Jul"
 msgstr "7월"
@@ -3071,17 +3294,26 @@ msgstr "KP 검사기"
 msgid "Kannada"
 msgstr "칸나다어"
 
+msgid "Keep"
+msgstr "유지"
+
+msgid "Keep White Noise open and online so your devices can sync. If this continues, people may not be able to add this device to chats."
+msgstr "기기 간 동기화가 가능하도록 White Noise를 열어 두고 온라인 상태를 유지하세요. 이 상태가 계속되면 다른 사람이 이 기기를 채팅에 추가하지 못할 수 있습니다."
+
+msgid "Keep both devices online. Eligible chats can appear before their earlier messages arrive."
+msgstr "두 기기 모두 온라인 상태로 유지하세요. 가져올 수 있는 채팅은 이전 메시지를 받기 전에 먼저 표시될 수 있습니다."
+
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr "열린 대화를 전체 너비로 채우지 않고 읽기 편한 너비로 유지합니다."
 
-msgid "Keep this vault"
-msgstr "이 금고 유지"
+msgid "Keep vault"
+msgstr "금고 유지"
+
+msgid "Keep while inactive"
+msgstr "비활성 상태일 때도 유지"
 
 msgid "Keep your chat list focused without deleting conversations."
 msgstr "대화를 삭제하지 않고 채팅 목록을 정리합니다."
-
-msgid "Keep your conversations in order."
-msgstr "대화를 정리합니다."
 
 msgid "Keep your signer open. Approve the connection and requested signatures there."
 msgstr "서명자를 열어 두세요. 서명자에서 연결과 요청된 서명을 승인하세요."
@@ -3096,8 +3328,15 @@ msgstr "키 패키지를 게시했으며 릴레이 %d개에서 확인했습니�
 msgid "Key package ref"
 msgstr "키 패키지 참조"
 
+msgid "Key package refresh overdue"
+msgstr "키 패키지 갱신 기한 초과"
+
 msgid "Key packages"
 msgstr "키 패키지"
+
+#, c-format
+msgid "Key packages deleted: %d."
+msgstr "삭제된 키 패키지: %d개."
 
 msgid "Key packages let people invite you. Refresh checks the app's default relays for published copies."
 msgstr "키 패키지가 있어야 다른 사람이 초대할 수 있습니다. 새로 고침하면 앱 기본 릴레이에서 게시된 사본을 확인합니다."
@@ -3123,14 +3362,8 @@ msgstr "LIGHTNING"
 msgid "LINES"
 msgstr "선"
 
-msgid "LOADED MESSAGES"
-msgstr "불러온 메시지"
-
 msgid "LOCATION"
 msgstr "위치"
-
-msgid "Language"
-msgstr "언어"
 
 msgid "Language & speech"
 msgstr "언어 및 음성"
@@ -3138,11 +3371,12 @@ msgstr "언어 및 음성"
 msgid "Language and formats"
 msgstr "언어 및 형식"
 
-msgid "Language, startup, and everyday preferences."
-msgstr "언어, 시작, 일상 환경설정."
-
 msgid "Large"
 msgstr "크게"
+
+#, c-format
+msgid "Last active: %s"
+msgstr "마지막 활동: %s"
 
 msgid "Last backup"
 msgstr "마지막 백업"
@@ -3158,9 +3392,6 @@ msgstr "로그인 시 실행"
 
 msgid "Layout"
 msgstr "레이아웃"
-
-msgid "Learn about White Noise."
-msgstr "White Noise에 대해 알아보세요."
 
 msgid "Leave"
 msgstr "나가기"
@@ -3195,14 +3426,67 @@ msgstr "Lightning"
 msgid "Lime"
 msgstr "라임"
 
+msgid "Link a device"
+msgstr "기기 연결"
+
+msgid "Link a new device?"
+msgstr "새 기기를 연결하시겠습니까?"
+
 msgid "Link copied"
 msgstr "링크를 복사했습니다"
 
 msgid "Link previews"
 msgstr "링크 미리보기"
 
-msgid "Linked events"
-msgstr "연결된 이벤트"
+msgid "Link requests"
+msgstr "연결 요청"
+
+msgid "Link this device"
+msgstr "이 기기 연결"
+
+msgid "Link this device to the one that has your chats. You’ll compare the same seven emoji on both screens."
+msgstr "채팅이 있는 기기에 이 기기를 연결하세요. 두 화면에 표시되는 이모지 7개가 같은지 비교합니다."
+
+msgid "Link to another device"
+msgstr "다른 기기에 연결"
+
+#, c-format
+msgid "Linked by: %s"
+msgstr "연결한 기기: %s"
+
+msgid "Linked devices"
+msgstr "연결된 기기"
+
+msgid "Linked devices are ready"
+msgstr "연결된 기기 기능 사용 가능"
+
+msgid "Linked devices are turned on for this chat."
+msgstr "이 채팅에서 연결된 기기 기능이 켜졌습니다."
+
+msgid "Linked devices weren't turned on for this chat."
+msgstr "이 채팅에서 연결된 기기 기능이 켜지지 않았습니다."
+
+msgid "Linked on another device"
+msgstr "다른 기기에서 연결됨"
+
+#, c-format
+msgid "Linked: %s"
+msgstr "연결 일시: %s"
+
+msgid "Linking ended."
+msgstr "연결이 종료되었습니다."
+
+msgid "Linking moves only this device. The other devices stay in their current device group."
+msgstr "연결하면 이 기기만 이동합니다. 나머지 기기는 현재 기기 그룹에 그대로 남습니다."
+
+msgid "Linking starts on the new device. Keep White Noise open here while you set it up."
+msgstr "새 기기에서 연결을 시작하세요. 설정하는 동안 이 기기에서 White Noise를 열어 두세요."
+
+msgid "Linking the other device…"
+msgstr "상대 기기를 연결하는 중…"
+
+msgid "Linking was cancelled."
+msgstr "연결이 취소되었습니다."
 
 msgid "Links"
 msgstr "링크"
@@ -3227,6 +3511,9 @@ msgstr "이모지 세트를 불러오는 중..."
 
 msgid "Loading full resolution…"
 msgstr "원본 해상도로 불러오는 중…"
+
+msgid "Loading linked devices…"
+msgstr "연결된 기기를 불러오는 중…"
 
 msgid "Loading map"
 msgstr "지도를 불러오는 중"
@@ -3258,14 +3545,15 @@ msgstr "불러오는 중..."
 msgid "Loading…"
 msgstr "불러오는 중…"
 
-msgid "Local data & backups"
-msgstr "로컬 데이터 및 백업"
+msgid "Local cleanup did not report completion."
+msgstr "이 기기의 정리 작업이 완료되었다는 응답이 없습니다."
+
+#, c-format
+msgid "Local cleanup reported a problem: %s"
+msgstr "이 기기의 정리 작업에서 문제가 발생했습니다: %s"
 
 msgid "Local date and time (YYYY-MM-DD HH:MM[:SS])."
 msgstr "현지 날짜와 시간(YYYY-MM-DD HH:MM[:SS])입니다."
-
-msgid "Local files, cached media, and encrypted backups."
-msgstr "로컬 파일, 캐시된 미디어, 암호화된 백업입니다."
 
 msgid "Location"
 msgstr "위치"
@@ -3309,12 +3597,6 @@ msgstr "측정값"
 msgid "Magnet link copied"
 msgstr "마그넷 링크를 복사했습니다"
 
-msgid "Make White Noise work your way."
-msgstr "White Noise를 원하는 방식으로 설정하세요."
-
-msgid "Make everything larger or smaller."
-msgstr "화면 전체를 크게 또는 작게 표시합니다."
-
 msgid "Make text and borders easier to see."
 msgstr "텍스트와 테두리를 더 쉽게 볼 수 있게 합니다."
 
@@ -3330,14 +3612,11 @@ msgstr "남성 음성입니다. 모든 읽기 언어를 지원합니다."
 msgid "Manage"
 msgstr "관리"
 
-msgid "Manage connections and published relay lists."
-msgstr "연결 및 게시된 릴레이 목록을 관리합니다."
-
 msgid "Manage contacts"
 msgstr "연락처 관리"
 
-msgid "Manage local files and encrypted backups."
-msgstr "로컬 파일과 암호화된 백업을 관리합니다."
+msgid "Manage linked devices"
+msgstr "연결된 기기 관리"
 
 msgid "Manage the devices linked to this account."
 msgstr "이 계정에 연결된 기기를 관리합니다."
@@ -3350,6 +3629,9 @@ msgstr "마라티어"
 
 msgid "Mark read"
 msgstr "읽음으로 표시"
+
+msgid "Mark this sign-in as not you?"
+msgstr "이 로그인을 본인이 하지 않은 것으로 표시하시겠습니까?"
 
 msgid "Mark unread"
 msgstr "읽지 않음으로 표시"
@@ -3390,6 +3672,9 @@ msgstr "멤버"
 msgid "Members to check"
 msgstr "확인이 필요한 멤버"
 
+msgid "Members' linked devices can join without an admin."
+msgstr "멤버의 연결된 기기는 관리자 승인 없이 채팅에 참여할 수 있습니다."
+
 msgid "Mentions"
 msgstr "멘션"
 
@@ -3404,9 +3689,6 @@ msgstr "메시지 줄 수 제한"
 
 msgid "Message menu"
 msgstr "메시지 메뉴"
-
-msgid "Message notifications"
-msgstr "메시지 알림"
 
 msgid "Message previews"
 msgstr "메시지 미리보기"
@@ -3426,6 +3708,13 @@ msgstr "메시지 번역"
 msgid "Message translation is available in native Linux builds."
 msgstr "메시지 번역은 네이티브 Linux 빌드에서 사용할 수 있습니다."
 
+#, c-format
+msgid "Messages above were imported from %s"
+msgstr "위 메시지는 %s에서 가져옴"
+
+msgid "Messages above were restored from a backup"
+msgstr "위 메시지는 백업에서 복원됨"
+
 msgid "Messages already in the chat are affected, not only new ones. Everyone in the group sees the change."
 msgstr "새 메시지뿐 아니라 채팅에 이미 있는 메시지에도 적용됩니다. 그룹의 모든 사람에게 변경 사항이 표시됩니다."
 
@@ -3438,14 +3727,17 @@ msgstr "메시지가 도착하지 않음"
 msgid "Messages stay on your device. Downloads about 2.5 GB on first translation. Enabling accepts the Gemma terms and prohibited use policy."
 msgstr "메시지는 기기 밖으로 전송되지 않습니다. 처음 번역할 때 약 2.5 GB를 다운로드합니다. 사용하면 Gemma 이용 약관 및 금지된 사용 정책에 동의하게 됩니다."
 
-msgid "Messaging"
-msgstr "메시지"
+msgid "Messages waiting to be sent."
+msgstr "전송을 기다리는 메시지입니다."
 
 msgid "Metalness"
 msgstr "금속성"
 
 msgid "Micro"
 msgstr "마이크로"
+
+msgid "Missing capabilities:"
+msgstr "지원하지 않는 기능:"
 
 msgid "Model inspector"
 msgstr "모델 검사기"
@@ -3480,8 +3772,14 @@ msgstr "뒤로 이동"
 msgid "Move to folder"
 msgstr "폴더로 이동"
 
-msgid "Multi-device isn't built yet. Each device that signs in with this key keeps its own separate chats. Groups and messages from your other devices won't appear here, and new invites reach only one of your devices."
-msgstr "다중 기기는 아직 지원되지 않습니다. 이 키로 로그인한 각 기기는 별도의 채팅을 유지합니다. 다른 기기의 그룹과 메시지는 여기에 표시되지 않으며, 새 초대는 기기 중 한 대에만 도착합니다."
+msgid "Moved to another device group"
+msgstr "다른 기기 그룹으로 이동함"
+
+msgid "Moved to your other device group."
+msgstr "다른 기기 그룹으로 옮겼습니다."
+
+msgid "Moving this device"
+msgstr "이 기기를 옮기는 중"
 
 msgid "Multilingual. Detects your language automatically."
 msgstr "다국어를 지원합니다. 언어를 자동으로 감지합니다."
@@ -3504,23 +3802,20 @@ msgstr "NES 게임"
 msgid "NEW PASSWORD"
 msgstr "새 비밀번호"
 
-msgid "NEXT"
-msgstr "다음"
-
 msgid "NOSTR EVENT"
 msgstr "NOSTR 이벤트"
 
 msgid "NOTE"
 msgstr "노트"
 
-msgid "NOW"
-msgstr "현재"
-
 msgid "Name"
 msgstr "이름"
 
 msgid "Name A to Z"
 msgstr "이름 오름차순"
+
+msgid "Name for this device"
+msgstr "이 기기의 이름"
 
 msgid "Name includes"
 msgstr "이름 포함"
@@ -3546,6 +3841,12 @@ msgstr "절대 공유하지 마세요. 내 신원 그 자체입니다."
 msgid "New chat"
 msgstr "새 채팅"
 
+msgid "New device"
+msgstr "새 기기"
+
+msgid "New device name"
+msgstr "새 기기 이름"
+
 msgid "New folder"
 msgstr "새 폴더"
 
@@ -3557,6 +3858,9 @@ msgstr "새 메시지"
 
 msgid "New name"
 msgstr "새 이름"
+
+msgid "New sign-in"
+msgstr "새 로그인"
 
 msgid "News"
 msgstr "뉴스"
@@ -3595,8 +3899,14 @@ msgstr "이 기기에서 만든 백업이 아직 없습니다."
 msgid "No chat is open. Select one and refresh."
 msgstr "열린 채팅이 없습니다. 채팅을 선택하고 새로 고치세요."
 
+msgid "No chats are available in your inbox yet."
+msgstr "받은편지함에 아직 채팅이 없습니다."
+
 msgid "No chats match your filter."
 msgstr "필터와 일치하는 채팅이 없습니다."
+
+msgid "No chats to review right now."
+msgstr "지금은 검토할 채팅이 없습니다."
 
 msgid "No chats to share with yet."
 msgstr "아직 공유할 채팅이 없습니다."
@@ -3612,6 +3922,9 @@ msgstr "아직 연락처 없음"
 
 msgid "No description."
 msgstr "설명이 없습니다."
+
+msgid "No devices are linked to this profile yet."
+msgstr "아직 이 프로필에 연결된 기기가 없습니다."
 
 msgid "No emoji available."
 msgstr "사용할 수 있는 이모지가 없습니다."
@@ -3676,9 +3989,6 @@ msgstr "일치하는 연락처 없음"
 msgid "No matching messages"
 msgstr "일치하는 메시지 없음"
 
-msgid "No matching settings."
-msgstr "일치하는 설정이 없습니다."
-
 msgid "No matching stickers."
 msgstr "일치하는 스티커가 없습니다."
 
@@ -3718,6 +4028,9 @@ msgstr "규칙 없음"
 msgid "No settings match ‘%s’."
 msgstr "‘%s’와 일치하는 설정이 없습니다."
 
+msgid "No sign-ins to review."
+msgstr "검토할 로그인 기록이 없습니다."
+
 msgid "No stickers here yet. Choose Manage to add stickers or sticker packs."
 msgstr "아직 스티커가 없습니다. 관리를 선택해 스티커나 스티커 팩을 추가하세요."
 
@@ -3726,6 +4039,9 @@ msgstr "신뢰하는 사이트가 없습니다."
 
 msgid "No unread chats"
 msgstr "읽지 않은 채팅 없음"
+
+msgid "No, start fresh"
+msgstr "연결하지 않고 새로 시작"
 
 msgid "Noir film treatment"
 msgstr "누아르 영화 효과"
@@ -3741,6 +4057,9 @@ msgstr "Nostr 이벤트"
 
 msgid "Not downloaded"
 msgstr "다운로드 안 됨"
+
+msgid "Not every device in this chat has reported support for linked devices. If everyone's app is up to date, keep the apps online so the chat can sync."
+msgstr "이 채팅의 일부 기기에서 연결된 기기 기능을 지원한다는 응답을 아직 받지 못했습니다. 모두 최신 버전의 앱을 사용하고 있다면 채팅을 동기화할 수 있도록 앱을 온라인 상태로 유지하세요."
 
 msgid "Not found"
 msgstr "찾을 수 없음"
@@ -3771,9 +4090,6 @@ msgstr "나에게 메모"
 
 msgid "Nothing is read aloud"
 msgstr "소리 내어 읽지 않음"
-
-msgid "Nothing is saved until you continue."
-msgstr "계속하기 전까지는 아무것도 저장되지 않습니다."
 
 msgid "Nothing loads until you accept. You can change this in Settings > Connection."
 msgstr "동의하기 전에는 아무것도 불러오지 않습니다. 설정의 연결에서 변경할 수 있습니다."
@@ -3810,6 +4126,9 @@ msgstr "끔"
 
 msgid "Off shows only \"New message\" without the text."
 msgstr "끄면 본문 없이 \"새 메시지\"만 표시합니다."
+
+msgid "Old queued messages were kept, but can't be assigned to a profile."
+msgstr "이전에 전송을 기다리던 메시지는 보관했지만 프로필에 연결할 수 없습니다."
 
 msgid "On"
 msgstr "켬"
@@ -3851,6 +4170,15 @@ msgstr "에이전트가 npub을 알려 주면 새 채팅에서 대화를 시작�
 msgid "One-tap reactions"
 msgstr "원탭 반응"
 
+msgid "Only a chat admin can turn on linked devices."
+msgstr "채팅 관리자만 연결된 기기 기능을 켤 수 있습니다."
+
+msgid "Only future invitations will appear here until you link this device."
+msgstr "이 기기를 연결하기 전까지는 새로 받은 초대만 여기에 표시됩니다."
+
+msgid "Only link if both screens show the same seven emoji in the same order."
+msgstr "두 화면에 이모지 7개가 같은 순서로 표시될 때만 연결하세요."
+
 msgid "Only the folder is removed. Its chats stay in your chat list."
 msgstr "폴더만 제거됩니다. 폴더 안의 채팅은 채팅 목록에 그대로 남습니다."
 
@@ -3860,7 +4188,13 @@ msgstr "이 이름은 나에게만 표시됩니다."
 msgid "Open"
 msgstr "열기"
 
+msgid "Open White Noise on the device that has your chats. Keep both devices online so you can compare the codes they show."
+msgstr "채팅이 있는 기기에서 White Noise를 여세요. 화면에 표시된 코드를 비교할 수 있도록 두 기기 모두 온라인 상태로 유지하세요."
+
 msgid "Open chat"
+msgstr "채팅 열기"
+
+msgid "Open chats"
 msgstr "채팅 열기"
 
 msgid "Open events in"
@@ -3948,9 +4282,6 @@ msgstr "선택 사항입니다. 계정을 선택하기 전에 프록시를 설�
 msgid "Orange"
 msgstr "주황"
 
-msgid "Organize your conversations."
-msgstr "대화를 정리합니다."
-
 msgid "Organize your folders"
 msgstr "폴더 정리"
 
@@ -3963,8 +4294,20 @@ msgstr "원본 메시지를 사용할 수 없습니다"
 msgid "Other"
 msgstr "기타"
 
+msgid "Other devices, public profiles and group membership are unchanged."
+msgstr "다른 기기, 공개 프로필, 그룹 멤버 자격은 그대로 유지됩니다."
+
 msgid "Other files"
 msgstr "기타 파일"
+
+msgid "Other linked devices could not be reached for cleanup."
+msgstr "정리 작업을 위해 다른 연결된 기기에 접속할 수 없었습니다."
+
+msgid "Other members' linked devices can join without an admin. This can't be turned off."
+msgstr "다른 멤버의 연결된 기기는 관리자 승인 없이 채팅에 참여할 수 있습니다. 이 기능은 끌 수 없습니다."
+
+msgid "Other profiles"
+msgstr "다른 프로필"
 
 msgid "Out of stock"
 msgstr "품절"
@@ -4055,6 +4398,9 @@ msgstr "일시 정지"
 msgid "Peers can't find you"
 msgstr "다른 사람이 나를 찾을 수 없습니다"
 
+msgid "Pending sends"
+msgstr "전송 대기 중인 메시지"
+
 msgid "People"
 msgstr "사람"
 
@@ -4082,14 +4428,14 @@ msgstr "반려동물"
 msgid "Photos"
 msgstr "사진"
 
-msgid "Pick a category"
-msgstr "카테고리 선택"
-
 msgid "Pick a chat to send it to. They choose whether to use it."
 msgstr "보낼 채팅을 선택하세요. 사용 여부는 상대방이 결정합니다."
 
 msgid "Pick a new password first."
 msgstr "먼저 새 비밀번호를 정하세요."
+
+msgid "Pick a new password to start a new vault. This does not recover your previous chats or pending sends."
+msgstr "새 금고를 만들려면 새 비밀번호를 설정하세요. 이전 채팅이나 전송 대기 중인 메시지는 복구되지 않습니다."
 
 msgid "Pick a password first."
 msgstr "먼저 비밀번호를 정하세요."
@@ -4099,9 +4445,6 @@ msgstr "백업을 암호화할 비밀번호를 정하세요. 비밀번호가 없
 
 msgid "Pick a password to encrypt the key with. You will need it to import the key anywhere else."
 msgstr "키를 암호화할 비밀번호를 정하세요. 다른 곳에서 키를 가져올 때 필요합니다."
-
-msgid "Pick a task..."
-msgstr "작업 선택..."
 
 msgid "Pick the whole app's look."
 msgstr "앱 전체의 모양을 선택합니다."
@@ -4136,17 +4479,8 @@ msgstr "재생"
 msgid "Play YouTube video"
 msgstr "YouTube 동영상 재생"
 
-msgid "Play a sound"
-msgstr "소리 재생"
-
-msgid "Play a sound for new messages"
-msgstr "새 메시지 알림음 재생"
-
 msgid "Play game"
 msgstr "게임하기"
-
-msgid "Play interface sounds"
-msgstr "인터페이스 소리 재생"
 
 msgid "Polish"
 msgstr "폴란드어"
@@ -4188,6 +4522,9 @@ msgstr "음성 준비 중..."
 msgid "Preparing the cropped picture…"
 msgstr "자른 사진 준비 중…"
 
+msgid "Preparing the link request…"
+msgstr "연결 요청을 준비하는 중…"
+
 msgid "Preparing transcription..."
 msgstr "받아쓰기 준비 중..."
 
@@ -4227,14 +4564,11 @@ msgstr "미디어 뷰어에서 이전 / 다음"
 msgid "Previous chat"
 msgstr "이전 채팅"
 
-msgid "Privacy"
-msgstr "개인 정보 보호"
+msgid "Previously linked on this device"
+msgstr "이 기기에서 이전에 연결함"
 
 msgid "Privacy & storage"
 msgstr "개인정보 및 저장 공간"
-
-msgid "Privacy, diagnostics, and developer tools."
-msgstr "개인 정보 보호, 진단, 개발자 도구."
 
 msgid "Private"
 msgstr "비공개"
@@ -4254,8 +4588,15 @@ msgstr "프로필 사진 미리 보기"
 msgid "Profile text changes published."
 msgstr "프로필 텍스트 변경 사항을 게시했습니다."
 
+#, c-format
+msgid "Profile: %s"
+msgstr "프로필: %s"
+
 msgid "Progress is indeterminate."
 msgstr "진행률을 알 수 없습니다."
+
+msgid "Projects"
+msgstr "프로젝트"
 
 msgid "Promote"
 msgstr "관리자로 지정"
@@ -4263,11 +4604,8 @@ msgstr "관리자로 지정"
 msgid "Prompt copied. Paste it into your agent."
 msgstr "프롬프트를 복사했습니다. 에이전트에 붙여넣으세요."
 
-msgid "Protect this device"
-msgstr "이 기기 보호"
-
-msgid "Protecting this device…"
-msgstr "이 기기를 보호하는 중…"
+msgid "Protect this computer"
+msgstr "이 컴퓨터 보호"
 
 msgid "Public key"
 msgstr "공개 키"
@@ -4341,12 +4679,6 @@ msgstr "원시 이벤트"
 msgid "RECENT"
 msgstr "최근"
 
-msgid "RELAY"
-msgstr "릴레이"
-
-msgid "RELAYS"
-msgstr "릴레이"
-
 msgid "RELAYS IN COMMON"
 msgstr "공통 릴레이"
 
@@ -4370,6 +4702,9 @@ msgstr "발신 및 수신 릴레이 목록을 다시 전송합니다. 다른 사
 
 msgid "Re-encrypts this device's secrets under a new password. The media cache is cleared, since it was sealed with the old one."
 msgstr "이 기기의 비밀 정보를 새 비밀번호로 다시 암호화합니다. 미디어 캐시는 이전 비밀번호로 봉인되었으므로 삭제됩니다."
+
+msgid "Reach out to support"
+msgstr "지원팀에 문의"
 
 msgid "Reaction details"
 msgstr "반응 세부 정보"
@@ -4401,6 +4736,9 @@ msgstr "이벤트 가져오기 릴레이의 최근 세트입니다. 미리 보�
 msgid "Recenter"
 msgstr "중앙으로 이동"
 
+msgid "Recognized on this device. Not linked."
+msgstr "이 기기에서 본인 로그인으로 확인했습니다. 연결하지 않았습니다."
+
 msgid "Reconnecting to your signer"
 msgstr "서명자에 다시 연결 중"
 
@@ -4428,6 +4766,9 @@ msgstr "새로고침"
 
 msgid "Regular"
 msgstr "보통"
+
+msgid "Rejected on another device"
+msgstr "다른 기기에서 거절됨"
 
 msgid "Relative time"
 msgstr "상대 시간"
@@ -4459,17 +4800,29 @@ msgstr "입체 테두리"
 msgid "Reload previews"
 msgstr "미리 보기 다시 불러오기"
 
+msgid "Removal from this device could not be confirmed."
+msgstr "이 기기에서 제거되었는지 확인할 수 없었습니다."
+
+msgid "Removal pending"
+msgstr "제거 대기 중"
+
 msgid "Remove"
 msgstr "제거"
-
-msgid "Remove account"
-msgstr "계정 제거"
 
 msgid "Remove admin rights?"
 msgstr "관리자 권한을 해제하시겠습니까?"
 
+msgid "Remove and sign in"
+msgstr "제거 및 로그인"
+
 msgid "Remove contact"
 msgstr "연락처 제거"
+
+msgid "Remove device"
+msgstr "기기 제거"
+
+msgid "Remove from this device"
+msgstr "이 기기에서 제거"
 
 msgid "Remove group"
 msgstr "그룹 제거"
@@ -4492,17 +4845,29 @@ msgstr "스티커 제거"
 msgid "Remove the conversation from this device."
 msgstr "이 기기에서 대화를 제거합니다."
 
-msgid "Remove this account?"
-msgstr "이 계정을 제거하시겠습니까?"
-
 msgid "Remove this contact?"
 msgstr "이 연락처를 제거하시겠습니까?"
+
+msgid "Remove this device?"
+msgstr "이 기기를 제거하시겠습니까?"
 
 msgid "Remove this member?"
 msgstr "이 멤버를 제거하시겠습니까?"
 
 msgid "Remove this relay?"
 msgstr "이 릴레이를 제거하시겠습니까?"
+
+msgid "Remove this unlinked profile?"
+msgstr "연결 해제된 이 프로필을 제거하시겠습니까?"
+
+msgid "Remove unlinked profile?"
+msgstr "연결 해제된 프로필을 제거하시겠습니까?"
+
+msgid "Removing the linked device…"
+msgstr "연결된 기기를 제거하는 중…"
+
+msgid "Removing the profile from this device…"
+msgstr "이 기기에서 프로필을 제거하는 중…"
 
 msgid "Removing your account from this device"
 msgstr "이 기기에서 계정을 제거하는 중"
@@ -4512,6 +4877,9 @@ msgstr "제거 중…"
 
 msgid "Rename"
 msgstr "이름 변경"
+
+msgid "Rename this device"
+msgstr "이 기기의 이름 변경"
 
 msgid "Renderer"
 msgstr "렌더러"
@@ -4549,8 +4917,17 @@ msgstr "위치를 요청하는 중입니다. 권한 요청이 표시되면 승�
 msgid "Reset"
 msgstr "재설정"
 
+msgid "Reset and link again"
+msgstr "초기화 후 다시 연결"
+
+msgid "Reset this device list?"
+msgstr "이 기기 목록을 초기화하시겠습니까?"
+
 msgid "Reset zoom"
 msgstr "확대/축소 재설정"
+
+msgid "Resetting the device list and publishing a key package…"
+msgstr "기기 목록을 초기화하고 키 패키지를 게시하는 중…"
 
 msgid "Restart now"
 msgstr "지금 다시 시작"
@@ -4570,6 +4947,9 @@ msgstr "기본 반응 복원"
 msgid "Restore the last chat on launch"
 msgstr "시작 시 마지막 채팅 복원"
 
+msgid "Resume device linking"
+msgstr "기기 연결 재개"
+
 msgid "Retry"
 msgstr "다시 시도"
 
@@ -4585,8 +4965,23 @@ msgstr "비밀 키(nsec) 표시"
 msgid "Reveal your secret key"
 msgstr "비밀 키 표시"
 
+msgid "Review"
+msgstr "검토"
+
 msgid "Review and approve"
 msgstr "검토 및 승인"
+
+msgid "Review chats"
+msgstr "채팅 검토"
+
+msgid "Review local data deletion"
+msgstr "로컬 데이터 삭제 내용 검토"
+
+msgid "Review postponed"
+msgstr "검토 보류"
+
+msgid "Review request"
+msgstr "요청 검토"
 
 msgid "Review signer approval link"
 msgstr "서명자 승인 링크 검토"
@@ -4594,8 +4989,8 @@ msgstr "서명자 승인 링크 검토"
 msgid "Review signer permissions"
 msgstr "서명자 권한 검토"
 
-msgid "Review starting over"
-msgstr "처음부터 다시 시작 검토"
+msgid "Review unlinked profiles"
+msgstr "연결 해제된 프로필 검토"
 
 msgid "Review your public profile"
 msgstr "공개 프로필 확인"
@@ -4643,17 +5038,11 @@ msgstr "러시아어"
 msgid "SEARCH"
 msgstr "검색"
 
-msgid "SEE ALSO"
-msgstr "관련 항목"
-
 msgid "SEEDS"
 msgstr "기본 색상"
 
 msgid "SEND WITH EFFECT"
 msgstr "효과와 함께 보내기"
-
-msgid "SETTINGS"
-msgstr "설정"
 
 msgid "SHARED THEME"
 msgstr "공유된 테마"
@@ -4675,6 +5064,9 @@ msgstr "스킨"
 
 msgid "SOCKS5 proxy"
 msgstr "SOCKS5 프록시"
+
+msgid "START OVER"
+msgstr "새로 시작"
 
 msgid "STATE SNAPSHOT"
 msgstr "상태 스냅샷"
@@ -4728,8 +5120,14 @@ msgstr "변경 사항을 저장한 후 White Noise를 다시 시작하여 적용
 msgid "Save file"
 msgstr "파일 저장"
 
+msgid "Save name"
+msgstr "이름 저장"
+
 msgid "Save sticker"
 msgstr "스티커 저장"
+
+msgid "Save this password in your password manager. White Noise cannot reset it to unlock this device's vault."
+msgstr "이 비밀번호를 비밀번호 관리자에 저장하세요. White Noise에서는 이 비밀번호를 재설정해 이 기기의 금고 잠금을 해제할 수 없습니다."
 
 msgid "Saved"
 msgstr "저장됨"
@@ -4738,11 +5136,20 @@ msgstr "저장됨"
 msgid "Saved %s."
 msgstr "%s을(를) 저장했습니다."
 
+msgid "Saved collections"
+msgstr "저장된 모음"
+
 msgid "Saved locally. Relay delivery pending."
 msgstr "이 기기에 저장했습니다. 릴레이 전송 대기 중입니다."
 
 msgid "Saved. Restart White Noise to apply this connection setting."
 msgstr "저장했습니다. 이 연결 설정을 적용하려면 White Noise를 다시 시작하세요."
+
+msgid "Saving the device name…"
+msgstr "기기 이름을 저장하는 중…"
+
+msgid "Saving the device setting…"
+msgstr "기기 설정을 저장하는 중…"
 
 msgid "Saving vote…"
 msgstr "투표 저장 중…"
@@ -4855,14 +5262,8 @@ msgstr "비밀 키를 복사했습니다"
 msgid "Security"
 msgstr "보안"
 
-msgid "Security & privacy"
-msgstr "보안 및 개인정보"
-
 msgid "Security actions"
 msgstr "보안 작업"
-
-msgid "See and hear it with your current sound and preview settings."
-msgstr "현재 소리 및 미리 보기 설정으로 알림을 확인합니다."
 
 msgid "See where your data is stored"
 msgstr "데이터 저장 위치 보기"
@@ -4949,6 +5350,9 @@ msgstr "세트: %s"
 msgid "Settings"
 msgstr "설정"
 
+msgid "Settings backups do not include these stores and cannot restore them."
+msgstr "설정 백업에는 이 데이터가 포함되지 않으며, 설정 백업으로는 이 데이터를 복원할 수 없습니다."
+
 msgid "Settings: account and devices"
 msgstr "설정: 계정 및 기기"
 
@@ -4976,8 +5380,8 @@ msgstr "설정: 알림"
 msgid "Settings: privacy and storage"
 msgstr "설정: 개인정보 및 저장 공간"
 
-msgid "Setup prompts for connecting an AI agent to White Noise."
-msgstr "AI 에이전트를 White Noise에 연결하기 위한 설정 프롬프트입니다."
+msgid "Several devices are trying to link. Cancel the other attempts to continue."
+msgstr "여러 기기가 연결을 시도하고 있습니다. 계속하려면 다른 연결 시도를 취소하세요."
 
 msgid "Shadow card"
 msgstr "그림자 (카드)"
@@ -5066,17 +5470,14 @@ msgstr "간단히 보기"
 msgid "Show maps from OpenStreetMap?"
 msgstr "OpenStreetMap 지도를 표시하시겠습니까?"
 
-msgid "Show message preview"
-msgstr "메시지 미리 보기 표시"
-
-msgid "Show or hide message previews"
-msgstr "메시지 미리 보기 표시 또는 숨기기"
-
 msgid "Show original"
 msgstr "원문 보기"
 
 msgid "Show passwords"
 msgstr "비밀번호 표시"
+
+msgid "Show this profile's keys"
+msgstr "이 프로필의 키 표시"
 
 msgid "Show translation"
 msgstr "번역 보기"
@@ -5098,14 +5499,38 @@ msgstr "%s(으)로 로그인"
 msgid "Sign out"
 msgstr "로그아웃"
 
+msgid "Sign out and wipe"
+msgstr "로그아웃 및 지우기"
+
+msgid "Sign out and wipe your profile?"
+msgstr "로그아웃하고 프로필을 지우시겠습니까?"
+
 msgid "Sign out of this account?"
 msgstr "이 계정에서 로그아웃하시겠습니까?"
 
 msgid "Sign-in is unavailable. Check your connection settings and restart White Noise."
 msgstr "로그인할 수 없습니다. 연결 설정을 확인한 후 White Noise를 다시 시작하세요."
 
+msgid "Sign-ins"
+msgstr "로그인 기록"
+
+msgid "Sign-out and wipe report"
+msgstr "로그아웃 및 지우기 결과"
+
+msgid "Sign-out on this device could not be confirmed."
+msgstr "이 기기에서 로그아웃되었는지 확인할 수 없었습니다."
+
 msgid "Signal call"
 msgstr "Signal 통화"
+
+msgid "Signed in before this device"
+msgstr "이 기기보다 먼저 로그인함"
+
+msgid "Signed in on another device?"
+msgstr "다른 기기에서 로그인하셨습니까?"
+
+msgid "Signed out"
+msgstr "로그아웃됨"
 
 msgid "Signed out. Choose it to sign back in."
 msgstr "로그아웃되었습니다. 선택하면 다시 로그인합니다."
@@ -5128,8 +5553,14 @@ msgstr "서명자를 사용할 수 없음"
 msgid "Signer unavailable. Reconnect from Add account."
 msgstr "서명자를 사용할 수 없습니다. 계정 추가에서 다시 연결하세요."
 
+msgid "Signing out"
+msgstr "로그아웃 중"
+
 msgid "Signing out and removing your signer session"
 msgstr "로그아웃하고 서명자 세션을 제거하는 중"
+
+msgid "Signing out and wiping this device's copy of the profile"
+msgstr "로그아웃하고 이 기기에 저장된 프로필을 지우는 중"
 
 msgid "Signing you in"
 msgstr "로그인하는 중"
@@ -5162,8 +5593,20 @@ msgstr "얼굴과 감정"
 msgid "Sold"
 msgstr "판매됨"
 
+msgid "Some chat changes weren't delivered"
+msgstr "일부 채팅 변경 사항이 전달되지 않음"
+
+msgid "Some chats couldn't be checked. Please try again."
+msgstr "일부 채팅을 확인할 수 없습니다. 다시 시도하세요."
+
+msgid "Some devices need to be replaced before linked devices can be turned on."
+msgstr "연결된 기기 기능을 켜려면 일부 기기를 교체해야 합니다."
+
 msgid "Some network results may be missing."
 msgstr "일부 네트워크 결과가 누락되었을 수 있습니다."
+
+msgid "Someone may have your private key"
+msgstr "비밀 키 유출 가능성"
 
 msgid "Sort chats by"
 msgstr "채팅 정렬 기준"
@@ -5192,9 +5635,6 @@ msgstr "스페인어"
 msgid "Sparkle manages update checks and downloads."
 msgstr "Sparkle이 업데이트 확인과 다운로드를 관리합니다."
 
-msgid "Speech"
-msgstr "음성"
-
 msgid "Speech model"
 msgstr "음성 모델"
 
@@ -5207,6 +5647,9 @@ msgstr "정사각형"
 msgid "Start"
 msgstr "시작"
 
+msgid "Start a chat"
+msgstr "채팅 시작"
+
 msgid "Start a group and invite people."
 msgstr "그룹을 만들고 사람들을 초대하세요."
 
@@ -5216,8 +5659,17 @@ msgstr "채팅 시작"
 msgid "Start day"
 msgstr "시작 요일"
 
+msgid "Start fresh"
+msgstr "새로 시작"
+
+msgid "Start fresh on this device?"
+msgstr "이 기기에서 새로 시작하시겠습니까?"
+
 msgid "Start group"
 msgstr "그룹 시작"
+
+msgid "Start linking"
+msgstr "연결 시작"
 
 msgid "Start minimized to tray"
 msgstr "트레이로 최소화하여 시작"
@@ -5232,11 +5684,14 @@ msgstr "오프라인으로 시작됨: %s"
 msgid "Starting a chat does not add someone to People. You can also import a contacts CSV or JSON export."
 msgstr "채팅을 시작해도 상대가 사람 목록에 추가되지 않습니다. 연락처 CSV 또는 JSON 내보내기 파일을 가져올 수도 있습니다."
 
+msgid "Starting device linking…"
+msgstr "기기 연결을 시작하는 중…"
+
+msgid "Starting fresh on this device…"
+msgstr "이 기기에서 새로 시작하는 중…"
+
 msgid "Starting microphone…"
 msgstr "마이크를 시작하는 중…"
-
-msgid "Starting over deletes the vault on this device and everything sealed with it: account keys stored here, remote signer sessions, unsent messages, saved stickers and GIFs, and cached media. This can't be undone. Signing in again later can give you your account back, but not what was deleted, and your chats may not return."
-msgstr "다시 시작하면 이 기기의 금고와 금고로 보호된 모든 것이 삭제됩니다. 여기에 저장된 계정 키, 원격 서명자 세션, 보내지 않은 메시지, 저장한 스티커와 GIF, 캐시된 미디어가 포함됩니다. 이 작업은 되돌릴 수 없습니다. 나중에 다시 로그인하면 계정은 되찾을 수 있지만 삭제된 항목은 복구되지 않으며 채팅이 돌아오지 않을 수 있습니다."
 
 msgid "Starting the runtime"
 msgstr "런타임을 시작하는 중"
@@ -5278,18 +5733,15 @@ msgstr "스티커"
 msgid "Stickers: %d"
 msgstr "스티커: %d"
 
+msgid "Still trying to bring earlier messages from your other device…"
+msgstr "다른 기기에서 이전 메시지를 계속 가져오는 중…"
+
 #, c-format
 msgid "Stock: %s"
 msgstr "재고: %s"
 
 msgid "Stop reading"
 msgstr "읽기 중지"
-
-msgid "Storage"
-msgstr "저장 공간"
-
-msgid "Store it in a password manager. It is separate from your nsec, remote signer, and backup file passwords."
-msgstr "비밀번호 관리자에 보관하세요. nsec, 원격 서명자, 백업 파일 비밀번호와는 별개입니다."
 
 msgid "Store it somewhere safe and close this dialog. Anyone who imports it will need the password you just entered to decrypt it."
 msgstr "안전한 곳에 보관하고 이 대화 상자를 닫으세요. 이 파일을 가져오는 사람은 복호화를 위해 방금 입력한 비밀번호가 필요합니다."
@@ -5321,6 +5773,9 @@ msgstr "스와힐리어(탄자니아)"
 msgid "Swedish"
 msgstr "스웨덴어"
 
+msgid "Switching profiles and checking the request…"
+msgstr "프로필을 전환하고 요청을 확인하는 중…"
+
 msgid "Switching your account"
 msgstr "계정 전환 중"
 
@@ -5345,17 +5800,8 @@ msgstr "태그"
 msgid "TEXT"
 msgstr "텍스트"
 
-msgid "THEM"
-msgstr "상대"
-
-msgid "THEME"
-msgstr "테마"
-
 msgid "TIMINGS"
 msgstr "처리 시간"
-
-msgid "TROUBLESHOOTERS"
-msgstr "문제 해결"
 
 msgid "Tab to focus Publish. Press Enter or Space to activate it."
 msgstr "Tab 키로 게시 버튼으로 이동한 뒤 Enter 키 또는 스페이스바를 누르세요."
@@ -5388,9 +5834,6 @@ msgstr "청록"
 msgid "Telugu"
 msgstr "텔루구어"
 
-msgid "Terminal"
-msgstr "터미널"
-
 msgid "Terminal agent by Nous Research"
 msgstr "Nous Research의 터미널 에이전트"
 
@@ -5400,9 +5843,6 @@ msgstr "지형: %d/5"
 
 msgid "Test notification"
 msgstr "테스트 알림"
-
-msgid "Test notification sent."
-msgstr "테스트 알림을 보냈습니다."
 
 msgid "Text"
 msgstr "텍스트"
@@ -5452,11 +5892,20 @@ msgstr "통화는 White Noise 외부에서 진행됩니다."
 msgid "The chat leaves your list. Joining later needs a new invite."
 msgstr "채팅이 목록에서 사라집니다. 나중에 참여하려면 새 초대가 필요합니다."
 
+msgid "The codes didn't match. Only link devices whose codes match exactly."
+msgstr "코드가 일치하지 않습니다. 코드가 정확히 일치하는 기기만 연결하세요."
+
 msgid "The colors and settings you changed in the editor are lost."
 msgstr "편집기에서 변경한 색상과 설정이 사라집니다."
 
+msgid "The comparison code is missing or invalid. Don't approve this request."
+msgstr "비교용 코드가 없거나 유효하지 않습니다. 이 요청을 승인하지 마세요."
+
 msgid "The conversation and its messages are removed from this device. This can't be undone."
 msgstr "이 기기에서 대화와 메시지가 제거됩니다. 이 작업은 되돌릴 수 없습니다."
+
+msgid "The device list was reset, but the key package couldn't be published. Start linking to try again."
+msgstr "기기 목록은 초기화되었지만 키 패키지를 게시할 수 없었습니다. 다시 시도하려면 연결을 시작하세요."
 
 msgid "The group name was removed"
 msgstr "그룹 이름이 제거되었습니다"
@@ -5464,6 +5913,15 @@ msgstr "그룹 이름이 제거되었습니다"
 #, c-format
 msgid "The group was renamed to %s"
 msgstr "그룹 이름이 %s(으)로 변경되었습니다"
+
+msgid "The link attempt ended."
+msgstr "연결 시도가 종료되었습니다."
+
+msgid "The link request expired."
+msgstr "연결 요청이 만료되었습니다."
+
+msgid "The linked devices change isn't confirmed yet."
+msgstr "연결된 기기 기능의 변경 사항이 아직 확인되지 않았습니다."
 
 msgid "The new password re-encrypts the vault on this device. White Noise still can't reset it. If you forget it, the only way forward is to delete this vault and start over."
 msgstr "새 비밀번호로 이 기기의 금고를 다시 암호화합니다. White Noise는 여전히 이 비밀번호를 재설정할 수 없습니다. 잊어버리면 이 금고를 삭제하고 처음부터 다시 시작하는 방법밖에 없습니다."
@@ -5477,20 +5935,23 @@ msgstr "알림 서비스가 테스트 요청을 받았습니다. 시스템 알�
 msgid "The original message isn't loaded in this view."
 msgstr "원본 메시지가 이 화면에 로드되지 않았습니다."
 
+msgid "The other device cancelled linking."
+msgstr "상대 기기에서 연결을 취소했습니다."
+
+msgid "The other device declined the request."
+msgstr "상대 기기에서 요청을 거절했습니다."
+
 msgid "The passwords don't match. Type them again."
 msgstr "비밀번호가 일치하지 않습니다. 다시 입력하세요."
 
-msgid "The relay in the middle stores and forwards. It never holds a key."
-msgstr "중간의 릴레이는 저장하고 전달만 합니다. 키를 보관하지 않습니다."
+msgid "The signer record could not be removed from the encrypted vault."
+msgstr "암호화된 금고에서 서명자 기록을 제거할 수 없었습니다."
 
 msgid "The signer request was cancelled."
 msgstr "서명자 요청이 취소되었습니다."
 
 msgid "The updated list is published to your relays."
 msgstr "업데이트된 목록이 릴레이에 게시됩니다."
-
-msgid "The vault on this device was deleted. Pick a new password to start over."
-msgstr "이 기기의 금고가 삭제되었습니다. 새 비밀번호를 정해 다시 시작하세요."
 
 #, c-format
 msgid "The web client an event card opens. For example %s. %s is replaced with the event id."
@@ -5521,9 +5982,6 @@ msgstr "테마 저장됨"
 msgid "Theme shared with %s"
 msgstr "%s에게 테마 공유됨"
 
-msgid "Themes, text size, and the look of your conversations."
-msgstr "테마, 글자 크기, 대화 모양을 설정합니다."
-
 msgid "These are installation prompts. Choose your agent, review its prompt, and paste it into that agent to connect it to White Noise. The prompt includes your public npub, never your private key, and asks the agent to explain the connector before requesting your approval to install it. Use only an agent you run and trust."
 msgstr "설치용 프롬프트입니다. 에이전트를 선택하고 프롬프트를 검토한 뒤 해당 에이전트에 붙여넣어 White Noise에 연결하세요. 프롬프트에는 공개 npub이 포함되며 비밀 키는 절대 포함되지 않습니다. 또한 설치 승인을 요청하기 전에 에이전트가 커넥터를 설명하도록 요청합니다. 직접 운영하고 신뢰하는 에이전트만 사용하세요."
 
@@ -5536,20 +5994,68 @@ msgstr "채팅에 추가할 수 있습니다."
 msgid "They come off your published contact list. Groups you already share stay as they are."
 msgstr "게시된 연락처 목록에서 제외됩니다. 이미 함께 있는 그룹은 그대로 유지됩니다."
 
+msgid "They don't match"
+msgstr "코드 불일치"
+
 msgid "They haven't published a relay list."
 msgstr "이 사용자는 릴레이 목록을 게시하지 않았습니다."
 
 msgid "They lose access to new messages in this group."
 msgstr "이 그룹의 새 메시지에 더 이상 접근할 수 없습니다."
 
+msgid "They match"
+msgstr "코드 일치"
+
+msgid "They match, link device"
+msgstr "코드 일치, 기기 연결"
+
 msgid "They stay in the group as a regular member."
 msgstr "일반 멤버로 그룹에 남습니다."
+
+msgid "This can't be undone."
+msgstr "이 작업은 되돌릴 수 없습니다."
+
+msgid "This chat doesn't support linked devices."
+msgstr "이 채팅은 연결된 기기 기능을 지원하지 않습니다."
+
+msgid "This chat exceeds the device limit."
+msgstr "이 채팅의 기기 수가 한도를 초과했습니다."
+
+msgid "This chat has no relays for inviting linked devices."
+msgstr "이 채팅에는 연결된 기기를 초대하는 데 사용할 릴레이가 없습니다."
 
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr "이 채팅은 보관되었습니다. 메시지를 보내려면 보관함에서 복원하세요."
 
 msgid "This creates a new Nostr identity, separate from any account you already use."
 msgstr "이미 사용 중인 계정과 별개로 새 Nostr 계정을 만듭니다."
+
+msgid "This deletes the keys and chats for this profile from this device. It doesn't remove the profile or its chats from other devices. This can't be undone."
+msgstr "이 프로필의 키와 채팅이 이 기기에서 삭제됩니다. 다른 기기에 있는 프로필과 채팅은 제거되지 않습니다. 이 작업은 되돌릴 수 없습니다."
+
+msgid "This device"
+msgstr "이 기기"
+
+msgid "This device can't be linked."
+msgstr "이 기기는 연결할 수 없습니다."
+
+msgid "This device can't catch up with your other devices."
+msgstr "이 기기에서 다른 기기의 최신 상태를 동기화할 수 없습니다."
+
+msgid "This device can't link because it doesn't support everything this profile needs."
+msgstr "이 기기는 이 프로필에 필요한 기능을 모두 지원하지 않아 연결할 수 없습니다."
+
+msgid "This device forgets its local device list and unfinished sync. Your chats and keys stay. Link again to get a new device list."
+msgstr "이 기기에 저장된 기기 목록과 미완료 동기화 작업이 지워집니다. 채팅과 키는 그대로 유지됩니다. 새 기기 목록을 받으려면 다시 연결하세요."
+
+msgid "This device is no longer in your device list."
+msgstr "이 기기는 더 이상 기기 목록에 없습니다."
+
+msgid "This device tries to leave its chats, then deletes its local copy of the profile, including its keys and chats. This can't be undone."
+msgstr "이 기기는 채팅에서 나가기를 시도한 뒤, 키와 채팅을 포함해 이 기기에 저장된 프로필을 삭제합니다. 이 작업은 되돌릴 수 없습니다."
+
+msgid "This device was unlinked. Remove the unlinked profile before signing in again."
+msgstr "이 기기의 연결이 해제되었습니다. 다시 로그인하기 전에 연결 해제된 프로필을 제거하세요."
 
 msgid "This event is no longer available."
 msgstr "이 이벤트를 더 이상 볼 수 없습니다."
@@ -5608,20 +6114,35 @@ msgstr "그룹의 암호화 키가 바뀌면 이 숫자가 증가합니다."
 msgid "This pairing link is too long for a QR code. Use Copy pairing link."
 msgstr "이 페어링 링크는 QR 코드로 만들기에 너무 깁니다. 페어링 링크 복사를 사용하세요."
 
-msgid "This password encrypts the vault on this device. It doesn't create an account, and White Noise can't reset it."
-msgstr "이 비밀번호는 이 기기의 금고를 암호화합니다. 계정을 만들지 않으며 White Noise는 이 비밀번호를 재설정할 수 없습니다."
-
 msgid "This password is easy to guess. Someone with this device could guess it and open the vault."
 msgstr "이 비밀번호는 쉽게 추측됩니다. 이 기기를 가진 사람이 비밀번호를 추측해 금고를 열 수 있습니다."
+
+msgid "This password protects sensitive local data. It is not a service login or a password to share with contacts. Save it in your password manager."
+msgstr "이 비밀번호는 기기에 저장된 민감한 데이터를 보호합니다. 서비스에 로그인하는 데 쓰는 비밀번호가 아니며, 연락처에 있는 사람과 공유해서는 안 됩니다. 비밀번호 관리자에 저장하세요."
 
 msgid "This preview stays on your device. Publishing uploads the picture and adds it to your public profile, separately from your text draft."
 msgstr "미리 보기는 이 기기에만 표시됩니다. 게시하면 텍스트 초안과 별도로 사진이 업로드되고 공개 프로필에 추가됩니다."
 
+msgid "This profile has reached its device limit. Unlink an existing device before trying again."
+msgstr "이 프로필에 연결할 수 있는 기기 수가 한도에 도달했습니다. 기존 기기의 연결을 해제한 뒤 다시 시도하세요."
+
+msgid "This profile has too many linked devices. Remove a device and try again."
+msgstr "이 프로필에 연결된 기기 수가 한도를 초과했습니다. 기기를 하나 제거한 뒤 다시 시도하세요."
+
+msgid "This profile is no longer unlinked."
+msgstr "이 프로필은 더 이상 연결 해제된 상태가 아닙니다."
+
 msgid "This relay is already in your list."
 msgstr "이 릴레이는 이미 목록에 있습니다."
 
-msgid "This session"
-msgstr "현재 세션"
+msgid "This request is no longer active."
+msgstr "이 요청은 더 이상 유효하지 않습니다."
+
+msgid "This request was answered on another device."
+msgstr "다른 기기에서 이 요청에 응답했습니다."
+
+msgid "This sign-in was rejected on one of your devices."
+msgstr "내 기기 중 하나에서 이 로그인을 거절했습니다."
 
 msgid "This step does not publish your chats."
 msgstr "이 단계에서는 채팅을 게시하지 않습니다."
@@ -5629,11 +6150,14 @@ msgstr "이 단계에서는 채팅을 게시하지 않습니다."
 msgid "This sticker is not in the current pack."
 msgstr "이 스티커는 현재 팩에 없습니다."
 
+msgid "This was me, don't link"
+msgstr "본인 로그인으로 표시, 연결 안 함"
+
+msgid "This wasn't me"
+msgstr "본인 로그인 아님"
+
 msgid "Thread"
 msgstr "스레드"
-
-msgid "Three things and you can send your first message."
-msgstr "세 가지만 하면 첫 메시지를 보낼 수 있습니다."
 
 #, c-format
 msgid "Through: %s"
@@ -5657,11 +6181,17 @@ msgstr "타임라인 구독이 종료되었습니다."
 msgid "Timings"
 msgstr "처리 시간"
 
+msgid "Title"
+msgstr "제목"
+
 msgid "Title font"
 msgstr "제목 글꼴"
 
 msgid "Title wash"
 msgstr "제목 그라데이션"
+
+msgid "To use the same identity after starting over, you need its secret key saved elsewhere or access to its remote signer. The signer's private key stays with that signer. Without either, you cannot sign in to that identity. Signing in again does not restore this device's chats. A settings backup does not contain account keys or message history."
+msgstr "새로 시작한 뒤 같은 신원을 사용하려면 다른 곳에 저장해 둔 해당 신원의 비밀 키가 있거나 해당 신원의 원격 서명자에 접근할 수 있어야 합니다. 서명자의 비밀 키는 해당 서명자에 보관됩니다. 둘 다 없으면 해당 신원으로 로그인할 수 없습니다. 다시 로그인해도 이 기기의 채팅은 복원되지 않습니다. 설정 백업에는 계정 키나 메시지 기록이 포함되지 않습니다."
 
 msgid "Today"
 msgstr "오늘"
@@ -5671,6 +6201,9 @@ msgstr "개발자 모드 전환"
 
 msgid "Too easy to guess"
 msgstr "너무 쉽게 추측됨"
+
+msgid "Too many recent attempts. Try again later."
+msgstr "최근 연결 시도가 너무 많습니다. 나중에 다시 시도하세요."
 
 msgid "Toolbar button"
 msgstr "도구 모음 버튼"
@@ -5750,6 +6283,10 @@ msgstr "다른 검색어를 사용해 보세요."
 msgid "Try again"
 msgstr "다시 시도"
 
+#, c-format
+msgid "Try again after %s."
+msgstr "%s 이후에 다시 시도하세요."
+
 msgid "Tuesday"
 msgstr "화요일"
 
@@ -5759,14 +6296,35 @@ msgstr "튀르키예어"
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "애니메이션 전환, 이동, 효과를 끕니다. 상태는 바뀌지만 아무것도 움직이지 않습니다."
 
+msgid "Turn on anyway"
+msgstr "그래도 켜기"
+
 msgid "Turn on desktop notifications to change these options or send a test."
 msgstr "이 옵션을 변경하거나 테스트 알림을 보내려면 데스크톱 알림을 켜세요."
 
 msgid "Turn on developer mode"
 msgstr "개발자 모드 켜기"
 
+msgid "Turn on linked devices"
+msgstr "연결된 기기 기능 켜기"
+
+msgid "Turn on linked devices?"
+msgstr "연결된 기기 기능을 켜시겠습니까?"
+
+msgid "Turning on linked devices…"
+msgstr "연결된 기기 기능을 켜는 중…"
+
+msgid "Turning this off doesn't leave any chats."
+msgstr "이 설정을 꺼도 채팅에서 나가지 않습니다."
+
+msgid "Turning this on doesn't bring history to chats this device already joined."
+msgstr "이 설정을 켜도 이 기기가 이미 참여한 채팅의 기록은 가져오지 않습니다."
+
 msgid "Type a command"
 msgstr "명령 입력"
+
+msgid "Type it again to protect your local vault."
+msgstr "로컬 금고를 보호하려면 비밀번호를 다시 입력하세요."
 
 msgid "Type to search all chats."
 msgstr "입력하여 모든 채팅을 검색하세요."
@@ -5783,9 +6341,6 @@ msgstr "먼저 비밀번호를 입력하세요."
 msgid "UNPUBLISHED TEXT DRAFT"
 msgstr "게시되지 않은 텍스트 초안"
 
-msgid "UPTIME"
-msgstr "가동 시간"
-
 msgid "UV checker"
 msgstr "UV 검사기"
 
@@ -5801,18 +6356,30 @@ msgstr "차단 해제"
 msgid "Unfiled"
 msgstr "미분류"
 
+msgid "Unknown app"
+msgstr "알 수 없는 앱"
+
 #, c-format
 msgid "Unknown event kind %d"
 msgstr "알 수 없는 이벤트 종류 %d"
 
+msgid "Unknown link request state."
+msgstr "연결 요청의 상태를 알 수 없습니다."
+
 msgid "Unlock"
 msgstr "잠금 해제"
+
+msgid "Unlock your vault"
+msgstr "금고 잠금 해제"
 
 msgid "Unlocking…"
 msgstr "잠금 해제 중…"
 
 msgid "Unmute"
 msgstr "알림 켜기"
+
+msgid "Unnamed device"
+msgstr "이름 없는 기기"
 
 msgid "Unnamed group"
 msgstr "이름 없는 그룹"
@@ -5825,6 +6392,13 @@ msgstr "읽지 않음"
 
 msgid "Unread first"
 msgstr "읽지 않은 채팅 우선"
+
+#, c-format
+msgid "Unrecognized activity: %s."
+msgstr "알 수 없는 활동: %s."
+
+msgid "Unrecognized sign-in"
+msgstr "알 수 없는 로그인"
 
 msgid "Unsupported attachment format."
 msgstr "지원하지 않는 첨부 파일 형식입니다."
@@ -5843,6 +6417,9 @@ msgstr "업데이트"
 
 msgid "Updates are disabled while a SOCKS5 proxy is configured. Sparkle cannot safely use the app's explicit proxy. Disable the proxy and restart to update, or install an authenticated release manually."
 msgstr "SOCKS5 프록시가 설정되어 있는 동안에는 업데이트가 비활성화됩니다. Sparkle은 앱에 지정된 프록시를 안전하게 사용할 수 없습니다. 프록시를 끄고 다시 시작하여 업데이트하거나, 인증된 릴리스를 직접 설치하세요."
+
+msgid "Updating the sign-in…"
+msgstr "로그인 기록을 갱신하는 중…"
 
 msgid "Updating your contacts"
 msgstr "연락처 업데이트 중"
@@ -5886,8 +6463,8 @@ msgstr "더 짧은 검색어를 사용하세요."
 msgid "Use an existing account"
 msgstr "기존 계정 사용"
 
-msgid "Use crop circle"
-msgstr "크롭 서클 사용"
+msgid "Use at most 64 bytes for the device name."
+msgstr "기기 이름은 최대 64바이트까지 입력할 수 있습니다."
 
 msgid "Use current location"
 msgstr "현재 위치 사용"
@@ -5964,9 +6541,6 @@ msgstr "16진수로 보기"
 msgid "View event data"
 msgstr "이벤트 데이터 보기"
 
-msgid "View keyboard shortcuts"
-msgstr "키보드 단축키 보기"
-
 msgid "View profile"
 msgstr "프로필 보기"
 
@@ -5994,14 +6568,41 @@ msgstr "음성 메시지"
 msgid "Voting has ended."
 msgstr "투표가 종료되었습니다."
 
+msgid "WILL BE DELETED"
+msgstr "삭제될 항목"
+
 msgid "WIREFRAME"
 msgstr "와이어프레임"
+
+msgid "Wait"
+msgstr "대기"
+
+msgid "Wait for sign-out to finish before sending."
+msgstr "로그아웃이 끝난 뒤 전송하세요."
+
+msgid "Wait for this chat to finish catching up, then try again."
+msgstr "이 채팅의 동기화가 끝난 뒤 다시 시도하세요."
+
+msgid "Waiting for a link request…"
+msgstr "연결 요청 대기 중…"
+
+msgid "Waiting for every device to report support."
+msgstr "모든 기기가 지원 여부를 알리기를 기다리고 있습니다."
 
 msgid "Waiting for signer approval"
 msgstr "서명자 승인 대기 중"
 
+msgid "Waiting for the other device to answer. Open White Noise there to review the request."
+msgstr "상대 기기의 응답을 기다리고 있습니다. 해당 기기에서 White Noise를 열어 요청을 검토하세요."
+
 msgid "Waiting for your signer"
 msgstr "서명자 대기 중"
+
+msgid "Waiting to join the other device group…"
+msgstr "상대 기기의 그룹에 합류하기를 기다리는 중…"
+
+msgid "Waiting to join your other device group."
+msgstr "다른 기기 그룹에 합류하기를 기다리고 있습니다."
 
 msgid "Waiting to translate..."
 msgstr "번역 대기 중..."
@@ -6030,9 +6631,6 @@ msgstr "수요일"
 msgid "What is shared"
 msgstr "공유되는 정보"
 
-msgid "What it is"
-msgstr "개요"
-
 msgid "What the GM button sends. You can use it once a day in each chat."
 msgstr "GM 버튼으로 보내는 메시지입니다. 채팅마다 하루에 한 번 사용할 수 있습니다."
 
@@ -6041,9 +6639,6 @@ msgstr "이 채팅에서 보내는 모든 내용은 전송 전에 기기에서 M
 
 msgid "Where"
 msgstr "위치"
-
-msgid "Where a message goes"
-msgstr "메시지의 경로"
 
 msgid "Where a shared location opens from its card. That site receives the location. Map images on the card always load from OpenStreetMap."
 msgstr "공유된 위치를 카드에서 열 때 사용하는 사이트입니다. 해당 사이트로 위치가 전송됩니다. 카드의 지도 이미지는 항상 OpenStreetMap에서 불러옵니다."
@@ -6061,11 +6656,14 @@ msgstr "내가 게시하는 곳입니다."
 msgid "White Noise %s is ready to install."
 msgstr "White Noise %s을(를) 설치할 준비가 되었습니다."
 
-msgid "White Noise and this session."
-msgstr "White Noise 및 현재 세션 정보입니다."
+msgid "White Noise cannot reset this password to unlock your existing vault."
+msgstr "White Noise에서는 이 비밀번호를 재설정해 기존 금고의 잠금을 해제할 수 없습니다."
 
-msgid "White Noise can't reset this password, and no one else has a copy. Without it, the vault on this device can't be opened."
-msgstr "White Noise는 이 비밀번호를 재설정할 수 없으며, 다른 누구도 사본을 갖고 있지 않습니다. 비밀번호가 없으면 이 기기의 금고를 열 수 없습니다."
+msgid "White Noise couldn't finish linking the device."
+msgstr "White Noise에서 기기 연결을 완료할 수 없었습니다."
+
+msgid "White Noise couldn't verify the other device."
+msgstr "White Noise에서 상대 기기를 확인할 수 없었습니다."
 
 msgid "White Noise doesn't open at login"
 msgstr "로그인 시 White Noise가 열리지 않음"
@@ -6125,14 +6723,20 @@ msgstr "어제"
 msgid "You"
 msgstr "나"
 
-msgid "You are signed out, but your signer record could not be removed from the encrypted vault."
-msgstr "로그아웃되었지만, 암호화된 금고에서 서명자 기록을 제거할 수 없었습니다."
-
 msgid "You can find it in Archived and restore it to your chat list there."
 msgstr "보관함에서 이 채팅을 찾아 채팅 목록으로 복원할 수 있습니다."
 
+msgid "You can open the chats already on this device."
+msgstr "이 기기에 이미 있는 채팅을 열 수 있습니다."
+
+msgid "You can turn on linked devices."
+msgstr "연결된 기기 기능을 켤 수 있습니다."
+
 msgid "You can't send messages to someone you blocked."
 msgstr "차단한 사람에게는 메시지를 보낼 수 없습니다."
+
+msgid "You confirmed the code. Waiting for the other device to approve the request."
+msgstr "코드를 확인했습니다. 상대 기기에서 요청을 승인하기를 기다리고 있습니다."
 
 msgid "You follow"
 msgstr "팔로우 중"
@@ -6192,9 +6796,6 @@ msgstr "내 GM"
 msgid "Your account has a pending action. Complete it before reconnecting your signer."
 msgstr "계정에 대기 중인 작업이 있습니다. 서명자를 다시 연결하기 전에 완료하세요."
 
-msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
-msgstr "계정은 제거되었지만, 암호화된 금고에서 서명자 기록을 제거할 수 없었습니다."
-
 msgid "Your account key was saved on this device."
 msgstr "계정 키는 이 기기에 저장되었습니다."
 
@@ -6210,6 +6811,9 @@ msgstr "현재 비밀번호"
 msgid "Your device asks for permission. Nothing is sent to the chat until you choose Send location."
 msgstr "기기에서 권한을 요청합니다. 위치 보내기를 선택하기 전에는 채팅에 아무것도 전송되지 않습니다."
 
+msgid "Your devices"
+msgstr "내 기기"
+
 msgid "Your disk is filling up"
 msgstr "디스크 공간이 부족해지고 있습니다"
 
@@ -6219,14 +6823,11 @@ msgstr "표시 이름과 프로필은 공개됩니다."
 msgid "Your existing and new notes are deleted after this time."
 msgstr "기존 메모와 새 메모 모두 이 시간이 지나면 삭제됩니다."
 
-msgid "Your identity and the secrets on this device."
-msgstr "내 신원과 이 기기의 비밀 정보입니다."
-
-msgid "Your identity, key packages, and device security."
-msgstr "내 신원, 키 패키지, 기기 보안입니다."
-
 msgid "Your key stays on this device"
 msgstr "키는 이 기기에만 보관됩니다"
+
+msgid "Your keys and chats are deleted from this device. Other linked devices keep their chats. Asking them to help with cleanup can take about 30 seconds. This can't be undone."
+msgstr "키와 채팅이 이 기기에서 삭제됩니다. 다른 연결된 기기의 채팅은 그대로 유지됩니다. 다른 기기에 정리 작업을 요청하는 데 30초 정도 걸릴 수 있습니다. 이 작업은 되돌릴 수 없습니다."
 
 msgid "Your name and a link to your picture go to public Nostr relays so people can recognize you."
 msgstr "다른 사람이 회원님을 알아볼 수 있도록 이름과 사진 링크를 공개 Nostr 릴레이에 전송합니다."
@@ -6234,8 +6835,8 @@ msgstr "다른 사람이 회원님을 알아볼 수 있도록 이름과 사진 �
 msgid "Your new password"
 msgstr "새 비밀번호"
 
-msgid "Your nsec or remote signer can let you use your account again, but it can't open this vault, and your chats on this device may not return. A backup file has its own password and holds only settings, drafts, custom emoji, and themes."
-msgstr "nsec 또는 원격 서명자로 계정을 다시 사용할 수는 있지만, 이 금고는 열 수 없으며 이 기기의 채팅은 복구되지 않을 수 있습니다. 백업 파일에는 별도의 비밀번호가 있으며 설정, 임시 저장 메시지, 사용자 지정 이모지, 테마만 포함됩니다."
+msgid "Your other linked devices will refuse this sign-in's link request and warn you about it. Someone may have your private key."
+msgstr "다른 연결된 기기는 이 로그인에서 보낸 연결 요청을 거절하고 경고를 표시합니다. 다른 사람이 비밀 키를 갖고 있을 수 있습니다."
 
 msgid "Your own notepad"
 msgstr "나만의 메모장"
@@ -6258,6 +6859,9 @@ msgstr "이전 계정 작업이 아직 대기 중입니다. 서명자에서 승�
 msgid "Your profile"
 msgstr "내 프로필"
 
+msgid "Your profile has reached the device limit in this chat."
+msgstr "이 채팅에서 이 프로필의 기기 수가 한도에 도달했습니다."
+
 msgid "Your profile publication wasn't confirmed."
 msgstr "프로필 게시를 확인하지 못했습니다."
 
@@ -6272,6 +6876,9 @@ msgstr "공개 키를 사용할 수 없습니다. 다른 계정을 선택하고 
 
 msgid "Your public key. Safe to share."
 msgstr "공개 키입니다. 공유해도 안전합니다."
+
+msgid "Your saved stickers and GIFs."
+msgstr "저장한 스티커와 GIF입니다."
 
 msgid "Your secret key stays in your remote signer, so this device can't reveal or export it. Back it up and recover it through your signer. A White Noise backup file doesn't include it."
 msgstr "비밀 키는 원격 서명자에 보관되므로 이 기기에서는 표시하거나 내보낼 수 없습니다. 백업과 복구는 서명자에서 하세요. White Noise 백업 파일에는 포함되지 않습니다."
@@ -6315,9 +6922,6 @@ msgstr "축소"
 msgid "Zoom out or enlarge the window to review what will be public."
 msgstr "공개될 내용을 확인하려면 화면을 축소하거나 창을 키우세요."
 
-msgid "Zoom the interface"
-msgstr "화면 확대/축소"
-
 msgid "Zulu"
 msgstr "줄루어"
 
@@ -6344,11 +6948,11 @@ msgstr "외 %d줄"
 msgid "and %s more"
 msgstr "외 %s"
 
+msgid "another device"
+msgstr "다른 기기"
+
 msgid "audio notifications mute"
 msgstr "소리 알림 음소거"
-
-msgid "carries the blob"
-msgstr "암호화 데이터 전달"
 
 msgid "display name username avatar picture bio"
 msgstr "표시 이름 사용자 이름 아바타 사진 소개"
@@ -6431,17 +7035,8 @@ msgstr "npub을 복사했습니다"
 msgid "npub or hex pubkey"
 msgstr "npub 또는 16진수 공개 키"
 
-msgid "opened there"
-msgstr "상대방 기기에서 복호화"
-
-msgid "or pick a page"
-msgstr "또는 페이지 선택"
-
 msgid "people"
 msgstr "명"
-
-msgid "plaintext"
-msgstr "평문"
 
 msgid "privacy notifications"
 msgstr "개인 정보 알림"
@@ -6451,9 +7046,6 @@ msgstr "릴레이"
 
 msgid "scale size accessibility"
 msgstr "배율 확대 축소 크기 접근성"
-
-msgid "sealed here"
-msgstr "여기서 암호화"
 
 msgid "silence quiet chat notifications"
 msgstr "음소거 무음 채팅 알림"
