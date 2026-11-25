@@ -714,9 +714,10 @@ settings_search_field :: proc(ui: ^Ui_State) {
 	if visible && field_mouse(ui, &ui.settings_search, "SettingsSearchBox", 12) {
 		ui.focus = .SettingsSearch
 		kb_focus = "SettingsSearchBox"
-	} else if ui.focus == .SettingsSearch &&
-	   (!visible || (rl.IsMouseButtonPressed(.LEFT) && !nendo.pointer_over(search_box))) {
-		ui.focus = .Compose
+	} else if ui.focus == .SettingsSearch {
+		outside := visible && rl.IsMouseButtonPressed(.LEFT) && !nendo.pointer_over(search_box)
+		closed := !visible && settings_query(ui) == "" && !rl.IsKeyPressed(.ESCAPE)
+		if outside || closed {ui.focus = .Compose}
 	}
 	// Space alone still activates the focused control.
 	if ui.focus == .Compose && !rl.HasTouch() && rl.HasTypedText() {

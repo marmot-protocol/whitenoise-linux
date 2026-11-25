@@ -671,7 +671,7 @@ settings_test_search_routes :: proc(t: ^testing.T, ui: ^Ui_State) {
 		for _ in 0 ..< 3 {settings_test_frame(ui)}
 		testing.expect_value(t, settings_query(ui), "relay")
 		testing.expect(t, nendo.element(nendo.id("SettingsSearchBox")).found)
-		ed_set(ui, &ui.settings_search, "r")
+		ed_set(ui, &ui.settings_search, " r")
 		rl.PushKey(.BACKSPACE, true)
 		settings_search_field(ui)
 		rl.PushKey(.BACKSPACE, false)
