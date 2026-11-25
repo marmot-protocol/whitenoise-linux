@@ -669,6 +669,9 @@ msgstr "質問を入力..."
 msgid "Asking your relays for their key package."
 msgstr "あなたのリレーに相手のキーパッケージを問い合わせています。"
 
+msgid "At least one Nostr relay accepted your profile."
+msgstr "少なくとも1つの Nostr リレーがプロフィールを受け付けました。"
+
 msgid "Attach a file"
 msgstr "ファイルを添付"
 
@@ -1496,10 +1499,6 @@ msgstr "%sをコピーできませんでした。もう一度お試しくださ�
 msgid "Couldn't copy the image to the clipboard. Please try again."
 msgstr "画像をクリップボードにコピーできませんでした。もう一度お試しください。"
 
-#, c-format
-msgid "Couldn't create an identity. %s"
-msgstr "IDを作成できませんでした。%s"
-
 msgid "Couldn't create the backup. Please try again."
 msgstr "バックアップを作成できませんでした。もう一度お試しください。"
 
@@ -1553,6 +1552,9 @@ msgstr "鍵をエクスポートできませんでした。%s"
 
 msgid "Couldn't find your account on the relays. Check your relay settings and try again."
 msgstr "リレーでアカウントを見つけられませんでした。リレー設定を確認して、もう一度お試しください。"
+
+msgid "Couldn't finish account setup. Please try again."
+msgstr "アカウントの設定を完了できませんでした。もう一度お試しください。"
 
 msgid "Couldn't finish dictation. Please try again."
 msgstr "音声入力を完了できませんでした。もう一度お試しください。"
@@ -1710,6 +1712,9 @@ msgstr "音声を再生できませんでした。音声出力を確認して、
 msgid "Couldn't play video. Click to retry."
 msgstr "動画を再生できませんでした。クリックして再試行してください。"
 
+msgid "Couldn't prepare your starter profile. Please try again."
+msgstr "初期プロフィールを準備できませんでした。もう一度お試しください。"
+
 msgid "Couldn't preview the picture. Please try again."
 msgstr "画像をプレビューできませんでした。もう一度お試しください。"
 
@@ -1720,10 +1725,6 @@ msgstr "写真を公開できませんでした。%s"
 #, c-format
 msgid "Couldn't publish the picture. %s"
 msgstr "画像を公開できませんでした。%s"
-
-#, c-format
-msgid "Couldn't publish your name. %s"
-msgstr "名前を公開できませんでした。%s"
 
 msgid "Couldn't reach the Namecoin resolvers. Please try again."
 msgstr "Namecoinリゾルバーに接続できませんでした。もう一度お試しください。"
@@ -1963,6 +1964,9 @@ msgstr "作成"
 msgid "Create a poll"
 msgstr "投票を作成"
 
+msgid "Create and publish"
+msgstr "作成して公開"
+
 msgid "Create backup"
 msgstr "バックアップを作成"
 
@@ -2001,6 +2005,9 @@ msgstr "作成者"
 
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "パスワードで暗号化したNIP-49形式の鍵を作成します。安全に保存したり、別のクライアントに移したりできます。"
+
+msgid "Creating your account and publishing your profile"
+msgstr "アカウントを作成し、プロフィールを公開しています"
 
 msgid "Creating your chat"
 msgstr "チャットを作成しています"
@@ -2805,9 +2812,6 @@ msgstr "一般"
 
 msgid "Generate a new key"
 msgstr "新しい鍵を生成"
-
-msgid "Generating your key"
-msgstr "鍵を生成しています"
 
 msgid "German"
 msgstr "ドイツ語"
@@ -4394,6 +4398,9 @@ msgstr "翻訳モデルを準備しています..."
 msgid "Preparing your pairing code"
 msgstr "ペアリングコードを準備しています"
 
+msgid "Preparing your starter profile"
+msgstr "初期プロフィールを準備しています"
+
 msgid "Press Ctrl P for the command palette."
 msgstr "Ctrl P を押すとコマンドパレットが開きます。"
 
@@ -4504,9 +4511,6 @@ msgstr "鍵パッケージを公開しています"
 
 msgid "Publishing your profile"
 msgstr "プロフィールを公開しています"
-
-msgid "Publishing your profile to the relays. This takes a few seconds."
-msgstr "プロフィールをリレーに公開しています。数秒かかります。"
 
 msgid "Publishing your relay lists"
 msgstr "リレーリストを公開しています"
@@ -4800,6 +4804,9 @@ msgstr "署名者の権限を確認"
 
 msgid "Review starting over"
 msgstr "やり直す前に確認する"
+
+msgid "Review your public profile"
+msgstr "公開プロフィールを確認"
 
 msgid "Right"
 msgstr "右"
@@ -5843,9 +5850,6 @@ msgstr "このメンバーの端末数がチャットの上限を超えていま
 msgid "This message was deleted"
 msgstr "このメッセージは削除されました"
 
-msgid "This name is public. You can change it later in your profile."
-msgstr "この名前は公開されます。後でプロフィールから変更できます。"
-
 msgid "This number increases when the group's encryption keys change."
 msgstr "グループの暗号鍵が変わると、この番号が増えます。"
 
@@ -5866,6 +5870,9 @@ msgstr "このパスワードは、端末内の機密データを保護します
 
 msgid "This relay is already in your list."
 msgstr "このリレーはすでにリストに追加されています。"
+
+msgid "This step does not publish your chats."
+msgstr "この手順でチャットが公開されることはありません。"
 
 msgid "This sticker is not in the current pack."
 msgstr "このステッカーは現在のパックに含まれていません。"
@@ -6280,9 +6287,6 @@ msgstr "水曜日"
 msgid "What is shared"
 msgstr "共有されるデータ"
 
-msgid "What should people call you?"
-msgstr "どのように呼ばれたいですか？"
-
 msgid "What the GM button sends. You can use it once a day in each chat."
 msgstr "GMボタンで送信するメッセージです。各チャットで1日1回使えます。"
 
@@ -6322,6 +6326,9 @@ msgstr "White NoiseはGifSnapと提携していません。GifSnapがこのデ�
 
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
 msgstr "White Noise があなたの秘密鍵を見ることはありません。秘密鍵はこの端末と、接続した署名者にのみ存在します。"
+
+msgid "White Noise uploads your picture to this public image server:"
+msgstr "White Noise はあなたの画像を次の公開画像サーバーにアップロードします。"
 
 msgid "White Noise will ask your signer for these permissions. Your signer may ask you to confirm them too."
 msgstr "White Noise は署名者にこれらの権限を求めます。署名者でも確認を求められることがあります。"
@@ -6442,6 +6449,12 @@ msgstr "このアカウントには保留中の操作があります。署名者
 msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
 msgstr "アカウントは削除されましたが、署名者の記録を暗号化された保管庫から削除できませんでした。"
 
+msgid "Your account key was saved on this device."
+msgstr "アカウントの鍵はこの端末に保存されました。"
+
+msgid "Your account was created"
+msgstr "アカウントを作成しました"
+
 msgid "Your chats appear here once you have some."
 msgstr "チャットができるとここに表示されます。"
 
@@ -6478,6 +6491,9 @@ msgstr "鍵はこの端末にとどまります"
 msgid "Your name"
 msgstr "あなたの名前"
 
+msgid "Your name and a link to your picture go to public Nostr relays so people can recognize you."
+msgstr "ほかの人があなたを見分けられるよう、名前と画像へのリンクを公開 Nostr リレーに送信します。"
+
 msgid "Your new password"
 msgstr "新しいパスワード"
 
@@ -6490,6 +6506,12 @@ msgstr "自分用メモ帳"
 msgid "Your password"
 msgstr "パスワード"
 
+msgid "Your picture upload wasn't confirmed."
+msgstr "画像のアップロードを確認できませんでした。"
+
+msgid "Your picture was uploaded."
+msgstr "画像をアップロードしました。"
+
 msgid "Your previous account action is still running."
 msgstr "前のアカウント操作はまだ実行中です。"
 
@@ -6501,6 +6523,9 @@ msgstr "秘密鍵はリモート署名者に保存されます。この端末で
 
 msgid "Your profile"
 msgstr "あなたのプロフィール"
+
+msgid "Your profile publication wasn't confirmed."
+msgstr "プロフィールの公開を確認できませんでした。"
 
 msgid "Your proxy credentials are stored in your encrypted vault."
 msgstr "プロキシの認証情報は暗号化された保管庫に保存されます。"
@@ -6546,6 +6571,9 @@ msgstr "署名者が要求を拒否しました。"
 
 msgid "Your signer session has ended."
 msgstr "署名者のセッションが終了しました。"
+
+msgid "Your starter picture and profile weren't sent."
+msgstr "初期画像とプロフィールは送信されていません。"
 
 msgid "Your stickers"
 msgstr "あなたのステッカー"

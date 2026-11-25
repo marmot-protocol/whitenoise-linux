@@ -744,6 +744,7 @@ short_hex :: proc(s: string) -> string {
 import_identity_blocking :: proc(
 	client: ^marmot.Client,
 	identity: string,
+	relays := ONBOARDING_RELAYS,
 ) -> (
 	hex: string,
 	status: marmot.Status,
@@ -755,10 +756,10 @@ import_identity_blocking :: proc(
 	status = marmot.login(
 		client,
 		id,
-		raw_data(ONBOARDING_RELAYS),
-		len(ONBOARDING_RELAYS),
-		raw_data(ONBOARDING_RELAYS),
-		len(ONBOARDING_RELAYS),
+		raw_data(relays),
+		uint(len(relays)),
+		raw_data(relays),
+		uint(len(relays)),
 		nil,
 		0,
 		&summary,
@@ -770,47 +771,7 @@ import_identity_blocking :: proc(
 	return strings.clone(string(summary.account_id_hex)), status, ""
 }
 
-// Mint a fresh identity and upload its starter face. Same blocking
-// contract as import_identity_blocking; `pic_url` is the face URL its
-// kind-0 and the local seed use once the user names the account.
-create_identity_blocking :: proc(
-	client: ^marmot.Client,
-	allocator := context.allocator,
-) -> (
-	hex: string,
-	pic_url: string,
-	err: string,
-) {
-	summary: ^marmot.Account_Summary
-	if marmot.create_identity(
-		   client,
-		   raw_data(DEFAULT_RELAYS),
-		   len(DEFAULT_RELAYS),
-		   raw_data(DEFAULT_RELAYS),
-		   len(DEFAULT_RELAYS),
-		   nil,
-		   0,
-		   &summary,
-	   ) !=
-	   .OK {
-		return "", "", fmt.aprintf(
-			tr("Couldn't create an identity. %s"),
-			marmot.last_error(),
-			allocator = allocator,
-		)
-	}
-	hex = strings.clone(string(summary.account_id_hex), allocator)
-	marmot.account_summary_free(summary)
-	return hex, upload_starter_face(client, hex, allocator), ""
-}
-
-// UI-thread tail of a sign-in: register the starter face under the
-// chosen name (fresh identities only; `name` is "" when signing in an
-// existing one) and land on the account just added.
-finish_auth :: proc(ui: ^Ui_State, client: ^marmot.Client, hex, pic_url, name: string) {
-	if name != "" {
-		seed_starter_local(client, hex, name, pic_url)
-	}
+finish_auth :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
 	after_login(ui, client, hex)
 	remember_account(ui, ui.account_ref)
 }
@@ -826,21 +787,18 @@ remember_account :: proc(ui: ^Ui_State, hex: string) {
 	ui.settings_dirty = true
 }
 
-// Synchronous create, for the WN_TEST_CREATE boot hook: the harness
-// screenshots a few frames in and can't wait on the worker, so it skips
-// the name step and publishes the generated name.
+// WN_TEST_CREATE confirms the generated name and lands before the first frame.
 do_create_identity :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	hex, pic_url, err := create_identity_blocking(client, context.temp_allocator)
-	if len(err) > 0 {
-		ui.login_error = strings.clone(err)
+	job := new(Auth_Job)
+	defer auth_job_free(job)
+	job.client = client
+	prepare_starter(job)
+	if job.err == "" {create_starter(job)}
+	if job.err != "" {
+		ui.login_error = strings.clone(job.err)
 		return
 	}
-	name := profile_fallback(hex)
-	if failed := publish_starter_name(client, hex, name, pic_url, context.temp_allocator);
-	   failed != "" {
-		fmt.eprintln(failed)
-	}
-	finish_auth(ui, client, hex, pic_url, name)
+	finish_starter(ui, job)
 }
 
 @(private)

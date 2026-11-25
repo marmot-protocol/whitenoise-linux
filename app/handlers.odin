@@ -13,31 +13,114 @@ import rl "sdlrl"
 import marmot "../marmot"
 
 @(private)
-auth_cancel :: proc(ui: ^Ui_State) {
-	ui.login_error = ""
+auth_cancel :: proc(ui: ^Ui_State) -> bool {
+	starter := auth_job != nil && auth_job.method == .Create
+	if starter &&
+	   (auth_job.starter_phase == .Create ||
+			   (auth_job.starter_phase == .Result && auth_job.err == "")) {return false}
+	delete(ui.login_error); ui.login_error = ""
 	login_input_error = false
-	if auth_job == nil {return}
-	// Leaving the name step discards the fresh key, as Back does while
-	// it is generated: it never landed and has no name yet.
-	if auth_job.naming {
-		account_job_start(account_job_new(ui, auth_job.client, .Remove, auth_job.hex))
+	if auth_job == nil {return true}
+	if auth_job.reviewing || (starter && auth_job.starter_phase != .Prepare) {
+		if starter {
+			kb_focus = ""
+			touch_field = {}
+			editor_forget(ui)
+			clear(&ui.login_input)
+		}
 		auth_job_free(auth_job)
 		auth_job = nil
-		clear(&ui.login_input)
-		return
-	}
-	// The review step has no worker yet; drop its unbound session.
-	if auth_job.reviewing {
-		auth_job_free(auth_job)
-		auth_job = nil
-		return
+		return true
 	}
 	auth_job.cancelled = true
-	if auth_job.session == nil {return}
+	if auth_job.session == nil {return true}
 	marmot.nip46_cancel(auth_job.session)
 	nip46_state_free(&auth_job.signer_state)
 	auth_job.signer_state.state = strings.clone("cancelled")
 	auth_job.signer_state.detail = strings.clone(tr("Finishing the cancelled connection."))
+	return true
+}
+
+@(private = "file")
+consent_bounds :: proc(id: nendo.Id) -> nendo.Rect {
+	button, card := nendo.element(id), nendo.element(nendo.id("LoginCard"))
+	if !button.found || !card.found {return {}}
+	b, c := button.rect, card.rect
+	x, y := max(b.x, c.x), max(b.y, c.y)
+	w, h := min(b.x + b.width, c.x + c.width) - x, min(b.y + b.height, c.y + c.height) - y
+	return {x * UI_ZOOM, y * UI_ZOOM, w * UI_ZOOM, h * UI_ZOOM}
+}
+
+@(private = "file")
+consent_hit :: proc(bounds: nendo.Rect, point: rl.Vector2) -> bool {
+	return(
+		point.x >= bounds.x &&
+		point.x <= bounds.x + bounds.width &&
+		point.y >= bounds.y &&
+		point.y <= bounds.y + bounds.height \
+	)
+}
+
+@(private = "file")
+consent_clicked :: proc(job: ^Auth_Job, id: nendo.Id, state: Button_State) -> bool {
+	// Events were polled before the current layout was presented.
+	bounds := job.consent_rect
+	job.consent_rect = state == .Enabled ? consent_bounds(id) : nendo.Rect{}
+	if bounds.width <= 0 || bounds.height <= 0 || state != .Enabled {
+		job.consent_pressed = false
+		return false
+	}
+	press, release := rl.GetLeftClickPoints()
+	if forced_press {
+		job.consent_pressed = nendo.pointer_over(id)
+	} else if rl.IsMouseButtonPressed(.LEFT) && !test_pointer_on {
+		job.consent_pressed = consent_hit(bounds, press)
+	}
+	if !forced_release && (rl.IsMouseButtonDown(.LEFT) || !rl.IsMouseButtonReleased(.LEFT)) {
+		if !rl.IsMouseButtonDown(.LEFT) && !forced_press {job.consent_pressed = false}
+		return false
+	}
+	matched_press := job.consent_pressed
+	job.consent_pressed = false
+	return(
+		matched_press &&
+		mouse_released() &&
+		(forced_release ? nendo.pointer_over(id) : consent_hit(bounds, release)) \
+	)
+}
+
+@(private = "file")
+handle_starter_review :: proc(ui: ^Ui_State) {
+	name := strings.trim_space(string(ui.login_input[:]))
+	publish := consent_clicked(
+		auth_job,
+		nendo.id("LoginCreatePublish"),
+		name != "" ? .Enabled : .Disabled,
+	)
+	controls := []string{"LoginInput", "LoginBack", "LoginCreatePublish"}
+	if kb_focus == "" && starter_focus() == "LoginInput" && tab_step() != 0 {
+		kb_focus = "LoginInput"
+	}
+	key := control_keys(controls)
+	if key == .Moved {
+		touch_field = {}
+		login_reveal_frames = 2
+	}
+	if clicked("LoginBack") ||
+	   rl.IsKeyPressed(.ESCAPE) ||
+	   (key == .Pressed && kb_focus == "LoginBack") {
+		auth_cancel(ui)
+		return
+	}
+	if name != "" && (publish || (key == .Pressed && kb_focus == "LoginCreatePublish")) {
+		auth_create_start(ui, name)
+		return
+	}
+	if field_mouse(ui, &ui.login_input, "LoginInput", 16) {
+		if !rl.TouchActive() {kb_focus = "LoginInput"}
+		login_reveal_frames = 2
+	}
+	if starter_focus() == "LoginInput" {edit_text(ui, &ui.login_input)}
 }
 
 handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
@@ -74,14 +157,23 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if client == nil {return}
-	if auth_job != nil && auth_job.naming {
-		if clicked("LoginErrorCopy") {copy_text(ui, ui.login_error, tr("Error copied"))}
-		if rl.IsKeyPressed(.ESCAPE) {auth_cancel(ui); return}
-		field_mouse(ui, &ui.login_input, "LoginInput", 16)
-		edit_text(ui, &ui.login_input)
-		name := strings.trim_space(string(ui.login_input[:]))
-		if name != "" &&
-		   (rl.IsKeyPressed(.ENTER) || clicked("LoginGo")) {auth_name_start(ui, name)}
+	if auth_job != nil && auth_job.method == .Create {
+		switch auth_job.starter_phase {
+		case .Prepare:
+			if rl.IsKeyPressed(.ESCAPE) {auth_cancel(ui)}
+		case .Review:
+			handle_starter_review(ui)
+		case .Create:
+		case .Result:
+			if auth_job.err != "" {
+				if clicked("LoginBack") || rl.IsKeyPressed(.ESCAPE) {auth_cancel(ui); return}
+				visible := auth_job.consent_rect.width > 0 && auth_job.consent_rect.height > 0
+				if consent_clicked(auth_job, nendo.id("LoginCreateRetry"), .Enabled) ||
+				   (visible && rl.IsKeyPressed(.ENTER)) {auth_create_start(ui, auth_job.name)}
+			} else if clicked("LoginCreateContinue") || rl.IsKeyPressed(.ENTER) {
+				auth_create_finish(ui)
+			}
+		}
 		return
 	}
 	if auth_job != nil {

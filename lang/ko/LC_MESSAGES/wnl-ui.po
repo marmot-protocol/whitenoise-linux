@@ -632,6 +632,9 @@ msgstr "질문 입력..."
 msgid "Asking your relays for their key package."
 msgstr "릴레이에 상대의 키 패키지를 요청하는 중입니다."
 
+msgid "At least one Nostr relay accepted your profile."
+msgstr "하나 이상의 Nostr 릴레이가 프로필을 수락했습니다."
+
 msgid "Attach a file"
 msgstr "파일 첨부"
 
@@ -1417,10 +1420,6 @@ msgstr "%s을(를) 복사할 수 없습니다. 다시 시도하세요."
 msgid "Couldn't copy the image to the clipboard. Please try again."
 msgstr "이미지를 클립보드에 복사할 수 없습니다. 다시 시도하세요."
 
-#, c-format
-msgid "Couldn't create an identity. %s"
-msgstr "신원을 만들 수 없습니다. %s"
-
 msgid "Couldn't create the backup. Please try again."
 msgstr "백업을 만들 수 없습니다. 다시 시도하세요."
 
@@ -1474,6 +1473,9 @@ msgstr "키를 내보낼 수 없습니다. %s"
 
 msgid "Couldn't find your account on the relays. Check your relay settings and try again."
 msgstr "릴레이에서 계정을 찾을 수 없습니다. 릴레이 설정을 확인하고 다시 시도하세요."
+
+msgid "Couldn't finish account setup. Please try again."
+msgstr "계정 설정을 완료할 수 없습니다. 다시 시도해 주세요."
 
 msgid "Couldn't finish dictation. Please try again."
 msgstr "받아쓰기를 완료할 수 없습니다. 다시 시도하세요."
@@ -1622,6 +1624,9 @@ msgstr "음성을 재생할 수 없습니다. 오디오 출력을 확인하고 �
 msgid "Couldn't play video. Click to retry."
 msgstr "동영상을 재생할 수 없습니다. 클릭하여 다시 시도하세요."
 
+msgid "Couldn't prepare your starter profile. Please try again."
+msgstr "초기 프로필을 준비할 수 없습니다. 다시 시도해 주세요."
+
 msgid "Couldn't preview the picture. Please try again."
 msgstr "사진을 미리 볼 수 없습니다. 다시 시도하세요."
 
@@ -1632,10 +1637,6 @@ msgstr "사진을 게시할 수 없습니다. %s"
 #, c-format
 msgid "Couldn't publish the picture. %s"
 msgstr "사진을 게시할 수 없습니다. %s"
-
-#, c-format
-msgid "Couldn't publish your name. %s"
-msgstr "이름을 게시할 수 없습니다. %s"
 
 msgid "Couldn't reach your signer. Please try again."
 msgstr "서명자에 연결할 수 없습니다. 다시 시도하세요."
@@ -1858,6 +1859,9 @@ msgstr "만들기"
 msgid "Create a poll"
 msgstr "투표 만들기"
 
+msgid "Create and publish"
+msgstr "생성 및 게시"
+
 msgid "Create backup"
 msgstr "백업 만들기"
 
@@ -1890,6 +1894,9 @@ msgstr "만든 사람"
 
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "비밀번호로 암호화된 NIP-49 키를 만듭니다. 안전하게 보관하거나 다른 클라이언트로 옮길 수 있습니다."
+
+msgid "Creating your account and publishing your profile"
+msgstr "계정 생성 및 프로필 게시 중"
 
 msgid "Creating your chat"
 msgstr "채팅 만드는 중"
@@ -2637,9 +2644,6 @@ msgstr "일반"
 
 msgid "Generate a new key"
 msgstr "새 키 생성"
-
-msgid "Generating your key"
-msgstr "키를 생성하는 중"
 
 msgid "German"
 msgstr "독일어"
@@ -4114,6 +4118,9 @@ msgstr "번역 모델 준비 중..."
 msgid "Preparing your pairing code"
 msgstr "페어링 코드 준비 중"
 
+msgid "Preparing your starter profile"
+msgstr "초기 프로필 준비 중"
+
 msgid "Press Ctrl P for the command palette."
 msgstr "Ctrl P를 누르면 명령 팔레트가 열립니다."
 
@@ -4221,9 +4228,6 @@ msgstr "키 패키지 게시 중"
 
 msgid "Publishing your profile"
 msgstr "프로필 게시 중"
-
-msgid "Publishing your profile to the relays. This takes a few seconds."
-msgstr "프로필을 릴레이에 게시하는 중입니다. 몇 초 정도 걸립니다."
 
 msgid "Publishing your relay lists"
 msgstr "릴레이 목록 게시 중"
@@ -4495,6 +4499,9 @@ msgstr "서명자 권한 검토"
 
 msgid "Review starting over"
 msgstr "처음부터 다시 시작 검토"
+
+msgid "Review your public profile"
+msgstr "공개 프로필 확인"
 
 msgid "Right"
 msgstr "오른쪽"
@@ -5477,9 +5484,6 @@ msgstr "이 멤버의 기기 수가 이 채팅의 한도를 초과했습니다."
 msgid "This message was deleted"
 msgstr "이 메시지는 삭제되었습니다"
 
-msgid "This name is public. You can change it later in your profile."
-msgstr "이 이름은 공개됩니다. 나중에 프로필에서 변경할 수 있습니다."
-
 msgid "This number increases when the group's encryption keys change."
 msgstr "그룹의 암호화 키가 바뀌면 이 숫자가 증가합니다."
 
@@ -5497,6 +5501,9 @@ msgstr "이 릴레이는 이미 목록에 있습니다."
 
 msgid "This session"
 msgstr "현재 세션"
+
+msgid "This step does not publish your chats."
+msgstr "이 단계에서는 채팅을 게시하지 않습니다."
 
 msgid "This sticker is not in the current pack."
 msgstr "이 스티커는 현재 팩에 없습니다."
@@ -5887,9 +5894,6 @@ msgstr "공유되는 정보"
 msgid "What it is"
 msgstr "개요"
 
-msgid "What should people call you?"
-msgstr "어떤 이름으로 불리고 싶습니까?"
-
 msgid "What the GM button sends. You can use it once a day in each chat."
 msgstr "GM 버튼으로 보내는 메시지입니다. 채팅마다 하루에 한 번 사용할 수 있습니다."
 
@@ -5929,6 +5933,9 @@ msgstr "로그인 시 White Noise가 열리지 않음"
 
 msgid "White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control."
 msgstr "White Noise는 GifSnap과 제휴 관계가 아닙니다. GifSnap이 이 데이터를 악용할 것이라고 볼 이유는 없지만, White Noise가 관리할 수 없는 제3자입니다."
+
+msgid "White Noise uploads your picture to this public image server:"
+msgstr "White Noise는 사진을 다음 공개 이미지 서버에 업로드합니다."
 
 msgid "White Noise will ask your signer for these permissions. Your signer may ask you to confirm them too."
 msgstr "White Noise가 서명자에게 이 권한을 요청합니다. 서명자에서도 확인을 요청할 수 있습니다."
@@ -6046,6 +6053,12 @@ msgstr "계정에 대기 중인 작업이 있습니다. 서명자를 다시 연�
 msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
 msgstr "계정은 제거되었지만, 암호화된 금고에서 서명자 기록을 제거할 수 없었습니다."
 
+msgid "Your account key was saved on this device."
+msgstr "계정 키는 이 기기에 저장되었습니다."
+
+msgid "Your account was created"
+msgstr "계정 생성 완료"
+
 msgid "Your chats appear here once you have some."
 msgstr "채팅이 생기면 여기에 표시됩니다."
 
@@ -6073,6 +6086,9 @@ msgstr "내 신원, 키 패키지, 기기 보안입니다."
 msgid "Your key stays on this device"
 msgstr "키는 이 기기에만 보관됩니다"
 
+msgid "Your name and a link to your picture go to public Nostr relays so people can recognize you."
+msgstr "다른 사람이 회원님을 알아볼 수 있도록 이름과 사진 링크를 공개 Nostr 릴레이에 전송합니다."
+
 msgid "Your new password"
 msgstr "새 비밀번호"
 
@@ -6085,6 +6101,12 @@ msgstr "나만의 메모장"
 msgid "Your password"
 msgstr "비밀번호"
 
+msgid "Your picture upload wasn't confirmed."
+msgstr "사진 업로드를 확인하지 못했습니다."
+
+msgid "Your picture was uploaded."
+msgstr "사진이 업로드되었습니다."
+
 msgid "Your previous account action is still running."
 msgstr "이전 계정 작업이 아직 실행 중입니다."
 
@@ -6093,6 +6115,9 @@ msgstr "이전 계정 작업이 아직 대기 중입니다. 서명자에서 승�
 
 msgid "Your profile"
 msgstr "내 프로필"
+
+msgid "Your profile publication wasn't confirmed."
+msgstr "프로필 게시를 확인하지 못했습니다."
 
 msgid "Your proxy credentials are stored in your encrypted vault."
 msgstr "프록시 인증 정보는 암호화된 금고에 저장됩니다."
@@ -6129,6 +6154,9 @@ msgstr "서명자가 요청을 거부했습니다."
 
 msgid "Your signer session has ended."
 msgstr "서명자 세션이 종료되었습니다."
+
+msgid "Your starter picture and profile weren't sent."
+msgstr "초기 사진과 프로필은 전송되지 않았습니다."
 
 msgid "Your stickers"
 msgstr "내 스티커"

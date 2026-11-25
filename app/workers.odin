@@ -9,6 +9,7 @@ import "core:sync"
 import "core:thread"
 import "core:time"
 
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -2184,18 +2185,8 @@ drain_relays :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 // ── Sign-in worker ──────────────────────────────────────────────────
 //
-// create_identity and login block on relay round trips (and, for a
-// fresh identity, a Blossom upload) for seconds, which froze the whole
-// window. They run here instead; the login pane shows a progress card
-// and the frame loop finishes the job on the UI thread, where texture
-// creation belongs.
-//
-// A fresh identity makes two trips, with the name step between them:
-//
-//   Generate a new key ─► worker: create + upload face
-//                          ─► card: "What should people call you?"
-//                                    (generated name prefilled)
-//   Continue ──────────────► worker: publish kind-0 ─► land
+// A fresh key and picture are prepared offline. Only "Create and publish"
+// starts account setup, picture upload and profile publication.
 //
 // A remote signer makes up to three trips, after a permission review:
 //
@@ -2203,6 +2194,14 @@ drain_relays :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 //   Allow ────► worker: approve ─► pair: offer ─► card: pairing code
 //                                  bunker: connect
 //               worker: connect (pair) ─► worker: login ─► land
+
+@(private)
+Starter_Phase :: enum {
+	Prepare,
+	Review,
+	Create,
+	Result,
+}
 
 Auth_Job :: struct {
 	client:                    ^marmot.Client,
@@ -2216,12 +2215,18 @@ Auth_Job :: struct {
 	pair_uri:                  string, // pairing offer; a credential
 	remote_login:              bool,
 	cancelled, cancel_cleanup: bool,
-	naming:                    bool, // a fresh key waits on the card for its name
 	previous_session:          ^Nip46_Account,
 	signer_state:              Nip46_State,
-	name:                      string, // a fresh key's chosen name; "" before Continue
-	hex:                       string, // result: the account just added
+	starter_phase:             Starter_Phase,
+	starter_image:             rl.Image,
+	starter_preview:           rl.Texture2D,
+	starter_saved:             bool,
+	consent_pressed:           bool,
+	consent_rect:              nendo.Rect,
+	name:                      string,
+	hex:                       string, // the reviewed or signed-in account
 	pic_url:                   string,
+	profile_confirmed:         bool,
 	err:                       string, // "" = it worked
 	first_import:              bool,
 	unlinked_target:           string,
@@ -2256,6 +2261,8 @@ auth_job_free :: proc(job: ^Auth_Job) {
 	delete(job.prior_accounts)
 	delete(job.nsec); delete(job.pair_uri)
 	delete(job.name); delete(job.hex); delete(job.pic_url); delete(job.err)
+	rl.UnloadTexture(job.starter_preview)
+	free(job.starter_image.data)
 	delete(job.unlinked_target)
 	job.client = nil
 	free(job)
@@ -2309,10 +2316,10 @@ auth_worker :: proc(t: ^thread.Thread) {
 		delete(detail)
 		if before != nil {marmot.account_summary_list_free(before)}
 	case .Create:
-		if job.name == "" {
-			job.hex, job.pic_url, job.err = create_identity_blocking(job.client)
+		if job.starter_phase == .Prepare {
+			prepare_starter(job)
 		} else {
-			job.err = publish_starter_name(job.client, job.hex, job.name, job.pic_url)
+			create_starter(job)
 		}
 	case .Bunker, .Pair:
 		if job.cancel_cleanup {
@@ -2470,23 +2477,22 @@ auth_connect :: proc(job: ^Auth_Job) {
 	job.hex = strings.clone(string(user)); marmot.string_free(user)
 }
 
-// The optional method preserves devctl callers; the UI always selects it explicitly.
 start_auth :: proc(
 	ui: ^Ui_State,
 	client: ^marmot.Client,
 	nsec: string,
-	method: Login_Method = .Menu,
+	method: Login_Method,
 	session: ^marmot.Nip46_Session = nil,
 ) {
 	if auth_job != nil || client == nil {
 		return
 	}
-	ui.login_error = ""
+	delete(ui.login_error); ui.login_error = ""
 
 	auth_job = new(Auth_Job)
 	auth_job.client = client
 	auth_job.nsec = strings.clone(nsec)
-	auth_job.method = method == .Menu ? (nsec == "" ? .Create : .Import) : method
+	auth_job.method = method
 	if auth_job.method == .Import {
 		for account in ui.accounts {append(&auth_job.prior_accounts, strings.clone(account.id_hex))}
 	}
@@ -2509,18 +2515,34 @@ auth_allow :: proc() {
 	thread.start(auth_thread)
 }
 
-// Continue on the name step: publish the fresh key's name on the worker.
-auth_name_start :: proc(ui: ^Ui_State, name: string) {
-	if auth_job == nil || !auth_job.naming {
-		return
+@(private)
+auth_create_start :: proc(ui: ^Ui_State, name: string) {
+	if auth_job.starter_phase == .Review {
+		delete(auth_job.name)
+		auth_job.name = strings.clone(name)
+		editor_forget(ui)
+		clear(&ui.login_input)
+		rl.UnloadTexture(auth_job.starter_preview)
+		auth_job.starter_preview = {}
 	}
-	ui.login_error = ""
-	auth_job.naming = false
-	delete(auth_job.name)
-	auth_job.name = strings.clone(name)
+	kb_focus = ""
+	touch_field = {}
+	auth_job.consent_pressed = false
+	auth_job.consent_rect = {}
+	delete(auth_job.err); auth_job.err = ""
+	auth_job.starter_phase = .Create
 	auth_thread = thread.create(auth_worker)
 	auth_thread.data = auth_job
 	thread.start(auth_thread)
+}
+
+@(private)
+auth_create_finish :: proc(ui: ^Ui_State) {
+	job := auth_job
+	auth_job = nil
+	defer auth_job_free(job)
+	finish_starter(ui, job)
+	open_key_export(ui, job.hex)
 }
 
 // Frame-loop tick: adopt a finished sign-in.
@@ -2541,20 +2563,15 @@ drain_auth :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if job.cancelled && job.session == nil {
 		auth_job = nil
 		defer auth_job_free(job)
-		known := false
-		for id in job.prior_accounts {if id == job.hex {known = true; break}}
-		if job.hex != "" && !known {
-			// Never activate an identity after Back. Preserve an imported
-			// identity's existing data, but remove a freshly minted key.
-			account_job_start(
-				account_job_new(
-					ui,
-					client,
-					job.method == .Create ? .Remove : .Sign_Out,
-					job.hex,
-					sign_out_intent = .Back,
-				),
-			)
+		if job.method == .Import && job.hex != "" {
+			known := false
+			for id in job.prior_accounts {if id == job.hex {known = true; break}}
+			if !known {
+				// Back leaves an imported identity's existing data intact.
+				account_job_start(
+					account_job_new(ui, client, .Sign_Out, job.hex, sign_out_intent = .Back),
+				)
+			}
 		}
 		ui.login_error = ""
 		login_pair_clear(ui)
@@ -2608,19 +2625,21 @@ drain_auth :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			tr("Your account has a pending action. Complete it before reconnecting your signer."),
 		)
 	}
-	// A fresh key stops on the card to ask for its name, prefilled with
-	// the generated one. A failed publish asks again with the error.
-	if job.method == .Create && !job.cancelled {
-		if job.name == "" && job.err == "" {
-			job.naming = true
-			ed_set(ui, &ui.login_input, profile_fallback(job.hex))
+	if job.method == .Create {
+		if job.starter_phase == .Create {
+			job.starter_phase = .Result
 			return
 		}
-		if job.name != "" && job.err != "" {
-			ui.login_error = job.err
-			job.err = ""
-			job.naming = true
-			return
+		if job.err == "" {
+			job.starter_preview = rl.LoadTextureFromImage(job.starter_image)
+			if job.starter_preview.tex != nil {
+				job.starter_phase = .Review
+				kb_focus = ""
+				touch_field = {}
+				ed_set(ui, &ui.login_input, job.name)
+				return
+			}
+			job.err = strings.clone(tr("Couldn't prepare your starter profile. Please try again."))
 		}
 	}
 	auth_job = nil
@@ -2643,9 +2662,6 @@ drain_auth :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		item.handle = job.session; job.session = nil
 	}
 	login_pair_clear(ui)
-	finish_auth(ui, client, job.hex, job.pic_url, job.name)
+	finish_auth(ui, client, job.hex)
 	if job.first_import && ui.account_ref == job.hex {devices_first_import(ui)}
-	if job.method == .Create {
-		open_key_export(ui, job.hex)
-	}
 }

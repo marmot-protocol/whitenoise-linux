@@ -546,8 +546,8 @@ phone_back_action :: proc(ui: ^Ui_State) {
 			ui.login_error = ""
 			return
 		}
-		auth_cancel(ui)
-		ui.add_account_open = false
+		starter := auth_job != nil && auth_job.method == .Create
+		if auth_cancel(ui) && !starter {ui.add_account_open = false}
 		return
 	}
 	switch ui.page {

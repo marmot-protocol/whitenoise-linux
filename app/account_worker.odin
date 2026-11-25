@@ -801,7 +801,7 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 				finish_account_switch(ui, job.client, job.account)
 				if ui.page == .Profile || ui.page == .Settings {load_profile(job.client, ui)}
 			} else if job.kind == .Sign_In {
-				finish_auth(ui, job.client, job.account, "", "")
+				finish_auth(ui, job.client, job.account)
 			} else if ui.account_ref == job.account {
 				switch job.kind {
 				case .Profile:

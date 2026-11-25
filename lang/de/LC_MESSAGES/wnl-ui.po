@@ -669,6 +669,9 @@ msgstr "Stelle eine Frage..."
 msgid "Asking your relays for their key package."
 msgstr "Deine Relays werden nach dem Schlüsselpaket der Person gefragt."
 
+msgid "At least one Nostr relay accepted your profile."
+msgstr "Mindestens ein Nostr-Relay hat dein Profil angenommen."
+
 msgid "Attach a file"
 msgstr "Datei anhängen"
 
@@ -1496,10 +1499,6 @@ msgstr "%s konnte nicht kopiert werden. Bitte versuche es erneut."
 msgid "Couldn't copy the image to the clipboard. Please try again."
 msgstr "Das Bild konnte nicht in die Zwischenablage kopiert werden. Bitte versuche es erneut."
 
-#, c-format
-msgid "Couldn't create an identity. %s"
-msgstr "Die Identität konnte nicht erstellt werden. %s"
-
 msgid "Couldn't create the backup. Please try again."
 msgstr "Das Backup konnte nicht erstellt werden. Bitte versuche es erneut."
 
@@ -1553,6 +1552,9 @@ msgstr "Der Schlüssel konnte nicht exportiert werden. %s"
 
 msgid "Couldn't find your account on the relays. Check your relay settings and try again."
 msgstr "Dein Konto konnte auf den Relays nicht gefunden werden. Prüfe deine Relay-Einstellungen und versuche es erneut."
+
+msgid "Couldn't finish account setup. Please try again."
+msgstr "Dein Konto konnte nicht fertig eingerichtet werden. Bitte versuche es erneut."
 
 msgid "Couldn't finish dictation. Please try again."
 msgstr "Das Diktat konnte nicht abgeschlossen werden. Bitte versuche es erneut."
@@ -1710,6 +1712,9 @@ msgstr "Die Sprachausgabe konnte nicht wiedergegeben werden. Prüfe deine Audioa
 msgid "Couldn't play video. Click to retry."
 msgstr "Das Video konnte nicht abgespielt werden. Klicke, um es erneut zu versuchen."
 
+msgid "Couldn't prepare your starter profile. Please try again."
+msgstr "Dein Startprofil konnte nicht vorbereitet werden. Bitte versuche es erneut."
+
 msgid "Couldn't preview the picture. Please try again."
 msgstr "Die Bildvorschau konnte nicht geladen werden. Bitte versuche es erneut."
 
@@ -1720,10 +1725,6 @@ msgstr "Das Foto konnte nicht veröffentlicht werden. %s"
 #, c-format
 msgid "Couldn't publish the picture. %s"
 msgstr "Das Bild konnte nicht veröffentlicht werden. %s"
-
-#, c-format
-msgid "Couldn't publish your name. %s"
-msgstr "Dein Name konnte nicht veröffentlicht werden. %s"
 
 msgid "Couldn't reach the Namecoin resolvers. Please try again."
 msgstr "Die Namecoin-Resolver konnten nicht erreicht werden. Bitte versuche es erneut."
@@ -1963,6 +1964,9 @@ msgstr "Erstellen"
 msgid "Create a poll"
 msgstr "Umfrage erstellen"
 
+msgid "Create and publish"
+msgstr "Erstellen und veröffentlichen"
+
 msgid "Create backup"
 msgstr "Backup erstellen"
 
@@ -2001,6 +2005,9 @@ msgstr "Erstellt mit"
 
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "Erstellt einen mit einem Passwort verschlüsselten NIP-49-Schlüssel, den du sicher aufbewahren oder in einen anderen Client übertragen kannst."
+
+msgid "Creating your account and publishing your profile"
+msgstr "Dein Konto wird erstellt und dein Profil veröffentlicht"
 
 msgid "Creating your chat"
 msgstr "Dein Chat wird erstellt"
@@ -2805,9 +2812,6 @@ msgstr "Allgemein"
 
 msgid "Generate a new key"
 msgstr "Neuen Schlüssel erzeugen"
-
-msgid "Generating your key"
-msgstr "Dein Schlüssel wird erzeugt"
 
 msgid "German"
 msgstr "Deutsch"
@@ -4394,6 +4398,9 @@ msgstr "Übersetzungsmodell wird vorbereitet..."
 msgid "Preparing your pairing code"
 msgstr "Dein Kopplungscode wird vorbereitet"
 
+msgid "Preparing your starter profile"
+msgstr "Dein Startprofil wird vorbereitet"
+
 msgid "Press Ctrl P for the command palette."
 msgstr "Drücke Ctrl P für die Befehlspalette."
 
@@ -4504,9 +4511,6 @@ msgstr "Dein Schlüsselpaket wird veröffentlicht"
 
 msgid "Publishing your profile"
 msgstr "Dein Profil wird veröffentlicht"
-
-msgid "Publishing your profile to the relays. This takes a few seconds."
-msgstr "Dein Profil wird auf den Relays veröffentlicht. Das dauert ein paar Sekunden."
 
 msgid "Publishing your relay lists"
 msgstr "Deine Relay-Listen werden veröffentlicht"
@@ -4800,6 +4804,9 @@ msgstr "Signer-Berechtigungen prüfen"
 
 msgid "Review starting over"
 msgstr "Neuanfang prüfen"
+
+msgid "Review your public profile"
+msgstr "Prüfe dein öffentliches Profil"
 
 msgid "Right"
 msgstr "Rechts"
@@ -5843,9 +5850,6 @@ msgstr "Dieses Mitglied hat zu viele Geräte in diesem Chat."
 msgid "This message was deleted"
 msgstr "Diese Nachricht wurde gelöscht"
 
-msgid "This name is public. You can change it later in your profile."
-msgstr "Dieser Name ist öffentlich. Du kannst ihn später in deinem Profil ändern."
-
 msgid "This number increases when the group's encryption keys change."
 msgstr "Diese Zahl erhöht sich, wenn sich die Verschlüsselungsschlüssel der Gruppe ändern."
 
@@ -5866,6 +5870,9 @@ msgstr "Dieses Passwort schützt sensible lokale Daten. Es dient nicht zur Anmel
 
 msgid "This relay is already in your list."
 msgstr "Dieses Relay ist bereits in deiner Liste."
+
+msgid "This step does not publish your chats."
+msgstr "Bei diesem Schritt werden deine Chats nicht veröffentlicht."
 
 msgid "This sticker is not in the current pack."
 msgstr "Dieser Sticker ist nicht im aktuellen Paket enthalten."
@@ -6280,9 +6287,6 @@ msgstr "Mittwoch"
 msgid "What is shared"
 msgstr "Geteilte Daten"
 
-msgid "What should people call you?"
-msgstr "Wie sollen andere dich nennen?"
-
 msgid "What the GM button sends. You can use it once a day in each chat."
 msgstr "Was die GM-Taste sendet. Du kannst sie einmal am Tag in jedem Chat verwenden."
 
@@ -6322,6 +6326,9 @@ msgstr "White Noise ist nicht mit GifSnap verbunden. Es gibt keinen Grund zu erw
 
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
 msgstr "White Noise sieht deinen privaten Schlüssel nie. Er liegt nur auf diesem Gerät und bei jedem Signer, den du verbindest."
+
+msgid "White Noise uploads your picture to this public image server:"
+msgstr "White Noise lädt dein Bild auf diesen öffentlichen Bildserver hoch:"
 
 msgid "White Noise will ask your signer for these permissions. Your signer may ask you to confirm them too."
 msgstr "White Noise bittet deinen Signer um diese Berechtigungen. Dein Signer fragt dich eventuell auch, sie zu bestätigen."
@@ -6442,6 +6449,12 @@ msgstr "Für dein Konto steht eine Aktion aus. Schließe sie ab, bevor du deinen
 msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
 msgstr "Dein Konto ist entfernt, aber sein Signer-Eintrag konnte nicht aus dem verschlüsselten Tresor entfernt werden."
 
+msgid "Your account key was saved on this device."
+msgstr "Dein Kontoschlüssel wurde auf diesem Gerät gespeichert."
+
+msgid "Your account was created"
+msgstr "Dein Konto wurde erstellt"
+
 msgid "Your chats appear here once you have some."
 msgstr "Deine Chats erscheinen hier, sobald du welche hast."
 
@@ -6478,6 +6491,9 @@ msgstr "Dein Schlüssel bleibt auf diesem Gerät"
 msgid "Your name"
 msgstr "Dein Name"
 
+msgid "Your name and a link to your picture go to public Nostr relays so people can recognize you."
+msgstr "Dein Name und ein Link zu deinem Bild werden an öffentliche Nostr-Relays gesendet, damit andere dich erkennen können."
+
 msgid "Your new password"
 msgstr "Dein neues Passwort"
 
@@ -6490,6 +6506,12 @@ msgstr "Dein eigener Notizblock"
 msgid "Your password"
 msgstr "Dein Passwort"
 
+msgid "Your picture upload wasn't confirmed."
+msgstr "Der Upload deines Bilds wurde nicht bestätigt."
+
+msgid "Your picture was uploaded."
+msgstr "Dein Bild wurde hochgeladen."
+
 msgid "Your previous account action is still running."
 msgstr "Deine vorherige Kontoaktion läuft noch."
 
@@ -6501,6 +6523,9 @@ msgstr "Dein privater Schlüssel bleibt bei deinem Remote-Signer. Anzeigen und E
 
 msgid "Your profile"
 msgstr "Dein Profil"
+
+msgid "Your profile publication wasn't confirmed."
+msgstr "Die Veröffentlichung deines Profils wurde nicht bestätigt."
 
 msgid "Your proxy credentials are stored in your encrypted vault."
 msgstr "Deine Proxy-Zugangsdaten werden in deinem verschlüsselten Tresor gespeichert."
@@ -6546,6 +6571,9 @@ msgstr "Dein Signer hat die Anfrage abgelehnt."
 
 msgid "Your signer session has ended."
 msgstr "Deine Signer-Sitzung ist beendet."
+
+msgid "Your starter picture and profile weren't sent."
+msgstr "Dein Startbild und dein Profil wurden nicht gesendet."
 
 msgid "Your stickers"
 msgstr "Deine Sticker"
