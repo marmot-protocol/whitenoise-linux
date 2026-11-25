@@ -35,6 +35,7 @@ profile_edit_summary :: proc(t: ^testing.T) {
 	defer {
 		delete(ui.name_input); delete(ui.about_input)
 		delete(ui.nip05_input); delete(ui.lud16_input)
+		delete(ui.toast)
 	}
 	check := proc(t: ^testing.T, ui: ^Ui_State, editing: bool) {
 		for _ in 0 ..< 3 {
@@ -73,6 +74,47 @@ profile_edit_summary :: proc(t: ^testing.T) {
 	testing.expect_value(t, string(ui.name_input[:]), "Draft name")
 	testing.expect_value(t, string(ui.nip05_input[:]), "draft@example.invalid")
 	check(t, &ui, true)
+	// Enter in a field cannot submit. Tab reaches the separate publish control.
+	ed_set(&ui, &ui.name_input, "")
+	rl.PushKey(.ENTER, true)
+	profile_fields(&ui, nil)
+	rl.PushKey(.ENTER, false)
+	testing.expect_value(t, ui.focus, Focus.About)
+	testing.expect_value(t, ui.client_status, "")
+	for _ in 0 ..< 2 {
+		rl.PushKey(.TAB, true)
+		profile_fields(&ui, nil)
+		rl.PushKey(.TAB, false)
+	}
+	rl.PushKey(.ENTER, true)
+	profile_fields(&ui, nil)
+	rl.PushKey(.ENTER, false)
+	testing.expect_value(t, ui.focus, Focus.Lud16)
+	rl.PushKey(.TAB, true)
+	profile_fields(&ui, nil)
+	rl.PushKey(.TAB, false)
+	testing.expect_value(t, ui.focus, Focus.Profile_Publish)
+	forced_press = true
+	profile_fields(&ui, nil)
+	forced_press = false
+	// A pointer interaction with the picture must not leave Publish armed.
+	rl.PushKey(.SPACE, true)
+	profile_fields(&ui, nil)
+	rl.PushKey(.SPACE, false)
+	testing.expect_value(t, ui.client_status, "")
+	rl.PushKey(.LEFT_SHIFT, true)
+	rl.PushKey(.TAB, true)
+	profile_fields(&ui, nil)
+	rl.PushKey(.TAB, false)
+	rl.PushKey(.LEFT_SHIFT, false)
+	testing.expect_value(t, ui.focus, Focus.Profile_Publish)
+	rl.PushKey(.SPACE, true)
+	profile_fields(&ui, nil)
+	rl.PushKey(.SPACE, false)
+	testing.expect_value(t, ui.focus, Focus.Name)
+	testing.expect_value(t, ui.client_status_kind, Status_Kind.Error)
+	ed_set(&ui, &ui.name_input, "Draft name")
+
 	// Cancel through the actual header action, preserving committed values.
 	box := nendo.element(nendo.id("EditProfileBtn")).rect
 	nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
@@ -103,6 +145,54 @@ profile_edit_summary :: proc(t: ^testing.T) {
 		if text == "saved@example.invalid" {found_saved = true}
 	}
 	testing.expect(t, found_saved, "the restored summary renders the reloaded value")
+
+	// At high zoom the disclosure and button do not fit in one viewport.
+	nendo.set_dimensions({340, 57})
+	edit_profile_start(&ui)
+	check(t, &ui, true)
+	tab := proc(ui: ^Ui_State, step: int) {
+		rl.PushKey(.LEFT_SHIFT, step < 0)
+		rl.PushKey(.TAB, true)
+		profile_fields(ui, nil)
+		rl.PushKey(.TAB, false)
+		rl.PushKey(.LEFT_SHIFT, false)
+	}
+	tab(&ui, -1)
+	testing.expect_value(t, ui.focus, Focus.Profile_Disclosure)
+	tab(&ui, -1)
+	testing.expect_value(t, ui.focus, Focus.Lud16)
+	profile_edit_finish(&ui)
+	rl.SetWindowSize(340, 56)
+	UI_ZOOM = 2
+	nendo.set_dimensions({170, 28})
+	edit_profile_start(&ui)
+	check(t, &ui, true)
+	tab(&ui, -1)
+	testing.expect_value(t, ui.focus, Focus.Profile_Disclosure)
+	check(t, &ui, true)
+	view := publication_view(nendo.id("ProfilePage"))
+	disclosure := nendo.element(nendo.id("ProfilePublishDisclosure")).rect
+	testing.expectf(
+		t,
+		view.height < disclosure.height,
+		"Viewport %v must clip disclosure %v",
+		view,
+		disclosure,
+	)
+	tab(&ui, 1)
+	testing.expect_value(t, ui.focus, Focus.Profile_Disclosure)
+
+	UI_ZOOM = 1
+	rl.SetWindowSize(340, 57)
+	nendo.set_dimensions({340, 57})
+	check(t, &ui, true)
+	rl.PushKey(.ENTER, true)
+	profile_fields(&ui, nil)
+	rl.PushKey(.ENTER, false)
+	testing.expect_value(t, ui.focus, Focus.Profile_Disclosure)
+	check(t, &ui, true)
+	tab(&ui, 1)
+	testing.expect_value(t, ui.focus, Focus.Profile_Publish)
 }
 
 @(test)

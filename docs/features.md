@@ -423,6 +423,8 @@ People and profiles:
 
 - Private local-only nicknames, an archive, and npub QR codes are also available.
 - Profile popups have a Message button. It opens your existing DM, including an archived DM without restoring it, or creates a new DM if none is reusable.
+- **Publish text changes** makes your display name, About, Verified address, and Lightning address public. To publish with the keyboard, Tab to the button and press Enter or Space.
+- **Upload and publish picture** uploads your previewed picture to public Blossom storage and publishes it to your profile. **Cancel text edit** discards only the text draft. It does not undo a picture upload or publication.
 - Empty display name, about, and Lightning inputs show a muted "Not set" hint. Empty profile summary values also say "Not set".
 - Profiles without a loaded name show a deterministic adjective and animal, such as "Magnetic Panda", derived from their public key. Published names replace it when loaded; local nicknames take precedence. The npub remains visible on profile cards.
 

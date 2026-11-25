@@ -15,17 +15,18 @@ Photo_Kind :: enum {
 }
 @(private)
 Photo_Preview :: struct {
-	kind:           Photo_Kind,
-	account, group: string,
-	pending:        bool, // stays armed even after invalidation, until the callback drains
-	draft:          Pic_Draft,
-	texture:        rl.Texture2D,
-	crop:           Photo_Crop,
-	crop_job:       ^Photo_Crop_Job,
-	crop_drag:      bool,
-	crop_pointer:   rl.Vector2,
-	crop_origin:    Photo_Crop,
-	crop_corner:    int, // 0 moves; 1..4 resize top-left, top-right, bottom-left, bottom-right
+	kind:            Photo_Kind,
+	account, group:  string,
+	pending:         bool, // stays armed even after invalidation, until the callback drains
+	disclosure_seen: bool,
+	draft:           Pic_Draft,
+	texture:         rl.Texture2D,
+	crop:            Photo_Crop,
+	crop_job:        ^Photo_Crop_Job,
+	crop_drag:       bool,
+	crop_pointer:    rl.Vector2,
+	crop_origin:     Photo_Crop,
+	crop_corner:     int, // 0 moves; 1..4 resize top-left, top-right, bottom-left, bottom-right
 }
 
 @(private)
@@ -128,6 +129,9 @@ photo_pick_complete :: proc(ui: ^Ui_State, paths: []string) {
 		return
 	}
 	ui.photo.draft, ui.photo.texture = draft, texture
+	if ui.photo.kind == .Profile {
+		kb_focus = ""
+	}
 }
 
 @(private)
@@ -167,8 +171,34 @@ photo_use :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 handle_photo_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// A native pick has no in-app actions until it has completed.
 	if ui.photo.pending {return}
+	profile := ui.photo.kind == .Profile
+	pane := nendo.id("PhotoPreview")
+	disclosure := nendo.id("PhotoPublishDisclosure")
+	if profile && fully_in_scroll_view(pane, disclosure) {
+		ui.photo.disclosure_seen = true
+	}
+	key := Control_Key.None
+	if profile && ui.photo.crop_job == nil {
+		actions := [?]string {
+			ui.photo.crop.active ? "PhotoOriginal" : "PhotoCrop",
+			"PhotoCancel",
+			"PhotoUse",
+		}
+		key = control_keys(actions[:])
+		if key == .Moved {
+			section := nendo.id(kb_focus)
+			if kb_focus == "PhotoUse" && !ui.photo.disclosure_seen {
+				section = nendo.id("PhotoPublishBlock")
+				if nendo.element(section).rect.height > nendo.scroll(pane).viewport.height {
+					section = disclosure
+				}
+			}
+			scroll_into_view(pane, section)
+		}
+	}
 	if rl.IsKeyPressed(.ESCAPE) ||
 	   clicked("PhotoCancel") ||
+	   (key == .Pressed && kb_focus == "PhotoCancel") ||
 	   (mouse_released() && !ui.photo.crop_drag && !nendo.pointer_over(nendo.id("PhotoPreview"))) {
 		photo_cancel(ui)
 		return
@@ -178,15 +208,24 @@ handle_photo_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	was_dragging := ui.photo.crop_drag
 	photo_crop_input(&ui.photo)
 	if was_dragging || ui.photo.crop_drag {return}
-	if clicked("PhotoCrop") {
+	if clicked("PhotoCrop") || (key == .Pressed && kb_focus == "PhotoCrop") {
 		photo_crop_start(&ui.photo)
 		return
 	}
-	if clicked("PhotoOriginal") {
+	if clicked("PhotoOriginal") || (key == .Pressed && kb_focus == "PhotoOriginal") {
 		ui.photo.crop = {}; ui.photo.crop_drag = false
 		return
 	}
-	if rl.IsKeyPressed(.ENTER) || clicked("PhotoUse") {
+	if clicked("PhotoUse") ||
+	   (profile ? (key == .Pressed && kb_focus == "PhotoUse") : rl.IsKeyPressed(.ENTER)) {
+		if profile && !ui.photo.disclosure_seen {
+			reveal_publication(ui, pane, disclosure)
+			return
+		}
+		if profile && !fully_in_scroll_view(pane, nendo.id("PhotoUse")) {
+			reveal_publication(ui, pane, nendo.id("PhotoUse"))
+			return
+		}
 		photo_use(ui, client)
 	}
 }
@@ -195,6 +234,7 @@ handle_photo_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 photo_preview_modal :: proc(ui: ^Ui_State) {
 	image := photo_image(&ui.photo)
 	if image.data == nil {return}
+	profile := ui.photo.kind == .Profile
 	width := min(f32(400), max(f32(160), f32(rl.GetScreenWidth()) / UI_ZOOM - 24))
 	edge := max(f32(24), min(width - 40, modal_h(600) - (tap_size() ? 320 : 230)))
 	scale := edge / f32(max(image.width, image.height))
@@ -217,7 +257,10 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 		},
 	},
 	) {
-		nendo.text(tr("Use this photo?"), {font = FONT_TITLE, size = 18, color = TEXT})
+		nendo.text(
+			profile ? tr("Profile picture preview") : tr("Use this photo?"),
+			{font = FONT_TITLE, size = 18, color = TEXT},
+		)
 		if nendo.box(nendo.id("PhotoImage"))(
 		{
 			width = nendo.fixed(f32(image.width) * scale),
@@ -307,9 +350,17 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 		} else {
 			if nendo.box(nendo.id("PhotoCropActions"))({gap = 8}) {
 				if ui.photo.crop.active {
-					micro_button("PhotoOriginal", tr("Use original"))
+					micro_button(
+						"PhotoOriginal",
+						tr("Use original"),
+						profile && kb_focus == "PhotoOriginal" ? ACCENT : {},
+					)
 				} else {
-					micro_button("PhotoCrop", tr("Crop"))
+					micro_button(
+						"PhotoCrop",
+						tr("Crop"),
+						profile && kb_focus == "PhotoCrop" ? ACCENT : {},
+					)
 				}
 			}
 			if ui.photo.crop.active {
@@ -319,10 +370,39 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 				)
 			}
 		}
-		if nendo.box(nendo.id("PhotoActions"))({width = nendo.grow(), gap = 10}) {
-			micro_button("PhotoCancel", tr("Cancel"))
-			if nendo.box(nendo.id("PhotoGap"))({width = nendo.grow()}) {}
-			if ui.photo.crop_job == nil {micro_button("PhotoUse", tr("Use"))}
+		if nendo.box(nendo.id("PhotoActions"))(
+		{width = nendo.grow(), direction = profile ? .Column : .Row, gap = 10},
+		) {
+			micro_button(
+				"PhotoCancel",
+				profile ? tr("Cancel preview") : tr("Cancel"),
+				profile && kb_focus == "PhotoCancel" ? ACCENT : {},
+			)
+			if !profile {
+				if nendo.box(nendo.id("PhotoGap"))({width = nendo.grow()}) {}
+			}
+			if ui.photo.crop_job == nil && !profile {
+				micro_button("PhotoUse", tr("Use"))
+			}
+		}
+		if profile && ui.photo.crop_job == nil {
+			if nendo.box(nendo.id("PhotoPublishBlock"))(
+			{width = nendo.grow(), direction = .Column, gap = 8},
+			) {
+				if nendo.box(nendo.id("PhotoPublishDisclosure"))({width = nendo.grow()}) {
+					nendo.text(
+						tr(
+							"This preview stays on your device. Publishing uploads the picture and adds it to your public profile, separately from your text draft.",
+						),
+						{font = FONT_BODY, size = 13, color = TEXT_DIM},
+					)
+				}
+				micro_button(
+					"PhotoUse",
+					tr("Upload and publish picture"),
+					kb_focus == "PhotoUse" ? ACCENT : {},
+				)
+			}
 		}
 	}
 	scrollbar(nendo.id("PhotoPreview"), 21)

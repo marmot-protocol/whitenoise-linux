@@ -862,8 +862,14 @@ msgstr "연결 취소"
 msgid "Cancel edit / reply, close panels"
 msgstr "수정/답장 취소, 패널 닫기"
 
+msgid "Cancel preview"
+msgstr "미리 보기 취소"
+
 msgid "Cancel reply"
 msgstr "답장 취소"
+
+msgid "Cancel text edit"
+msgstr "텍스트 편집 취소"
 
 msgid "Cancel translation"
 msgstr "번역 취소"
@@ -1419,6 +1425,9 @@ msgstr "계정 작업을 완료할 수 없습니다. 다시 시도하세요. (%s
 msgid "Couldn't configure the proxy. Please try again."
 msgstr "프록시를 구성할 수 없습니다. 다시 시도하세요."
 
+msgid "Couldn't confirm picture publication. Your picture was uploaded. Please try again."
+msgstr "사진 게시를 확인하지 못했습니다. 사진은 업로드되었습니다. 다시 시도해 주세요."
+
 #, c-format
 msgid "Couldn't copy %s. Please try again."
 msgstr "%s을(를) 복사할 수 없습니다. 다시 시도하세요."
@@ -1640,10 +1649,6 @@ msgstr "사진을 미리 볼 수 없습니다. 다시 시도하세요."
 msgid "Couldn't publish the photo. %s"
 msgstr "사진을 게시할 수 없습니다. %s"
 
-#, c-format
-msgid "Couldn't publish the picture. %s"
-msgstr "사진을 게시할 수 없습니다. %s"
-
 msgid "Couldn't reach your signer. Please try again."
 msgstr "서명자에 연결할 수 없습니다. 다시 시도하세요."
 
@@ -1834,9 +1839,8 @@ msgstr "보관을 해제할 수 없습니다. %s"
 msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr "금고 잠금을 해제할 수 없습니다. 비밀번호를 다시 확인하고 다시 시도하세요."
 
-#, c-format
-msgid "Couldn't upload the picture. %s"
-msgstr "사진을 업로드할 수 없습니다. %s"
+msgid "Couldn't upload the picture. Please try again."
+msgstr "사진을 업로드하지 못했습니다. 다시 시도해 주세요."
 
 msgid "Couldn't use that file. Choose a PNG or JPEG."
 msgstr "해당 파일을 사용할 수 없습니다. PNG 또는 JPEG를 선택하세요."
@@ -2146,11 +2150,14 @@ msgstr "사라지는 메시지가 꺼졌습니다"
 msgid "Discard"
 msgstr "버리기"
 
-msgid "Discard profile changes?"
-msgstr "프로필 변경 사항을 버리시겠습니까?"
+msgid "Discard your text draft?"
+msgstr "텍스트 초안을 폐기하시겠습니까?"
 
 msgid "Discard your theme changes?"
 msgstr "테마 변경 사항을 버리시겠습니까?"
+
+msgid "Discarding your text draft won't undo a picture upload or publication."
+msgstr "텍스트 초안을 폐기해도 사진 업로드나 게시가 취소되지는 않습니다."
 
 msgid "Discover"
 msgstr "둘러보기"
@@ -2226,12 +2233,6 @@ msgstr "먼지"
 
 msgid "Dutch"
 msgstr "네덜란드어"
-
-msgid "EDIT PROFILE"
-msgstr "프로필 편집"
-
-msgid "EDITING · BROADCAST TO RELAYS ON PUBLISH"
-msgstr "편집 중 · 게시 시 릴레이에 전송"
 
 msgid "EMOJI GROUP IMAGE"
 msgstr "이모지 그룹 이미지"
@@ -2364,9 +2365,6 @@ msgstr "2명 이상 입력하세요. 인원 수에는 본인이 포함됩니다.
 #, c-format
 msgid "Enter dates like %s, with the start on or before the end."
 msgstr "%s 형식으로 날짜를 입력하세요. 시작일은 종료일과 같거나 이전이어야 합니다."
-
-msgid "Enter moves to the next field, Escape cancels."
-msgstr "Enter는 다음 필드로 이동하고 Escape는 취소합니다."
 
 msgid "Enter the backup password."
 msgstr "백업 비밀번호를 입력하세요."
@@ -3974,6 +3972,9 @@ msgstr "상품"
 msgid "PROFILE"
 msgstr "프로필"
 
+msgid "PROFILE TEXT"
+msgstr "프로필 텍스트"
+
 msgid "PUBLIC PROFILE"
 msgstr "공개 프로필"
 
@@ -4077,6 +4078,9 @@ msgstr "작업 선택..."
 
 msgid "Pick the whole app's look."
 msgstr "앱 전체의 모양을 선택합니다."
+
+msgid "Picture published to your profile."
+msgstr "프로필에 사진을 게시했습니다."
 
 msgid "Pieces"
 msgstr "조각"
@@ -4217,6 +4221,12 @@ msgstr "프로필"
 msgid "Profile & devices"
 msgstr "프로필 및 기기"
 
+msgid "Profile picture preview"
+msgstr "프로필 사진 미리 보기"
+
+msgid "Profile text changes published."
+msgstr "프로필 텍스트 변경 사항을 게시했습니다."
+
 msgid "Progress is indeterminate."
 msgstr "진행률을 알 수 없습니다."
 
@@ -4253,8 +4263,8 @@ msgstr "게시"
 msgid "Publish a key package"
 msgstr "키 패키지 게시"
 
-msgid "Publish changes"
-msgstr "변경 사항 게시"
+msgid "Publish text changes"
+msgstr "텍스트 변경 사항 게시"
 
 msgid "Publish your key package"
 msgstr "키 패키지 게시"
@@ -4267,6 +4277,12 @@ msgstr "게시된 수신 릴레이"
 
 msgid "Published outbox relays"
 msgstr "게시된 발신 릴레이"
+
+msgid "Publishing makes your display name, About, verified address, and Lightning address public on Nostr relays."
+msgstr "게시하면 표시 이름, 소개, 인증된 주소, 라이트닝 주소가 Nostr 릴레이에 공개됩니다."
+
+msgid "Publishing text changes…"
+msgstr "텍스트 변경 사항 게시 중…"
 
 msgid "Publishing your group profile"
 msgstr "그룹 프로필 게시 중"
@@ -5305,6 +5321,9 @@ msgstr "처리 시간"
 msgid "TROUBLESHOOTERS"
 msgstr "문제 해결"
 
+msgid "Tab to focus Publish. Press Enter or Space to activate it."
+msgstr "Tab 키로 게시 버튼으로 이동한 뒤 Enter 키 또는 스페이스바를 누르세요."
+
 #, c-format
 msgid "Take %d"
 msgstr "테이크 %d"
@@ -5559,6 +5578,9 @@ msgstr "이 비밀번호는 이 기기의 금고를 암호화합니다. 계정�
 msgid "This password is easy to guess. Someone with this device could guess it and open the vault."
 msgstr "이 비밀번호는 쉽게 추측됩니다. 이 기기를 가진 사람이 비밀번호를 추측해 금고를 열 수 있습니다."
 
+msgid "This preview stays on your device. Publishing uploads the picture and adds it to your public profile, separately from your text draft."
+msgstr "미리 보기는 이 기기에만 표시됩니다. 게시하면 텍스트 초안과 별도로 사진이 업로드되고 공개 프로필에 추가됩니다."
+
 msgid "This relay is already in your list."
 msgstr "이 릴레이는 이미 목록에 있습니다."
 
@@ -5719,6 +5741,9 @@ msgstr "비밀번호를 다시 입력하세요"
 msgid "Type your password first."
 msgstr "먼저 비밀번호를 입력하세요."
 
+msgid "UNPUBLISHED TEXT DRAFT"
+msgstr "게시되지 않은 텍스트 초안"
+
 msgid "UPTIME"
 msgstr "가동 시간"
 
@@ -5783,14 +5808,17 @@ msgstr "SOCKS5 프록시가 설정되어 있는 동안에는 업데이트가 비
 msgid "Updating your contacts"
 msgstr "연락처 업데이트 중"
 
+msgid "Upload and publish picture"
+msgstr "사진 업로드 및 게시"
+
 msgid "Upload custom emoji"
 msgstr "사용자 지정 이모지 업로드"
 
 msgid "Uploaded emoji"
 msgstr "업로드한 이모지"
 
-msgid "Uploading picture"
-msgstr "사진 업로드 중"
+msgid "Uploading and publishing your picture…"
+msgstr "사진 업로드 및 게시 중…"
 
 msgid "Urdu"
 msgstr "우르두어"
@@ -6239,14 +6267,14 @@ msgstr "내 스티커"
 msgid "Your themes"
 msgstr "내 테마"
 
-msgid "Your unpublished profile changes are lost."
-msgstr "게시하지 않은 프로필 변경 사항은 사라집니다."
-
 msgid "Zoom in"
 msgstr "확대"
 
 msgid "Zoom out"
 msgstr "축소"
+
+msgid "Zoom out or enlarge the window to review what will be public."
+msgstr "공개될 내용을 확인하려면 화면을 축소하거나 창을 키우세요."
 
 msgid "Zoom the interface"
 msgstr "화면 확대/축소"

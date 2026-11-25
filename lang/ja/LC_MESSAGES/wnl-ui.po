@@ -902,8 +902,14 @@ msgstr "接続をキャンセル"
 msgid "Cancel edit / reply, close panels"
 msgstr "編集や返信をキャンセル、パネルを閉じる"
 
+msgid "Cancel preview"
+msgstr "プレビューをキャンセル"
+
 msgid "Cancel reply"
 msgstr "返信をキャンセル"
+
+msgid "Cancel text edit"
+msgstr "テキスト編集をキャンセル"
 
 msgid "Cancel translation"
 msgstr "翻訳をキャンセル"
@@ -1495,6 +1501,9 @@ msgstr "アカウント操作を完了できませんでした。もう一度お
 msgid "Couldn't configure the proxy. Please try again."
 msgstr "プロキシを設定できませんでした。もう一度お試しください。"
 
+msgid "Couldn't confirm picture publication. Your picture was uploaded. Please try again."
+msgstr "画像の公開を確認できませんでした。画像はアップロードされました。もう一度お試しください。"
+
 #, c-format
 msgid "Couldn't copy %s. Please try again."
 msgstr "%sをコピーできませんでした。もう一度お試しください。"
@@ -1725,10 +1734,6 @@ msgstr "画像をプレビューできませんでした。もう一度お試し
 msgid "Couldn't publish the photo. %s"
 msgstr "写真を公開できませんでした。%s"
 
-#, c-format
-msgid "Couldn't publish the picture. %s"
-msgstr "画像を公開できませんでした。%s"
-
 msgid "Couldn't reach the Namecoin resolvers. Please try again."
 msgstr "Namecoinリゾルバーに接続できませんでした。もう一度お試しください。"
 
@@ -1936,9 +1941,8 @@ msgstr "保管庫のロックを解除できませんでした。パスワード
 msgid "Couldn't update issues. Please try again."
 msgstr "報告を更新できませんでした。もう一度お試しください。"
 
-#, c-format
-msgid "Couldn't upload the picture. %s"
-msgstr "画像をアップロードできませんでした。%s"
+msgid "Couldn't upload the picture. Please try again."
+msgstr "画像をアップロードできませんでした。もう一度お試しください。"
 
 msgid "Couldn't use that file. Choose a PNG or JPEG."
 msgstr "そのファイルは使用できません。PNGまたはJPEGを選択してください。"
@@ -2278,11 +2282,14 @@ msgstr "消えるメッセージがオフになりました"
 msgid "Discard"
 msgstr "破棄"
 
-msgid "Discard profile changes?"
-msgstr "プロフィールの変更を破棄しますか？"
+msgid "Discard your text draft?"
+msgstr "テキストの下書きを破棄しますか？"
 
 msgid "Discard your theme changes?"
 msgstr "テーマの変更を破棄しますか？"
+
+msgid "Discarding your text draft won't undo a picture upload or publication."
+msgstr "テキストの下書きを破棄しても、画像のアップロードや公開は取り消されません。"
 
 msgid "Discover"
 msgstr "見つける"
@@ -2361,12 +2368,6 @@ msgstr "ほこり"
 
 msgid "Dutch"
 msgstr "オランダ語"
-
-msgid "EDIT PROFILE"
-msgstr "プロフィールを編集"
-
-msgid "EDITING · BROADCAST TO RELAYS ON PUBLISH"
-msgstr "編集中 · 公開時にリレーへ配信されます"
 
 msgid "EMOJI GROUP IMAGE"
 msgstr "絵文字のグループ画像"
@@ -2508,9 +2509,6 @@ msgstr "2人以上を入力してください。人数にはあなたも含ま�
 #, c-format
 msgid "Enter dates like %s, with the start on or before the end."
 msgstr "%s のように日付を入力してください。開始日は終了日以前にしてください。"
-
-msgid "Enter moves to the next field, Escape cancels."
-msgstr "Enterで次の項目に移動し、Escapeでキャンセルします。"
 
 msgid "Enter publishes, Escape cancels."
 msgstr "Enter で公開、Escape でキャンセルします。"
@@ -4233,6 +4231,9 @@ msgstr "商品"
 msgid "PROFILE"
 msgstr "プロフィール"
 
+msgid "PROFILE TEXT"
+msgstr "プロフィールのテキスト"
+
 msgid "PUBLIC PROFILE"
 msgstr "公開プロフィール"
 
@@ -4351,6 +4352,9 @@ msgstr "アプリ全体の見た目を選択します。"
 
 msgid "Picture"
 msgstr "画像"
+
+msgid "Picture published to your profile."
+msgstr "画像をプロフィールに公開しました。"
 
 msgid "Pieces"
 msgstr "ピース"
@@ -4491,6 +4495,12 @@ msgstr "プロフィール"
 msgid "Profile & devices"
 msgstr "プロフィールと端末"
 
+msgid "Profile picture preview"
+msgstr "プロフィール画像のプレビュー"
+
+msgid "Profile text changes published."
+msgstr "プロフィールのテキストの変更を公開しました。"
+
 msgid "Progress is indeterminate."
 msgstr "進捗率は未確定です。"
 
@@ -4530,8 +4540,8 @@ msgstr "公開"
 msgid "Publish a key package"
 msgstr "キーパッケージを公開"
 
-msgid "Publish changes"
-msgstr "変更を公開"
+msgid "Publish text changes"
+msgstr "テキストの変更を公開"
 
 msgid "Publish your key package"
 msgstr "キーパッケージを公開する"
@@ -4544,6 +4554,12 @@ msgstr "公開済みの受信リレー"
 
 msgid "Published outbox relays"
 msgstr "公開済み送信用リレー"
+
+msgid "Publishing makes your display name, About, verified address, and Lightning address public on Nostr relays."
+msgstr "公開すると、表示名、自己紹介、認証済みアドレス、Lightning アドレスが Nostr リレーで公開されます。"
+
+msgid "Publishing text changes…"
+msgstr "テキストの変更を公開中…"
 
 msgid "Publishing your group profile"
 msgstr "グループのプロフィールを公開しています"
@@ -5655,6 +5671,9 @@ msgstr "処理時間"
 msgid "TROUBLESHOOTERS"
 msgstr "トラブルシューティング"
 
+msgid "Tab to focus Publish. Press Enter or Space to activate it."
+msgstr "Tab キーで公開ボタンに移動し、Enter キーか Space キーで実行します。"
+
 #, c-format
 msgid "Take %d"
 msgstr "テイク %d"
@@ -5925,6 +5944,9 @@ msgstr "このパスワードは推測されやすいものです。関連のな
 msgid "This password protects sensitive local data. It is not a service login or a password to share with contacts. Save it in your password manager."
 msgstr "このパスワードは、端末内の機密データを保護します。サービスへのログイン用でも、連絡先と共有するためのものでもありません。パスワードマネージャーに保存してください。"
 
+msgid "This preview stays on your device. Publishing uploads the picture and adds it to your public profile, separately from your text draft."
+msgstr "このプレビューはお使いの端末内に留まります。公開すると、テキストの下書きとは別に、画像がアップロードされて公開プロフィールに追加されます。"
+
 msgid "This relay is already in your list."
 msgstr "このリレーはすでにリストに追加されています。"
 
@@ -6100,6 +6122,9 @@ msgstr "パスワードをもう一度入力してください"
 msgid "Type your password first."
 msgstr "先にパスワードを入力してください。"
 
+msgid "UNPUBLISHED TEXT DRAFT"
+msgstr "未公開のテキスト下書き"
+
 msgid "UV checker"
 msgstr "UVチェッカー"
 
@@ -6170,14 +6195,17 @@ msgstr "問題の追跡を更新しています..."
 msgid "Updating your contacts"
 msgstr "連絡先を更新しています"
 
+msgid "Upload and publish picture"
+msgstr "画像をアップロードして公開"
+
 msgid "Upload custom emoji"
 msgstr "カスタム絵文字をアップロード"
 
 msgid "Uploaded emoji"
 msgstr "アップロード済みの絵文字"
 
-msgid "Uploading picture"
-msgstr "画像をアップロードしています"
+msgid "Uploading and publishing your picture…"
+msgstr "画像をアップロードして公開中…"
 
 msgid "Urdu"
 msgstr "ウルドゥー語"
@@ -6650,14 +6678,14 @@ msgstr "あなたのステッカー"
 msgid "Your themes"
 msgstr "あなたのテーマ"
 
-msgid "Your unpublished profile changes are lost."
-msgstr "未公開のプロフィールの変更は失われます。"
-
 msgid "Zoom in"
 msgstr "拡大"
 
 msgid "Zoom out"
 msgstr "縮小"
+
+msgid "Zoom out or enlarge the window to review what will be public."
+msgstr "公開する内容を確認するには、表示倍率を下げるかウィンドウを広げてください。"
 
 msgid "Zoom the interface"
 msgstr "画面を拡大・縮小"

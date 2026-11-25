@@ -104,8 +104,8 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		), N_("The colors and settings you changed in the editor are lost."), N_("Discard")
 	case .Discard_Profile:
 		return N_(
-			"Discard profile changes?",
-		), N_("Your unpublished profile changes are lost."), N_("Discard")
+			"Discard your text draft?",
+		), N_("Discarding your text draft won't undo a picture upload or publication."), N_("Discard")
 	case .Delete_Folder:
 		return N_(
 			"Delete this folder?",

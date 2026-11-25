@@ -1069,7 +1069,7 @@ app_main :: proc() {
 			// Interface zoom shortcuts (Ctrl + / - / 0).
 			photo_check_target(&ui)
 			photo_crop_drain(&ui, client, false)
-			if !photo_captured &&
+			if (!photo_captured || (ui.photo.kind == .Profile && !ui.photo.pending)) &&
 			   !location_captured &&
 			   !overlay_captured &&
 			   (rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL)) {
@@ -1606,6 +1606,10 @@ app_main :: proc() {
 				}
 				if clicked("BannerClose") {
 					ui.banner = "" // borrowed from client_status; never freed here
+				}
+				if clicked("ProfilePicDismiss") {
+					delete(ui.profile_pic_notice)
+					ui.profile_pic_notice = ""
 				}
 				if clicked("BannerCopy") {
 					copy_text(&ui, ui.banner, tr("Copied"))

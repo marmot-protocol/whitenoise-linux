@@ -54,7 +54,10 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if ui.page == .Profile && ui.profile.editing && !ui.new_chat_open {
+	if ui.page == .Profile &&
+	   ui.profile.editing &&
+	   !ui.new_chat_open &&
+	   !profile_text_pending(ui) {
 		#partial switch ui.focus {
 		case .Name, .About, .Nip05, .Lud16:
 			edit_text(ui, active_buf(ui), ui.focus == .About)
@@ -538,6 +541,8 @@ profile_addr_valid :: proc(value: string) -> bool {
 @(private)
 profile_ready :: proc(ui: ^Ui_State) -> bool {
 	return(
+		(!ppic_busy || profile_pic_owner() != ui.account_ref) &&
+		!profile_text_pending(ui) &&
 		profile_dirty(ui) &&
 		strings.trim_space(string(ui.name_input[:])) != "" &&
 		profile_addr_valid(string(ui.nip05_input[:])) &&
@@ -547,6 +552,9 @@ profile_ready :: proc(ui: ^Ui_State) -> bool {
 
 @(private)
 profile_cancel :: proc(ui: ^Ui_State) {
+	if profile_text_pending(ui) {
+		return
+	}
 	if profile_dirty(ui) {confirm_ask(ui, .Discard_Profile, ""); return}
 	ui.focus = .Compose
 	profile_edit_finish(ui)
@@ -568,6 +576,23 @@ profile_edit_finish :: proc(ui: ^Ui_State) {
 	ui.settings_scroll_pending = true
 }
 
+@(private)
+profile_text_pending :: proc(ui: ^Ui_State) -> bool {
+	for job in account_jobs {
+		if job.kind == .Profile && job.account == ui.account_ref {
+			return true
+		}
+	}
+	return false
+}
+
+@(private = "file")
+profile_actions_need_scroll :: proc() -> bool {
+	view := publication_view(nendo.id("ProfilePage"))
+	actions := nendo.element(nendo.id("ProfileFormActions"))
+	return actions.found && actions.rect.height > view.height
+}
+
 // Only the explicit button publishes public kind-0 data.
 publish_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !ui.profile.editing {return}
@@ -579,6 +604,11 @@ publish_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if !profile_ready(ui) {
+		return
+	}
+	if !ui.profile.disclosure_seen {
+		ui.focus = .Profile_Disclosure
+		reveal_publication(ui, nendo.id("ProfilePage"), nendo.id("ProfilePublishDisclosure"))
 		return
 	}
 	job := account_job_new(ui, client, .Profile); if job == nil {return}
@@ -593,6 +623,7 @@ edit_profile_start :: proc(ui: ^Ui_State) {
 	ui.focus = .Name
 	if ui.profile.editing {return}
 	ui.profile.editing = true
+	ui.profile.disclosure_seen = false
 	ed_set(ui, &ui.name_input, ui.profile.name)
 	ed_set(ui, &ui.about_input, ui.profile.about)
 	ed_set(ui, &ui.nip05_input, ui.profile.nip05)
@@ -612,10 +643,19 @@ settings_edit_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // edit form's keyboard shortcuts. Runs every frame, ahead of the
 // release gate that holds handle_profile back.
 profile_fields :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if !ui.profile.editing || profile_text_pending(ui) {
+		return
+	}
+	if fully_in_scroll_view(nendo.id("ProfilePage"), nendo.id("ProfilePublishDisclosure")) {
+		ui.profile.disclosure_seen = true
+	}
+	if ui.focus == .Profile_Publish && mouse_pressed() {
+		ui.focus = .Name
+	}
 	if field_mouse(ui, &ui.name_input, "NameBox", 14) {
 		ui.focus = .Name
 	}
-	if ui.profile.editing {compose_mouse(ui, &ui.about_input, .About)}
+	compose_mouse(ui, &ui.about_input, .About)
 	if field_mouse(ui, &ui.nip05_input, "Nip05Box", 14) {
 		ui.focus = .Nip05
 	}
@@ -626,26 +666,64 @@ profile_fields :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.focus = .Relay
 	}
 
-	if !ui.profile.editing {
-		return
+	if ui.focus == .Profile_Disclosure {
+		switch tab_step() {
+		case -1:
+			ui.focus = .Lud16
+			scroll_into_view(nendo.id("ProfilePage"), nendo.id("Lud16Box"))
+			return
+		case 1:
+			if ui.profile.disclosure_seen {
+				ui.focus = .Profile_Publish
+				reveal_publication(ui, nendo.id("ProfilePage"), nendo.id("PublishProfileBtn"))
+			} else {
+				reveal_publication(
+					ui,
+					nendo.id("ProfilePage"),
+					nendo.id("ProfilePublishDisclosure"),
+				)
+			}
+			return
+		}
 	}
-	fields := [?]Focus{.Name, .About, .Nip05, .Lud16}
-	boxes := [?]string{"NameBox", "ComposeBox", "Nip05Box", "Lud16Box"}
+	fields := [?]Focus{.Name, .About, .Nip05, .Lud16, .Profile_Publish}
+	boxes := [?]string{"NameBox", "ComposeBox", "Nip05Box", "Lud16Box", "ProfileFormActions"}
 	if at, moved := tab_focus(fields[:], &ui.focus); moved {
-		scroll_into_view(nendo.id("ProfilePage"), nendo.id(boxes[at]))
+		box := boxes[at]
+		if ui.focus == .Profile_Publish && profile_actions_need_scroll() {
+			if ui.profile.disclosure_seen {
+				box = "PublishProfileBtn"
+			} else {
+				ui.focus = .Profile_Disclosure
+				box = "ProfilePublishDisclosure"
+			}
+		}
+		scroll_into_view(nendo.id("ProfilePage"), nendo.id(box))
+		return
 	}
 	if rl.IsKeyPressed(.ESCAPE) {
 		profile_cancel(ui)
 		return
 	}
+	if ui.focus == .Profile_Disclosure {
+		if rl.IsKeyPressed(.ENTER) || rl.IsKeyPressed(.SPACE) {
+			reveal_publication(ui, nendo.id("ProfilePage"), nendo.id("ProfilePublishDisclosure"))
+		}
+		return
+	}
+	if ui.focus == .Profile_Publish {
+		if rl.IsKeyPressed(.ENTER) || rl.IsKeyPressed(.SPACE) {
+			publish_profile(ui, client)
+		}
+		return
+	}
 	if rl.IsKeyPressed(.ENTER) {
 		for field, i in fields {
-			if ui.focus != field {continue}
-			if i + 1 < len(fields) {
+			if ui.focus == field && field != .Lud16 {
 				ui.focus = fields[i + 1]
 				scroll_into_view(nendo.id("ProfilePage"), nendo.id(boxes[i + 1]))
-			} else {ui.focus = .Compose}
-			break
+				break
+			}
 		}
 	}
 }
@@ -712,7 +790,8 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	if ui.profile.editing &&
 	   (clicked("ChangePicBtn") || clicked("ProfileAvatarPick")) &&
-	   !ppic_busy {
+	   !ppic_busy &&
+	   !profile_text_pending(ui) {
 		if photo_pick_begin(ui, .Profile) {rl.OpenFileDialog(false); return}
 	}
 

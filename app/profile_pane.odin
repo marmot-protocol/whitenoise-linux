@@ -156,6 +156,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 	old := profile_palette(profile_colors(style))
 	defer profile_palette(old)
 	background := profile_background(style)
+	text_pending := profile_text_pending(ui)
 	if nendo.box(nendo.id("ProfilePage"))(
 	{
 		width = nendo.grow(),
@@ -187,7 +188,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 			) {
 				nendo.text(tr("Your profile"), {font = FONT_TITLE, size = 22, color = TEXT})
 				nendo.text(
-					ui.profile.editing ? tr("EDITING · BROADCAST TO RELAYS ON PUBLISH") : tr("PUBLIC PROFILE"),
+					tr("PUBLIC PROFILE"),
 					{font = FONT_MONO, size = 10, color = TEXT_LO, spacing = 2},
 				)
 			}
@@ -198,7 +199,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 				padding = {left = 14, right = 14, top = 8, bottom = 8},
 				gap = 8,
 				align = {y = .Center},
-				color = ui.profile.editing ? (hovered() ? HOVER : ROW_BG) : ACCENT,
+				color = ui.profile.editing ? (!text_pending && hovered() ? HOVER : ROW_BG) : ACCENT,
 				radius = rr(9),
 				border = ui.profile.editing ? nendo.Border{color = FIELD_BORDER, width = bw()} : {},
 			},
@@ -207,10 +208,21 @@ profile_pane :: proc(ui: ^Ui_State) {
 					nendo.text(ICON_PENCIL, {font = FONT_ICON, size = 12, color = ON_ACCENT})
 				}
 				nendo.text(
-					ui.profile.editing ? tr("Cancel") : tr("Edit profile"),
-					{font = FONT_TITLE, size = 13, color = ui.profile.editing ? TEXT : ON_ACCENT},
+					ui.profile.editing ? tr("Cancel text edit") : tr("Edit profile"),
+					{
+						font = FONT_TITLE,
+						size = 13,
+						color = text_pending ? TEXT_LO : (ui.profile.editing ? TEXT : ON_ACCENT),
+					},
 				)
 			}
+		}
+
+		if ui.profile.editing && !text_pending {
+			nendo.text(
+				tr("Discarding your text draft won't undo a picture upload or publication."),
+				{font = FONT_BODY, size = 13, color = TEXT_DIM},
+			)
 		}
 
 		// ── Hero: banner, avatar riding the seam, live-draft name ──
@@ -273,7 +285,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 				},
 			},
 			) {
-				if ui.profile.editing && hovered() {
+				if ui.profile.editing && !ppic_busy && !text_pending && hovered() {
 					tooltip(tr("Change picture"))
 				}
 				avatar(
@@ -284,7 +296,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					96,
 					url_pic(ui.my_pic_url),
 				)
-				if ui.profile.editing {
+				if ui.profile.editing && !ppic_busy && !text_pending {
 					if nendo.box(nendo.id("ProfileAvatarBadge"))(
 					{
 						width = nendo.fixed(30),
@@ -357,10 +369,18 @@ profile_pane :: proc(ui: ^Ui_State) {
 			}
 		}
 
-		// ── Edit form: every kind-0 field the app lets you set ─────
+		if ui.profile.editing && !text_pending {
+			if ppic_busy {
+				nendo.text(tr("Change picture"), {font = FONT_BODY, size = 12, color = TEXT_LO})
+			} else {
+				micro_button("ChangePicBtn", tr("Change picture"))
+			}
+		}
+
+		// ── Text draft: every kind-0 text field the app lets you set ──
 		if ui.profile.editing {
 			if nendo.box(nendo.id("FormEyebrow"))({padding = {top = 6}}) {
-				eyebrow(tr("EDIT PROFILE"))
+				eyebrow(text_pending ? tr("PROFILE TEXT") : tr("UNPUBLISHED TEXT DRAFT"))
 			}
 			if nendo.box(nendo.id("ProfileForm"))(
 			{
@@ -427,24 +447,18 @@ profile_pane :: proc(ui: ^Ui_State) {
 					)
 				}
 				if nendo.box(nendo.id("ProfileFormActions"))(
-				{
-					width = nendo.grow(),
-					direction = single_pane() ? .Column : .Row,
-					gap = 10,
-					padding = {top = 6},
-					align = {y = .Center},
-				},
+				{width = nendo.grow(), direction = .Column, gap = 8, padding = {top = 6}},
 				) {
-					if ppic_busy {
-						micro_button("ChangePicBtn", tr("Uploading picture"))
-					} else {
-						micro_button("ChangePicBtn", tr("Change picture"))
-					}
-					if nendo.box(nendo.id("FormActionGap"))({width = nendo.grow()}) {}
-					if !single_pane() && !tap_size() {
+					if nendo.box(nendo.id("ProfilePublishDisclosure"))({width = nendo.grow()}) {
 						nendo.text(
-							tr("Enter moves to the next field, Escape cancels."),
-							{font = FONT_BODY, size = 10, color = TEXT_LO},
+							tr(
+								"Publishing makes your display name, About, verified address, and Lightning address public on Nostr relays.",
+							),
+							{
+								font = FONT_BODY,
+								size = 13,
+								color = ui.focus == .Profile_Disclosure ? TEXT : TEXT_DIM,
+							},
 						)
 					}
 					ready := profile_ready(ui)
@@ -455,13 +469,20 @@ profile_pane :: proc(ui: ^Ui_State) {
 						align = {x = .Center, y = .Center},
 						color = ready ? ACCENT : FIELD_BORDER,
 						radius = rr(9),
+						border = ui.focus == .Profile_Publish && !text_pending ? kb_ring(ready ? TEXT : ACCENT) : {},
 					},
 					) {
 						nendo.text(
-							tr("Publish changes"),
+							text_pending ? tr("Publishing text changes…") : tr("Publish text changes"),
 							{font = FONT_TITLE, size = 13, color = ready ? ON_ACCENT : TEXT_LO},
 						)
 					}
+				}
+				if !text_pending && !tap_size() {
+					nendo.text(
+						tr("Tab to focus Publish. Press Enter or Space to activate it."),
+						{font = FONT_BODY, size = 12, color = TEXT_DIM},
+					)
 				}
 			}
 		}

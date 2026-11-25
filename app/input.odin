@@ -108,6 +108,29 @@ kb_ring :: proc(color: nendo.Color) -> nendo.Border {
 	return {color = color, width = {2, 2, 2, 2, 0}}
 }
 
+@(private)
+publication_view :: proc(container: nendo.Id) -> nendo.Rect {
+	box := nendo.element(container).rect
+	x, y := max(0, box.x), max(0, box.y)
+	w := min(box.x + box.width, f32(rl.GetScreenWidth()) / UI_ZOOM) - x
+	h := min(box.y + box.height, f32(rl.GetScreenHeight()) / UI_ZOOM) - y
+	return {x, y, max(0, w), max(0, h)}
+}
+
+@(private)
+fully_in_scroll_view :: proc(container, item: nendo.Id) -> bool {
+	view := publication_view(container)
+	box := nendo.element(item)
+	return(
+		box.found &&
+		box.rect.height > 0 &&
+		box.rect.x >= view.x - 0.5 &&
+		box.rect.y >= view.y - 0.5 &&
+		box.rect.x + box.rect.width <= view.x + view.width + 0.5 &&
+		box.rect.y + box.rect.height <= view.y + view.height + 0.5 \
+	)
+}
+
 // Scrolls `container` the least distance that shows all of `field`, so a
 // box focused from the keyboard is never below the fold. Reads last
 // frame's layout.
@@ -123,6 +146,20 @@ scroll_into_view :: proc(container, field: nendo.Id) {
 	}
 	if box.y + box.height > view.y + view.height {
 		scroll.position.y -= box.y + box.height - view.y - view.height
+	}
+}
+
+@(private)
+reveal_publication :: proc(ui: ^Ui_State, container, item: nendo.Id) {
+	view := publication_view(container)
+	box := nendo.element(item).rect
+	if box.height > view.height || box.x + box.width > view.x + view.width {
+		toast(ui, tr("Zoom out or enlarge the window to review what will be public."))
+		return
+	}
+	if scroll := nendo.scroll(container); scroll.found {
+		top, bottom := box.y - view.y, box.y + box.height - view.y - view.height
+		scroll.position.y -= clamp(0, bottom, top)
 	}
 }
 

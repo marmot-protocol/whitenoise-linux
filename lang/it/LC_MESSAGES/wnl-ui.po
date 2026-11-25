@@ -902,8 +902,14 @@ msgstr "Annulla connessione"
 msgid "Cancel edit / reply, close panels"
 msgstr "Annulla modifica / risposta, chiudi i pannelli"
 
+msgid "Cancel preview"
+msgstr "Annulla anteprima"
+
 msgid "Cancel reply"
 msgstr "Annulla risposta"
+
+msgid "Cancel text edit"
+msgstr "Annulla modifica del testo"
 
 msgid "Cancel translation"
 msgstr "Annulla traduzione"
@@ -1495,6 +1501,9 @@ msgstr "Impossibile completare la tua azione sull'account. Riprova. (%s)"
 msgid "Couldn't configure the proxy. Please try again."
 msgstr "Impossibile configurare il proxy. Riprova."
 
+msgid "Couldn't confirm picture publication. Your picture was uploaded. Please try again."
+msgstr "Impossibile confermare la pubblicazione dell'immagine. L'immagine è stata caricata. Riprova."
+
 #, c-format
 msgid "Couldn't copy %s. Please try again."
 msgstr "Impossibile copiare %s. Riprova."
@@ -1725,10 +1734,6 @@ msgstr "Impossibile mostrare l'anteprima dell'immagine. Riprova."
 msgid "Couldn't publish the photo. %s"
 msgstr "Impossibile pubblicare la foto. %s"
 
-#, c-format
-msgid "Couldn't publish the picture. %s"
-msgstr "Impossibile pubblicare l'immagine. %s"
-
 msgid "Couldn't reach the Namecoin resolvers. Please try again."
 msgstr "Impossibile raggiungere i resolver Namecoin. Riprova."
 
@@ -1936,9 +1941,8 @@ msgstr "Impossibile sbloccare la cassaforte. Ricontrolla la password e riprova."
 msgid "Couldn't update issues. Please try again."
 msgstr "Impossibile aggiornare le segnalazioni. Riprova."
 
-#, c-format
-msgid "Couldn't upload the picture. %s"
-msgstr "Impossibile caricare l'immagine. %s"
+msgid "Couldn't upload the picture. Please try again."
+msgstr "Impossibile caricare l'immagine. Riprova."
 
 msgid "Couldn't use that file. Choose a PNG or JPEG."
 msgstr "Impossibile usare questo file. Scegli un PNG o un JPEG."
@@ -2278,11 +2282,14 @@ msgstr "I messaggi effimeri sono stati disattivati"
 msgid "Discard"
 msgstr "Scarta"
 
-msgid "Discard profile changes?"
-msgstr "Vuoi scartare le modifiche al profilo?"
+msgid "Discard your text draft?"
+msgstr "Scartare la bozza di testo?"
 
 msgid "Discard your theme changes?"
 msgstr "Scartare le modifiche al tema?"
+
+msgid "Discarding your text draft won't undo a picture upload or publication."
+msgstr "Scartare la bozza di testo non annulla il caricamento o la pubblicazione di un'immagine."
 
 msgid "Discover"
 msgstr "Scopri"
@@ -2361,12 +2368,6 @@ msgstr "Pulviscolo"
 
 msgid "Dutch"
 msgstr "Olandese"
-
-msgid "EDIT PROFILE"
-msgstr "MODIFICA PROFILO"
-
-msgid "EDITING · BROADCAST TO RELAYS ON PUBLISH"
-msgstr "MODIFICA · INVIATO AI RELAY ALLA PUBBLICAZIONE"
 
 msgid "EMOJI GROUP IMAGE"
 msgstr "IMMAGINE DEL GRUPPO DA EMOJI"
@@ -2508,9 +2509,6 @@ msgstr "Inserisci almeno 2 persone. Il conteggio include te."
 #, c-format
 msgid "Enter dates like %s, with the start on or before the end."
 msgstr "Inserisci date come %s. La data iniziale non deve essere successiva a quella finale."
-
-msgid "Enter moves to the next field, Escape cancels."
-msgstr "Invio passa al campo successivo, Esc annulla."
 
 msgid "Enter publishes, Escape cancels."
 msgstr "Invio pubblica, Esc annulla."
@@ -4233,6 +4231,9 @@ msgstr "PRODOTTO"
 msgid "PROFILE"
 msgstr "PROFILO"
 
+msgid "PROFILE TEXT"
+msgstr "TESTO DEL PROFILO"
+
 msgid "PUBLIC PROFILE"
 msgstr "PROFILO PUBBLICO"
 
@@ -4351,6 +4352,9 @@ msgstr "Scegli l'aspetto di tutta l'app."
 
 msgid "Picture"
 msgstr "Immagine"
+
+msgid "Picture published to your profile."
+msgstr "Immagine pubblicata sul tuo profilo."
 
 msgid "Pieces"
 msgstr "Pezzi"
@@ -4491,6 +4495,12 @@ msgstr "Profilo"
 msgid "Profile & devices"
 msgstr "Profilo e dispositivi"
 
+msgid "Profile picture preview"
+msgstr "Anteprima dell'immagine del profilo"
+
+msgid "Profile text changes published."
+msgstr "Modifiche al testo del profilo pubblicate."
+
 msgid "Progress is indeterminate."
 msgstr "L'avanzamento è indeterminato."
 
@@ -4530,8 +4540,8 @@ msgstr "Pubblica"
 msgid "Publish a key package"
 msgstr "Pubblica un pacchetto chiavi"
 
-msgid "Publish changes"
-msgstr "Pubblica modifiche"
+msgid "Publish text changes"
+msgstr "Pubblica modifiche al testo"
 
 msgid "Publish your key package"
 msgstr "Pubblica il tuo pacchetto chiavi"
@@ -4544,6 +4554,12 @@ msgstr "Relay in entrata pubblicati"
 
 msgid "Published outbox relays"
 msgstr "Relay in uscita pubblicati"
+
+msgid "Publishing makes your display name, About, verified address, and Lightning address public on Nostr relays."
+msgstr "La pubblicazione rende pubblici sui relay Nostr il tuo nome visualizzato, la tua bio, il tuo indirizzo verificato e il tuo indirizzo Lightning."
+
+msgid "Publishing text changes…"
+msgstr "Pubblicazione delle modifiche al testo…"
 
 msgid "Publishing your group profile"
 msgstr "Pubblicazione del profilo del tuo gruppo"
@@ -5655,6 +5671,9 @@ msgstr "TEMPI"
 msgid "TROUBLESHOOTERS"
 msgstr "RISOLUZIONE DEI PROBLEMI"
 
+msgid "Tab to focus Publish. Press Enter or Space to activate it."
+msgstr "Premi Tab per raggiungere il pulsante di pubblicazione. Premi Invio o Spazio per attivarlo."
+
 #, c-format
 msgid "Take %d"
 msgstr "Take %d"
@@ -5925,6 +5944,9 @@ msgstr "Questa password è troppo facile da indovinare. Usa parole non correlate
 msgid "This password protects sensitive local data. It is not a service login or a password to share with contacts. Save it in your password manager."
 msgstr "Questa password protegge i dati sensibili locali. Non serve per accedere a un servizio e non va condivisa con i tuoi contatti. Salvala nel tuo gestore di password."
 
+msgid "This preview stays on your device. Publishing uploads the picture and adds it to your public profile, separately from your text draft."
+msgstr "L'anteprima resta sul tuo dispositivo. Quando pubblichi, l'immagine viene caricata e aggiunta al tuo profilo pubblico, separatamente dalla bozza di testo."
+
 msgid "This relay is already in your list."
 msgstr "Questo relay è già nel tuo elenco."
 
@@ -6100,6 +6122,9 @@ msgstr "Digita di nuovo la tua password"
 msgid "Type your password first."
 msgstr "Digita prima la tua password."
 
+msgid "UNPUBLISHED TEXT DRAFT"
+msgstr "BOZZA DI TESTO NON PUBBLICATA"
+
 msgid "UV checker"
 msgstr "Scacchiera UV"
 
@@ -6170,14 +6195,17 @@ msgstr "Aggiornamento del tracciamento delle segnalazioni..."
 msgid "Updating your contacts"
 msgstr "Aggiornamento dei tuoi contatti"
 
+msgid "Upload and publish picture"
+msgstr "Carica e pubblica immagine"
+
 msgid "Upload custom emoji"
 msgstr "Carica emoji personalizzate"
 
 msgid "Uploaded emoji"
 msgstr "Emoji caricate"
 
-msgid "Uploading picture"
-msgstr "Caricamento dell'immagine"
+msgid "Uploading and publishing your picture…"
+msgstr "Caricamento e pubblicazione dell'immagine…"
 
 msgid "Urdu"
 msgstr "Urdu"
@@ -6650,14 +6678,14 @@ msgstr "I tuoi adesivi"
 msgid "Your themes"
 msgstr "I tuoi temi"
 
-msgid "Your unpublished profile changes are lost."
-msgstr "Le modifiche al profilo non pubblicate andranno perse."
-
 msgid "Zoom in"
 msgstr "Aumenta lo zoom"
 
 msgid "Zoom out"
 msgstr "Riduci lo zoom"
+
+msgid "Zoom out or enlarge the window to review what will be public."
+msgstr "Riduci lo zoom o ingrandisci la finestra per vedere cosa verrà reso pubblico."
 
 msgid "Zoom the interface"
 msgstr "Ingrandisci l'interfaccia"
