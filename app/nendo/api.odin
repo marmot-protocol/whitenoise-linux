@@ -107,6 +107,21 @@ virtual_lower_bound :: proc(offsets: []f32, gap, y: f32) -> int {
 	return lo
 }
 
+// Lower and upper bounds when a Y position depends on unbuilt siblings.
+@(private)
+Y_Bounds :: [2]f32
+
+@(private)
+virtual_viewport :: proc(owner: ^Layout_Element) -> Y_Bounds {
+	size := owner.config.height
+	if size.kind == .Fixed {return {size.min, size.min}}
+	prior := get_hash_map_item(owner.id)
+	previous := prior.appeared_this_frame ? 0 : prior.bounding_box.height
+	upper := cmax(cmax(active_context.layout_dimensions.height, previous), size.min)
+	if size.max > 0 {upper = cmin(upper, size.max)}
+	return {size.min, upper}
+}
+
 @(private)
 virtual_window :: proc(height: f32) -> (top, bottom: f32) {
 	ctx := active_context
@@ -117,32 +132,31 @@ virtual_window :: proc(height: f32) -> (top, bottom: f32) {
 	}
 	bottom = limit
 	clip := &owner.config.clip
-	inherited_clip := false
 	// A bounded picker keeps its own small window for keyboard reveal.
 	if !scroll_enabled(clip) ||
 	   owner.config.height.max <= 0 ||
 	   owner.config.height.max > ctx.layout_dimensions.height {
-		top, bottom, inherited_clip = virtual_ancestor_window(owner)
-		bottom = cmin(bottom, cmax(f32(0), top) + limit)
+		top, bottom = virtual_ancestor_window(owner)
 	}
-	prefix := flow_prefix_y(owner, ctx.layout_element_children_buffer.length)
-	if view := scroll_enabled(clip) ? find_scroll_data(owner.id) : nil; view != nil {
-		viewport := view.bounding_box.height
-		if owner.config.height.kind == .Fixed {
-			viewport = owner.config.height.min
-		} else if !inherited_clip {
-			viewport = cmin(viewport, limit)
-		} else if owner.config.height.max > 0 {
-			viewport = cmin(viewport, owner.config.height.max)
-		}
-		content := prefix + height + f32(owner.config.padding.bottom)
-		offset := clamp(-view.scroll_position.y, 0, cmax(f32(0), content - viewport))
-		view.scroll_position.y = -offset
-		clip.offset.y = -offset
+	prefix := flow_prefix_y(owner, ctx.layout_element_children_buffer.length, .Final_Run)
+	if clip.y {
+		top = cmax(f32(0), top)
+		if owner.config.height.max > 0 {bottom = cmin(bottom, owner.config.height.max)}
 	}
-	if clip.y {top = cmax(f32(0), top)}
-	if clip.x || clip.y {prefix += clip.offset.y}
-	return top - prefix, bottom - prefix
+	if clip.y && scroll_enabled(clip) {
+		owner.virtual_scroll_y = true
+		// Mount the union for the possible scroll positions. Placement clamps to the
+		// actual viewport. Nested runs need the same scroll bounds during declaration.
+		viewport := virtual_viewport(owner)
+		tail := height + f32(owner.config.padding.bottom)
+		requested := cmax(f32(0), -clip.offset.y)
+		owner.virtual_scroll_min_y = -cmin(requested, cmax(f32(0), prefix[1] + tail - viewport[0]))
+		clip.offset.y = -cmin(requested, cmax(f32(0), prefix[0] + tail - viewport[1]))
+		prefix += Y_Bounds{owner.virtual_scroll_min_y, clip.offset.y}
+	} else if clip.x || clip.y {
+		prefix += Y_Bounds{clip.offset.y, clip.offset.y}
+	}
+	return top - prefix[1], bottom - prefix[0]
 }
 
 @(private)
@@ -155,21 +169,51 @@ open_virtual_run :: proc(id: Id, skipped: int, prefix: f32, gap: u16) {
 }
 
 @(private)
-flow_prefix_y :: proc(parent: ^Layout_Element, children_end: i32) -> (y: f32) {
-	y = f32(parent.config.padding.top)
-	if parent.config.direction != .Column {return}
+Prefix_Mode :: enum {
+	Final_Run,
+	Open_Column,
+}
+
+@(private)
+flow_prefix_y :: proc(
+	parent: ^Layout_Element,
+	children_end: i32,
+	mode: Prefix_Mode,
+) -> (
+	y: Y_Bounds,
+) {
+	padding_top := f32(parent.config.padding.top)
+	if parent.config.direction != .Column {return {padding_top, padding_top}}
 	ctx := active_context
 	siblings := i32(parent.children.length)
+	start := children_end - siblings
 	height_sum := parent.virtual_prefix_height
+	gaps := f32(siblings) * f32(parent.config.gap)
+	percent_basis: Y_Bounds = {-1, -1}
 	// An open column only appends completed children. Reuse the prefix for later runs.
-	for i in children_end - siblings + parent.virtual_prefix_count ..< children_end {
+	for i in start + parent.virtual_prefix_count ..< children_end {
 		child := array_get(
 			&ctx.layout_elements,
 			array_get_value(&ctx.layout_element_children_buffer, i),
 		)
 		height := child.dimensions.height
-		// Keep fixed children at their current heights. Only estimate the reflow.
-		if child.height_reflows {
+		if !child.is_text_element && child.config.height.kind == .Percent {
+			if percent_basis[0] < 0 {
+				// Cache only the prefix that does not depend on the final number of gaps.
+				parent.virtual_prefix_height = height_sum
+				parent.virtual_prefix_count = i - start
+				viewport := virtual_viewport(parent)
+				insets := padding_top + f32(parent.config.padding.bottom) + gaps
+				percent_basis = {
+					cmax(f32(0), viewport[0] - insets),
+					cmax(f32(0), viewport[1] - insets),
+				}
+				if mode == .Open_Column && parent.config.gap > 0 {percent_basis[0] = 0}
+			}
+			y[0] += resolve_percent(child.config.height, percent_basis[0])
+			y[1] += resolve_percent(child.config.height, percent_basis[1])
+			continue
+		} else if child.height_reflows {
 			prior := get_hash_map_item(child.id)
 			if prior.layout_element == child && !prior.appeared_this_frame {
 				height += prior.bounding_box.height - prior.declared_height
@@ -183,21 +227,24 @@ flow_prefix_y :: proc(parent: ^Layout_Element, children_end: i32) -> (y: f32) {
 		}
 		height_sum += height
 	}
-	parent.virtual_prefix_height = height_sum
-	parent.virtual_prefix_count = siblings
-	return y + f32(siblings) * f32(parent.config.gap) + height_sum
+	if percent_basis[0] < 0 {
+		parent.virtual_prefix_height = height_sum
+		parent.virtual_prefix_count = siblings
+	}
+	fixed_prefix := padding_top + gaps + height_sum
+	return y + Y_Bounds{fixed_prefix, fixed_prefix}
 }
 
 @(private)
-virtual_ancestor_window :: proc(owner: ^Layout_Element) -> (top, bottom: f32, clipped: bool) {
+virtual_ancestor_window :: proc(owner: ^Layout_Element) -> (top, bottom: f32) {
 	ctx := active_context
 	canvas := ctx.layout_dimensions.height
 	if owner.config.floating.attach_to != .None {
 		y := floating_origin_y(owner)
-		return -y, canvas - y, false
+		return -y, canvas - y
 	}
 	top, bottom = -MAX_FLOAT, MAX_FLOAT
-	relative: f32
+	relative: Y_Bounds
 	child := owner
 	children_end := ctx.layout_element_children_buffer.length - i32(owner.children.length)
 	for i := ctx.open_layout_element_stack.length - 2; i > 0; i -= 1 {
@@ -209,41 +256,44 @@ virtual_ancestor_window :: proc(owner: ^Layout_Element) -> (top, bottom: f32, cl
 		if config.align.y == .Top &&
 		   config.direction != .Wrap_Row &&
 		   config.grid.min_cell_width <= 0 {
-			relative += flow_prefix_y(ancestor, children_end)
+			relative += flow_prefix_y(ancestor, children_end, .Open_Column)
 		} else {
 			// Layout-dependent positions come from the last arrangement, without its scroll.
 			prior_child, prior_parent :=
 				get_hash_map_item(child.id), get_hash_map_item(ancestor.id)
 			if prior_child.bounding_box.height > 0 && prior_parent.bounding_box.height > 0 {
-				relative +=
+				y :=
 					prior_child.bounding_box.y -
 					prior_parent.bounding_box.y -
 					prior_parent.laid_out_y
+				relative += Y_Bounds{y, y}
 			}
 		}
 		if config.clip.x || config.clip.y {
-			relative += config.clip.offset.y
+			min_y :=
+				ancestor.virtual_scroll_y ? ancestor.virtual_scroll_min_y : config.clip.offset.y
+			relative += Y_Bounds{min_y, config.clip.offset.y}
 		}
 		if config.clip.y {
-			clipped = true
-			top = cmax(top, -relative)
+			top = cmax(top, -relative[1])
 			viewport := canvas
 			if config.height.kind == .Fixed {
 				viewport = config.height.min
 			} else if config.height.max > 0 {
 				viewport = cmin(viewport, config.height.max)
 			}
-			bottom = cmin(bottom, viewport - relative)
+			bottom = cmin(bottom, viewport - relative[0])
 		}
 		if config.floating.attach_to != .None {
-			relative += floating_origin_y(ancestor)
+			y := floating_origin_y(ancestor)
+			relative += Y_Bounds{y, y}
 			break
 		}
 		child = ancestor
 		children_end -= i32(ancestor.children.length)
 	}
-	top = cmax(top, -relative)
-	bottom = cmin(bottom, canvas - relative)
+	top = cmax(top, -relative[1])
+	bottom = cmin(bottom, canvas - relative[0])
 	return
 }
 

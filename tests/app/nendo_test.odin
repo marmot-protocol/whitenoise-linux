@@ -174,7 +174,7 @@ virtual_rows_layout :: proc(
 	height: nendo.Size,
 	clip := nendo.Clip{y = true, scroll = true},
 	row_height: f32 = 20,
-	header_height: f32 = 19,
+	header_height := nendo.Size{kind = .Fixed, min = 19, max = 19},
 ) -> []nendo.Render_Command {
 	nendo.begin()
 	if nendo.box(nendo.id("VirtualList"))(
@@ -187,8 +187,10 @@ virtual_rows_layout :: proc(
 		clip = clip,
 	},
 	) {
-		if nendo.box(nendo.id("VirtualHeader"))({direction = .Column}) {
-			if nendo.box()({height = nendo.fixed(header_height)}) {}
+		if header_height.kind == .Percent {
+			if nendo.box(nendo.id("VirtualHeader"))({height = header_height}) {}
+		} else if nendo.box(nendo.id("VirtualHeader"))({direction = .Column}) {
+			if nendo.box()({height = header_height}) {}
 		}
 		rows := nendo.virtual_rows(nendo.id("VirtualRun"), count, row_height, gap = 4)
 		for i in rows.first ..< rows.end {
@@ -275,16 +277,36 @@ layout_virtual_rows_preserves_geometry_when_scrolled_and_shrunk :: proc(t: ^test
 
 	virtual_rows_layout(100, nendo.fixed(100))
 	nendo.scroll(list_id).position.y = -432
-	virtual_rows_layout(100, nendo.fixed(100), header_height = 300)
+	virtual_rows_layout(100, nendo.fixed(100), header_height = nendo.fixed(300))
 	testing.expect_value(
 		t,
 		nendo.element(nendo.id("VirtualRow", 5)).rect,
 		nendo.Rect{11, 0, 182, 20},
 	)
 	nendo.scroll(list_id).position.y = -2817
-	virtual_rows_layout(100, nendo.fixed(100), header_height = 500)
+	virtual_rows_layout(100, nendo.fixed(100), header_height = nendo.fixed(500))
 	testing.expect_value(t, nendo.scroll(list_id).position.y, -2817)
 	testing.expect_value(t, nendo.element(nendo.id("VirtualRow", 99)).rect.y, 71)
+
+	virtual_rows_layout(100, nendo.fixed(200), header_height = nendo.percent(0.5))
+	nendo.scroll(list_id).position.y = -432
+	virtual_rows_layout(100, nendo.fixed(400), header_height = nendo.percent(0.5, max = 180))
+	testing.expect_value(
+		t,
+		nendo.element(nendo.id("VirtualRow", 10)).rect,
+		nendo.Rect{11, 0, 182, 20},
+	)
+
+	nendo.set_dimensions({800, 400})
+	virtual_rows_layout(100, nendo.grow(), header_height = nendo.percent(0.5))
+	nendo.scroll(list_id).position.y = -432
+	nendo.set_dimensions({800, 100})
+	virtual_rows_layout(100, nendo.grow(), header_height = nendo.percent(0.5))
+	testing.expect_value(
+		t,
+		nendo.element(nendo.id("VirtualRow", 16)).rect,
+		nendo.Rect{11, 3.5, 182, 20},
+	)
 
 	virtual_rows_layout(1000, nendo.fixed(100), {y = true, offset = {0, -200}})
 	testing.expect(t, !nendo.scroll(list_id).found)
@@ -448,6 +470,43 @@ layout_virtual_rows_follow_ancestor_scroll :: proc(t: ^testing.T) {
 		testing.expect_value(t, row.rect, nendo.Rect{0, 0, 200, 20})
 		testing.expect(t, !nendo.element(nendo.id("FloatingRow", 0)).found)
 	}
+
+	nendo.set_dimensions({800, 600})
+	grouped_id := nendo.id("GroupedViewport")
+	for count in ([2]int{30, 5}) {
+		if count == 5 {
+			view := nendo.scroll(grouped_id)
+			view.position.y = view.viewport.height - view.content.height
+		}
+		offsets := [2]f32{0, 40 + f32(count) * 40}
+		nendo.begin()
+		if nendo.box(grouped_id)(
+		{
+			width = nendo.fixed(200),
+			height = nendo.fixed(120),
+			direction = .Column,
+			padding = {bottom = 10},
+			clip = {y = true, scroll = true},
+		},
+		) {
+			groups := nendo.virtual_rows(nendo.id("GroupedSections"), offsets[:])
+			for _ in groups.first ..< groups.end {
+				if nendo.box()(
+				{width = nendo.grow(), height = nendo.fixed(offsets[1]), direction = .Column},
+				) {
+					if nendo.box()({height = nendo.fixed(40)}) {}
+					rows := nendo.virtual_rows(nendo.id("GroupedRun"), count, 40)
+					for i in rows.first ..< rows.end {
+						if nendo.box(nendo.id("GroupedRow", u32(i)))({height = nendo.fixed(40)}) {}
+					}
+				}
+			}
+		}
+		nendo.end(0)
+	}
+	testing.expect_value(t, nendo.scroll(grouped_id).position.y, -130)
+	testing.expect_value(t, nendo.element(nendo.id("GroupedRow", 3)).rect.y, 30)
+	testing.expect_value(t, nendo.element(nendo.id("GroupedRow", 4)).rect.y, 70)
 	testing.expect_value(t, errors, 0)
 }
 
@@ -467,10 +526,16 @@ layout_virtual_height_growth :: proc(t: ^testing.T) {
 			if nendo.box(nendo.id("HeightGrowthRow", u32(i)))({height = nendo.fixed(20)}) {}
 		}
 	}
+	list_id := nendo.id("HeightGrowthList")
 	for nested in ([2]bool{false, true}) {
-		for dimensions in ([4][2]f32{{100, 0}, {500, 0}, {500, 400}, {500, 0}}) {
+		for dimensions, frame in ([4][2]f32{{100, 0}, {500, 0}, {500, 400}, {500, 0}}) {
 			height, footer := dimensions[0], dimensions[1]
 			nendo.set_dimensions({800, height})
+			at_bottom := !nested && frame == 3
+			if at_bottom {
+				view := nendo.scroll(list_id)
+				view.position.y = view.viewport.height - view.content.height
+			}
 			nendo.begin()
 			if nendo.box()(
 			{width = nendo.fixed(100), height = nendo.grow(), direction = .Column},
@@ -494,11 +559,18 @@ layout_virtual_height_growth :: proc(t: ^testing.T) {
 				}
 			}
 			nendo.end(0)
-			testing.expect_value(
-				t,
-				nendo.scroll(nendo.id("HeightGrowthList")).viewport.height,
-				height - footer,
-			)
+			view := nendo.scroll(list_id)
+			testing.expect_value(t, view.viewport.height, height - footer)
+			if at_bottom {
+				testing.expect_value(t, view.position.y, -1500)
+				first := nendo.element(nendo.id("HeightGrowthRow", 75))
+				last := nendo.element(nendo.id("HeightGrowthRow", 99))
+				testing.expect(t, first.found && last.found)
+				testing.expect_value(t, first.rect.y, 0)
+				testing.expect_value(t, last.rect.y, 480)
+				view.position.y = 0
+				continue
+			}
 			row := nendo.element(nendo.id("HeightGrowthRow", 23))
 			if height - footer == 500 {
 				testing.expect(t, row.found)
@@ -731,6 +803,64 @@ layout_grid_reflows_cells :: proc(t: ^testing.T) {
 }
 
 @(test)
+layout_grid_aspect_uses_allocated_width :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	nendo.set_context(nil)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.init(memory, {800, 600})
+	grid, first, last := nendo.id("AspectGrid"), nendo.id("First"), nendo.id("Last")
+
+	for trial in ([3]struct {
+			width, height:   nendo.Size,
+			expected_height: f32,
+		}{{nendo.fixed(200), nendo.fit(), 100}, {nendo.grow(), nendo.fit(), 100}, {nendo.fixed(200), nendo.percent(0.5, max = 70), 70}}) {
+		nendo.begin()
+		if nendo.box()(
+		{width = nendo.fixed(200), height = nendo.fixed(160), direction = .Column},
+		) {
+			if nendo.box(grid)(
+			{
+				width = trial.width,
+				height = trial.height,
+				aspect = 2,
+				grid = {min_cell_width = 90, row_height = 30},
+				clip = {x = true},
+			},
+			) {
+				if nendo.box(first)({}) {}
+				if nendo.box(last)({}) {}
+			}
+		}
+		nendo.end(0)
+		testing.expect_value(
+			t,
+			nendo.element(grid).rect,
+			nendo.Rect{0, 0, 200, trial.expected_height},
+		)
+		testing.expect_value(t, nendo.element(first).rect, nendo.Rect{0, 0, 100, 30})
+		testing.expect_value(t, nendo.element(last).rect, nendo.Rect{100, 0, 100, 30})
+		nendo.set_pointer({150, 15}, .Up)
+		testing.expect(t, nendo.pointer_over(last))
+	}
+
+	nendo.begin()
+	if nendo.box()({width = nendo.fixed(200), grid = {min_cell_width = 90, row_height = 30}}) {
+		if nendo.box(grid)({aspect = 2, grid = {min_cell_width = 90, row_height = 10}}) {
+			if nendo.box(first)({}) {}
+		}
+		if nendo.box()({}) {}
+		if nendo.box(last)({}) {}
+	}
+	nendo.end(0)
+	testing.expect_value(t, nendo.element(grid).rect, nendo.Rect{0, 0, 100, 30})
+	testing.expect_value(t, nendo.element(first).rect, nendo.Rect{0, 0, 100, 10})
+	testing.expect_value(t, nendo.element(last).rect, nendo.Rect{0, 30, 100, 30})
+}
+
+@(test)
 layout_grid_animates_contents :: proc(t: ^testing.T) {
 	sync.lock(&nendo_test_mutex)
 	defer sync.unlock(&nendo_test_mutex)
@@ -820,6 +950,55 @@ layout_wrap_row_reflows :: proc(t: ^testing.T) {
 		)
 		nendo.set_pointer({box.x + 1, box.y + 1}, .Up)
 		testing.expect(t, nendo.pointer_over(last))
+	}
+}
+
+@(test)
+layout_wrap_row_resolves_height_after_allocation :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	nendo.set_context(nil)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.init(memory, {800, 600})
+	row, first, last := nendo.id("RelativeRow"), nendo.id("First"), nendo.id("Last")
+
+	for trial in ([3]struct {
+			parent_height, row_height, first_height: f32,
+			height:                                  nendo.Size,
+		}{{100, 100, 30, nendo.grow()}, {56, 56, 18, nendo.grow()}, {100, 44, 12, nendo.fit()}}) {
+		nendo.begin()
+		if nendo.box()(
+		{width = nendo.fixed(100), height = nendo.fixed(trial.parent_height), direction = .Column},
+		) {
+			if nendo.box(row)(
+			{
+				width = nendo.grow(),
+				height = trial.height,
+				direction = .Wrap_Row,
+				padding = nendo.pad(10),
+				gap = 6,
+			},
+			) {
+				if nendo.box(first)(
+				{width = nendo.fixed(70), height = nendo.percent(0.5, max = 30)},
+				) {}
+				if nendo.box(last)({width = nendo.fixed(70), height = nendo.fixed(18)}) {}
+			}
+		}
+		nendo.end(0)
+		testing.expect_value(t, nendo.element(row).rect, nendo.Rect{0, 0, 100, trial.row_height})
+		testing.expect_value(
+			t,
+			nendo.element(first).rect,
+			nendo.Rect{10, 10, 70, trial.first_height},
+		)
+		testing.expect_value(
+			t,
+			nendo.element(last).rect,
+			nendo.Rect{10, 16 + trial.first_height, 70, 18},
+		)
 	}
 }
 

@@ -110,12 +110,14 @@ Layout_Element :: struct {
 	in_wrap_flow:             bool,
 	wrap_subtree:             bool,
 	height_reflows:           bool,
+	virtual_scroll_y:         bool,
 	wrap_first:               i32,
 	wrap_intrinsic:           Dimensions,
 	wrap_exit_position:       Vector2,
 	declared_height:          f32,
 	virtual_prefix_height:    f32,
 	virtual_prefix_count:     i32,
+	virtual_scroll_min_y:     f32,
 }
 
 @(private)
