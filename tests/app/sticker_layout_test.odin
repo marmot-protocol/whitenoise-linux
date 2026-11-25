@@ -560,27 +560,32 @@ sticker_picker_virtual_rows :: proc(t: ^testing.T) {
 
 	ui.selected = 0
 	delete(ui.sticker_filter); ui.sticker_filter = ""
-	rl.SetWindowSize(248, 700)
-	nendo.set_dimensions({248, 700})
-	frame(&ui); frame(&ui)
-	ui.sticker_focus = 4
-	nendo.scroll(grid_id).position.y = 0
-	frame(&ui)
-	composer := nendo.element(nendo.id("ComposeBox"))
-	if !testing.expect(t, composer.found) {return}
-	rl.PushKey(.DOWN, true); handle_picker(&ui, nil); rl.PushKey(.DOWN, false)
-	rl.SetWindowSize(248, 540)
-	nendo.set_dimensions({248, 540})
-	frame(&ui)
-	grid = nendo.element(grid_id).rect
-	resized := nendo.element(nendo.id("StickerPick", 6))
-	testing.expect(
-		t,
-		resized.found &&
-		resized.rect.y >= grid.y &&
-		resized.rect.y + resized.rect.height <= grid.y + grid.height + 0.01,
-		"The composer-anchored grid must reveal focus after a resize",
-	)
+	for height in ([2]i32{620, 540}) {
+		rl.SetWindowSize(248, 700)
+		nendo.set_dimensions({248, 700})
+		frame(&ui); frame(&ui)
+		ui.sticker_focus = 4
+		nendo.scroll(grid_id).position.y = 0
+		frame(&ui)
+		if !testing.expect(t, nendo.element(nendo.id("ComposeBox")).found) {return}
+		rl.PushKey(.DOWN, true); handle_picker(&ui, nil); rl.PushKey(.DOWN, false)
+		rl.SetWindowSize(248, height)
+		nendo.set_dimensions({248, f32(height)})
+		frame(&ui)
+		grid = nendo.element(grid_id).rect
+		tile := nendo.element(nendo.id("StickerPick", 6))
+		visible :=
+			min(grid.y + grid.height, tile.rect.y + tile.rect.height) - max(grid.y, tile.rect.y)
+		// A viewport shorter than a tile can only reveal one viewport's worth.
+		testing.expectf(
+			t,
+			grid.height > 0 && tile.found && visible + 0.01 >= min(tile.rect.height, grid.height),
+			"Picker focus at window height %d: tile %v, grid %v",
+			height,
+			tile.rect,
+			grid,
+		)
+	}
 	rl.PushKey(.ENTER, true); handle_picker(&ui, nil); rl.PushKey(.ENTER, false)
 	if testing.expect_value(t, len(ui.pending), 1) {
 		testing.expect_value(t, ui.pending[0].sticker.code, "sticker-6")
