@@ -110,7 +110,11 @@ Keep `build/cargo/native` and `build/cross/<target>/cargo` between builds. Cargo
 
 - **Cargo.** Rust and C/C++ compiler versions, target, and build flags select separate cache directories. `CARGO_TARGET_DIR` selects the native cache root; the build appends its compiler-environment fingerprint.
 - **Cross dependencies.** Cross builds also retain the target sysroot, SDL, speech runtime, and vcpkg outputs. Their stamps include the inputs that produced them; changing those inputs rebuilds the affected dependency.
-- **CI restores.** CI restores Cargo state within the same compiler and target boundary and lets Cargo check the inputs. GitHub's macOS jobs save one snapshot per dependency and toolchain key, not per app commit.
+- **CI restores.** GitHub's macOS jobs cache Cargo state, the installed vcpkg prefix, libmpv, and other C dependencies by dependency and toolchain inputs, not by app commit. Cargo still checks its inputs, and the cross build checks the C dependency stamps before reuse.
+- **Windows CI.** GitHub `master` builds save vcpkg binary archives for the Boat SDK and dependency recipe. Tag builds can restore them. vcpkg checks each package's ABI before reuse; packaging, signing, and smoke checks still run as before.
+- **OpenBSD CI.** Successful GitHub `master` builds save MDK sources and Cargo state for the matching guest SDK. Tag builds can restore the cache. Cargo still checks the staged source, and every run builds and boots the package.
+- **Orchard CI.** GitHub `master` saves the publisher executable by source digest, Rust version, and build recipe. Push jobs reuse it on a cache hit. The Flatpak job still builds the bundle and boots the app from both release formats.
+- **Flatpak CI.** The module cache key uses the resolved manifest, the builder version, and the installed runtime commits. Workflow-only edits no longer invalidate it. Only `master` saves the cache, before the app module runs.
 - **C/C++ helpers and Odin outputs.** Native and cross builds cache these by input contents, compiler, target, and flags. Output manifests detect missing or corrupted files and reject dangling links.
 - **SDK symlinks.** Dangling SDK symlinks contribute their link metadata to input keys; resolving or retargeting them invalidates the cache.
 - **Native Linux app.** Odin compiles separate LLVM modules at `-o:speed` and links them with LLD. The cache stores the executable. A change to the Marmot archive rebuilds the app, even if no Odin source changed.

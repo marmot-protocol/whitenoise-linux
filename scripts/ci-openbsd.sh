@@ -17,6 +17,7 @@ cpus=$(getconf _NPROCESSORS_ONLN)
 
 out="$PWD/build/openbsd"
 mkdir -p "$out"
+cache_dir="$out/cargo-cache"
 tmp=$(mktemp -d)
 unit="wn-openbsd-$$.scope"
 cleanup() {
@@ -81,7 +82,7 @@ fi
 ssh "${ssh_args[@]}" runner@127.0.0.1 /usr/local/bin/bash -s <<'GUEST'
 set -euo pipefail
 sudo pkg_add -I bash git cmake ninja gmake coreutils llvm%21 rust unzip-- \
-    sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg zenity libnotify zstd
+    sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg zenity libnotify zstd gtar rsync
 sudo fdisk -iy sd2
 printf '/mnt/build * 100%%\n' | sudo disklabel -wA -T - sd2
 sudo newfs /dev/rsd2a
@@ -91,7 +92,25 @@ sudo chown runner /mnt/build
 mkdir -p /mnt/build/work
 GUEST
 export RSYNC_RSH="ssh -i $tmp/key -p 22022 -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$tmp/known_hosts"
-rsync -a --no-owner --no-group --exclude=/build/ --exclude=/dist/ ./ runner@127.0.0.1:/mnt/build/work/
+guest=runner@127.0.0.1
+if ! sdk=$(ssh "${ssh_args[@]}" "$guest" '/usr/local/bin/bash -o pipefail -c "pkg_info -q -S | LC_ALL=C sort | sha256 -q"'); then
+  echo '::warning::OpenBSD SDK fingerprint unavailable. Building without the Cargo cache.'
+  sdk=''
+fi
+restored=no
+if [[ -n $sdk && -f $cache_dir/cache.tar.zst && -f $cache_dir/sdk && $(<"$cache_dir/sdk") == "$sdk" ]]; then
+  if ssh "${ssh_args[@]}" "$guest" '/usr/local/bin/bash -o pipefail -c "zstd -dc | gtar -xf - -C /mnt/build"' \
+    <"$cache_dir/cache.tar.zst"; then
+    restored=yes
+  else
+    echo '::warning::OpenBSD Cargo cache could not be restored. Building from scratch.'
+    ssh "${ssh_args[@]}" "$guest" 'rm -rf /mnt/build/cargo /mnt/build/target /mnt/build/work/vendor/mdk'
+  fi
+fi
+printf 'OpenBSD Cargo cache restored: %s\n' "$restored"
+# Cargo uses source mtimes. Keep them only for byte-identical staged inputs.
+rsync -a --no-owner --no-group --checksum --no-times --delete --rsync-path=/usr/local/bin/rsync \
+  --exclude=/build/ --exclude=/dist/ --exclude='*.env' ./ "$guest:/mnt/build/work/"
 {
   printf 'export %s=%q\n' \
     WN_RELEASE_VERSION "${WN_RELEASE_VERSION:-}" \
@@ -105,7 +124,33 @@ export CARGO_TARGET_DIR=/mnt/build/target CARGO_HOME=/mnt/build/cargo
 export CARGO_BUILD_JOBS=3 WN_BUILD_JOBS=3 CMAKE_BUILD_PARALLEL_LEVEL=3
 bash scripts/openbsd-build.sh
 GUEST
-} | ssh "${ssh_args[@]}" runner@127.0.0.1 /usr/local/bin/bash -s
+} | ssh "${ssh_args[@]}" "$guest" /usr/local/bin/bash -s
 mkdir -p dist
-rsync -a runner@127.0.0.1:/mnt/build/work/dist/ dist/
-rsync -a runner@127.0.0.1:/mnt/build/work/build/openbsd/wn-odin-shot.png "$out/"
+rsync -a "$guest:/mnt/build/work/dist/" dist/
+rsync -a "$guest:/mnt/build/work/build/openbsd/wn-odin-shot.png" "$out/"
+
+if [[ ${GITHUB_EVENT_NAME:-} != push || ${GITHUB_REF:-} != refs/heads/master ]]; then
+  exit 0
+fi
+update="$out/cargo-cache-update"
+if ! { rm -f "$update" && : >"$update"; }; then
+  echo '::warning::OpenBSD Cargo cache update marker could not be created.'
+  exit 0
+fi
+if [[ $restored == yes || -z $sdk ]]; then
+  exit 0
+fi
+
+# Pax retains the subsecond mtimes Cargo uses to check freshness.
+if ! { mkdir -p "$cache_dir" &&
+  ssh "${ssh_args[@]}" "$guest" /usr/local/bin/bash -s >"$cache_dir/cache.tar.zst" <<'GUEST' &&
+set -euo pipefail
+cd /mnt/build
+gtar --format=pax -cf - --exclude='*.env' --exclude=work/vendor/mdk/.git \
+  --exclude=work/vendor/mdk/crates/marmot-c/output cargo/git cargo/registry target work/vendor/mdk | zstd -T2 -1
+GUEST
+  printf '%s\n' "$sdk" >"$cache_dir/sdk" &&
+  printf '%s\n' "$sdk" >"$update.new" && mv -T "$update.new" "$update";
+}; then
+  echo '::warning::OpenBSD Cargo cache could not be saved.'
+fi

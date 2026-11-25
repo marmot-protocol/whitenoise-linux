@@ -54,6 +54,10 @@ case "${1:-}" in
       -v "$GITHUB_WORKSPACE:/work" -v "$RUNNER_TEMP:$RUNNER_TEMP" \
       --workdir /work --entrypoint sleep "${args[@]}" "$image" infinity
     ;;
+  debian-sdk-key)
+    podman exec "$name" dpkg-query -W -f '${binary:Package}=${Version}\n' |
+      LC_ALL=C sort | sha256sum | cut -d' ' -f1
+    ;;
   run)
     . scripts/ci-job-vars.sh
     args=()
@@ -79,7 +83,7 @@ case "${1:-}" in
     podman rm --force --ignore "$name"
     ;;
   *)
-    echo "Usage: $0 start <native|cross|flatpak|arch> | run <script> | stop" >&2
+    echo "Usage: $0 start <native|cross|flatpak|arch> | debian-sdk-key | run <script> | stop" >&2
     exit 2
     ;;
 esac

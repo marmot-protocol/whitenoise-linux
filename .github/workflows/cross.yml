@@ -42,6 +42,7 @@ jobs:
       BOAT_CI_KEY: ${{ github.event_name != 'pull_request' && secrets.BOAT_CI_KEY || '' }}
       WN_RELEASE_VERSION: ${{ inputs.version }}
       RELEASE: ${{ matrix.target == 'windows-amd64' && github.event_name == 'push' && github.ref_type == 'tag' && inputs.version != '' }}
+      VCPKG_BINARY_SOURCES: ${{ matrix.target == 'windows-amd64' && github.event_name == 'push' && 'clear;files,/work/build/ci-vcpkg,readwrite' || '' }}
       # ARM64 release codegen can exceed the container's memory at six jobs.
       CARGO_BUILD_JOBS: ${{ matrix.target == 'linux-arm64' && 2 || 6 }}
       WN_BUILD_JOBS: 6
@@ -60,6 +61,28 @@ jobs:
         id: start
         shell: bash
         run: bash scripts/ci-boat.sh start cross '${{ matrix.target == 'linux-arm64' && 'xlarge' || 'large' }}'
+      - name: Identify Windows cross SDK
+        if: env.VCPKG_BINARY_SOURCES != ''
+        id: windows-sdk
+        continue-on-error: true
+        shell: bash
+        run: |
+          sdk=$(WN_BOAT_HOST_STEP=1 bash scripts/ci-boat.sh run <(echo 'bash scripts/ci-container.sh debian-sdk-key'))
+          [[ $sdk =~ ^[0-9a-f]{64}$ ]]
+          echo "fingerprint=$sdk" >> "$GITHUB_OUTPUT"
+      - name: Restore Windows vcpkg archives
+        if: steps.windows-sdk.outputs.fingerprint != ''
+        id: windows-cache
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: build/ci-vcpkg
+          key: windows-vcpkg-v1-${{ steps.windows-sdk.outputs.fingerprint }}-${{ hashFiles('DEPS_PIN', 'packaging/cross/**', 'scripts/cross-toolchain.sh', 'scripts/cross-deps.sh') }}
+      - name: Send Windows vcpkg archives to Boat
+        if: steps.windows-cache.outputs.cache-hit == 'true'
+        continue-on-error: true
+        shell: bash
+        run: bash scripts/ci-boat.sh push build/ci-vcpkg
       - name: Clear previous packages and smoke evidence
         run: rm -rf dist build/cross-smoke build/cross-evidence
       - name: Cross compile and package
@@ -142,6 +165,19 @@ jobs:
           name: smoke-${{ matrix.target }}
           path: build/cross-evidence/${{ matrix.target }}.png
           if-no-files-found: error
+      - name: Retrieve new Windows vcpkg archives
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.windows-cache.outputs.cache-primary-key != '' && steps.windows-cache.outputs.cache-hit != 'true'
+        id: windows-cache-export
+        continue-on-error: true
+        shell: bash
+        run: bash scripts/ci-boat.sh pull build/ci-vcpkg
+      - name: Save Windows vcpkg archives
+        if: steps.windows-cache-export.outcome == 'success'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: build/ci-vcpkg
+          key: ${{ steps.windows-cache.outputs.cache-primary-key }}
       - name: Stop cross build environment
         if: always()
         shell: bash
@@ -176,6 +212,21 @@ jobs:
             *[!a-zA-Z0-9._+-]*) echo 'Invalid archive version' >&2; exit 2 ;;
           esac
           bash scripts/ci-boat.sh start openbsd
+      - name: Restore OpenBSD Cargo cache
+        if: github.event_name == 'push'
+        id: openbsd-cache
+        uses: actions/cache/restore@v4
+        env:
+          CACHE_PREFIX: openbsd-cargo-v1-${{ hashFiles('scripts/ci-openbsd.sh', 'scripts/openbsd-build.sh', 'DEPS_PIN', 'patches/mdk-*.patch') }}-
+        with:
+          path: build/openbsd/cargo-cache
+          key: ${{ env.CACHE_PREFIX }}
+          restore-keys: ${{ env.CACHE_PREFIX }}
+      - name: Send OpenBSD Cargo cache to Boat
+        if: steps.openbsd-cache.outputs.cache-matched-key != ''
+        continue-on-error: true
+        shell: bash
+        run: bash scripts/ci-boat.sh push build/openbsd/cargo-cache
       - name: Build and package in Boat OpenBSD guest
         if: github.event_name != 'pull_request'
         run: |
@@ -227,6 +278,25 @@ jobs:
           name: smoke-openbsd-amd64
           path: build/openbsd/wn-odin-shot.png
           if-no-files-found: error
+      - name: Retrieve new OpenBSD Cargo cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        id: openbsd-cache-export
+        continue-on-error: true
+        shell: bash
+        run: |
+          bash scripts/ci-boat.sh pull build/openbsd/cargo-cache-update
+          sdk=$(<build/openbsd/cargo-cache-update)
+          if [ -n "$sdk" ]; then
+            bash scripts/ci-boat.sh pull build/openbsd/cargo-cache
+            echo "sdk=$sdk" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Save OpenBSD Cargo cache
+        if: steps.openbsd-cache-export.outputs.sdk != ''
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: build/openbsd/cargo-cache
+          key: ${{ steps.openbsd-cache.outputs.cache-primary-key }}${{ steps.openbsd-cache-export.outputs.sdk }}
       - name: Stop OpenBSD build environment
         if: always() && github.event_name != 'pull_request'
         shell: bash
@@ -299,7 +369,7 @@ jobs:
         with:
           path: |
             build/cross/${{ matrix.target }}/fbx/ufbx.o
-            build/cross/${{ matrix.target }}/fbx/ufbx.stamp
+            build/cross/${{ matrix.target }}/ufbx.cache
             build/cross/${{ matrix.target }}/mpv-stage
             build/cross/${{ matrix.target }}/mpv.stamp
             build/cross/${{ matrix.target }}/sherpa-onnx
@@ -333,12 +403,12 @@ jobs:
             ~/.rustup/toolchains
           key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
       - name: Save C dependencies
-        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && hashFiles(format('build/cross/{0}/fbx/ufbx.stamp', matrix.target)) != ''
+        if: success() && steps.cdeps-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
             build/cross/${{ matrix.target }}/fbx/ufbx.o
-            build/cross/${{ matrix.target }}/fbx/ufbx.stamp
+            build/cross/${{ matrix.target }}/ufbx.cache
             build/cross/${{ matrix.target }}/mpv-stage
             build/cross/${{ matrix.target }}/mpv.stamp
             build/cross/${{ matrix.target }}/sherpa-onnx

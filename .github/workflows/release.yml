@@ -168,6 +168,7 @@ jobs:
     environment: ${{ github.event_name == 'pull_request' && 'wn-github-pr' || 'wn-boat-build' }}
     env:
       BOAT_CI_KEY: ${{ github.event_name != 'pull_request' && secrets.BOAT_CI_KEY || '' }}
+      ORCHARD_RUST_VERSION: '1.100.0'
     defaults:
       run:
         shell: bash scripts/ci-boat.sh run {0}
@@ -176,14 +177,38 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Identify pinned Orchard source
+        if: github.event_name == 'push'
+        id: orchard-source
+        shell: bash
+        run: |
+          digest=$(awk '$1 == "orchard-source-file" && $2 == "=" {print $3}' DEPS_PIN)
+          [[ $digest =~ ^[0-9a-f]{64}$ ]]
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Orchard publisher
+        if: github.event_name == 'push'
+        id: orchard-cache
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: build/orchard-publish
+          key: orchard-publisher-v1-ubuntu24-x64-${{ env.ORCHARD_RUST_VERSION }}-${{ steps.orchard-source.outputs.digest }}-${{ hashFiles('scripts/build-orchard.sh', 'scripts/fetch.sh', 'scripts/ci-boat.sh', 'scripts/ci-container.sh', 'packaging/ci/Containerfile', 'patches/orchard-*.patch') }}
+
       - name: Start native build guest
+        if: steps.orchard-cache.outputs.cache-hit != 'true'
+        id: orchard-guest
         shell: bash
         run: bash scripts/ci-boat.sh start native
 
       - name: Build pinned publisher only
-        run: scripts/build-orchard.sh
+        if: steps.orchard-guest.outcome == 'success'
+        run: |
+          rustup toolchain install '${{ env.ORCHARD_RUST_VERSION }}' --profile minimal
+          RUSTUP_TOOLCHAIN='${{ env.ORCHARD_RUST_VERSION }}' scripts/build-orchard.sh
 
       - name: Retrieve Orchard publisher
+        if: steps.orchard-guest.outcome == 'success'
         shell: bash
         run: bash scripts/ci-boat.sh pull build/orchard-publish
 
@@ -194,9 +219,17 @@ jobs:
           if-no-files-found: error
 
       - name: Stop build guest
-        if: always()
+        if: always() && steps.orchard-guest.outcome != 'skipped'
         shell: bash
         run: bash scripts/ci-boat.sh stop
+
+      - name: Save Orchard publisher
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.orchard-guest.outcome == 'success' && steps.orchard-cache.outputs.cache-primary-key != ''
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: build/orchard-publish
+          key: ${{ steps.orchard-cache.outputs.cache-primary-key }}
 
   flatpak:
     name: Flatpak (x86_64)
@@ -227,50 +260,81 @@ jobs:
         # Branch and PR refs can contain slashes.
         run: echo "WN_FLATPAK_BUNDLE=WhiteNoise-${GITHUB_REF_NAME//\//-}-x86_64.flatpak" >> "$GITHUB_ENV"
 
+      - name: Prepare Flatpak builder
+        id: flatpak-prepare
+        shell: bash
+        run: |
+          set -o pipefail
+          log="$RUNNER_TEMP/flatpak-prepare.log"
+          script="$RUNNER_TEMP/flatpak-prepare.sh"
+          cat > "$script" <<'PREPARE'
+          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          # Keep relative manifest sources rooted in the checkout.
+          flatpak-builder --show-manifest "packaging/flatpak/$FLATPAK_ID.yml" \
+            | jq '."build-options".env += {"CARGO_BUILD_JOBS":"6","WN_BUILD_JOBS":"6","CMAKE_BUILD_PARALLEL_LEVEL":"6"}' \
+            > packaging/flatpak/ci-manifest.json
+          flatpak-builder --user --install-deps-from=flathub --install-deps-only \
+            --arch=x86_64 --state-dir=build/flatpak-state build/flatpak packaging/flatpak/ci-manifest.json
+          if [[ $GITHUB_EVENT_NAME != pull_request ]]; then
+            # Hash full commit IDs for the SDK and its installed extensions.
+            if digest=$({
+              flatpak-builder --version || exit 1
+              flatpak list --user --all --runtime --columns=ref | LC_ALL=C sort | while read -r ref; do
+                printf '%s ' "$ref"
+                flatpak info --user --show-commit "$ref" || exit 1
+              done || exit 1
+              jq -cS . packaging/flatpak/ci-manifest.json
+            } | sha256sum | cut -d' ' -f1); then
+              echo "Flatpak module cache digest: $digest"
+            else
+              echo '::warning::Flatpak cache inputs unavailable. Building without the module cache.'
+            fi
+          fi
+          PREPARE
+          bash scripts/ci-boat.sh run "$script" | tee "$log"
+          digest=$(awk '/^Flatpak module cache digest: / {print $NF}' "$log")
+          if [[ $digest =~ ^[0-9a-f]{64}$ ]]; then
+            echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Restore Flatpak module cache
-        if: github.event_name != 'pull_request'
+        if: steps.flatpak-prepare.outputs.digest != ''
         id: flatpak-cache
         uses: actions/cache/restore@v4
         with:
           path: build/flatpak-module-cache.tar.gz
-          key: flatpak-modules-v1-${{ hashFiles('packaging/flatpak/dev.ipf.whitenoise.yml', '.github/workflows/release.yml') }}
+          key: flatpak-modules-v2-${{ steps.flatpak-prepare.outputs.digest }}
 
       - name: Send Flatpak module cache to guest
         if: steps.flatpak-cache.outputs.cache-hit == 'true'
         shell: bash
         run: bash scripts/ci-boat.sh push build/flatpak-module-cache.tar.gz
 
-      - name: Prepare Flatpak builder
+      - name: Unpack Flatpak module cache
+        if: steps.flatpak-cache.outputs.cache-hit == 'true'
         run: |
-          if [ -f build/flatpak-module-cache.tar.gz ]; then
-            mkdir -p build/flatpak-state
-            tar -xzf build/flatpak-module-cache.tar.gz -C build/flatpak-state
-          fi
-          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-          # The SDK sandbox does not inherit the outer container's build limits.
-          # Keep this resolved manifest beside the original for relative sources.
-          flatpak-builder --show-manifest "packaging/flatpak/$FLATPAK_ID.yml" \
-            | jq '."build-options".env += {"CARGO_BUILD_JOBS":"6","WN_BUILD_JOBS":"6","CMAKE_BUILD_PARALLEL_LEVEL":"6"}' \
-            > packaging/flatpak/ci-manifest.json
+          mkdir -p build/flatpak-state
+          tar -xzf build/flatpak-module-cache.tar.gz -C build/flatpak-state
 
       # Only master writes this cache, before any app module runs. Save just
       # the installed module snapshots, not the SDK, sources, or build trees.
       - name: Build tokenless Flatpak modules
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.flatpak-cache.outputs.cache-hit != 'true'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.flatpak-cache.outputs.cache-primary-key != '' && steps.flatpak-cache.outputs.cache-hit != 'true'
+        id: flatpak-cache-build
         run: |
           xvfb-run --auto-servernum flatpak-builder \
-            --user --install-deps-from=flathub --disable-rofiles-fuse --force-clean \
+            --user --disable-rofiles-fuse --force-clean \
             --jobs=6 --default-branch=master --arch=x86_64 --state-dir=build/flatpak-state \
             --stop-at=whitenoise-linux build/flatpak packaging/flatpak/ci-manifest.json
           tar -czf build/flatpak-module-cache.tar.gz -C build/flatpak-state cache
 
       - name: Retrieve tokenless Flatpak module cache
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.flatpak-cache.outputs.cache-hit != 'true'
+        if: steps.flatpak-cache-build.outcome == 'success'
         shell: bash
         run: bash scripts/ci-boat.sh pull build/flatpak-module-cache.tar.gz
 
       - name: Save tokenless Flatpak module cache
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.flatpak-cache.outputs.cache-hit != 'true'
+        if: steps.flatpak-cache-build.outcome == 'success'
         uses: actions/cache/save@v4
         with:
           path: build/flatpak-module-cache.tar.gz
@@ -282,7 +346,7 @@ jobs:
           WN_AUDIT_WRITE_TOKEN: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
         run: |
           xvfb-run --auto-servernum flatpak-builder \
-            --user --install-deps-from=flathub --repo=build/flatpak-repo \
+            --user --repo=build/flatpak-repo \
             --disable-rofiles-fuse --force-clean --jobs=6 \
             --default-branch=master --arch=x86_64 --subject="Built from $GITHUB_SHA" \
             --state-dir=build/flatpak-state \
