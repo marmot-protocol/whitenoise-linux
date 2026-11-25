@@ -256,7 +256,7 @@ settings_advanced :: proc(ui: ^Ui_State) {
 
 // Two-step delete id, keyed to the file path so a rescan that reorders
 // the list cannot confirm a different row. A plain string dodges the
-// indexed-id binding bug (PORT.md Quirks).
+// indexed-id binding bug.
 audit_delete_id :: proc(path: string) -> string {
 	return fmt.tprintf("AuditDelete:%s", path)
 }

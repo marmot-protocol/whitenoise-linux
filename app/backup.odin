@@ -1,4 +1,4 @@
-// Password-sealed backup of everything this port owns locally: the
+// Password-sealed backup of everything this app owns locally: the
 // settings blob (themes, drafts, nicknames, blocked, prefs), the
 // hidden-message ids, the custom emoji, and any user themes. The
 // offline send queue is left out: it is sealed with this device's vault
@@ -6,7 +6,7 @@
 //
 // marmot-c exposes no store export/import, so the account keys, the
 // MLS state, and the message history are NOT in here. A backup
-// restores this device's preferences, not its identity (PORT.md).
+// restores this device's preferences, not its identity.
 //
 //   files ──manifest json──► plaintext ──XChaCha20-Poly1305──► .wnbk
 //                                             ▲

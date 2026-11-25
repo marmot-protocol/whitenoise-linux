@@ -1,6 +1,5 @@
-// UI prefs persistence, the settings.rs port: a tiny JSON blob in XDG
-// config. All load/save failures are swallowed; defaults keep the app
-// booting.
+// UI prefs persistence: a tiny JSON blob in XDG config. All load/save
+// failures are swallowed; defaults keep the app booting.
 package main
 
 import "core:time"

@@ -893,7 +893,7 @@ settings_chats :: proc(ui: ^Ui_State) {
 				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 			// Fixed-size input first: this nendo build drops a fixed sibling
-			// declared after a grow sibling (see PORT.md quirks).
+			// declared after a grow sibling.
 			if nendo.box(nendo.id("RowEmojiName"))(
 			{
 				width = nendo.grow(),

@@ -293,7 +293,7 @@ get_started_pane :: proc(ui: ^Ui_State, mode: Onboard_Layout = .Scroll) {
 }
 
 // Plain-string id per row: indexed nendo ids don't survive the query
-// round trip (PORT.md Quirks).
+// round trip.
 step_action_id :: proc(step: Step) -> string {
 	switch step {
 	case .Relays:
