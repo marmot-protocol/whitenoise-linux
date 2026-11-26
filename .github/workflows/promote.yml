@@ -1,0 +1,154 @@
+name: Promote release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Immutable release candidate to promote
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.repository == 'marmot-protocol/whitenoise-linux' && github.ref == 'refs/heads/master' && 'wn-promote' || format('promote-skipped-{0}', github.run_id) }}
+  queue: max
+
+jobs:
+  promote:
+    name: Move GitHub Latest
+    if: github.repository == 'marmot-protocol/whitenoise-linux' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: wn-release-metadata
+      queue: max
+    permissions:
+      attestations: read
+      contents: write
+    outputs:
+      tag: ${{ steps.latest.outputs.tag }}
+      release_id: ${{ steps.latest.outputs.release_id }}
+      commit_sha: ${{ steps.latest.outputs.commit_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: policy
+          persist-credentials: false
+      - uses: danconwaydev/setup-ngit@v3
+      - name: Install pinned nak
+        run: |
+          bin="$RUNNER_TEMP/rc-bin"
+          mkdir "$bin"
+          curl --fail --silent --show-error --location \
+            https://github.com/fiatjaf/nak/releases/download/v0.20.6/nak-v0.20.6-linux-amd64 -o "$bin/nak"
+          printf '%s  %s\n' b44b36c792fbc3fb73b7ba3bbc94beda2219826271aa8d5f130f569c3817c3b9 "$bin/nak" | sha256sum --check
+          chmod +x "$bin/nak"
+          echo "$bin" >> "$GITHUB_PATH"
+      - name: Verify the candidate and promote its metadata
+        id: latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WN_RC_TAG: ${{ inputs.tag }}
+        run: |
+          source="$RUNNER_TEMP/rc-source"
+          git init -q "$source"
+          cd "$source"
+          git remote add origin "https://github.com/$GITHUB_REPOSITORY.git"
+          bash "$GITHUB_WORKSPACE/policy/scripts/rc-promote.sh" "$WN_RC_TAG"
+
+  aur:
+    name: Publish AUR recipes
+    needs: promote
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    environment: wn-boat-build
+    env:
+      BOAT_CI_KEY: ${{ secrets.BOAT_CI_KEY }}
+      WN_RC_TAG: ${{ needs.promote.outputs.tag }}
+      WN_RC_ID: ${{ needs.promote.outputs.release_id }}
+    defaults:
+      run:
+        shell: bash scripts/ci-boat.sh run {0}
+    steps:
+      - name: Check for the AUR key
+        id: key
+        shell: bash
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          if [ -n "$AUR_SSH_PRIVATE_KEY" ]; then echo 'present=true' >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          ref: refs/tags/${{ needs.promote.outputs.tag }}
+          persist-credentials: false
+      - name: Download and verify the promoted Arch archive
+        if: steps.key.outputs.present == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WN_RC_COMMIT: ${{ needs.promote.outputs.commit_sha }}
+        run: |
+          sha=$(git rev-parse HEAD)
+          test "$sha" = "$WN_RC_COMMIT"
+          echo "AUR source: $sha"
+          latest=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest")
+          jq -e --arg tag "$WN_RC_TAG" --argjson id "$WN_RC_ID" \
+            '.tag_name == $tag and .id == $id and .immutable == true and .prerelease == false and .draft == false' \
+            >/dev/null <<< "$latest"
+          archive="WhiteNoise-$WN_RC_TAG-archlinux-x86_64.tar.zst"
+          gh release download "$WN_RC_TAG" -R "$GITHUB_REPOSITORY" -p SHA256SUMS.txt -p "$archive" -D dist
+          (cd dist; sha256sum --check --strict --ignore-missing SHA256SUMS.txt)
+      - name: Start Arch build guest
+        id: start
+        if: steps.key.outputs.present == 'true'
+        shell: bash
+        run: bash scripts/ci-boat.sh start arch
+      - name: Send the verified package to the guest
+        if: steps.key.outputs.present == 'true'
+        shell: bash
+        run: bash scripts/ci-boat.sh push "dist/WhiteNoise-$WN_RC_TAG-archlinux-x86_64.tar.zst"
+      - name: Render AUR recipes from the promoted tag
+        if: steps.key.outputs.present == 'true'
+        run: |
+          pacman -Syu --noconfirm --needed git
+          bash scripts/aur-render.sh
+      - name: Retrieve recipes
+        if: steps.key.outputs.present == 'true'
+        shell: bash
+        run: bash scripts/ci-boat.sh pull build/aur
+      # ED25519 key published by aur.archlinux.org (SHA256:RFzBCUItH9LZS0cKB5UE6ceAYhBD5C8GeOBip8Z11+4).
+      - name: Push recipes while this release is Latest
+        if: steps.key.outputs.present == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          ssh_dir=$(mktemp -d)
+          trap 'rm -rf "$ssh_dir"' EXIT
+          (umask 077; printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > "$ssh_dir/key")
+          unset AUR_SSH_PRIVATE_KEY
+          echo 'aur.archlinux.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEuBKrPzbawxA/k2g6NcyV5jmqwJ2s+zpgZGZ7tpLIcN' > "$ssh_dir/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes"
+          for pkg in whitenoise-linux whitenoise-linux-bin whitenoise-linux-git; do
+            repo="$ssh_dir/$pkg"
+            git clone "ssh://aur@aur.archlinux.org/$pkg.git" "$repo"
+            cp "build/aur/$pkg/PKGBUILD" "build/aur/$pkg/.SRCINFO" "$repo/"
+            git -C "$repo" add PKGBUILD .SRCINFO
+            if git -C "$repo" diff --cached --quiet; then continue; fi
+            git -C "$repo" -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -q -m "Update to $WN_RC_TAG"
+            latest=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest")
+            jq -e --arg tag "$WN_RC_TAG" --argjson id "$WN_RC_ID" \
+              '.tag_name == $tag and .id == $id and .immutable == true and .prerelease == false and .draft == false' \
+              >/dev/null <<< "$latest"
+            git -C "$repo" push origin HEAD:master
+          done
+      - name: Stop Arch build guest
+        if: always() && steps.start.outcome != 'skipped'
+        shell: bash
+        run: bash scripts/ci-boat.sh stop

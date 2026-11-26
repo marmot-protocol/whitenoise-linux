@@ -129,7 +129,7 @@ mkdir -p dist
 rsync -a "$guest:/mnt/build/work/dist/" dist/
 rsync -a "$guest:/mnt/build/work/build/openbsd/wn-odin-shot.png" "$out/"
 
-if [[ ${GITHUB_EVENT_NAME:-} != push || ${GITHUB_REF:-} != refs/heads/master ]]; then
+if [[ -z ${WN_RC_TAG:-} || ${GITHUB_REF:-} != refs/heads/master ]]; then
   exit 0
 fi
 update="$out/cargo-cache-update"

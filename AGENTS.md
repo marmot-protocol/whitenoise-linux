@@ -326,10 +326,11 @@ any vault or identity exists. Unlock keeps its own copy without the map.
 
 ## Packaging
 
-Releases are an AppImage and a Flatpak bundle, built by
-`.github/workflows/release.yml` on a `v*` tag.
-`.ngit/act/workflows/release-appimage.yml` builds the AppImage on every push
-to master and hands it to ngit-ci for Blossom. The Flatpak manifest is
+`.github/workflows/release.yml` builds immutable prereleases from a green
+Canary. It signs a version commit outside `master` and tags that exact
+commit on GitHub. `promote.yml` moves Latest without rebuilding. The ngit
+desktop previews stay in place until the first qualified RC. The ngit
+Android debug APK runs on each push independently. The Flatpak manifest is
 `packaging/flatpak/dev.ipf.whitenoise.yml`; it builds
 the app inside the GNOME 50 SDK (freedesktop 25.08 base, which is what
 ships webkit2gtk-4.1 for wn-webview; libmpv and poppler as modules,
@@ -341,31 +342,22 @@ builds master from source: `prepare()` runs `scripts/build.sh fetch`, which
 downloads every pinned input including the speech runtime and the Rust
 crates, and `build()` compiles with `CARGO_NET_OFFLINE=true`. Odin is the
 pinned release tarball, kept in step with `ODIN_VERSION` in the workflows.
-That PKGBUILD is also the one copy of the package metadata. On a tag, the
-release workflow's `archlinux` job installs its depends and makedepends in
+That PKGBUILD is also the one copy of the package metadata. The RC
+workflow's `archlinux` job installs its depends and makedepends in
 an `archlinux` container and runs `scripts/arch-package.sh`, which compiles
 inside `unshare --net` and produces
-`WhiteNoise-<tag>-archlinux-x86_64.tar.zst`. The `aur` job then renders
+`WhiteNoise-<tag>-archlinux-x86_64.tar.zst`. The `aur-check` job renders
 `whitenoise-linux-bin` for that tarball with `scripts/aur-bin.sh`, installs
 and boots it, renders the from-source `whitenoise-linux` with
 `scripts/aur-source.sh` (every `DEPS_PIN` entry becomes a checksummed source)
-and checks its sources, and pushes all three once an `AUR_SSH_PRIVATE_KEY`
-secret exists.
+and checks its sources before the prerelease is public. Promotion pushes
+all three recipes if `AUR_SSH_PRIVATE_KEY` exists and the release is Latest.
 
-`just publish` (`scripts/publish.sh [tag]`) publishes a release everywhere
-from a maintainer's machine. It asks for the Zapstore signer (bunker URL or
-nsec), tags the merged release PR from `just release` with
-`scripts/release.sh --tag` (or takes an existing tag), waits for the
-release workflow to create the GitHub release, then downloads the AppImage
-and Flatpak, checks them against `SHA256SUMS.txt`, and runs
-`scripts/zapstore.ts`. That signs NIP-82 events with `nak` and sends them to
-Zapstore's relay: the app (kind 32267), one asset per package (3063, with a
-`variant` of `appimage` or `flatpak`) and the release (30063), all tagged
-`linux-x86_64`. Zapstore's own publisher, zsp, handles only APKs. The
-listing metadata and the publisher pubkey live in `zapstore.yaml`; the relay
-whitelists that pubkey by fetching the file from the repository on the first
-publish. Zapstore's clients list only Android apps today, so the events have
-no store page yet.
+`just release <tag>` pushes the verified RC tag to ngit and queues
+promotion. `just publish <tag>` requires GitHub Latest before asking for
+the store signer. It downloads the assets and release notes, checks the
+assets against `SHA256SUMS.txt`, and runs `scripts/zapstore.ts` to sign the
+NIP-82 announcements for Zapstore and Orchard. See [the release guide](docs/building.md#test-and-promote-a-release-candidate).
 
 All of them install the same tree through `scripts/install-tree.sh
 <prefix> <id>`. The app reads data and helper programs from disk at runtime,
@@ -403,9 +395,8 @@ prefer the bundled Nerd Font when it has the glyph. Other characters retain
 the selected text stack. Inline glyphs use native text metrics; icon buttons
 apply ink-box centering without changing the shared glyph cache.
 
-Both workflows boot the finished AppImage headlessly (`SDL_VIDEODRIVER=dummy`
-plus `WN_SHOT`) before publishing, which catches a library linuxdeploy failed
-to bundle and a `res_dir` that stopped finding its data.
+Canary boots the staging AppImage with SDL's dummy driver. The RC boots the
+signed AppImage on Ubuntu 22.04 with Xvfb and checks the updater separately.
 
 ## i18n
 

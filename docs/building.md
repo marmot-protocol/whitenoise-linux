@@ -179,7 +179,7 @@ Run the build as your normal user, with `sudo` or `doas` configured for package 
 
 ### Checking cross builds
 
-`.github/workflows/cross.yml` is called by CI and tagged releases. No compiler runs under the emulators it uses.
+GitHub's full PR gate and the release candidate workflow call `.github/workflows/cross.yml`. No compiler runs under the emulators it uses.
 
 | Job | What it proves |
 | --- | --- |
@@ -198,30 +198,26 @@ odin check app -target:openbsd_amd64 -vet-unused-imports
 
 These commands type-check the app; they do not link it or verify runtime behavior.
 
-## Releasing: one command tags, another announces
+## Test and promote a release candidate
 
-<picture>
-  <source media="(max-width: 600px) and (prefers-color-scheme: dark)" srcset="../assets/docs/building-release-narrow-dark.svg">
-  <source media="(max-width: 600px)" srcset="../assets/docs/building-release-narrow-light.svg">
-  <source media="(prefers-color-scheme: dark)" srcset="../assets/docs/building-release-dark.svg">
-  <img alt="From just release to the stores. just release sets APP_VERSION to today's date and next revision and opens a release PR against origin/master; once it is merged, just release --tag tags vYYYY.M.D-build.REVISION and pushes the tag to both remotes. The tag on GitHub runs release.yml, which rejects a mismatched tag and publishes the GitHub release with the packages and Orchard OCI files. just publish waits for it, then you approve seven NIP-46 signing requests in your bunker. One NIP-82 release goes to four relays, for Zapstore and Orchard; a tag push alone adds nothing to Orchard." src="../assets/docs/building-release-light.svg" width="880">
-</picture>
+Hourly CI runs the native tests and staging AppImage smoke on GitHub's `master`. The `canary` ref advances only when both pass. The daily release candidate workflow uses that ref and its successful `Advance Canary` job, not the current `master` tip.
 
-`APP_VERSION` in `app/advanced.odin` is `YYYY.M.D+REVISION`, starting at `2026.9.15+1`. Like Android and iOS, the date is the release date and the numeric revision increases for every shipment, including on a new date. Set it before releasing and tag that commit `vYYYY.M.D-build.REVISION` (for example, `v2026.9.15-build.1`). About, diagnostics, AppImage, Flatpak, and Arch packaging use this version.
+The workflow signs a child commit that changes only `APP_VERSION` and the metainfo release entry. It assigns the next revision for that UTC date and reserves the signed `vYYYY.M.D-build.REVISION` tag on GitHub. `master` keeps the development version. After all release builds and smokes pass, the workflow publishes an immutable prerelease. A retry uses the same tag and commit.
 
-> [!IMPORTANT]
-> Never reuse a published tag.
+1. Find the highest-version immutable release with `rc-source.json` on [GitHub Releases](https://github.com/marmot-protocol/whitenoise-linux/releases). Download the packages you want to test and verify them against `SHA256SUMS.txt`.
+2. When the candidate is ready, edit its title and notes on GitHub. Run `just release <tag>` from a checkout with the ngit `origin`. This pushes the unchanged tag to ngit and queues promotion.
+3. Confirm the `Promote release candidate` workflow succeeds and [GitHub Latest](https://github.com/marmot-protocol/whitenoise-linux/releases/latest) points at that tag. Promotion changes release metadata only. The app updaters use Latest, and the AUR job publishes recipes for the same bytes.
+4. Run `just publish <tag>` to announce that release to the stores. The command rejects other tags before asking for a signer.
 
-The app shows the version written in `APP_VERSION` (`app/advanced.odin`); a tag does not change it, and `release.yml` rejects a tag that does not match it. The release commands keep the two together:
+### Set up the first candidate
 
-| Command | What it does |
-| --- | --- |
-| `just release` (`scripts/release.sh`) | takes `origin/master` (a dirty checkout or another branch is left untouched), sets `APP_VERSION` to today's date with the next revision (`2026.9.27+1`, then `+2` the same day), commits that on top with the edited notes as the commit body, and pushes it to `origin` as the PR `pr/release-v2026.9.27-build.1`; `master` only moves when that PR is merged |
-| `just release --dry-run` | prints the version and tag without changing anything |
-| `just release --tag` | tags the merged `Release <version>` commit on `origin/master` with its notes and pushes only the tag to both remotes; the tag reaching GitHub starts the release build |
-| `just publish` (`scripts/publish.sh`) | runs `just release --tag`, waits for the release workflow to publish the GitHub release, then signs its AppImage, Flatpak bundle, and Orchard OCI components with your bunker or nsec |
-| `just publish <tag>` | waits for and announces an existing release without creating another one; use it to resume publication after the tag was pushed |
-| `bash tests/release-test.sh` | checks the release PR, merge, and tag handoff with signed commits and local remotes, without publishing publicly |
+1. Land the base-owned PR policy before the workflow cutover. Check the cutover proposal on ngit with `ngit ci status <sha> --require-ci-trust maintainer-directed --json`. It takes the build lane. On an ordinary proposal, check that the trusted signature and trailers skip the native build without skipping pre-commit.
+2. Land hourly Canary before switching both release workflows together. Once the mirror contains the new packaging code, dispatch `ci.yml` on `master`. Check that `Advance Canary` points at that commit. Dispatch again and confirm the same green SHA skips the build.
+3. Enable immutable releases on GitHub and verify the setting with `gh api repos/marmot-protocol/whitenoise-linux/immutable-releases`. In the `wn-rc-stamp` environment, restricted to `master`, set `WN_RC_SETTINGS_TOKEN` to a repository-scoped token with Administration read access if the Actions token cannot read the setting. Add the dedicated OpenPGP release-source public key to `packaging/ci/rc-source-signers.asc` in a reviewed change. Put its matching armored, unattended signing key in `WN_RC_GIT_SIGNING_KEY`. Do not reuse the AppImage key. If the default token cannot push the tag because of workflow-file permissions, add `WN_RC_TAG_TOKEN` with repository-scoped Contents and Workflows write access.
+4. Dispatch `release.yml` on `master`. Verify the signed tagged source, the immutable prerelease, and its checksums. Check that Latest did not move. Only then retire the three desktop Blossom preview workflows in a reviewed ngit change. Keep the Android debug APK lane.
+5. Before the first live promotion, use an immutable prerelease in a scratch repository to check that the metadata change preserves the release ID, tag, asset IDs, and digests. After authorized promotion, verify the AppImage, Sparkle, and Windows updater feeds on Latest.
+
+`bash tests/pr-gate-test.sh` and `bash tests/release-test.sh` exercise signature policy and stamp reservation with temporary keys and local Git repositories.
 
 One NIP-82 release lists all five assets and is sent to `wss://relay.cyberguy.fyi`, `wss://relay.orchard.rocks`, `wss://relay.ditto.pub`, and `wss://relay.zapstore.dev`. Both stores use the publisher in `zapstore.yaml`; `orchard.txt` records that public key for Orchard's repository check.
 
@@ -229,7 +225,7 @@ One NIP-82 release lists all five assets and is sent to `wss://relay.cyberguy.fy
 
 The release publisher is the White Noise identity, `npub1whtn0s68y3cs98zysa4nxrfzss5g5snhndv35tk5m2sudsr7ltms48r3ec`.
 
-1. Run `just publish` (or `just publish <tag>` for a built release).
+1. Run `just publish <tag>` for the current immutable GitHub Latest release.
 2. Paste its `bunker://` URL at the hidden signer prompt.
 3. Approve the seven NIP-46 signing requests: one kind 32267 listing, five kind 3063 assets, and one kind 30063 release.
 
@@ -250,7 +246,11 @@ The public keys are committed; private keys stay in Actions secrets and maintain
 <details>
 <summary><b>Windows: unsigned until someone configures jsign</b></summary>
 
-Tagged releases publish the Windows installer, the portable zip, and Velopack's feed (`releases.win.json`, `assets.win.json`, `RELEASES`, and the `.nupkg` packages) to the GitHub release. The job first downloads the previous release so Velopack can also publish a delta package.
+Release candidates publish the Windows installer, portable zip, and Velopack's feed (`releases.win.json`, `assets.win.json`, `RELEASES`, and `.nupkg` packages). The job first downloads the stable release so Velopack can also publish a delta package.
+
+Installed Windows updaters look through the first ten GitHub releases for Stable.
+Candidate publication pauses if one more prerelease could push Latest off
+that page. Promote a tested candidate before publishing another.
 
 Windows packages are unsigned unless `JSIGN_STORETYPE` is configured. Unsigned builds may trigger Windows publisher and SmartScreen warnings. To enable Authenticode signing with [jsign](https://ebourg.github.io/jsign/), set:
 

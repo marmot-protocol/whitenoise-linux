@@ -1,109 +1,95 @@
 #!/usr/bin/env bash
-# Exercise the interactive publisher against local Git remotes, never GitHub.
 set -euo pipefail
-HERE="$(cd "$(dirname "$0")/.." && pwd)"
-WORK="$(mktemp -d)"
-export GNUPGHOME="$WORK/gnupg"
-cleanup() {
-  gpgconf --kill gpg-agent
-  rm -rf "$WORK"
-}
-trap cleanup EXIT
+root=$(cd "$(dirname "$0")/.." && pwd)
+tmp=$(mktemp -d)
+export GNUPGHOME="$tmp/gnupg"
+trap 'gpgconf --kill gpg-agent; rm -rf "$tmp"' EXIT
 mkdir -m 700 "$GNUPGHOME"
-gpg --batch --passphrase '' --quick-generate-key 'Release test <release@example.invalid>' ed25519 sign 0
-KEY="$(gpg --batch --with-colons --list-keys release@example.invalid | awk -F: '$1 == "fpr" { print $10; exit }')"
+mkdir -p "$tmp/policy/scripts" "$tmp/policy/packaging/ci"
+cp "$root/scripts/"{version,rc-source,rc-stamp,check-rc-tag}.sh "$tmp/policy/scripts/"
+policy="$tmp/policy/scripts"
+key="$tmp/policy/packaging/ci/rc-source-signers.asc"
+gpg --batch --passphrase '' --quick-generate-key 'RC fixture <rc@example.test>' ed25519 sign 0
+gpg --batch --armor --export rc@example.test > "$key"
+signing_key=$(gpg --batch --armor --export-secret-keys rc@example.test)
 
-CHECKOUT="$WORK/checkout"
-git init -q -b master "$CHECKOUT"
-cd "$CHECKOUT"
-git config user.name 'Release test'
-git config user.email release@example.invalid
-git config user.signingkey "$KEY"
-git config commit.gpgsign true
-git config tag.gpgsign true
+git init -q --bare "$tmp/mirror"
+git init -q -b master "$tmp/source"
+cd "$tmp/source"
+git config core.hooksPath /dev/null
+git config user.name Fixture
+git config user.email rc@example.test
+git config user.signingkey rc@example.test
 git config gpg.format openpgp
 git config gpg.program gpg
-mkdir scripts app assets
-cp "$HERE/scripts/"{release,publish,version}.sh scripts/
-printf 'APP_VERSION :: "2000.1.1+1"\n' >app/advanced.odin
-printf '<component>\n  <releases>\n  </releases>\n</component>\n' >assets/whitenoise-linux.metainfo.xml
-printf 'pubkey: fixture\n' >zapstore.yaml
-printf 'Original checkout.\n' >README.md
+git remote add origin "$tmp/mirror"
+mkdir app assets scripts
+cp "$root/scripts/version.sh" scripts/
+printf 'APP_VERSION :: "2026.11.25+1" // preserve this\n' > app/advanced.odin
+printf '<component>\n  <releases>\n  </releases>\n</component>\n' > assets/whitenoise-linux.metainfo.xml
 git add .
-git commit -qm 'Seed release fixture'
-HEAD_BEFORE="$(git rev-parse HEAD)"
-git clone -q --bare . "$WORK/origin.git"
-git clone -q --bare . "$WORK/github.git"
-git remote add origin "$WORK/origin.git"
-git remote add github "$WORK/github.git"
-printf 'Uncommitted caller changes.\n' >README.md
+git -c commit.gpgsign=false commit -qm Base
+base=$(git rev-parse HEAD)
+git -c commit.gpgsign=false commit --allow-empty -qm Canary
+canary=$(git rev-parse HEAD)
+git tag --no-sign v2026.11.25-build.2 "$base"
+git push -q origin master refs/tags/v2026.11.25-build.2 "$canary:refs/heads/canary"
+git switch -q --detach "$canary"
 
-export WN_NOTES_CMD='printf "### Fixed\n\n- Release fixture.\n"'
-export VISUAL=true SHELL=/bin/bash
-export ZAPSTORE_SIGNER=bunker://release-fixture
-# Stop at the real gh client's first request, after the local tag push.
-export GH_HOST=127.0.0.1:1 GH_TOKEN=fixture GH_ENTERPRISE_TOKEN=fixture
-export GH_CONFIG_DIR="$WORK/gh" GH_PROMPT_DISABLED=1 NO_PROXY=127.0.0.1
-pr_refs() { git --git-dir="$WORK/origin.git" for-each-ref --format='%(refname:short)' refs/heads/pr/; }
+first=$(WN_RC_GIT_SIGNING_KEY="$signing_key" bash "$policy/rc-stamp.sh" "$canary" 2026-11-25)
+read -r tag commit <<< "$first"
+[[ "$tag" == v2026.11.25-build.3 ]]
+[[ $(bash "$policy/check-rc-tag.sh" "$tag" "$key") == "$canary $commit" ]]
+[[ $(git diff --name-only "$canary" "$commit") == $'app/advanced.odin\nassets/whitenoise-linux.metainfo.xml' ]]
+git push -q origin "refs/tags/$tag:refs/tags/$tag"
+mkdir "$tmp/archive"
+git archive "$commit" | tar -x -C "$tmp/archive"
+[[ $(bash "$tmp/archive/scripts/version.sh" "$tag") == '2026.11.25+3' ]]
+grep -Fx '    <release version="2026.11.25+3" date="2026-11-25"/>' "$tmp/archive/assets/whitenoise-linux.metainfo.xml"
+[[ $(git rev-parse master) == "$canary" ]]
+[[ $(git --git-dir="$tmp/mirror" rev-parse master) == "$canary" ]]
 
-scripts/release.sh --dry-run >"$WORK/dry-run.log" 2>&1
-[ -z "$(pr_refs)" ]
-if scripts/release.sh --tag --tag-output >"$WORK/invalid.log" 2>&1; then
-  echo 'Expected a missing tag-output path to be rejected.' >&2
-  exit 1
-fi
-grep -F -- '--tag-output requires a file path.' "$WORK/invalid.log"
-echo 'PASS: dry runs open no PR, and a missing output path is rejected.'
+git init -q "$tmp/retry"
+cd "$tmp/retry"
+git remote add origin "$tmp/mirror"
+git fetch -q --tags origin master canary
+git switch -q --detach "$canary"
+[[ $(bash "$policy/rc-stamp.sh" "$canary" 2026-11-26) == "$first" ]]
 
-if printf 'n\n' | script -q -e -c scripts/release.sh /dev/null >"$WORK/cancel.log" 2>&1; then
-  echo 'Expected cancellation to stop the release.' >&2
-  exit 1
-fi
-grep -F 'Nothing was released.' "$WORK/cancel.log"
-[ -z "$(pr_refs)" ]
-echo 'PASS: cancellation opens no PR.'
+cd "$tmp/source"
+# A valid signature does not make a wrong parent or a non-stamp diff valid.
+reject_stamp() {
+  local refs
+  refs=$(git show-ref)
+  if bash "$policy/rc-stamp.sh" "$canary" 2026-11-26; then
+    echo 'Invalid reservation was accepted' >&2
+    exit 1
+  fi
+  [[ $(git show-ref) == "$refs" ]]
+}
 
-printf 'y\n' | script -q -e -c scripts/release.sh /dev/null >"$WORK/release.log" 2>&1
-PR="$(pr_refs)"
-[[ "$PR" =~ ^pr/release-v[0-9]{4}\.[0-9]+\.[0-9]+-build\.[0-9]+$ ]]
-RELEASE="$(git --git-dir="$WORK/origin.git" rev-parse "$PR")"
-[ "$(git --git-dir="$WORK/origin.git" rev-parse master)" = "$HEAD_BEFORE" ]
-[ "$(git --git-dir="$WORK/github.git" rev-parse master)" = "$HEAD_BEFORE" ]
-git verify-commit "$RELEASE"
-git log -1 --format=%b "$RELEASE" | grep -Fx '### Fixed'
-[ "$(git rev-parse HEAD)" = "$HEAD_BEFORE" ]
-[ "$(<README.md)" = 'Uncommitted caller changes.' ]
-echo 'PASS: release opens a signed PR with the notes and leaves master alone.'
+git tag -d "$tag" >/dev/null
+bad=v2026.11.25-build.4
+git tag -s -m 'White Noise RC' -m "Canary-SHA: $canary" "$bad" "$base"
+reject_stamp
+git tag -d "$bad" >/dev/null
 
-if scripts/publish.sh >"$WORK/early.log" 2>&1; then
-  echo 'Expected publish to refuse an unmerged release.' >&2
-  exit 1
-fi
-grep -F 'Merge the release PR first.' "$WORK/early.log"
-[ -z "$(git --git-dir="$WORK/origin.git" tag -l)" ]
-echo 'PASS: publish refuses to tag before the release PR is merged.'
+git switch -q --detach "$canary"
+printf 'APP_VERSION :: "2026.11.25+4" // preserve this\n' > app/advanced.odin
+printf '<component>\n  <releases>\n    <release version="2026.11.25+4" date="2026-11-25"/>\n  </releases>\n</component>\n' > assets/whitenoise-linux.metainfo.xml
+printf 'unrelated\n' > extra
+git add app assets extra
+git commit -q -S -m 'Stamp White Noise 2026.11.25+4'
+git tag -s -m 'White Noise RC' -m "Canary-SHA: $canary" "$bad"
+reject_stamp
+git tag -d "$bad" >/dev/null
 
-# Merge the PR, then land another change, which must stay out of the tag.
-git --git-dir="$WORK/origin.git" update-ref refs/heads/master "$RELEASE"
-git clone -q "$WORK/origin.git" "$WORK/later"
-git -C "$WORK/later" -c user.name=Later -c user.email=later@example.invalid \
-  -c commit.gpgsign=false commit -q --allow-empty -m 'Merge a later change'
-git -C "$WORK/later" push -q origin master
-
-if scripts/publish.sh >"$WORK/publish.log" 2>&1; then
-  echo 'Expected the unavailable local GitHub endpoint to stop publication.' >&2
-  exit 1
-fi
-TAG="$(git --git-dir="$WORK/origin.git" tag -l 'v*-build.*')"
-[ "pr/release-$TAG" = "$PR" ]
-[ "$(git rev-parse "$TAG^{}")" = "$RELEASE" ]
-[ "$(git --git-dir="$WORK/github.git" rev-parse "$TAG^{}")" = "$RELEASE" ]
-[ "$(git --git-dir="$WORK/github.git" rev-parse master)" = "$HEAD_BEFORE" ]
-git verify-tag "$TAG"
-git tag -l --format='%(contents:body)' "$TAG" | grep -Fx '### Fixed'
-[ "$(git rev-parse HEAD)" = "$HEAD_BEFORE" ]
-[ "$(<README.md)" = 'Uncommitted caller changes.' ]
-grep -F "Waiting for the GitHub release $TAG:" "$WORK/publish.log"
-grep -F '127.0.0.1:1' "$WORK/publish.log"
-! grep -Fq 'Downloading packages' "$WORK/publish.log"
-echo 'PASS: publish tags the merged release commit, pushes only the tag, and waits for it.'
+git rm -q extra
+printf '// unrelated\n' >> app/advanced.odin
+git add app/advanced.odin
+git commit -q -S --amend --no-edit
+git tag -s -m 'White Noise RC' -m "Canary-SHA: $canary" "$bad"
+reject_stamp
+git fetch -q origin "refs/tags/$tag:refs/tags/$tag"
+reject_stamp
+printf 'RC stamp fixtures passed\n'

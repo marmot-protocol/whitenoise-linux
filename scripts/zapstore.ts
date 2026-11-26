@@ -12,13 +12,13 @@
 // nak signs them (ZAPSTORE_SIGNER: a bunker URL or nsec) and publishes each
 // to every relay below; a relay refusing one fails the run.
 //
-// scripts/publish.sh runs it once the GitHub release exists, with the
-// release's files downloaded and checked against its SHA256SUMS.txt:
+// scripts/publish.sh passes the notes and checksum-verified packages
+// from the current stable GitHub release:
 //
 //   ZAPSTORE_SIGNER=bunker://... scripts/zapstore.ts v2026.10.21-build.1 \
 //     WhiteNoise-v2026.10.21-build.1-x86_64.AppImage \
 //     WhiteNoise-v2026.10.21-build.1-x86_64.flatpak \
-//     dev.ipf.whitenoise-linux-x86_64.asset.json
+//     dev.ipf.whitenoise-linux-x86_64.asset.json release-notes.md
 //
 // Zapstore's Android app and zapstore.dev list only android-arm64-v8a
 // today, so these events are reachable by NIP-82 queries but have no store
@@ -59,9 +59,10 @@ const FORMATS = [
 ];
 
 const [tag, ...paths] = Bun.argv.slice(2);
-if (!tag || paths.length !== 3) {
+const notesPath = paths.pop();
+if (!tag || !notesPath || paths.length !== 3) {
   console.error(
-    "Usage: scripts/zapstore.ts <tag> <AppImage> <flatpak> <Orchard .asset.json>",
+    "Usage: scripts/zapstore.ts <tag> <AppImage> <flatpak> <Orchard .asset.json> <notes-file>",
   );
   process.exit(2);
 }
@@ -71,8 +72,7 @@ if (!signer) {
   process.exit(2);
 }
 
-// v2026.10.21-build.1 is APP_VERSION 2026.10.21+1 (scripts/version.sh). Read
-// from the tag, not the checkout, so any checkout can publish any release.
+// Resolve the published version from the tag, not local APP_VERSION.
 const tagVersion = tag.match(
   /^v(\d{4})\.([1-9]|1[0-2])\.([1-9]|[12][0-9]|3[01])-build\.([1-9][0-9]*)$/,
 );
@@ -107,12 +107,9 @@ const version = `${year}.${month}.${day}+${revision}`;
 
 const root = `${import.meta.dir}/..`;
 const commit = (
-  await $`git -C ${root} rev-parse ${`${tag}^{commit}`}`.text()
+  await $`git -C ${root} rev-parse ${`refs/tags/${tag}^{commit}`}`.text()
 ).trim();
-// The notes scripts/release.sh wrote into the tag, as on the GitHub release.
-const notes = (
-  await $`git -C ${root} tag -l ${"--format=%(contents:body)"} ${tag}`.text()
-).trim();
+const notes = await Bun.file(notesPath).text();
 const config = Bun.YAML.parse(await Bun.file(`${root}/zapstore.yaml`).text());
 // Zapstore whitelists only zapstore.yaml's pubkey. Another key's events would
 // be refused there but still land on the other relays, so refuse them first.
