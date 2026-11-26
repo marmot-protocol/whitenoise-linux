@@ -24,6 +24,8 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	)
 	if !testing.expect_value(t, err, nil) {return}
 	defer os.remove_all(dir)
+	settings_test_dir = dir
+	defer settings_test_dir = ""
 	deployment: ^marmot.Deployment
 	if !testing.expect_value(
 		t,
@@ -103,6 +105,34 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		layout(ui)
 		click(t, ui, client, nendo.id("NCCancel"))
 	}
+	account := ui.account_ref
+	settings_open(&ui, nil, .Privacy)
+	layout(&ui)
+	click(t, &ui, client, nendo.id("DefaultRetention3"))
+	save_settings(&ui)
+	load_settings(&ui)
+	ui.account_ref = "other-account"
+	open_new_chat(&ui, nil)
+	testing.expect_value(t, ui.nc_retention, 0)
+	close_new_chat(&ui)
+	settings_flip(&ui, client, "DefaultRetention1")
+	save_settings(&ui)
+	load_settings(&ui)
+	open_new_chat(&ui, nil)
+	testing.expect_value(t, ui.nc_retention, 3600)
+	close_new_chat(&ui)
+	ui.account_ref = account
+	ui.page = .Chats
+	for notes in ([]bool{false, true}) {
+		ui.new_chat_open, ui.nc_page = true, .Group
+		ui.nc_created.id = strings.clone("abandoned-group")
+		if notes {open_notes(&ui, nil)}
+		open_new_chat(&ui, nil)
+		layout(&ui)
+		testing.expect(t, nendo.element(nendo.id("NCSearch")).found)
+		testing.expect(t, !nendo.element(nendo.id("NCRetryOpen")).found)
+		close_new_chat(&ui)
+	}
 	for cancel in ([]bool{false, true}) {
 		layout(&ui)
 		click(t, &ui, client, nendo.id("NewChatBtn"))
@@ -110,6 +140,7 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		layout(&ui)
 		click(t, &ui, client, nendo.id("NCGroup"))
 		testing.expect(t, ui.nc_page == .Group)
+		testing.expect_value(t, ui.nc_retention, 604800)
 		ed_insert(&ui, &ui.nc_name, "Abandoned group")
 
 		testing.expect_value(t, string(ui.nc_name[:]), "Abandoned group")
@@ -229,9 +260,13 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	if !testing.expect_value(t, ui.focus, Focus.NC_Name) {return}
 	layout(&ui)
 	rl.PushKey(.LEFT_SHIFT, true)
-	rl.PushKey(.TAB, true)
-	handle_chat(&ui, client)
-	rl.PushKey(.TAB, false)
+	for _ in 0 ..< len(NC_RETENTION_KEYS) + 2 {
+		rl.PushKey(.TAB, true)
+		handle_chat(&ui, client)
+		rl.PushKey(.TAB, false)
+		rl.WindowShouldClose()
+		layout(&ui)
+	}
 	rl.PushKey(.LEFT_SHIFT, false)
 	rl.WindowShouldClose()
 	layout(&ui)
@@ -298,15 +333,53 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	}
 	testing.expect_value(t, nc_group_targets(&ui), peer + "\n" + second)
 	ed_set(&ui, &ui.nc_name, "Weekend plans")
+	ed_set(&ui, &ui.nc_description, "Meet at the station")
 	account_jobs_stop()
+	layout(&ui)
+	scroll_into_view(nendo.id("NCForm"), nendo.id(NC_RETENTION_KEYS[1]))
+	layout(&ui)
+	click(t, &ui, client, nendo.id(NC_RETENTION_KEYS[1]))
 	layout(&ui)
 	click(t, &ui, client, nendo.id("NCCreate"))
 	if testing.expect_value(t, len(account_jobs), 1) {
 		testing.expect_value(t, account_jobs[0].kind, Account_Operation.Create_Chat)
 		testing.expect_value(t, account_jobs[0].target, peer + "\n" + second)
+		testing.expect_value(t, account_jobs[0].retention, 3600)
+		testing.expect_value(t, account_jobs[0].description, "Meet at the station")
 	}
+	testing.expect_value(t, ui.prefs.default_retention[account], 604800)
 	account_jobs_stop()
 	layout(&ui)
 	back_out(t, &ui, client)
 	testing.expect_value(t, nc_group_targets(&ui), "")
+
+	rl.SetWindowSize(360, 320)
+	nendo.set_dimensions({360, 320})
+	open_new_chat(&ui, nil)
+	ui.nc_page, ui.focus = .Group, .NC_Name
+	layout(&ui)
+	for name in ([2]string{"NCForm", "NewChatPane"}) {
+		if scroll := nendo.scroll(nendo.id(name)); scroll.found {scroll.position.y = 0}
+	}
+	layout(&ui)
+	rl.PushKey(.LEFT_SHIFT, true)
+	rl.PushKey(.TAB, true)
+	handle_chat(&ui, client)
+	rl.PushKey(.TAB, false)
+	rl.PushKey(.LEFT_SHIFT, false)
+	rl.WindowShouldClose()
+	layout(&ui)
+	last_chip := nendo.id("NCRetention4")
+	chip := nendo.element(last_chip)
+	if !testing.expect(t, chip.found) {return}
+	box = chip.rect
+	nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
+	testing.expect(t, nendo.pointer_over(last_chip), "Shift+Tab reveals 4w through both panes")
+	nendo.set_pointer({0, 0}, .Up)
+	rl.PushKey(.SPACE, true)
+	handle_chat(&ui, client)
+	rl.PushKey(.SPACE, false)
+	rl.WindowShouldClose()
+	testing.expect_value(t, ui.nc_retention, 2419200)
+	close_new_chat(&ui)
 }

@@ -29,9 +29,8 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	dir, err := os.make_directory_temp("", "wn-restore-chat-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}
 	defer os.remove_all(dir)
-	previous_config := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
-	os.set_env("XDG_CONFIG_HOME", dir)
-	defer os.set_env("XDG_CONFIG_HOME", previous_config)
+	settings_test_dir = dir
+	defer settings_test_dir = ""
 	previous_home := data_home
 	data_home = dir
 	defer {vault_lock(); data_home = previous_home}
@@ -577,6 +576,70 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	testing.expect(t, queue_err != nil)
 	_, have_draft := ui.drafts[draft_key(account, other)]
 	testing.expect(t, !have_draft)
+
+	for job in account_jobs {thread.join(job.worker)}
+	account_job_drain(&ui)
+	stale := Chat_List_Work {
+		client   = client,
+		account  = strings.clone_to_cstring(account),
+		revision = chat_list_revision,
+	}
+	defer chat_list_free(&stale)
+	chat_list_read(&stale)
+	if !testing.expect(t, stale.rows != nil, stale.err) {return}
+	ui.page, ui.new_chat_open, ui.nc_page = .Chats, true, .Group
+	ui.nc_retention = 3600
+	ed_set(&ui, &ui.nc_description, "Bring a map")
+	// A solo group keeps this founding operation independent of relay discovery.
+	job := account_job_new(&ui, client, .Create_Chat)
+	if !testing.expect(t, job != nil) {return}
+	job.title = strings.clone("Hiking")
+	job.description = strings.clone(string(ui.nc_description[:]))
+	job.retention = ui.nc_retention
+	job.form, job.open_chat = .Group, true
+	account_job_start(job)
+	thread.join(job.worker)
+	if !testing.expect(t, job.error == "" && job.opened_row != nil, job.error) {return}
+	founded := strings.clone(job.result)
+	defer delete(founded)
+	// Lose just the first row read, after the real SDK has committed the group.
+	marmot.presented_chat_row_free(job.opened_row)
+	job.opened_row = nil
+	job.error = strings.clone("First authoritative read failed")
+	job.skipped, job.photo_requested = 1, true
+	account_job_drain(&ui)
+	frame(&ui)
+	point, found := control_point(t, nendo.id("NCRetryOpen"))
+	if !found {return}
+	nendo.set_pointer(point, .Up)
+	forced_release = true
+	handle_new_chat(&ui, client)
+	forced_release = false
+	for retry in account_jobs {thread.join(retry.worker)}
+	account_job_drain(&ui)
+	if !testing.expect(t, !ui.new_chat_open && ui.selected >= 0) {return}
+	testing.expect_value(t, ui.chats[ui.selected].group_id, founded)
+	testing.expect(t, strings.contains(ui.client_status, "without the photo you chose"))
+	testing.expect(t, strings.contains(ui.client_status, "1 person couldn't be added"))
+	refresh: Live
+	live_apply(&refresh, &ui, client, &stale)
+	if !testing.expect(
+		t,
+		ui.selected >= 0,
+		"A pre-create refresh leaves the new chat selected",
+	) {return}
+	testing.expect_value(t, ui.chats[ui.selected].group_id, founded)
+	details: ^marmot.Group_Details
+	status = marmot.group_details(
+		client,
+		strings.clone_to_cstring(account, context.temp_allocator),
+		strings.clone_to_cstring(founded, context.temp_allocator),
+		&details,
+	)
+	if !testing.expect(t, status == .OK && details != nil, marmot.last_error()) {return}
+	defer marmot.group_details_free(details)
+	testing.expect_value(t, details.group.disappearing_message_secs, 3600)
+	testing.expect_value(t, string(details.group.description), "Bring a map")
 }
 
 @(test)

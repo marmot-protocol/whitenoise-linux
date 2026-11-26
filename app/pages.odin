@@ -480,16 +480,17 @@ save_nickname :: proc(ui: ^Ui_State) {
 	ui.focus = .Compose
 }
 
-// Reuse a direct chat with this person, or create an unnamed pair.
-start_dm :: proc(ui: ^Ui_State, client: ^marmot.Client, contact: Contact_Ui) {
+// The runtime applies the timer only if it founds a direct conversation.
+start_dm :: proc(
+	ui: ^Ui_State,
+	client: ^marmot.Client,
+	contact: Contact_Ui,
+	form: Maybe(Nc_Page) = nil,
+) {
 	job := account_job_new(ui, client, .Open_DM); if job == nil {return}
 	job.target = strings.clone(contact.id_hex)
-	job.chat_list = {
-		client           = client,
-		account          = strings.clone_to_cstring(ui.account_ref),
-		include_archived = true,
-	}
-	chat_list_snapshot(&job.chat_list, ui)
+	job.retention = ui.prefs.default_retention[job.account]
+	job.form, job.open_chat = form, true
 	ui.peer_open = false
 	account_job_start(job)
 }

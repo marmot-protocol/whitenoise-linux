@@ -951,7 +951,6 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 			tr("Disappearing messages"),
 			notes ? tr("Your existing and new notes are deleted after this time.") : tr("Messages already in the chat, and new ones, are deleted for everyone after this time."),
 		)
-		labels := [len(RETENTION_SECS)]string{N_("Off"), "1h", "1d", "1w", "4w"}
 		// Members see the current timer without controls to change it.
 		if !admin {
 			nendo.text(
@@ -959,38 +958,7 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 				{font = FONT_TITLE, size = 12, color = TEXT_DIM},
 			)
 		} else {
-			if nendo.box(nendo.id("RetentionRow"))(
-			{
-				width = nendo.grow(),
-				padding = nendo.pad(3),
-				gap = 2,
-				clip = {x = true, scroll = true},
-				color = ROW_BG,
-				radius = rr(10),
-				border = {color = FIELD_BORDER, width = bw()},
-			},
-			) {
-				for secs, i in RETENTION_SECS {
-					active := ui.group_retention == secs
-					if nendo.box(nendo.id(fmt.tprintf("RetChip%d", i)))(
-					{
-						width = nendo.fit(min = tap_size() ? tap_min() : 0),
-						height = nendo.fit(min = tap_size() ? tap_min() : 0),
-						padding = {left = 14, right = 14, top = 6, bottom = 6},
-						align = {x = .Center, y = .Center},
-						color = active ? ACCENT : (hovered() ? HOVER : {}),
-						radius = rr(7),
-					},
-					) {
-						nendo.text(
-							tr(labels[i]),
-							{font = FONT_TITLE, size = 12, color = active ? ON_ACCENT : TEXT_DIM},
-						)
-						if hovered() && !active {cursor_raise(.Pointer)}
-					}
-				}
-			}
-			scrollbar(nendo.id("RetentionRow"))
+			retention_choices("RetentionRow", DETAIL_RETENTION_KEYS, ui.group_retention)
 		}
 	}
 
@@ -1311,9 +1279,83 @@ member_row :: proc(member: ^Member_Ui, index: u32) {
 	}
 }
 
-// Timer chip presets, in seconds; 0 disables. Handlers index the same
-// array, so chip N here is chip N there.
-RETENTION_SECS :: [5]u64{0, 3600, 86400, 604800, 2419200}
+// Timer chip presets, in seconds; 0 disables.
+@(private)
+RETENTION_SECS := [5]u64{0, 3600, 86400, 604800, 2419200}
+@(private)
+DETAIL_RETENTION_KEYS :: [len(RETENTION_SECS)]string {
+	"RetChip0",
+	"RetChip1",
+	"RetChip2",
+	"RetChip3",
+	"RetChip4",
+}
+@(private)
+NC_RETENTION_KEYS := [len(RETENTION_SECS)]string {
+	"NCRetention0",
+	"NCRetention1",
+	"NCRetention2",
+	"NCRetention3",
+	"NCRetention4",
+}
+
+@(private)
+retention_choices :: proc(
+	row: string,
+	keys: [len(RETENTION_SECS)]string,
+	current: u64,
+	focus := "",
+) {
+	labels := [len(RETENTION_SECS)]string{tr("Off"), "1h", "1d", "1w", "4w"}
+	if nendo.box(nendo.id(row))(
+	{
+		width = nendo.grow(),
+		padding = nendo.pad(3),
+		gap = 2,
+		clip = {x = true, scroll = true},
+		color = ROW_BG,
+		radius = rr(10),
+		border = {color = FIELD_BORDER, width = bw()},
+	},
+	) {
+		for key, i in keys {
+			active := current == RETENTION_SECS[i]
+			if nendo.box(nendo.id(key))(
+			{
+				width = nendo.fit(min = tap_size() ? tap_min() : 0),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = {left = 14, right = 14, top = 6, bottom = 6},
+				align = {x = .Center, y = .Center},
+				color = active ? ACCENT : (hovered() ? HOVER : {}),
+				border = key == focus ? kb_ring(active ? ON_ACCENT : ACCENT) : {},
+				radius = rr(7),
+			},
+			) {
+				nendo.text(
+					labels[i],
+					{font = FONT_TITLE, size = 12, color = active ? ON_ACCENT : TEXT_DIM},
+				)
+				if hovered() && !active {cursor_raise(.Pointer)}
+			}
+		}
+	}
+	scrollbar(nendo.id(row))
+}
+
+@(private)
+reveal_retention_choice :: proc(row: string, choice: nendo.Id) {
+	container := nendo.id(row)
+	scroll := nendo.scroll(container)
+	button := nendo.element(choice)
+	if !scroll.found || !button.found {return}
+	view := nendo.element(container).rect
+	box := button.rect
+	if box.x < view.x {
+		scroll.position.x += view.x - box.x
+	} else if box.x + box.width > view.x + view.width {
+		scroll.position.x -= box.x + box.width - view.x - view.width
+	}
+}
 
 @(private)
 retention_text :: proc(secs: u64) -> string {
@@ -1566,6 +1608,13 @@ Nc_Page :: enum {
 }
 
 @(private)
+Nc_Created :: struct {
+	id:              string,
+	skipped:         int,
+	photo_requested: bool,
+}
+
+@(private)
 Nc_Member :: struct {
 	hex, label, pic_url: string,
 }
@@ -1576,8 +1625,8 @@ NC_CONTACT_H :: f32(64)
 @(private)
 nc_pending_label :: proc(ui: ^Ui_State) -> string {
 	for job in account_jobs {
-		if job.account == ui.account_ref && job.kind == .Create_Chat && job.form != nil {
-			return tr("Creating your chat")
+		if job.account == ui.account_ref && job.form != nil {
+			return account_pending_label(job.kind)
 		}
 	}
 	if ui.nip05_ticket != 0 {return tr("Looking up...")}
@@ -1993,6 +2042,7 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 	defer scrollbar(nendo.id("NewChatPane"))
 	pending := nc_pending_label(ui)
 	group := ui.nc_page == .Group
+	retry_open := ui.nc_created.id != ""
 	no_contacts := len(ui.nc_contacts) == 0
 	for job in account_jobs {if job.account == ui.account_ref && job.kind == .Read_Contacts {no_contacts = false; break}}
 	if nendo.box(nendo.id("NewChatPane"))(
@@ -2021,7 +2071,12 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 				padding = {top = 8, bottom = 8},
 			},
 			) {
-				header_chip(group ? "NCBack" : "NCCancel", "\uf060", false, tr("Back"))
+				header_chip(
+					group && pending == "" && !retry_open ? "NCBack" : "NCCancel",
+					"\uf060",
+					false,
+					tr("Back"),
+				)
 				if nendo.box(nendo.id("NCTitle"))(
 				{width = nendo.grow(), direction = .Column, gap = 6},
 				) {
@@ -2029,13 +2084,17 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 						group ? tr("New group") : tr("New chat"),
 						{font = FONT_TITLE, size = 26, color = TEXT},
 					)
-					nendo.text(
-						group ? tr("Give your group a name and a photo.") : no_contacts ? tr("Search for someone or paste their public key to start a chat.") : tr("Choose someone to talk to."),
-						{font = FONT_BODY, size = 14, color = TEXT_DIM},
-					)
+					if !retry_open {
+						nendo.text(
+							group ? tr("Give your group a name and a photo.") : no_contacts ? tr("Search for someone or paste their public key to start a chat.") : tr("Choose someone to talk to."),
+							{font = FONT_BODY, size = 14, color = TEXT_DIM},
+						)
+					}
 				}
 			}
-			if ui.nc_page == .Contacts {
+			if retry_open {
+				if pending == "" {login_big_button("NCRetryOpen", tr("Retry"), true)}
+			} else if !group {
 				input_box(
 					ui,
 					"NCSearch",
@@ -2121,6 +2180,22 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 						nc_member_options(ui, query)
 					}
 					nc_selected_members(ui)
+					nendo.text(tr("Description"), {font = FONT_TITLE, size = 14, color = TEXT})
+					input_box(
+						ui,
+						"NCDescription",
+						&ui.nc_description,
+						tr("Description"),
+						ui.focus == .NC_Description,
+						0,
+					)
+					nendo.text(
+						tr("Disappearing messages"),
+						{font = FONT_TITLE, size = 14, color = TEXT},
+					)
+					focus :=
+						ui.focus == .NC_Retention ? NC_RETENTION_KEYS[ui.nc_retention_focus] : ""
+					retention_choices("NCRetention", NC_RETENTION_KEYS, ui.nc_retention, focus)
 				}
 				scrollbar(nendo.id("NCForm"))
 			}
@@ -2128,7 +2203,7 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 				nendo.text(pending, {font = FONT_BODY, size = 13, color = ACCENT})
 				busy_bar("NCBusy")
 			}
-			if ui.nc_page != .Contacts {
+			if group && !retry_open {
 				label := pending != "" ? pending : tr("Create group")
 				named := strings.trim_space(string(ui.nc_name[:])) != ""
 				ready := pending == "" && named && len(ui.nc_members) > 0

@@ -669,6 +669,9 @@ msgstr "Aspetto"
 msgid "Applies to message bodies and the composer."
 msgstr "Si applica al testo dei messaggi e al campo di scrittura."
 
+msgid "Applies to new chats you create with this account. Existing chats keep their timers."
+msgstr "Si applica alle nuove chat che crei con questo account. Le chat esistenti mantengono il loro timer."
+
 msgid "Applies to the picker, reactions and emoji in messages."
 msgstr "Si applica al selettore, alle reazioni e alle emoji nei messaggi."
 
@@ -1804,6 +1807,9 @@ msgstr "Impossibile aprire la foto. Scegli un’immagine più piccola o un altro
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "Impossibile aprire il backup. Ricontrolla la password e riprova."
 
+msgid "Couldn't open the chat. Please try again."
+msgstr "Impossibile aprire la chat. Riprova."
+
 msgid "Couldn't open the microphone. Please try again."
 msgstr "Impossibile aprire il microfono. Riprova."
 
@@ -2240,6 +2246,9 @@ msgstr "Predefinito"
 
 msgid "Default avatar shape"
 msgstr "Forma predefinita degli avatar"
+
+msgid "Default disappearing messages"
+msgstr "Timer predefinito per i messaggi effimeri"
 
 msgid "Default stack"
 msgstr "Serie predefinita"
@@ -6865,6 +6874,9 @@ msgstr "Il tuo nome visualizzato e il tuo profilo sono pubblici."
 
 msgid "Your existing and new notes are deleted after this time."
 msgstr "Le tue note già presenti e quelle nuove vengono eliminate dopo questo tempo."
+
+msgid "Your group was created without the photo you chose."
+msgstr "Il tuo gruppo è stato creato senza la foto che hai scelto."
 
 msgid "Your key stays on this device"
 msgstr "La tua chiave resta su questo dispositivo"

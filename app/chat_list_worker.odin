@@ -77,26 +77,28 @@ chat_list_read :: proc(job: ^Chat_List_Work) {
 		marmot.string_list_free(list)
 	}
 	for i in 0 ..< job.rows.rows_len {
-		row := &job.rows.rows[i].row
-		last := row.last_message
-		// System summaries resolve profile labels through UI-owned caches.
-		if last != nil &&
-		   last.group_system != nil &&
-		   record_class(last.kind, string(last.plaintext)) == .System {continue}
-		// Parsing and blocked-sender fallback reads finish before UI adoption;
-		// even an empty preview is prepared, so adoption never retries the read.
-		preview, system_page := chat_row_preview(
-			job.client,
-			row,
-			string(job.account),
-			job.blocked,
-			mode = .Worker,
-		)
-		if system_page != nil {
-			job.previews[string(row.group_id_hex)] = system_page
-		} else {
-			job.reading_previews[string(row.group_id_hex)] = strings.clone(preview)
-		}
+		chat_prepare_preview(job, job.client, string(job.account), &job.rows.rows[i].row)
+	}
+}
+
+@(private)
+chat_prepare_preview :: proc(
+	job: ^Chat_List_Work,
+	client: ^marmot.Client,
+	account: string,
+	row: ^marmot.Chat_List_Row,
+) {
+	last := row.last_message
+	// System summaries resolve profile labels through UI-owned caches.
+	if last == nil ||
+	   (last.group_system != nil &&
+			   record_class(last.kind, string(last.plaintext)) == .System) {return}
+	// An empty prepared preview also keeps the UI from repeating a read.
+	preview, system_page := chat_row_preview(client, row, account, job.blocked, mode = .Worker)
+	if system_page != nil {
+		job.previews[string(row.group_id_hex)] = system_page
+	} else {
+		job.reading_previews[string(row.group_id_hex)] = strings.clone(preview)
 	}
 }
 
@@ -119,22 +121,31 @@ chat_identity_members_fetch :: proc(
 ) {
 	if rows == nil {return}
 	for i in 0 ..< rows.rows_len {
-		presented := &rows.rows[i]
-		row := &presented.row
-		group := string(row.group_id_hex)
-		if group in members^ {continue} 	// reuse folder-rule roster reads
-		if !(row.conversation_kind == .UNKNOWN && chat_name_is_unnamed(string(row.group_name))) &&
-		   !(row.conversation_kind == .DIRECT &&
-				   !row.pending_confirmation &&
-				   string(presented.presentation.peer_id) == "") {continue}
-		list: ^marmot.Group_Member_Record_List
-		if marmot.group_members(client, account, row.group_id_hex, &list) != .OK ||
-		   list == nil {continue}
-		ids := make([]string, list.len)
-		for member, j in list.items[:list.len] {ids[j] = strings.clone(string(member.member_id_hex))}
-		marmot.app_group_member_record_list_free(list)
-		members^[strings.clone(group)] = ids
+		chat_identity_member_fetch(client, account, &rows.rows[i], members)
 	}
+}
+
+@(private)
+chat_identity_member_fetch :: proc(
+	client: ^marmot.Client,
+	account: cstring,
+	presented: ^marmot.Presented_Chat_Row,
+	members: ^map[string][]string,
+) {
+	row := &presented.row
+	group := string(row.group_id_hex)
+	if group in members^ {return} 	// reuse folder-rule roster reads
+	if !(row.conversation_kind == .UNKNOWN && chat_name_is_unnamed(string(row.group_name))) &&
+	   !(row.conversation_kind == .DIRECT &&
+			   !row.pending_confirmation &&
+			   string(presented.presentation.peer_id) == "") {return}
+	list: ^marmot.Group_Member_Record_List
+	if marmot.group_members(client, account, row.group_id_hex, &list) != .OK ||
+	   list == nil {return}
+	ids := make([]string, list.len)
+	for member, j in list.items[:list.len] {ids[j] = strings.clone(string(member.member_id_hex))}
+	marmot.app_group_member_record_list_free(list)
+	members^[strings.clone(group)] = ids
 }
 
 @(private)

@@ -200,6 +200,9 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 	login_pair_clear(ui)
 	editor_forget(ui)
 	nc_members_clear(ui)
+	session_buffer_forget(&ui.nc_description)
+	session_string_forget(&ui.nc_created.id)
+	ui.nc_created = {}
 	keys_forget(ui)
 	group_relays_clear(ui)
 	close_export(ui)
