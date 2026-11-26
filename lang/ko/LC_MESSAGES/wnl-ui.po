@@ -668,6 +668,9 @@ msgstr "모양"
 msgid "Applies to message bodies and the composer."
 msgstr "메시지 본문과 입력창에 적용됩니다."
 
+msgid "Applies to new chats you create with this account. Existing chats keep their timers."
+msgstr "이 계정으로 만드는 새 채팅에 적용됩니다. 기존 채팅의 타이머는 바뀌지 않습니다."
+
 msgid "Applies to the picker, reactions and emoji in messages."
 msgstr "선택기, 반응, 메시지 속 이모지에 적용됩니다."
 
@@ -1803,6 +1806,9 @@ msgstr "사진을 열지 못했습니다. 더 작은 이미지나 다른 파일�
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "백업을 열 수 없습니다. 비밀번호를 다시 확인하고 다시 시도하세요."
 
+msgid "Couldn't open the chat. Please try again."
+msgstr "채팅을 열 수 없습니다. 다시 시도하세요."
+
 msgid "Couldn't open the microphone. Please try again."
 msgstr "마이크를 열 수 없습니다. 다시 시도하세요."
 
@@ -2239,6 +2245,9 @@ msgstr "기본값"
 
 msgid "Default avatar shape"
 msgstr "기본 아바타 모양"
+
+msgid "Default disappearing messages"
+msgstr "사라지는 메시지 기본 타이머"
 
 msgid "Default stack"
 msgstr "기본 글꼴"

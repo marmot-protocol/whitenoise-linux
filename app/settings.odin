@@ -32,6 +32,7 @@ Prefs :: struct {
 	last_chat:             string, // group id to reopen on launch
 	last_account:          string, // account hex chosen last; boot opens on it
 	sign_ins_recognized:   map[string]map[string]u64, // account and slot → first seen time
+	default_retention:     map[string]u64, // account → founding timer in seconds
 	page:                  Page,
 	settings_category:     Settings_Section,
 	chat_filter:           Chat_Filter,
@@ -215,6 +216,7 @@ Settings_Load :: enum {
 
 load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	sign_in_reviews_free(ui.prefs.sign_ins_recognized)
+	retention_defaults_free(ui.prefs.default_retention)
 	ui.prefs = default_prefs()
 	defer {
 		if len(ui.prefs.recent_emoji) == 0 {
@@ -243,6 +245,7 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	settings: Settings = wire
 	settings.prefs = wire.prefs_wire
 	defer sign_in_reviews_free(settings.prefs.sign_ins_recognized)
+	defer retention_defaults_free(settings.prefs.default_retention)
 	if decode != nil {
 		settings_discard_private(settings.nicknames, settings.drafts, settings.blocked)
 		return
@@ -275,6 +278,7 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 		ui.prefs = settings.prefs
 		settings_read_folder_rules(ui, data)
 		settings.prefs.sign_ins_recognized = nil
+		settings.prefs.default_retention = nil
 		if ui.prefs.settings_category == .Home {
 			ui.prefs.settings_category = migrate_legacy_settings_category(data, ui.prefs.dev_mode)
 		}
@@ -455,6 +459,12 @@ sign_in_reviews_free :: proc(accounts: map[string]map[string]u64) {
 sign_in_review_slots_free :: proc(slots: map[string]u64) {
 	for slot in slots {delete(slot)}
 	delete(slots)
+}
+
+@(private = "file")
+retention_defaults_free :: proc(defaults: map[string]u64) {
+	for account in defaults {delete(account)}
+	delete(defaults)
 }
 
 // Unlock restores only session-local data. The already loaded preferences

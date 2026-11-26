@@ -669,6 +669,9 @@ msgstr "外観"
 msgid "Applies to message bodies and the composer."
 msgstr "メッセージ本文と入力欄に適用されます。"
 
+msgid "Applies to new chats you create with this account. Existing chats keep their timers."
+msgstr "このアカウントで作成する新しいチャットに適用されます。既存のチャットのタイマーは変わりません。"
+
 msgid "Applies to the picker, reactions and emoji in messages."
 msgstr "ピッカー、リアクション、メッセージ内の絵文字に適用されます。"
 
@@ -1804,6 +1807,9 @@ msgstr "写真を開けませんでした。小さい画像か別のファイル
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "バックアップを開けませんでした。パスワードを確認して、もう一度お試しください。"
 
+msgid "Couldn't open the chat. Please try again."
+msgstr "チャットを開けませんでした。もう一度お試しください。"
+
 msgid "Couldn't open the microphone. Please try again."
 msgstr "マイクを開けませんでした。もう一度お試しください。"
 
@@ -2240,6 +2246,9 @@ msgstr "デフォルト"
 
 msgid "Default avatar shape"
 msgstr "デフォルトのアバター形状"
+
+msgid "Default disappearing messages"
+msgstr "消えるメッセージの既定のタイマー"
 
 msgid "Default stack"
 msgstr "デフォルトのフォント"

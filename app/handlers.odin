@@ -350,6 +350,7 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 	}
 	if ui.new_chat_open {
 		if ui.focus == .NC_Search {return &ui.nc_search}
+		if ui.focus == .NC_Description {return &ui.nc_description}
 		return ui.focus == .NC_Name ? &ui.nc_name : &ui.nc_member
 	}
 	if ui.page == .Profile {
@@ -2183,7 +2184,9 @@ open_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ui.nc_contact_sel = 0
 	clear(&ui.nc_search)
 	ed_set(ui, &ui.nc_name, "")
+	ed_set(ui, &ui.nc_description, "")
 	ed_set(ui, &ui.nc_member, "")
+	ui.nc_retention = ui.prefs.default_retention[ui.account_ref]
 	nc_members_clear(ui)
 	nc_contacts_free(&ui.nc_contacts)
 	job := account_job_new(ui, client, .Read_Contacts)
@@ -2319,11 +2322,21 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if nc_pending_label(ui) != "" {return}
+	if ui.nc_created_group != "" {
+		if clicked("NCRetryOpen") || rl.IsKeyPressed(.ENTER) {
+			job := account_job_new(ui, client, .Create_Chat)
+			if job == nil {return}
+			job.result = strings.clone(ui.nc_created_group)
+			job.form, job.open_chat = ui.nc_page, true
+			account_job_start(job)
+		}
+		return
+	}
 	if clicked("PeopleRetry") {
 		people_retry(ui)
 		return
 	}
-	if ui.focus != .NC_Remove {edit_text(ui, active_buf(ui))}
+	if ui.focus != .NC_Remove && ui.focus != .NC_Retention {edit_text(ui, active_buf(ui))}
 	address_input := ui.nc_page == .Contacts ? string(ui.nc_search[:]) : string(ui.nc_member[:])
 	if address := nc_address_hex(ui, address_input); address != "" {profile_info(client, address)}
 
@@ -2345,8 +2358,6 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		people := people_rows(ui, rows)
 		count := len(rows) + len(people)
 		// A pasted key with no matching contact starts a chat with that person.
-		// MDK types an unnamed pair as a DM and a named one as a group, so a
-		// one-to-one chat starts without a name; each side shows its peer.
 		if address := nc_address_hex(ui, string(ui.nc_search[:]));
 		   address != "" &&
 		   len(rows) == 0 &&
@@ -2395,22 +2406,51 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if field_mouse(ui, &ui.nc_name, "NCName", 14) {
 		ui.focus = .NC_Name
 	}
+	if field_mouse(ui, &ui.nc_description, "NCDescription", 14) {
+		ui.focus = .NC_Description
+	}
 	if step := tab_step(); step != 0 {
-		at := ui.focus == .NC_Name ? 0 : ui.focus == .NC_Member ? 1 : ui.nc_remove_focus + 2
-		at = (at + step) %% (2 + len(ui.nc_members))
+		desc := 2 + len(ui.nc_members)
+		at := 0
+		#partial switch ui.focus {
+		case .NC_Member:
+			at = 1
+		case .NC_Remove:
+			at = 2 + ui.nc_remove_focus
+		case .NC_Description:
+			at = desc
+		case .NC_Retention:
+			at = desc + 1 + ui.nc_retention_focus
+		}
+		at = (at + step) %% (desc + 1 + len(NC_RETENTION_KEYS))
 		field := nendo.id("NCName")
 		ui.focus = .NC_Name
 		if at == 1 {
 			ui.focus = .NC_Member
 			field = nendo.id("NCMember")
-		} else if at >= 2 {
+		} else if at >= 2 && at < desc {
 			ui.focus, ui.nc_remove_focus = .NC_Remove, at - 2
 			field = nendo.id("NCMemberRemove", u32(ui.nc_remove_focus))
+		} else if at == desc {
+			ui.focus, field = .NC_Description, nendo.id("NCDescription")
+		} else if at > desc {
+			ui.focus, ui.nc_retention_focus = .NC_Retention, at - desc - 1
+			field = nendo.id(NC_RETENTION_KEYS[ui.nc_retention_focus])
 		}
 		nc_control_visible(field)
 		return
 	}
 	enter := rl.IsKeyPressed(.ENTER)
+	for key, i in NC_RETENTION_KEYS {
+		if clicked(key) ||
+		   (ui.focus == .NC_Retention &&
+				   ui.nc_retention_focus == i &&
+				   (enter || rl.IsKeyPressed(.SPACE))) {
+			ui.nc_retention = RETENTION_SECS[i]
+			ui.focus, ui.nc_retention_focus = .NC_Retention, i
+			return
+		}
+	}
 	remove := -1
 	if ui.focus == .NC_Remove && (enter || rl.IsKeyPressed(.SPACE)) {
 		remove = ui.nc_remove_focus
@@ -2515,7 +2555,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if clicked("NCCreate") || enter {
+	if clicked("NCCreate") || (enter && ui.focus != .NC_Description) {
 		// A filled-in default would make every unnamed group look the same.
 		name := strings.trim_space(string(ui.nc_name[:]))
 		if name == "" {
@@ -2537,27 +2577,33 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // new chat, so the user stays where they went.
 close_new_chat :: proc(ui: ^Ui_State) {
 	for job in account_jobs {
-		if job.account == ui.account_ref && job.kind == .Create_Chat && job.form != nil {
+		if job.account == ui.account_ref && job.form != nil {
 			job.open_chat = false
 		}
 	}
 	ui.nip05_ticket = 0
 	nc_members_clear(ui)
+	delete(ui.nc_created_group)
+	ui.nc_created_group = ""
+	pic_draft_free(&ui.nc_pic)
 	ui.new_chat_open = false
 	ui.focus = .Compose
 }
 
-// The common tail of new_chat: create the group, hand a staged image to
-// the group-image worker, clear the form, jump to the new chat.
 new_chat_create_and_open :: proc(ui: ^Ui_State, client: ^marmot.Client, name, member: string) {
 	if strings.trim_space(member) == "" {return}
 	if name == "" {
-		if open_existing_dm(ui, client, member) {return}
+		if !open_existing_dm(ui, client, member) {
+			start_dm(ui, client, Contact_Ui{id_hex = member}, ui.nc_page)
+		}
+		return
 	}
 	job := account_job_new(ui, client, .Create_Chat); if job == nil {return}
 	job.title = strings.clone(name); job.target = strings.clone(member); job.open_chat = true
 	job.form = ui.nc_page
-	if ui.nc_page == .Group && len(ui.nc_pic.data) > 0 {
+	job.description = strings.clone(strings.trim_space(string(ui.nc_description[:])))
+	job.retention = ui.nc_retention
+	if len(ui.nc_pic.data) > 0 {
 		job.pic_data = ui.nc_pic.data; job.pic_media = ui.nc_pic.media_type
 		rl.UnloadImage(ui.nc_pic.image)
 		ui.nc_pic = {}
@@ -2728,10 +2774,9 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	for secs, i in RETENTION_SECS {
-		if !self_is_admin(ui) ||
-		   !clicked(fmt.tprintf("RetChip%d", i)) ||
-		   ui.group_retention == secs {
+	for key, i in DETAIL_RETENTION_KEYS {
+		secs := RETENTION_SECS[i]
+		if !admin || !clicked(key) || ui.group_retention == secs {
 			continue
 		}
 		if ui.selected < 0 || ui.selected >= len(ui.chats) {

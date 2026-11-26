@@ -9,6 +9,7 @@ package main
 import "core:fmt"
 import "core:mem"
 import "core:os"
+import "core:strings"
 import "core:time"
 
 import "nendo"
@@ -223,7 +224,34 @@ backup_import :: proc(ui: ^Ui_State) {
 
 // ── Page ────────────────────────────────────────────────────────────
 
+@(private = "file")
+DEFAULT_RETENTION_KEYS :: [len(RETENTION_SECS)]string {
+	"DefaultRetention0",
+	"DefaultRetention1",
+	"DefaultRetention2",
+	"DefaultRetention3",
+	"DefaultRetention4",
+}
+
 settings_storage :: proc(ui: ^Ui_State) {
+	if ui.account_ref != "" {
+		settings_group(tr("Disappearing messages"))
+		if nendo.box(nendo.id("RowDefaultRetention"))(settings_box()) {
+			row_labels(
+				tr("Default disappearing messages"),
+				tr(
+					"Applies to new chats you create with this account. Existing chats keep their timers.",
+				),
+			)
+			for key in DEFAULT_RETENTION_KEYS {settings_register(key)}
+			retention_choices(
+				"DefaultRetention",
+				DEFAULT_RETENTION_KEYS,
+				ui.prefs.default_retention[ui.account_ref],
+				kb_focus,
+			)
+		}
+	}
 	settings_usage(ui)
 	if !ui.cache_scanned {
 		cache_scan(ui)
@@ -323,7 +351,30 @@ last_backup_line :: proc(ui: ^Ui_State) -> string {
 
 // ── Interactions ────────────────────────────────────────────────────
 
+@(private)
+storage_retention :: proc(ui: ^Ui_State, keyboard := "") -> bool {
+	if ui.account_ref == "" {return false}
+	for key, i in DEFAULT_RETENTION_KEYS {
+		if key != keyboard && (keyboard != "" || !clicked(key)) {continue}
+		secs := RETENTION_SECS[i]
+		previous := ui.prefs.default_retention[ui.account_ref]
+		if secs == previous {return true}
+		if secs == 0 {
+			retired, _ := delete_key(&ui.prefs.default_retention, ui.account_ref)
+			delete(retired)
+		} else if stored, found := &ui.prefs.default_retention[ui.account_ref]; found {
+			stored^ = secs
+		} else {
+			ui.prefs.default_retention[strings.clone(ui.account_ref)] = secs
+		}
+		ui.settings_dirty = true
+		return true
+	}
+	return false
+}
+
 handle_storage :: proc(ui: ^Ui_State) {
+	if storage_retention(ui) {return}
 	if clicked("LocCopy") {
 		copy_text(ui, data_home, tr("Path copied"))
 		return

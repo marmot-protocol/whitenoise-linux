@@ -1990,6 +1990,7 @@ flip :: proc(ui: ^Ui_State, flag: ^bool) {
 @(private)
 settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 	if settings_nav_action(ui, client, id) {return}
+	if ui.settings_section == .Privacy && storage_retention(ui, id) {return}
 	if ui.settings_section == .Help {
 		for link in SETTINGS_TROUBLESHOOTERS {
 			if id != link.label {continue}

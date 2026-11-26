@@ -19,7 +19,8 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 
 ### Chats, groups and who may change them
 
-- **New chat opens a searchable contact picker.** Choose a contact, or select New group to set its name and photo.
+- **New chat opens a searchable contact picker.** Choose a contact, or select **New group** to set its name, description, and photo.
+- **Set a timer for new chats in Settings > Privacy & storage.** **Default disappearing messages** starts Off and is saved per account on this device. You can override it before creating a group. Changing the default or reopening a chat leaves existing timers unchanged.
 - **Choose who to invite before you create the group.** In **Members**, select people from the search results, or paste comma-separated public keys and select **Add**. Review the selected members and remove anyone you don't want to invite. Choose at least one person, then select **Create group**.
 - **Only admins change group settings.** Other members can view the settings.
 - **See which relays carry a conversation.** Open **Group settings** or **Chat details** to view and copy its configured relay URLs. This list does not show live connection status. Manage account relays separately in **Network**.

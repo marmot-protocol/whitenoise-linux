@@ -602,6 +602,25 @@ Group_Creation_Result :: struct {
 	member_outcomes_len: uint,
 }
 
+Direct_Conversation_Options :: struct {
+	disappearing_message_secs: u64,
+}
+
+Initial_Group_Image :: struct {
+	plaintext:     [^]u8,
+	plaintext_len: uint,
+	media_type:    cstring,
+	source_url:    cstring,
+	dim:           cstring,
+	thumbhash:     cstring,
+}
+
+Create_Group_Options :: struct {
+	description:               cstring,
+	initial_image:             ^Initial_Group_Image,
+	disappearing_message_secs: u64,
+}
+
 // summary is NULL when no requested account could be invited.
 Invite_Members_Result :: struct {
 	summary:             ^Send_Summary,
@@ -2028,9 +2047,10 @@ foreign lib {
 	events_subscription_free :: proc(sub: ^Events_Subscription) ---
 	event_free :: proc(event: ^Runtime_Event) ---
 
-	// Reuses this account's DM with the peer or creates one with both as admins.
-	start_direct_chat :: proc(client: ^Client, account_ref, peer_account_id: cstring, out: ^cstring) -> Status ---
+	// Reuse leaves the existing DM's timer and roles unchanged.
+	start_direct_chat_with_options :: proc(client: ^Client, account_ref, peer_account_id: cstring, options: ^Direct_Conversation_Options, out: ^cstring) -> Status ---
 	create_group :: proc(client: ^Client, account_ref: cstring, name: cstring, member_refs: [^]cstring, member_refs_len: uint, description: cstring, out: ^^Group_Creation_Result) -> Status ---
+	create_group_with_options :: proc(client: ^Client, account_ref, name: cstring, member_refs: [^]cstring, member_refs_len: uint, options: ^Create_Group_Options, out: ^^Group_Creation_Result) -> Status ---
 	group_creation_free :: proc(ptr: ^Group_Creation_Result) ---
 	send_text :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, text: cstring, out: ^^Send_Summary) -> Status ---
 	// App-defined event: any non-reserved kind with caller-built tags
@@ -2122,6 +2142,8 @@ foreign lib {
 
 	chat_list_row_free :: proc(ptr: ^Chat_List_Row) ---
 	presented_chat_list :: proc(client: ^Client, account_ref: cstring, include_archived: bool, out: ^^Presented_Chat_List) -> Status ---
+	presented_chat_list_row :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^^Presented_Chat_Row) -> Status ---
+	presented_chat_row_free :: proc(row: ^Presented_Chat_Row) ---
 	@(link_name = "marmot_presented_chat_list_snapshot_free")
 	presented_chat_list_free :: proc(list: ^Presented_Chat_List) ---
 	folder_unread_mentions :: proc(client: ^Client, account_ref: cstring, out: ^^String_List) -> Status ---

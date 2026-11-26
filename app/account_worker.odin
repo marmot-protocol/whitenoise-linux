@@ -46,8 +46,11 @@ Account_Job :: struct {
 	client:                                       ^marmot.Client,
 	account, group, target, title, result, error: string,
 	fields:                                       [4]string,
+	description:                                  string,
 	pic_data:                                     []u8,
 	pic_media:                                    string,
+	retention:                                    u64,
+	opened_row:                                   ^marmot.Presented_Chat_Row,
 	relays:                                       []cstring,
 	kind:                                         Account_Operation,
 	sign_out_intent:                              Sign_Out_Intent,
@@ -134,6 +137,9 @@ account_job_new :: proc(
 	job.client, job.account, job.kind = client, strings.clone(owner), kind
 	job.signer, job.sign_out_intent = signer, sign_out_intent
 	job.accounts_revision = ui.accounts_revision
+	if kind == .Open_DM || kind == .Create_Chat {
+		for hex in ui.blocked {job.chat_list.blocked[strings.clone(hex)] = true}
+	}
 	if account_wiping(kind) {
 		label: string
 		if profile := ui.devices.profiles[owner]; profile != nil {label = profile.unlink_label}
@@ -277,13 +283,14 @@ account_worker :: proc(t: ^thread.Thread) {
 		status = .OK
 	case .Open_DM:
 		out: cstring
-		status = marmot.start_direct_chat(job.client, account, target, &out)
-		if out != nil {job.result = strings.clone(string(out)); marmot.string_free(out)}
-		if status == .OK {
-			chat_list_read(&job.chat_list)
-			if job.chat_list.err != "" {job.error = strings.clone(job.chat_list.err)}
+		options := marmot.Direct_Conversation_Options {
+			disappearing_message_secs = job.retention,
 		}
+		status = marmot.start_direct_chat_with_options(job.client, account, target, &options, &out)
+		if out != nil {job.result = strings.clone(string(out)); marmot.string_free(out)}
 	case .Create_Chat:
+		// A retry already has its group id. Only read the row again.
+		if job.result != "" {break}
 		members := make([dynamic]cstring, context.temp_allocator)
 		seen := make(map[string]bool, context.temp_allocator)
 		for peer in strings.split(job.target, "\n", context.temp_allocator) {
@@ -291,14 +298,27 @@ account_worker :: proc(t: ^thread.Thread) {
 			seen[peer] = true
 			append(&members, strings.clone_to_cstring(peer, context.temp_allocator))
 		}
+		options := marmot.Create_Group_Options {
+			description               = strings.clone_to_cstring(
+				job.description,
+				context.temp_allocator,
+			),
+			disappearing_message_secs = job.retention,
+		}
+		image := marmot.Initial_Group_Image {
+			plaintext     = raw_data(job.pic_data),
+			plaintext_len = uint(len(job.pic_data)),
+			media_type    = strings.clone_to_cstring(job.pic_media, context.temp_allocator),
+		}
+		if len(job.pic_data) > 0 {options.initial_image = &image}
 		out: ^marmot.Group_Creation_Result
-		status = marmot.create_group(
+		status = marmot.create_group_with_options(
 			job.client,
 			account,
 			strings.clone_to_cstring(job.title, context.temp_allocator),
 			raw_data(members),
 			uint(len(members)),
-			nil,
+			&options,
 			&out,
 		)
 		if out != nil {
@@ -313,9 +333,6 @@ account_worker :: proc(t: ^thread.Thread) {
 					"Couldn't create the chat. No one you picked has a key package White Noise can use. Ask them to open White Noise, then try again.",
 				),
 			)
-		} else if status == .OK && len(job.pic_data) > 0 {
-			group_pic_queue(job.client, job.account, job.result, job.pic_data, job.pic_media)
-			job.pic_data = nil
 		}
 	case .Accept:
 		out: ^marmot.App_Group_Record
@@ -349,6 +366,18 @@ account_worker :: proc(t: ^thread.Thread) {
 		)
 	}
 	if summary != nil {marmot.send_summary_free(summary)}
+	if status == .OK &&
+	   (job.kind == .Open_DM || (job.kind == .Create_Chat && !job.notes)) &&
+	   job.result != "" {
+		id := strings.clone_to_cstring(job.result, context.temp_allocator)
+		if marmot.presented_chat_list_row(job.client, account, id, &job.opened_row) != .OK ||
+		   job.opened_row == nil {
+			job.error = strings.clone(tr("Couldn't open the chat. Please try again."))
+		} else {
+			chat_identity_member_fetch(job.client, account, job.opened_row, &job.chat_list.members)
+			chat_prepare_preview(&job.chat_list, job.client, job.account, &job.opened_row.row)
+		}
+	}
 	if status != .OK {
 		reason := marmot.last_error()
 		defer delete(reason)
@@ -538,9 +567,10 @@ account_job_free :: proc(job: ^Account_Job, join: Account_Join = .Pending) {
 		if join == .Pending {thread.join(job.worker)}
 		thread.destroy(job.worker)
 	}
-	for text in ([]string{job.account, job.group, job.target, job.title, job.result, job.error}) {delete(text)}
+	for text in ([]string{job.account, job.group, job.target, job.title, job.description, job.result, job.error}) {delete(text)}
 	delete(job.wipe_report)
 	if job.accounts != nil {marmot.account_summary_list_free(job.accounts)}
+	if job.opened_row != nil {marmot.presented_chat_row_free(job.opened_row)}
 	for text in job.fields {delete(text)}
 	for relay in job.relays {delete(relay)}
 	kp_rows_free(&job.key_rows); delete(job.key_rows)
@@ -771,24 +801,27 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 			continue
 		}
 		if job.kind == .Switch && job.error != "" {devices_switch_failed(ui, job.account)}
+		form_active :=
+			job.form != nil &&
+			job.open_chat &&
+			ui.page == .Chats &&
+			!ui.add_account_open &&
+			ui.new_chat_open &&
+			ui.nc_page == job.form &&
+			ui.account_ref == job.account
 		if job.error != "" {
 			// The sign-in card shows its own failure; the banner sits behind it.
 			if job.kind == .Sign_In && (ui.account_ref == "" || ui.add_account_open) {
 				ui.login_error = strings.clone(job.error)
-			} else if job.form == nil ||
-			   (job.open_chat &&
-					   ui.page == .Chats &&
-					   !ui.add_account_open &&
-					   ui.new_chat_open &&
-					   ui.nc_page == job.form &&
-					   ui.account_ref == job.account) {
+			} else if job.form == nil || form_active {
 				set_status(ui, strings.clone(job.error), .Error)
 			}
 		}
-		if job.error != "" &&
-		   job.kind == .Create_Chat &&
-		   ui.account_ref == job.account &&
-		   ui.new_chat_open &&
+		if job.error != "" && form_active && job.result != "" {
+			delete(ui.nc_created_group)
+			ui.nc_created_group, job.result = job.result, ""
+		} else if job.error != "" &&
+		   form_active &&
 		   len(job.pic_data) > 0 &&
 		   len(ui.nc_pic.data) == 0 {
 			ext := strings.clone_to_cstring(
@@ -863,38 +896,32 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 					} else if live != nil {
 						live.refresh_dirty = true
 					}
-				case .Open_DM:
-					ui.page, ui.focus = .Chats, .Compose
-					gs_keep_open_chat(ui, job.result)
-					if !select_by_id(ui, job.client, job.result) && job.chat_list.rows != nil {
-						rows := job.chat_list.rows
-						for i in 0 ..< rows.rows_len {
-							row := &rows.rows[i]
-							if string(row.row.group_id_hex) != job.result {continue}
+				case .Create_Chat, .Open_DM:
+					if job.notes {
+						delete(ui.prefs.notes_group)
+						ui.prefs.notes_group = strings.clone(job.result)
+						ui.prefs.pinned[strings.clone(job.result)] = true
+						save_settings(ui)
+						load_chat_list(job.client, job.account, ui)
+					}
+					if job.open_chat && (job.form == nil || form_active) {
+						if ui.new_chat_open {close_new_chat(ui)}
+						ui.page, ui.focus = .Chats, .Compose
+						gs_keep_open_chat(ui, job.result)
+						if !select_by_id(ui, job.client, job.result) && job.opened_row != nil {
 							chat := row_to_ui(
 								job.client,
-								row,
+								job.opened_row,
 								job.account,
 								job.chat_list.previews,
 								job.chat_list.reading_previews,
 								job.chat_list.members,
 							)
-							chat.search_only = row.row.archived
-							if chat.search_only {append(&ui.archived, chat_clone(chat))}
+							chat.search_only = chat.archived
+							if chat.archived {append(&ui.archived, chat_clone(chat))}
 							append(&ui.chats, chat)
 							select_by_id(ui, job.client, job.result)
-							break
 						}
-					}
-				case .Create_Chat:
-					if job.notes {delete(ui.prefs.notes_group); ui.prefs.notes_group = strings.clone(job.result); ui.prefs.pinned[strings.clone(job.result)] = true; save_settings(ui)}
-					load_chat_list(job.client, job.account, ui)
-					if job.open_chat {
-						if job.form != nil {close_new_chat(ui)}
-						ui.focus = .Compose
-						ui.page = .Chats
-						ui.new_chat_open = false
-						select_by_id(ui, job.client, job.result)
 					}
 					if job.skipped > 0 {
 						set_status(

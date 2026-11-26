@@ -269,25 +269,6 @@ upload_group_pic_for :: proc(client: ^marmot.Client, account, gid: string, draft
 
 // ── Group-image worker ──────────────────────────────────────────────
 
-@(private)
-group_pic_queue :: proc(
-	client: ^marmot.Client,
-	account, group: string,
-	data: []u8,
-	media_type: string,
-) {
-	gimg_push(
-		Gimg_Job {
-			kind = .Upload,
-			client = client,
-			account = strings.clone(account),
-			group_id = strings.clone(group),
-			data = data,
-			media_type = media_type,
-		},
-	)
-}
-
 @(private = "file")
 Gimg_Kind :: enum {
 	Download,

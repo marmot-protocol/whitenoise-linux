@@ -669,6 +669,9 @@ msgstr "Erscheinungsbild"
 msgid "Applies to message bodies and the composer."
 msgstr "Gilt für Nachrichtentexte und das Eingabefeld."
 
+msgid "Applies to new chats you create with this account. Existing chats keep their timers."
+msgstr "Gilt für neue Chats, die du mit diesem Konto erstellst. Bestehende Chats behalten ihre Timer."
+
 msgid "Applies to the picker, reactions and emoji in messages."
 msgstr "Gilt für die Auswahl, Reaktionen und Emojis in Nachrichten."
 
@@ -1804,6 +1807,9 @@ msgstr "Das Foto konnte nicht geöffnet werden. Wähle ein kleineres Bild oder e
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "Das Backup konnte nicht geöffnet werden. Überprüfe das Passwort und versuche es erneut."
 
+msgid "Couldn't open the chat. Please try again."
+msgstr "Der Chat konnte nicht geöffnet werden. Bitte versuche es erneut."
+
 msgid "Couldn't open the microphone. Please try again."
 msgstr "Das Mikrofon konnte nicht geöffnet werden. Bitte versuche es erneut."
 
@@ -2240,6 +2246,9 @@ msgstr "Standard"
 
 msgid "Default avatar shape"
 msgstr "Standardform für Avatare"
+
+msgid "Default disappearing messages"
+msgstr "Standardtimer für selbstlöschende Nachrichten"
 
 msgid "Default stack"
 msgstr "Standardschriften"

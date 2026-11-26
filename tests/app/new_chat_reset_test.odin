@@ -24,6 +24,9 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	)
 	if !testing.expect_value(t, err, nil) {return}
 	defer os.remove_all(dir)
+	old_config := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
+	os.set_env("XDG_CONFIG_HOME", dir)
+	defer os.set_env("XDG_CONFIG_HOME", old_config)
 	deployment: ^marmot.Deployment
 	if !testing.expect_value(
 		t,
@@ -103,6 +106,21 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		layout(ui)
 		click(t, ui, client, nendo.id("NCCancel"))
 	}
+	account := ui.account_ref
+	settings_open(&ui, nil, .Privacy)
+	layout(&ui)
+	click(t, &ui, client, nendo.id("DefaultRetention3"))
+	save_settings(&ui)
+	load_settings(&ui)
+	ui.account_ref = "other-account"
+	settings_flip(&ui, client, "DefaultRetention1")
+	save_settings(&ui)
+	load_settings(&ui)
+	open_new_chat(&ui, nil)
+	testing.expect_value(t, ui.nc_retention, 3600)
+	close_new_chat(&ui)
+	ui.account_ref = account
+	ui.page = .Chats
 	for cancel in ([]bool{false, true}) {
 		layout(&ui)
 		click(t, &ui, client, nendo.id("NewChatBtn"))
@@ -110,6 +128,7 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		layout(&ui)
 		click(t, &ui, client, nendo.id("NCGroup"))
 		testing.expect(t, ui.nc_page == .Group)
+		testing.expect_value(t, ui.nc_retention, 604800)
 		ed_insert(&ui, &ui.nc_name, "Abandoned group")
 
 		testing.expect_value(t, string(ui.nc_name[:]), "Abandoned group")
@@ -229,9 +248,13 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	if !testing.expect_value(t, ui.focus, Focus.NC_Name) {return}
 	layout(&ui)
 	rl.PushKey(.LEFT_SHIFT, true)
-	rl.PushKey(.TAB, true)
-	handle_chat(&ui, client)
-	rl.PushKey(.TAB, false)
+	for _ in 0 ..< len(NC_RETENTION_KEYS) + 2 {
+		rl.PushKey(.TAB, true)
+		handle_chat(&ui, client)
+		rl.PushKey(.TAB, false)
+		rl.WindowShouldClose()
+		layout(&ui)
+	}
 	rl.PushKey(.LEFT_SHIFT, false)
 	rl.WindowShouldClose()
 	layout(&ui)
@@ -298,13 +321,21 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	}
 	testing.expect_value(t, nc_group_targets(&ui), peer + "\n" + second)
 	ed_set(&ui, &ui.nc_name, "Weekend plans")
+	ed_set(&ui, &ui.nc_description, "Meet at the station")
 	account_jobs_stop()
+	layout(&ui)
+	scroll_into_view(nendo.id("NCForm"), nendo.id(NC_RETENTION_KEYS[1]))
+	layout(&ui)
+	click(t, &ui, client, nendo.id(NC_RETENTION_KEYS[1]))
 	layout(&ui)
 	click(t, &ui, client, nendo.id("NCCreate"))
 	if testing.expect_value(t, len(account_jobs), 1) {
 		testing.expect_value(t, account_jobs[0].kind, Account_Operation.Create_Chat)
 		testing.expect_value(t, account_jobs[0].target, peer + "\n" + second)
+		testing.expect_value(t, account_jobs[0].retention, 3600)
+		testing.expect_value(t, account_jobs[0].description, "Meet at the station")
 	}
+	testing.expect_value(t, ui.prefs.default_retention[account], 604800)
 	account_jobs_stop()
 	layout(&ui)
 	back_out(t, &ui, client)

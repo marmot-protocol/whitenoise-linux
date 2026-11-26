@@ -151,6 +151,12 @@ SETTINGS_TASKS := [?]Settings_Task {
 	{.Account, N_("Change your vault password"), "RowVaultPw", "security encryption secret"},
 	{.Account, N_("Reveal your secret key"), "RowReveal", "nsec export security"},
 	{.Devices, N_("Manage linked devices"), "DevicesRoster", "pair link roster"},
+	{
+		.Privacy,
+		N_("Default disappearing messages"),
+		"RowDefaultRetention",
+		"timer retention expiry expiration",
+	},
 	{.Privacy, N_("Clear cached attachments"), "RowCache", "media space disk"},
 	{.Privacy, N_("Back up local data"), "RowBackup", "export data encrypted"},
 	{.Privacy, N_("Import a backup"), "RowImport", "restore data encrypted"},
@@ -814,6 +820,8 @@ settings_open_result :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) 
 		ui.settings_target_focus = "TranslationSource"
 	case "RowTranslationTarget":
 		ui.settings_target_focus = "TranslationTarget"
+	case "RowDefaultRetention":
+		ui.settings_target_focus = "DefaultRetention0"
 	case "RowTelemetry":
 		ui.settings_target_focus = "TgTelemetry"
 	case "RowAudit":
