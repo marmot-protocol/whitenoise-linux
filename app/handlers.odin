@@ -2039,6 +2039,7 @@ open_group_info :: proc(ui: ^Ui_State, client: ^marmot.Client, tab: Info_Tab) {
 // Back to the conversation from either group info page.
 close_group_info :: proc(ui: ^Ui_State) {
 	activation_reset(ui)
+	group_relays_clear(ui)
 	ui.show_members = false
 	ui.nip05_ticket = 0
 	ui.desc_editing = false
@@ -2603,11 +2604,32 @@ handle_dm_details :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	return false
 }
 
+@(private)
+group_relay_seed :: proc(ui: ^Ui_State) -> u32 {
+	seed := nendo.id(ui.account_ref, nendo.id("InfoRelayCopy").id).id
+	return nendo.id(ui.chats[ui.selected].group_id, seed).id
+}
+
 // Member admin actions and the invite box.
 handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	dm := selected_chat_is_dm(ui)
 	admin := !dm && self_is_admin(ui)
 	if dm && handle_dm_details(ui, client) {return}
+	if dm || ui.info_tab == .Settings {
+		if ui.group_relays_status == .Failed && clicked("InfoRelaysRetry") {
+			load_members(client, ui)
+			return
+		}
+		if ui.group_relays_status == .Ready && mouse_released() {
+			seed := group_relay_seed(ui)
+			for url in ui.group_relays {
+				if nendo.pointer_over(nendo.id(url, seed)) {
+					copy_text(ui, url, tr("Copied"))
+					return
+				}
+			}
+		}
+	}
 	// Member-row nickname editor: Enter saves (empty clears), Escape
 	// drops it without saving. load_members refreshes the row name.
 	if !dm && ui.member_nick >= 0 && ui.member_nick < len(ui.members) {

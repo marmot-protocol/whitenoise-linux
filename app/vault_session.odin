@@ -198,6 +198,7 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 	editor_forget(ui)
 	nc_members_clear(ui)
 	keys_forget(ui)
+	group_relays_clear(ui)
 	close_export(ui)
 	backup_close(ui)
 	vault_pw_close(ui)

@@ -525,6 +525,7 @@ members_retired: [dynamic]^Members_Work
 // Group details enrich every member. Keep that database work off the UI thread.
 load_members :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	if ui.selected < 0 {return}
+	group_relays_clear(ui)
 	if members_job != nil {append(&members_retired, members_job)}
 	job := new(Members_Work)
 	job.client = client
@@ -576,6 +577,7 @@ members_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   ui.account_ref != string(job.account) ||
 	   ui.chats[ui.selected].group_id != string(job.group) {return}
 	if job.details == nil {
+		ui.group_relays_status = .Failed
 		set_status(
 			ui,
 			fmt.aprintf("%s %s", tr("Couldn't load group members. Please try again."), job.err),
@@ -584,6 +586,43 @@ members_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	members_apply(ui, client, job.details)
+	if ui.show_members {
+		record := &job.details.group
+		ui.group_relays = make([dynamic]string, 0, int(record.relays_len))
+		seen := make(map[[2]string]bool, context.temp_allocator)
+		for i in 0 ..< record.relays_len {
+			url := string(record.relays[i])
+			key := group_relay_key(url)
+			if seen[key] {continue}
+			seen[key] = true
+			append(&ui.group_relays, strings.clone(url))
+		}
+		ui.group_relays_status = .Ready
+	}
+}
+
+// Display deduplication is conservative: fold the authority and root slash,
+// but keep path and query bytes as configured.
+@(private)
+group_relay_key :: proc(url: string) -> [2]string {
+	scheme_end := strings.index(url, "://")
+	if scheme_end < 0 {return {url, ""}}
+	authority := scheme_end + 3
+	end := strings.index_any(url[authority:], "/?\\")
+	end = end < 0 ? len(url) : authority + end
+	endpoint := strings.to_lower(url[:end], context.temp_allocator)
+	endpoint = strings.trim_suffix(endpoint, strings.has_prefix(endpoint, "wss:") ? ":443" : ":80")
+	path := url[end:]
+	if path == "/" || strings.has_prefix(path, "/?") {path = path[1:]}
+	return {endpoint, path}
+}
+
+@(private)
+group_relays_clear :: proc(ui: ^Ui_State) {
+	for &url in ui.group_relays {session_string_forget(&url)}
+	delete(ui.group_relays)
+	ui.group_relays = {}
+	ui.group_relays_status = .Loading
 }
 
 @(private)
