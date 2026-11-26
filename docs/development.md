@@ -142,6 +142,12 @@ even if a later commit reverts them. The
 runs the native C and Odin suite, the Linux and Windows package boots,
 and the OpenBSD filesystem, helper, and startup tests.
 
+The GitHub `CI` workflow runs Canary on `master` at `:17` each hour.
+It pins the run's commit and advances the `canary` branch only after the
+native build, tests, and AppImage boot pass. To retry a failed revision
+while it is still `master`, dispatch `CI` on `master` from Actions.
+An unchanged green revision skips the build.
+
 <details>
 <summary><b>Test signing keys and build cache keys</b></summary>
 

@@ -3,16 +3,19 @@ name: CI
 
 on:
   workflow_dispatch:
-  push:
-    branches: [master]
+  schedule:
+    - cron: '17 * * * *'
   pull_request:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: >-
+    ${{ github.event_name == 'pull_request' && format('wn-pr-{0}', github.ref)
+    || (github.repository == 'marmot-protocol/whitenoise-linux' && github.ref == 'refs/heads/master' && 'wn-canary')
+    || format('ci-skipped-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_BUILD_JOBS: 6
@@ -53,12 +56,40 @@ jobs:
             bash scripts/pr-gate.sh "$PR_BASE" "$PR_HEAD"
           fi
 
+  canary:
+    name: Select Canary batch
+    if: github.event_name != 'pull_request' && github.repository == 'marmot-protocol/whitenoise-linux' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+    outputs:
+      build: ${{ steps.select.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check live refs and previous runs
+        id: select
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/canary.sh select
+
   build:
     name: build + test
-    needs: pr-gate
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.pr-gate.outputs.lane == 'build') }}
+    needs: [pr-gate, canary]
+    if: ${{ !cancelled() && (needs.pr-gate.outputs.lane == 'build' || needs.canary.outputs.build == 'true') }}
     runs-on: ubuntu-24.04
     environment: ${{ github.event_name == 'pull_request' && 'wn-github-pr' || 'wn-boat-build' }}
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+    outputs:
+      smoked: ${{ steps.smoke.outcome == 'success' }}
     env:
       BOAT_CI_KEY: ${{ github.event_name != 'pull_request' && secrets.BOAT_CI_KEY || '' }}
     timeout-minutes: 90
@@ -68,26 +99,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.sha }}
+          fetch-depth: ${{ github.event_name == 'pull_request' && 1 || 0 }}
           persist-credentials: false
+
+      # A selective rerun can reuse the original selector job's outputs.
+      - name: Recheck Canary before starting Boat
+        id: recheck
+        if: github.event_name != 'pull_request'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/canary.sh select
 
       - name: Start Ubuntu build environment
         id: start
+        if: github.event_name == 'pull_request' || steps.recheck.outputs.build == 'true'
         shell: bash
         run: bash scripts/ci-boat.sh start native
 
       # Fail a hung test before the job deadline.
       - name: Build and test
+        if: steps.start.outcome == 'success'
         timeout-minutes: 60
-        env:
-          WN_METRICS_WRITE_TOKEN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && secrets.WN_METRICS_WRITE_TOKEN || '' }}
-          WN_AUDIT_WRITE_TOKEN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
         run: scripts/build.sh test
 
-      - name: Remove generated observability credentials
-        if: always() && steps.start.outcome == 'success'
-        run: rm -f build/observability-tokens.toml
-
       - name: Name staging AppImage
+        if: steps.start.outcome == 'success'
         shell: bash
         run: |
           version=$(bash scripts/version.sh)
@@ -95,6 +133,7 @@ jobs:
 
       # Staging packages must not point AppImageUpdate at the release channel.
       - name: Build staging AppImage
+        if: steps.start.outcome == 'success'
         run: |
           rm -rf AppDir
           scripts/install-tree.sh AppDir/usr whitenoise
@@ -109,22 +148,26 @@ jobs:
           ./appimagetool AppDir "$APPIMAGE_NAME"
 
       - name: Run the AppImage headless
+        id: smoke
+        if: steps.start.outcome == 'success'
         run: |
           chmod +x "$APPIMAGE_NAME"
           SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke ./"$APPIMAGE_NAME" "$(mktemp -d)"
 
       - name: Retrieve staging AppImage
+        if: steps.smoke.outcome == 'success'
         shell: bash
         run: bash scripts/ci-boat.sh pull "$APPIMAGE_NAME"
 
       - uses: actions/upload-artifact@v4
+        if: steps.smoke.outcome == 'success'
         with:
           name: whitenoise-staging-x86_64
           path: ${{ env.APPIMAGE_NAME }}
           if-no-files-found: error
 
       - name: Stop build environment
-        if: always()
+        if: always() && steps.start.outcome != 'skipped' && steps.start.outcome != ''
         shell: bash
         run: bash scripts/ci-boat.sh stop
 
@@ -133,7 +176,20 @@ jobs:
     if: needs.pr-gate.outputs.lane == 'build'
     uses: ./.github/workflows/cross.yml
 
-  cross-integration:
-    if: github.event_name != 'pull_request'
-    uses: ./.github/workflows/cross.yml
-    secrets: inherit
+  advance:
+    name: Advance Canary
+    needs: [canary, build]
+    if: ${{ !cancelled() && needs.canary.outputs.build == 'true' && needs.build.result == 'success' && needs.build.outputs.smoked == 'true' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fast-forward Canary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/canary.sh advance
