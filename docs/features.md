@@ -54,6 +54,7 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 
 - **Automatic** puts shortcuts beside short drafts when they fit. **Always expanded** keeps the toolbar on its own line. GM and the voice microphone hide while your draft has text. When the draft is empty, the microphone follows your placement setting.
 - Press Ctrl+V to paste into the draft. Pasting a file or image adds it as an attachment.
+- If you're replying to a message when you send a poll, the poll quotes that message.
 - Polls start in single-choice mode and close after seven days by default. Choose multiple choice or change the duration to one day, three days, or no deadline.
 - The Forward picker shows the message's first line, or its first attachment's filename, above the destination filter.
 - Forwarded attachments download and prepare in the background.

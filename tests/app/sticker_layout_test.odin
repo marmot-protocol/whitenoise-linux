@@ -401,6 +401,15 @@ sticker_layout :: proc(t: ^testing.T) {
 	// A personal sticker first reads its vault copy, keeping the same context.
 	ui.replying = sha
 	ui.fx_armed = 3
+	job := Timeline_Work {
+		account = "account",
+		group   = "test",
+	}
+	old_timeline := timeline_job
+	timeline_job = &job
+	defer {timeline_job = old_timeline; delete(ui.thread_stack)}
+	append(&ui.thread_stack, "thread-parent")
+	ui.thread_placement = .Ready
 	sticker_send(&ui, nil, ui.stickers[14])
 	found := false
 	for job in sticker_jobs {
@@ -408,6 +417,7 @@ sticker_layout :: proc(t: ^testing.T) {
 		found = true
 		testing.expect_value(t, job.group, "test")
 		testing.expect_value(t, job.account, "account")
+		testing.expect_value(t, job.root, "thread-parent")
 		testing.expect_value(t, job.reply, sha)
 		testing.expect_value(t, job.effect, 3)
 	}

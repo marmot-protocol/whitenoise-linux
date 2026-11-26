@@ -394,7 +394,7 @@ sticker_send :: proc(ui: ^Ui_State, client: ^marmot.Client, item: Sticker_Item) 
 		job.item = sticker_item_clone(item)
 		job.group = strings.clone(ui.chats[ui.selected].group_id)
 		job.root = strings.clone(root)
-		job.reply = strings.clone(root == "" ? ui.replying : "")
+		job.reply = strings.clone(ui.replying)
 		job.effect = ui.fx_armed
 	} else {
 		info := profile_info(client, ui.account_ref)
