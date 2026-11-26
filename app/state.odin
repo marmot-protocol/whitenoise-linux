@@ -320,6 +320,8 @@ Focus :: enum {
 	Ov, // Openverse image-search query box
 	NC_Member,
 	NC_Name,
+	NC_Description,
+	NC_Retention,
 	NC_Search,
 	Filter, // sidebar chat filter
 	Picker, // emoji-picker search box
@@ -1006,6 +1008,10 @@ Ui_State :: struct {
 	nc_remove_focus:                     int,
 	nip05_ticket:                        int,
 	nc_name:                             [dynamic]u8,
+	nc_description:                      [dynamic]u8,
+	nc_retention:                        u64,
+	nc_retention_focus:                  int,
+	nc_created:                          Nc_Created, // creation succeeded; only opening needs a retry
 	nc_pic:                              Pic_Draft, // group image staged for Create
 	people:                              People_Search, // directory hits for the new-chat fields
 	client_status:                       string, // written only through set_status

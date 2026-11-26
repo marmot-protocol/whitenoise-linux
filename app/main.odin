@@ -1237,8 +1237,10 @@ app_main :: proc() {
 				wheel = {}
 			}
 			chat_filter_wheel(&ui, &wheel)
-			if ui.picker_open && wheel.y != 0 {
-				for name in ([3]string{"PickerCategories", "PkCustomRow", "PkRecentRow"}) {
+			if wheel.y != 0 {
+				rows := [3]string{"RetentionRow", "DefaultRetention", "NCRetention"}
+				if ui.picker_open {rows = {"PickerCategories", "PkCustomRow", "PkRecentRow"}}
+				for name in rows {
 					id := nendo.id(name)
 					if !nendo.pointer_over(id) {continue}
 					if view := nendo.scroll(id);
