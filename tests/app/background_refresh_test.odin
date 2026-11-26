@@ -365,6 +365,19 @@ thread_reply_previews :: proc(t: ^testing.T) {
 		testing.expect_value(t, ui.messages[0].reply_id, "")
 		record.deleted = false
 	}
+	// A quoted poll can stay on the main timeline without an e tag.
+	record.kind = KIND_POLL
+	record.thread = nil
+	record.tags, record.tags_len = raw_data(tags[1:]), 1
+	record.reply_to_message_id_hex = "parent"
+	preview.message_id_hex = "parent"
+	record.reply_preview = &preview
+	timeline_apply(nil, &ui, &page)
+	if !testing.expect_value(t, len(ui.messages), 1) {return}
+	testing.expect_value(t, ui.messages[0].thread_of, "")
+	testing.expect_value(t, ui.messages[0].reply_id, "parent")
+	testing.expect_value(t, ui.messages[0].reply_text, "Original")
+
 	// Numeric-k comments can have q or e in the old reply target field.
 	record.kind = KIND_THREAD
 	record.thread = &ref

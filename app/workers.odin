@@ -1357,22 +1357,24 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // reloads when the worker reports back. Threads are reaped by
 // drain_sends, which joins whatever is done in send_threads.
 Op_Job :: struct {
-	ticket:       int,
-	client:       ^marmot.Client,
-	op:           Msg_Op,
-	account:      cstring,
-	group:        cstring,
-	target:       cstring,
-	emoji:        cstring, // nil for delete
-	emoji_file:   cstring, // .React with a :code: this device has an image for
-	emoji_png:    []u8, // that image's bytes, owned
-	content:      cstring, // poll question or edit
-	poll_values:  []cstring, // option labels on creation; selected ids on voting
-	poll_type:    marmot.Poll_Type,
-	poll_ends_at: u64,
-	secs:         u64, // .Retention only
-	advisory:     marmot.Status,
-	retry_epoch:  u64,
+	ticket:         int,
+	client:         ^marmot.Client,
+	op:             Msg_Op,
+	account:        cstring,
+	group:          cstring,
+	target:         cstring,
+	emoji:          cstring, // nil for delete
+	emoji_file:     cstring, // .React with a :code: this device has an image for
+	emoji_png:      []u8, // that image's bytes, owned
+	content:        cstring, // poll question or edit
+	poll_quote:     cstring,
+	reply_revision: u64,
+	poll_values:    []cstring, // option labels on creation; selected ids on voting
+	poll_type:      marmot.Poll_Type,
+	poll_ends_at:   u64,
+	secs:           u64, // .Retention only
+	advisory:       marmot.Status,
+	retry_epoch:    u64,
 }
 
 Activation_Op_Result :: struct {
@@ -1386,6 +1388,7 @@ Op_Done :: struct {
 	ticket:                          int,
 	op:                              Msg_Op,
 	err:                             string, // "" = ok, else the owned marmot error
+	reply_revision:                  u64,
 	account, group, target, content: string,
 	history:                         [dynamic]^marmot.Timeline_Edit_Page,
 	has_original:                    bool, // .History: content holds the original plaintext
@@ -1511,34 +1514,40 @@ react_custom_emoji :: proc(job: ^Op_Job, summary: ^^marmot.Send_Summary) -> marm
 }
 
 @(private)
-poll_thread_tags :: proc(
-	parent: cstring,
+poll_message_tags :: proc(
+	parent, quote: cstring,
 	placement: ^marmot.Thread_Reply_Context,
-	values: ^[5][4]cstring,
-) -> [5]marmot.Message_Tag {
-	values^ = {
-		{"E", placement.root_message_id_hex, "", placement.root_author},
-		{"K", fmt.ctprintf("%d", placement.root_kind), nil, nil},
-		{"P", placement.root_author, nil, nil},
-		{"e", parent, "", placement.parent_author},
-		{"k", fmt.ctprintf("%d", placement.parent_kind), nil, nil},
+	values: ^[6][4]cstring,
+	tags: ^[6]marmot.Message_Tag,
+) -> []marmot.Message_Tag {
+	count := 0
+	if placement != nil {
+		values^ = {
+			{"E", placement.root_message_id_hex, "", placement.root_author},
+			{"K", fmt.ctprintf("%d", placement.root_kind), nil, nil},
+			{"P", placement.root_author, nil, nil},
+			{"e", parent, "", placement.parent_author},
+			{"k", fmt.ctprintf("%d", placement.parent_kind), nil, nil},
+			{},
+		}
+		for i in 0 ..< 5 {
+			tags^[i] = {raw_data(values^[i][:]), i == 0 || i == 3 ? 4 : 2}
+		}
+		count = 5
 	}
-	return {
-		{raw_data(values^[0][:]), 4},
-		{raw_data(values^[1][:]), 2},
-		{raw_data(values^[2][:]), 2},
-		{raw_data(values^[3][:]), 4},
-		{raw_data(values^[4][:]), 2},
+	// An e tag places a poll in a thread, even without an E tag.
+	if quote != nil {
+		values^[count] = {"q", quote, nil, nil}
+		tags^[count] = {raw_data(values^[count][:]), 2}
+		count += 1
 	}
+	return tags^[:count]
 }
 
 @(private = "file")
 send_poll_job :: proc(job: ^Op_Job, summary: ^^marmot.Send_Summary) -> (marmot.Status, bool) {
 	placement: ^marmot.Thread_Reply_Context
 	defer if placement != nil {marmot.thread_reply_context_free(placement)}
-	values: [5][4]cstring
-	tags: [5]marmot.Message_Tag
-	rows: []marmot.Message_Tag
 	if string(job.target) != "" {
 		available: u8
 		status := marmot.thread_reply_context(
@@ -1551,9 +1560,10 @@ send_poll_job :: proc(job: ^Op_Job, summary: ^^marmot.Send_Summary) -> (marmot.S
 		)
 		if status != .OK {return status, false}
 		if available == 0 {return .OK, true}
-		tags = poll_thread_tags(job.target, placement, &values)
-		rows = tags[:]
 	}
+	values: [6][4]cstring
+	tags: [6]marmot.Message_Tag
+	rows := poll_message_tags(job.target, job.poll_quote, placement, &values, &tags)
 	status := marmot.create_tagged_poll(
 		job.client,
 		job.account,
@@ -1577,8 +1587,9 @@ op_worker :: proc(t: ^thread.Thread) {
 	job := (^Op_Job)(t.data)
 	summary: ^marmot.Send_Summary
 	done := Op_Done {
-		ticket = job.ticket,
-		op     = job.op,
+		ticket         = job.ticket,
+		op             = job.op,
+		reply_revision = job.reply_revision,
 	}
 	status: marmot.Status
 	uninvited: bool
@@ -1772,6 +1783,7 @@ op_worker :: proc(t: ^thread.Thread) {
 	}
 	delete(job.emoji_file)
 	delete(job.emoji_png)
+	delete(job.poll_quote)
 	for value in job.poll_values {delete(value)}
 	delete(job.poll_values)
 	if job.content != nil {
@@ -1800,6 +1812,12 @@ spawn_poll :: proc(
 	job.group = strings.clone_to_cstring(ui.chats[ui.selected].group_id)
 	job.target = strings.clone_to_cstring(target)
 	job.content = strings.clone_to_cstring(question)
+	if op == .Poll_Create {
+		job.reply_revision = ui.reply_revision
+		if ui.replying != "" {
+			job.poll_quote = strings.clone_to_cstring(ui.replying)
+		}
+	}
 	job.poll_type = poll_type
 	job.poll_ends_at = ends_at
 	job.poll_values = make([]cstring, len(values))
@@ -1871,6 +1889,9 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if d.op == .Poll_Create && d.ticket == ui.poll_ticket {
 			ui.poll_ticket = 0
 			if d.err == "" {
+				if ui.reply_revision == d.reply_revision {
+					ui.replying = ""
+				}
 				poll_close(ui)
 				ui.scroll_pending = true
 				play_sound(.Send)

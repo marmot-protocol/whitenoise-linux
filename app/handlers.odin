@@ -1864,6 +1864,7 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // Reply and Edit hand text entry to the user, so both focus the composer.
 @(private = "file")
 start_reply :: proc(ui: ^Ui_State, msg: Msg_Ui) {
+	ui.reply_revision += 1
 	ui.replying = msg.id
 	ui.reply_hint = fmt.aprintf("%s: %s", msg.sender, msg_preview(msg))
 	ui.focus = .Compose

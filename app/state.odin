@@ -719,6 +719,7 @@ Ui_State :: struct {
 	editing:                             string, // message id being edited, "" = composing new
 	edit_ticket:                         int, // outstanding edit; keep the composer until its ack
 	replying:                            string, // message id being replied to
+	reply_revision:                      u64, // changes even when the same message is selected again
 	reply_hint:                          string, // preview text for the reply banner
 	show_members:                        bool, // group info page open
 	info_tab:                            Info_Tab, // which half of it
