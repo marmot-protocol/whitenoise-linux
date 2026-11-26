@@ -182,6 +182,25 @@ thread_poll_canonical_tags :: proc(t: ^testing.T) {
 }
 
 @(test)
+poll_keeps_reselected_reply :: proc(t: ^testing.T) {
+	if !test_isolated("poll_keeps_reselected_reply") {return}
+	for selection in ([]u64{1, 3}) {
+		ui := Ui_State {
+			poll_open      = true,
+			poll_ticket    = 1,
+			replying       = "original message",
+			reply_revision = selection,
+		}
+		// The same message is still selected, either from before the send
+		// or after changing to a different reply and back.
+		append(&ops_done, Op_Done{ticket = 1, op = .Poll_Create, reply_revision = 1})
+		drain_ops(&ui, nil)
+		testing.expect(t, !ui.poll_open, "a successful send closes the poll")
+		testing.expect_value(t, ui.replying, selection == 1 ? "" : "original message")
+	}
+}
+
+@(test)
 thread_offline_retry_preflights_destination :: proc(t: ^testing.T) {
 	if !test_isolated("thread_offline_retry_preflights_destination") {return}
 	context.allocator = runtime.default_context().allocator
