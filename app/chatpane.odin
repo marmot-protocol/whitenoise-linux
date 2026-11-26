@@ -992,6 +992,8 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 		}
 	}
 
+	info_relays_card(ui, col_w - 32, dm ? tr("Chat relays") : tr("Group relays"))
+
 	if nendo.box(nendo.id("InfoExportCard"))(info_card()) {
 		if nendo.box(nendo.id("ExportRow"))(
 		{
@@ -1037,6 +1039,73 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 			)
 		}
 		if hovered() {cursor_raise(.Pointer)}
+	}
+}
+
+@(private = "file")
+info_relays_card :: proc(ui: ^Ui_State, width: f32, title: string) {
+	if nendo.box(nendo.id("InfoRelaysCard"))(info_card()) {
+		row_labels(
+			title,
+			tr(
+				"These relays carry encrypted messages for this conversation. This list does not show connection status.",
+			),
+		)
+		switch ui.group_relays_status {
+		case .Loading:
+			nendo.text(tr("Loading relays…"), {font = FONT_BODY, size = 12, color = TEXT_DIM})
+			busy_bar("InfoRelaysBusy")
+		case .Failed:
+			nendo.text(
+				tr("Couldn't load relays. Please try again."),
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
+			)
+			micro_button("InfoRelaysRetry", tr("Retry"))
+		case .Ready:
+			if len(ui.group_relays) == 0 {
+				nendo.text(
+					tr("No relays configured."),
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
+				)
+			}
+			inset :: 8
+			gap :: 8
+			icon_w :: 16
+			address_w := max(1, width - 2 * inset - gap - icon_w)
+			for url, i in ui.group_relays {
+				if nendo.box(nendo.id("InfoRelayCopy", u32(i)))(
+				{
+					width = nendo.grow(),
+					height = nendo.fit(min = tap_size() ? tap_min() : 0),
+					padding = nendo.pad(inset),
+					gap = gap,
+					align = {y = .Center},
+					color = hovered() ? HOVER : ROW_BG,
+					radius = rr(8),
+				},
+				) {
+					if nendo.box(nendo.id_local("RelayAddress"))(
+					{width = nendo.grow(), direction = .Column},
+					) {
+						for line in wrapped_lines(url, address_w, 12, .Plain) {
+							nendo.text(
+								url[line.start:line.end],
+								{font = FONT_BODY, size = 12, color = TEXT, wrap = .None},
+							)
+						}
+					}
+					if nendo.box(nendo.id_local("RelayCopyIcon"))(
+					{width = nendo.fixed(icon_w), align = {x = .Center}},
+					) {
+						nendo.text(ICON_COPY, {font = FONT_ICON, size = 12, color = TEXT_DIM})
+					}
+					if hovered() {
+						tooltip(tr("Copy"))
+						cursor_raise(.Pointer)
+					}
+				}
+			}
+		}
 	}
 }
 

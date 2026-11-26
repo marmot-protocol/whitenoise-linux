@@ -2039,6 +2039,7 @@ open_group_info :: proc(ui: ^Ui_State, client: ^marmot.Client, tab: Info_Tab) {
 // Back to the conversation from either group info page.
 close_group_info :: proc(ui: ^Ui_State) {
 	activation_reset(ui)
+	group_relays_clear(ui)
 	ui.show_members = false
 	ui.nip05_ticket = 0
 	ui.desc_editing = false
@@ -2608,6 +2609,20 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	dm := selected_chat_is_dm(ui)
 	admin := !dm && self_is_admin(ui)
 	if dm && handle_dm_details(ui, client) {return}
+	if ui.info_tab == .Settings {
+		if ui.group_relays_status == .Failed && clicked("InfoRelaysRetry") {
+			load_members(client, ui)
+			return
+		}
+		if ui.group_relays_status == .Ready && mouse_released() {
+			for url, i in ui.group_relays {
+				if nendo.pointer_over(nendo.id("InfoRelayCopy", u32(i))) {
+					copy_text(ui, url, tr("Copied"))
+					return
+				}
+			}
+		}
+	}
 	// Member-row nickname editor: Enter saves (empty clears), Escape
 	// drops it without saving. load_members refreshes the row name.
 	if !dm && ui.member_nick >= 0 && ui.member_nick < len(ui.members) {

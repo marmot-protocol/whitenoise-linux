@@ -9,6 +9,7 @@ import "core:text/edit"
 import "core:thread"
 import "nendo"
 import rl "sdlrl"
+import sdl "vendor:sdl3"
 
 // Neutral deployment keeps this generated fixture off public infrastructure.
 @(default_calling_convention = "c")
@@ -40,7 +41,8 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	defer marmot.deployment_free(deployment)
 	client: ^marmot.Client
 	store := vault_secret_store()
-	relays := []cstring{"wss://127.0.0.1:9"}
+	long_relay :: "wss://127.0.0.1:9/a-long-relay-path/for-a-group-that-routes-its-encrypted-messages-through-a-specific-endpoint/keep-the-whole-address"
+	relays := []cstring{"wss://127.0.0.1:9", "wss://127.0.0.1:9/", long_relay}
 	options := marmot.Client_Options {
 		store        = &store,
 		relay_policy = 1,
@@ -445,9 +447,32 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	ui.page, ui.chat_filter = .Chats, .Chats
 	ui.client_status = ""
 	open_group_info(&ui, client, .Settings)
+	defer close_group_info(&ui)
+	for _ in 0 ..< 3 {frame(&ui)}
+	if relay_card := nendo.element(nendo.id("InfoRelaysCard"));
+	   testing.expect(t, relay_card.found) {
+		view := nendo.id("MembersScroll")
+		scroll := nendo.scroll(view)
+		scroll.position.y -= max(0, relay_card.rect.y - nendo.element(view).rect.y)
+	}
+	text := frame(&ui)
+	testing.expect(t, strings.contains(text, "Loading relays…"))
 	thread.join(members_job.worker)
 	members_drain(&ui, client)
 	if !testing.expect_value(t, len(ui.members), 1) {return}
+	text = frame(&ui)
+	testing.expect(t, strings.contains(text, "Group relays"))
+	testing.expect(t, strings.contains(text, "keep-the-whole-address"))
+	if point, ok := control_point(t, nendo.id("InfoRelayCopy", 1)); ok {
+		nendo.set_pointer(point, .Up)
+		forced_release = true
+		handle_chat(&ui, client)
+		forced_release = false
+		clipboard := sdl.GetClipboardText()
+		defer sdl.free(clipboard)
+		testing.expect_value(t, string(cstring(clipboard)), long_relay)
+	}
+	testing.expect(t, !nendo.element(nendo.id("InfoRelayCopy", 2)).found)
 	for _ in 0 ..< 3 {frame(&ui)}
 	scroll := nendo.scroll(nendo.id("MembersScroll"))
 	if !testing.expect(t, scroll.found) {return}
@@ -459,7 +484,7 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	ui.chats[ui.selected].conversation_kind = .GROUP
 	testing.expect(t, strings.contains(frame(&ui), "Leave group"))
 	pop(&ui.members)
-	text := frame(&ui)
+	text = frame(&ui)
 	testing.expect(t, strings.contains(text, "Delete group"))
 	testing.expect(t, !nendo.element(nendo.id("LeaveBtn")).found)
 	button := nendo.element(nendo.id("DeleteConversationBtn"))
