@@ -435,6 +435,8 @@ Contacts:
 
 - Import and export contacts as CSV or JSON from the contacts rail.
 - Imports skip existing contacts and duplicate npubs, restore private nicknames and blocked state, and report added, skipped, and failed records.
+- Open a contact and choose **Edit private note and photo**. Clear the note or choose **Remove private photo**, then save. Removing a photo restores the published picture or the default avatar.
+- White Noise encrypts these details on this device for the active account. It does not include them in contact exports or backups, or publish them to Nostr. Signing out removes them for that account.
 - Published profile names still come from Nostr.
 
 </details>

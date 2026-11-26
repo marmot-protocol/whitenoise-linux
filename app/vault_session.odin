@@ -135,6 +135,8 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 @(private)
 session_stop :: proc(ui: ^Ui_State, client: ^marmot.Client, live: ^Live) {
 	// Detach the preview on the frame thread before joining pixel-only jobs.
+	contact_edit_close(ui)
+	contact_store_stop()
 	photo_cancel(ui)
 	location_cancel(ui)
 	if auth_job != nil {
@@ -193,6 +195,7 @@ editor_forget :: proc(ui: ^Ui_State) {
 @(private)
 lock_scrub_ui :: proc(ui: ^Ui_State) {
 	if ui.photo.pending {rl.DiscardFileDialogResult()}
+	contact_edit_close(ui)
 	photo_cancel(ui)
 	login_pair_clear(ui)
 	editor_forget(ui)

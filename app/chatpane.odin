@@ -710,7 +710,10 @@ compose_view: struct {
 compose_scroll :: proc(ui: ^Ui_State) {
 	buf := &ui.compose
 	focus := Focus.Compose
-	if ui.page == .Profile && ui.profile.editing {
+	if ui.focus == .ContactNote {
+		buf = &ui.contact_edit.note
+		focus = .ContactNote
+	} else if ui.page == .Profile && ui.profile.editing {
 		buf = &ui.about_input
 		focus = .About
 	} else if ui.show_members && ui.desc_editing {
@@ -1251,7 +1254,15 @@ member_row :: proc(member: ^Member_Ui, index: u32) {
 		radius = rr(8),
 	},
 	) {
-		avatar("MemberAvatar", index, member.id_hex, member.name, 36, url_pic(member.pic_url))
+		avatar(
+			"MemberAvatar",
+			index,
+			member.id_hex,
+			member.name,
+			36,
+			person_picture(member.id_hex, member.pic_url),
+		)
+
 		if nendo.box(nendo.id("MemberCol", index))(
 		{width = nendo.grow(), direction = .Column, gap = 1, clip = {x = true}},
 		) {
@@ -1748,7 +1759,7 @@ nc_selected_members :: proc(ui: ^Ui_State) {
 					member.hex,
 					member.label,
 					22,
-					url_pic(pic_url),
+					person_picture(member.hex, pic_url),
 				)
 				if nendo.box(nendo.id_local("Name"))({width = nendo.grow(), clip = {x = true}}) {
 					nendo.text(
@@ -1788,7 +1799,7 @@ nc_member_option :: proc(id: string, index: u32, hex, label, sub, pic_url: strin
 		clip = {x = true},
 	},
 	) {
-		avatar(fmt.tprintf("%sAvatar", id), index, hex, label, 28, url_pic(pic_url))
+		avatar(fmt.tprintf("%sAvatar", id), index, hex, label, 28, person_picture(hex, pic_url))
 		row_labels(label, sub)
 		if hovered() {cursor_raise(.Pointer)}
 	}
@@ -1808,7 +1819,7 @@ nc_person_row :: proc(id: string, index: u32, hex, label, sub, pic_url: string, 
 		radius = rr(10),
 	},
 	) {
-		avatar(fmt.tprintf("%sAvatar", id), index, hex, label, 40, url_pic(pic_url))
+		avatar(fmt.tprintf("%sAvatar", id), index, hex, label, 40, person_picture(hex, pic_url))
 		if nendo.box(nendo.id_local("Text"))(
 		{width = nendo.grow(), direction = .Column, gap = 4, clip = {x = true}},
 		) {
@@ -1900,7 +1911,7 @@ nc_contact_list :: proc(ui: ^Ui_State) {
 						address,
 						sender_label(address),
 						40,
-						url_pic(profile_cached(address).pic_url),
+						person_picture(address, profile_cached(address).pic_url),
 					)
 					if nendo.box(nendo.id("NCAddressText"))(
 					{width = nendo.grow(), direction = .Column, gap = 4, clip = {x = true}},
@@ -2154,6 +2165,7 @@ multiline_field :: proc(
 	placeholder: string,
 	height: f32,
 ) {
+	mode := focus == .ContactNote ? Wrap_Mode.Plain : .Compose
 	if nendo.box(nendo.id("ComposeBox"))(
 	{
 		width = nendo.grow(),
@@ -2183,10 +2195,10 @@ multiline_field :: proc(
 				text := string(buf[:])
 				lo, hi, head := field_sel(ui, buf)
 				if ui.focus != focus {head = -1}
-				for line, i in compose_lines(text) {
+				for line, i in compose_lines(text, mode = mode) {
 					h := head
 					if head == line[0] && line[0] > 0 && text[line[0] - 1] != '\n' {h = -1}
-					compose_line(u32(i), text, line[0], line[1], lo, hi, h)
+					compose_line(u32(i), text, line[0], line[1], lo, hi, h, mode)
 					if h >= line[0] && h <= line[1] {compose_view.row = u32(i)}
 				}
 			}

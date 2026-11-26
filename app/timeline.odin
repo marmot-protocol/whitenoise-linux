@@ -919,7 +919,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				msg.sender_id,
 				msg.sender,
 				tap_size() ? tap_min() : 28,
-				url_pic(msg.pic_url),
+				person_picture(msg.sender_id, msg.pic_url),
 				nendo.pointer_over(nendo.id("MsgAvatar", index)) ? .Open : .Closed,
 				fade(ACCENT, fresh),
 			)

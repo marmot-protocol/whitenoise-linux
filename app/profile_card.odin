@@ -88,7 +88,7 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 	inset: u16 = use == .Peer_Popup ? 20 : INSET
 	inner_w := width - 2 * f32(inset)
 	radius := rr(use == .Peer_Popup ? 16 : 12).top_left
-	photo := url_pic(info.pic_url)
+	photo := person_picture(hex, info.pic_url)
 	over := use == .Message && nendo.pointer_over(nendo.id("ProfileCard", id))
 	if over {
 		profile_card_hover = hex

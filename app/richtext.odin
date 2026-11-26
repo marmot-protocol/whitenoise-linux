@@ -2,6 +2,7 @@ package main
 
 import "base:runtime"
 import "core:fmt"
+import "core:mem"
 import "core:strings"
 import "core:time"
 import "core:unicode"
@@ -459,7 +460,7 @@ render_segs :: proc(
 					seg.hex,
 					mention_label(seg.hex),
 					f32(font_size),
-					url_pic(profile_info(g_client, seg.hex).pic_url),
+					person_picture(seg.hex, profile_info(g_client, seg.hex).pic_url),
 					over ? .Open : .Closed,
 				)
 				nendo.text(
@@ -537,13 +538,23 @@ compose_cache: struct {
 	text:         string,
 	width, scale: f32,
 	lines:        [dynamic][2]int,
+	mode:         Wrap_Mode,
+}
+
+@(private)
+compose_cache_forget :: proc() {
+	allocator := runtime.default_context().allocator
+	if compose_cache.mode == .Plain {mem.zero_slice(transmute([]u8)compose_cache.text)}
+	delete(compose_cache.text, allocator)
+	delete(compose_cache.lines)
+	compose_cache = {}
 }
 
 // Byte ranges of the composer's visual lines: each physical '\n' line
 // greedily wrapped to the pill's text width. Spaces stay in the ranges
 // so every byte keeps exactly one row and caret
 // hit-mapping stays byte-accurate.
-compose_lines :: proc(text: string, width: f32 = 0) -> [][2]int {
+compose_lines :: proc(text: string, width: f32 = 0, mode: Wrap_Mode = .Compose) -> [][2]int {
 	// Only the wrap cache uses the process heap. Mention lookups inherit the
 	// caller's allocator so queued profile IDs stay owned by the UI heap.
 	allocator := runtime.default_context().allocator
@@ -553,6 +564,7 @@ compose_lines :: proc(text: string, width: f32 = 0) -> [][2]int {
 	start := 0
 	if compose_cache.width == width &&
 	   compose_cache.scale == UI_SCALE &&
+	   compose_cache.mode == mode &&
 	   len(compose_cache.lines) > 0 {
 		if compose_cache.text == text {return compose_cache.lines[:]}
 		prefix := 0
@@ -573,7 +585,7 @@ compose_lines :: proc(text: string, width: f32 = 0) -> [][2]int {
 		}
 		at := start
 		for {
-			cut := wrap_break(text, at, end, width, BODY_FS, .Compose)
+			cut := wrap_break(text, at, end, width, BODY_FS, mode)
 			append(&compose_cache.lines, [2]int{at, cut})
 			if cut >= end {
 				break
@@ -585,16 +597,26 @@ compose_lines :: proc(text: string, width: f32 = 0) -> [][2]int {
 		}
 		start = end + 1
 	}
+	if compose_cache.mode == .Plain {mem.zero_slice(transmute([]u8)compose_cache.text)}
 	delete(compose_cache.text, allocator)
 	compose_cache.text = strings.clone(text, allocator)
-	compose_cache.width, compose_cache.scale = width, UI_SCALE
+	compose_cache.width, compose_cache.scale, compose_cache.mode = width, UI_SCALE, mode
 	return compose_cache.lines[:]
+}
+
+@(private = "file")
+compose_span :: proc(id: u32, text: string, ink: nendo.Color, mode: Wrap_Mode) {
+	if mode == .Plain {
+		nendo.text(text, {font = FONT_BODY, size = BODY_FS, color = ink, wrap = .None})
+		return
+	}
+	render_segs(id, inline_segs(text)[:], BODY_FS, ink, 18)
 }
 
 // One physical composer line [ls, le): up to three spans split at the
 // selection [lo, hi) (middle span highlighted), the caret at the
 // selection head, the IME preedit riding at the caret.
-compose_line :: proc(i: u32, text: string, ls, le, lo, hi, head: int) {
+compose_line :: proc(i: u32, text: string, ls, le, lo, hi, head: int, mode: Wrap_Mode = .Compose) {
 	if nendo.box(nendo.id("ComposeLine", i))(
 	{height = nendo.fit(min = 20), align = {y = .Center}},
 	) {
@@ -605,7 +627,7 @@ compose_line :: proc(i: u32, text: string, ls, le, lo, hi, head: int) {
 		}
 
 		if a > ls {
-			render_segs(0xE00 + i * 8, inline_segs(text[ls:a])[:], BODY_FS, TEXT, 18)
+			compose_span(0xE00 + i * 8, text[ls:a], TEXT, mode)
 		}
 		if at_caret(head, a, ls, le) {
 			if preedit := rl.Preedit(); len(preedit) > 0 {
@@ -617,14 +639,14 @@ compose_line :: proc(i: u32, text: string, ls, le, lo, hi, head: int) {
 			if nendo.box(nendo.id("ComposeSel", i))(
 			{color = ACCENT, gap = 1, align = {y = .Center}},
 			) {
-				render_segs(0xE00 + i * 8 + 2, inline_segs(text[a:b])[:], BODY_FS, ON_ACCENT, 18)
+				compose_span(0xE00 + i * 8 + 2, text[a:b], ON_ACCENT, mode)
 			}
 			if at_caret(head, b, ls, le) && head > a {
 				caret()
 			}
 		}
 		if b < le {
-			render_segs(0xE00 + i * 8 + 4, inline_segs(text[b:le])[:], BODY_FS, TEXT, 18)
+			compose_span(0xE00 + i * 8 + 4, text[b:le], TEXT, mode)
 		}
 	}
 }

@@ -422,7 +422,7 @@ build_layout_pass :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Comm
 				export_modal(ui)
 			}
 			// No exit animation: Cancel immediately releases its texture.
-			if photo_image(&ui.photo).data != nil {photo_preview_modal(ui)}
+			if photo_has_modal(ui) {photo_preview_modal(ui)}
 			// No close animation: web_close tears down the child process, so
 			// nothing may draw the modal after it.
 			if web_modal.open {
@@ -954,7 +954,7 @@ app_main :: proc() {
 			location_captured := ui.location_open
 			overlay_captured := shell_overlay_open(&ui)
 			child_captured := shell_child_open(&ui)
-			photo_interactive := photo_image(&ui.photo).data != nil
+			photo_interactive := photo_has_modal(&ui)
 			defer messages_collect()
 			defer chats_collect()
 			defer {if wrap_flush {wrap_clear()}}
@@ -1089,9 +1089,11 @@ app_main :: proc() {
 			retention_tick(&ui, client) // prune disappeared messages
 			tray_tick(&ui) // unread total in the tray tooltip
 
-			// Interface zoom shortcuts (Ctrl + / - / 0).
+			contact_edit_tick(&ui)
 			photo_check_target(&ui)
 			photo_crop_drain(&ui, client, false)
+
+			// Interface zoom shortcuts (Ctrl + / - / 0).
 			if (!photo_captured || (ui.photo.kind == .Profile && !ui.photo.pending)) &&
 			   !location_captured &&
 			   !overlay_captured &&
@@ -1161,7 +1163,7 @@ app_main :: proc() {
 
 			scroll_thumb_tick()
 			// A drag-selection ending with text selected feeds the primary
-			// selection (select-to-copy), except from the masked nsec field.
+			// selection (select-to-copy), except from sensitive fields.
 			if !photo_captured &&
 			   !location_captured &&
 			   !overlay_captured &&
@@ -1170,6 +1172,7 @@ app_main :: proc() {
 			   text_drag != nil {
 				if text_drag != &ui.login_input &&
 				   text_drag != &ui.socks5_password &&
+				   text_drag != &ui.contact_edit.note &&
 				   ui.ed_target == text_drag &&
 				   ui.ed.selection[0] != ui.ed.selection[1] {
 					buf := (^[dynamic]u8)(text_drag)

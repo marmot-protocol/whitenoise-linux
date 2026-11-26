@@ -1203,6 +1203,9 @@ msgstr "이모지를 1개 또는 2개 선택하세요. 모든 멤버에게 같�
 msgid "Choose one-tap reactions"
 msgstr "원탭 반응 선택"
 
+msgid "Choose photo"
+msgstr "사진 선택"
+
 msgid "Choose someone to talk to."
 msgstr "대화할 상대를 선택하세요."
 
@@ -1794,6 +1797,9 @@ msgstr "다른 기기 그룹으로 옮길 수 없습니다. 다시 연결해 보
 msgid "Couldn't open %s. Please try again."
 msgstr "%s을(를) 열 수 없습니다. 다시 시도하세요."
 
+msgid "Couldn't open that photo. Try a smaller image or a different file."
+msgstr "사진을 열지 못했습니다. 더 작은 이미지나 다른 파일을 선택하세요."
+
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "백업을 열 수 없습니다. 비밀번호를 다시 확인하고 다시 시도하세요."
 
@@ -1867,6 +1873,9 @@ msgstr "기존 연락처를 읽을 수 없습니다. 다시 시도하세요."
 msgid "Couldn't read your local time. Check your device's clock and try again."
 msgstr "현지 시간을 확인할 수 없습니다. 기기의 시계를 확인하고 다시 시도하세요."
 
+msgid "Couldn't read your saved private details. Replace or remove your private photo."
+msgstr "저장된 비공개 정보를 읽지 못했습니다. 비공개 사진을 교체하거나 삭제하세요."
+
 msgid "Couldn't refresh automatic folders. Please try again."
 msgstr "자동 폴더를 새로 고치지 못했습니다. 다시 시도해 주세요."
 
@@ -1939,6 +1948,9 @@ msgstr "이모지를 저장할 수 없습니다. 이름에 ASCII 영문자, 숫�
 
 msgid "Couldn't save your emoji. Please try again."
 msgstr "이모지를 저장할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't save your private note and photo. Please try again."
+msgstr "비공개 메모와 사진을 저장하지 못했습니다. 다시 시도해 주세요."
 
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
 msgstr "암호화된 금고에 서명자 세션을 저장할 수 없습니다. 다시 시도하세요."
@@ -2134,6 +2146,9 @@ msgstr "자르기"
 
 msgid "Crop circle shape"
 msgstr "크롭 서클 모양"
+
+msgid "Crop contact photo"
+msgstr "연락처 사진 자르기"
 
 msgid "Current"
 msgstr "현재"
@@ -2502,6 +2517,9 @@ msgstr "수정 기록"
 
 msgid "Edit message"
 msgstr "메시지 수정"
+
+msgid "Edit private note and photo"
+msgstr "비공개 메모와 사진 편집"
 
 msgid "Edit profile"
 msgstr "프로필 편집"
@@ -3241,14 +3259,8 @@ msgstr "이 기기는 더 이상 이 프로필의 메시지를 받지 않습니�
 msgid "Italian"
 msgstr "이탈리아어"
 
-msgid "Its chats stay on this device. To sign back in, connect your remote signer again."
-msgstr "채팅은 이 기기에 남아 있습니다. 다시 로그인하려면 원격 서명자를 다시 연결하세요."
-
 msgid "Its file is removed from this device. Themes shared into a chat stay there."
 msgstr "이 기기에서 파일이 제거됩니다. 채팅에 공유한 테마는 그대로 남습니다."
-
-msgid "Its key and chats stay on this device. You can sign back in from Accounts or the sign-in screen without your secret key."
-msgstr "키와 채팅은 이 기기에 남아 있습니다. 비밀 키 없이 계정 또는 로그인 화면에서 다시 로그인할 수 있습니다."
 
 msgid "Jan"
 msgstr "1월"
@@ -3535,6 +3547,9 @@ msgstr "연락처를 불러오는 중"
 
 msgid "Loading your key packages"
 msgstr "키 패키지를 불러오는 중"
+
+msgid "Loading your private note and photo…"
+msgstr "비공개 메모와 사진을 불러오는 중…"
 
 msgid "Loading your sticker packs…"
 msgstr "스티커 팩을 불러오는 중…"
@@ -4182,6 +4197,9 @@ msgstr "두 화면에 이모지 7개가 같은 순서로 표시될 때만 연결
 msgid "Only the folder is removed. Its chats stay in your chat list."
 msgstr "폴더만 제거됩니다. 폴더 안의 채팅은 채팅 목록에 그대로 남습니다."
 
+msgid "Only you can see these on this device."
+msgstr "이 기기에서 나만 볼 수 있습니다."
+
 msgid "Only you see this name."
 msgstr "이 이름은 나에게만 표시됩니다."
 
@@ -4254,6 +4272,9 @@ msgstr "브라우저에서 여는 중"
 
 msgid "Opening in your file manager"
 msgstr "파일 관리자에서 여는 중"
+
+msgid "Opening picture…"
+msgstr "사진을 여는 중…"
 
 msgid "Opening your chat"
 msgstr "채팅 여는 중"
@@ -4332,6 +4353,9 @@ msgstr "패치"
 
 msgid "PEOPLE"
 msgstr "사람"
+
+msgid "PRIVATE NOTE AND PHOTO"
+msgstr "비공개 메모와 사진"
 
 msgid "PRODUCT"
 msgstr "상품"
@@ -4575,6 +4599,9 @@ msgstr "비공개"
 
 msgid "Private group chat over Nostr"
 msgstr "Nostr 기반 비공개 그룹 채팅"
+
+msgid "Private note"
+msgstr "비공개 메모"
 
 msgid "Profile"
 msgstr "프로필"
@@ -4832,6 +4859,9 @@ msgstr "선택지 제거"
 
 msgid "Remove pack"
 msgstr "팩 제거"
+
+msgid "Remove private photo"
+msgstr "비공개 사진 삭제"
 
 msgid "Remove rule"
 msgstr "규칙 제거"
@@ -5154,6 +5184,9 @@ msgstr "기기 설정을 저장하는 중…"
 msgid "Saving vote…"
 msgstr "투표 저장 중…"
 
+msgid "Saving your private note and photo…"
+msgstr "비공개 메모와 사진을 저장하는 중…"
+
 msgid "Saving your proxy settings and encrypted credentials."
 msgstr "프록시 설정과 암호화된 자격 증명을 저장하는 중입니다."
 
@@ -5433,6 +5466,9 @@ msgstr "쇼핑"
 
 msgid "Short tones when a message leaves, arrives, or fails to send."
 msgstr "메시지를 보내거나 받거나 전송에 실패할 때 짧은 소리를 냅니다."
+
+msgid "Shorten your private note."
+msgstr "비공개 메모를 줄이세요."
 
 msgid "Show"
 msgstr "표시"
@@ -6481,6 +6517,9 @@ msgstr "직접 운영하고 신뢰하는 에이전트만 사용하세요. 비밀
 msgid "Use original"
 msgstr "원본 사용"
 
+msgid "Use photo"
+msgstr "사진 사용"
+
 msgid "Use this password anyway"
 msgstr "이 비밀번호 그대로 사용"
 
@@ -6858,6 +6897,15 @@ msgstr "이전 계정 작업이 아직 실행 중입니다."
 
 msgid "Your previous account action is still waiting. Check your signer for approval."
 msgstr "이전 계정 작업이 아직 대기 중입니다. 서명자에서 승인을 확인하세요."
+
+msgid "Your private contact notes and photos are deleted. Your chats stay. To sign back in, connect your remote signer again."
+msgstr "연락처의 비공개 메모와 사진이 삭제됩니다. 채팅은 그대로 남습니다. 다시 로그인하려면 원격 서명자를 다시 연결하세요."
+
+msgid "Your private contact notes and photos are deleted. Your key and chats stay. You can sign back in without your secret key."
+msgstr "연락처의 비공개 메모와 사진이 삭제됩니다. 키와 채팅은 그대로 남습니다. 비밀 키 없이 다시 로그인할 수 있습니다."
+
+msgid "Your private contact notes and photos could not be removed from this device."
+msgstr "이 기기에서 연락처의 비공개 메모와 사진을 삭제하지 못했습니다."
 
 msgid "Your profile"
 msgstr "내 프로필"

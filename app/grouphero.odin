@@ -44,10 +44,12 @@ blossom_pic_url :: proc(image_hash: string) -> string {
 	return fmt.tprintf("blossom://%s", image_hash)
 }
 
-// The chat's photo texture: the local pick first, then a published
-// URL avatar (which marmot gives precedence), then the decrypted
-// Blossom image once the worker has landed it.
+// Accepted DMs can use the active account's private photo. Group
+// pictures keep their local pick, public URL and Blossom precedence.
 chat_pic :: proc(chat: Chat_Row_Ui) -> ^rl.Texture2D {
+	if chat_is_dm(chat) && !chat.pending && g_ui != nil {
+		if photo := contact_portrait(g_ui.account_ref, chat.peer_hex); photo != nil {return photo}
+	}
 	if url, ok := gpic_local[chat.group_id]; ok {
 		return url_pic(url)
 	}

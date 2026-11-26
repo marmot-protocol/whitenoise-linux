@@ -481,6 +481,12 @@ account_exit_worker :: proc(job: ^Account_Job, account: cstring) {
 			job.kind == .Sign_Out ? tr("Sign-out on this device could not be confirmed.") : tr("Removal from this device could not be confirmed."),
 		)
 	} else {
+		if !contact_store_purge(job.account) {
+			append_issue(
+				&issues,
+				tr("Your private contact notes and photos could not be removed from this device."),
+			)
+		}
 		if vault_remove(fmt.tprintf("nip46:%s", job.account)) != .None {
 			append_issue(
 				&issues,

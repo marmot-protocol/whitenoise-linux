@@ -1204,6 +1204,9 @@ msgstr "Wähle ein oder zwei Emojis. Alle Mitglieder sehen dasselbe Bild."
 msgid "Choose one-tap reactions"
 msgstr "Schnellreaktionen wählen"
 
+msgid "Choose photo"
+msgstr "Foto auswählen"
+
 msgid "Choose someone to talk to."
 msgstr "Wähle jemanden zum Chatten aus."
 
@@ -1795,6 +1798,9 @@ msgstr "Das Gerät konnte nicht in deine andere Gerätegruppe wechseln. Versuche
 msgid "Couldn't open %s. Please try again."
 msgstr "%s konnte nicht geöffnet werden. Bitte versuche es erneut."
 
+msgid "Couldn't open that photo. Try a smaller image or a different file."
+msgstr "Das Foto konnte nicht geöffnet werden. Wähle ein kleineres Bild oder eine andere Datei."
+
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "Das Backup konnte nicht geöffnet werden. Überprüfe das Passwort und versuche es erneut."
 
@@ -1868,6 +1874,9 @@ msgstr "Deine vorhandenen Kontakte konnten nicht gelesen werden. Bitte versuche 
 msgid "Couldn't read your local time. Check your device's clock and try again."
 msgstr "Deine Ortszeit konnte nicht ermittelt werden. Prüfe die Uhr deines Geräts und versuche es erneut."
 
+msgid "Couldn't read your saved private details. Replace or remove your private photo."
+msgstr "Deine gespeicherten privaten Angaben konnten nicht gelesen werden. Ersetze oder entferne dein privates Foto."
+
 msgid "Couldn't refresh automatic folders. Please try again."
 msgstr "Die automatischen Ordner konnten nicht aktualisiert werden. Bitte versuche es erneut."
 
@@ -1940,6 +1949,9 @@ msgstr "Dein Emoji konnte nicht gespeichert werden. Verwende im Namen mindestens
 
 msgid "Couldn't save your emoji. Please try again."
 msgstr "Dein Emoji konnte nicht gespeichert werden. Bitte versuche es erneut."
+
+msgid "Couldn't save your private note and photo. Please try again."
+msgstr "Deine private Notiz und dein Foto konnten nicht gespeichert werden. Bitte versuche es erneut."
 
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
 msgstr "Deine Signer-Sitzung konnte nicht im verschlüsselten Tresor gespeichert werden. Bitte versuche es erneut."
@@ -2135,6 +2147,9 @@ msgstr "Zuschneiden"
 
 msgid "Crop circle shape"
 msgstr "Kornkreis-Form"
+
+msgid "Crop contact photo"
+msgstr "Kontaktfoto zuschneiden"
 
 msgid "Current"
 msgstr "Aktuell"
@@ -2503,6 +2518,9 @@ msgstr "Bearbeitungsverlauf"
 
 msgid "Edit message"
 msgstr "Nachricht bearbeiten"
+
+msgid "Edit private note and photo"
+msgstr "Private Notiz und Foto bearbeiten"
 
 msgid "Edit profile"
 msgstr "Profil bearbeiten"
@@ -3242,14 +3260,8 @@ msgstr "Dieses Gerät erhält keine Nachrichten mehr für dieses Profil. Aus Cha
 msgid "Italian"
 msgstr "Italienisch"
 
-msgid "Its chats stay on this device. To sign back in, connect your remote signer again."
-msgstr "Seine Chats bleiben auf diesem Gerät. Um dich wieder anzumelden, verbinde deinen Remote-Signer erneut."
-
 msgid "Its file is removed from this device. Themes shared into a chat stay there."
 msgstr "Seine Datei wird von diesem Gerät entfernt. In einen Chat geteilte Themes bleiben dort erhalten."
-
-msgid "Its key and chats stay on this device. You can sign back in from Accounts or the sign-in screen without your secret key."
-msgstr "Sein Schlüssel und seine Chats bleiben auf diesem Gerät. Du kannst dich ohne deinen geheimen Schlüssel über Konten oder den Anmeldebildschirm wieder anmelden."
 
 msgid "Jan"
 msgstr "Jan."
@@ -3536,6 +3548,9 @@ msgstr "Deine Kontakte werden geladen"
 
 msgid "Loading your key packages"
 msgstr "Deine Schlüsselpakete werden geladen"
+
+msgid "Loading your private note and photo…"
+msgstr "Deine private Notiz und dein Foto werden geladen…"
 
 msgid "Loading your sticker packs…"
 msgstr "Deine Stickerpakete werden geladen…"
@@ -4183,6 +4198,9 @@ msgstr "Verknüpfe die Geräte nur, wenn beide Bildschirme dieselben sieben Emoj
 msgid "Only the folder is removed. Its chats stay in your chat list."
 msgstr "Nur der Ordner wird entfernt. Seine Chats bleiben in deiner Chatliste."
 
+msgid "Only you can see these on this device."
+msgstr "Nur du kannst diese Angaben auf diesem Gerät sehen."
+
 msgid "Only you see this name."
 msgstr "Nur du siehst diesen Namen."
 
@@ -4255,6 +4273,9 @@ msgstr "Wird in deinem Browser geöffnet"
 
 msgid "Opening in your file manager"
 msgstr "Wird in deinem Dateimanager geöffnet"
+
+msgid "Opening picture…"
+msgstr "Bild wird geöffnet…"
 
 msgid "Opening your chat"
 msgstr "Dein Chat wird geöffnet"
@@ -4333,6 +4354,9 @@ msgstr "PATCH"
 
 msgid "PEOPLE"
 msgstr "PERSONEN"
+
+msgid "PRIVATE NOTE AND PHOTO"
+msgstr "PRIVATE NOTIZ UND FOTO"
 
 msgid "PRODUCT"
 msgstr "PRODUKT"
@@ -4576,6 +4600,9 @@ msgstr "Privat"
 
 msgid "Private group chat over Nostr"
 msgstr "Privater Gruppenchat über Nostr"
+
+msgid "Private note"
+msgstr "Private Notiz"
 
 msgid "Profile"
 msgstr "Profil"
@@ -4833,6 +4860,9 @@ msgstr "Option entfernen"
 
 msgid "Remove pack"
 msgstr "Paket entfernen"
+
+msgid "Remove private photo"
+msgstr "Privates Foto entfernen"
 
 msgid "Remove rule"
 msgstr "Regel entfernen"
@@ -5155,6 +5185,9 @@ msgstr "Die Geräteeinstellung wird gespeichert…"
 msgid "Saving vote…"
 msgstr "Stimme wird gespeichert…"
 
+msgid "Saving your private note and photo…"
+msgstr "Deine private Notiz und dein Foto werden gespeichert…"
+
 msgid "Saving your proxy settings and encrypted credentials."
 msgstr "Deine Proxy-Einstellungen und verschlüsselten Zugangsdaten werden gespeichert."
 
@@ -5434,6 +5467,9 @@ msgstr "Einkaufen"
 
 msgid "Short tones when a message leaves, arrives, or fails to send."
 msgstr "Kurze Töne, wenn eine Nachricht rausgeht, ankommt oder nicht gesendet werden kann."
+
+msgid "Shorten your private note."
+msgstr "Kürze deine private Notiz."
 
 msgid "Show"
 msgstr "Anzeigen"
@@ -6482,6 +6518,9 @@ msgstr "Verwende nur einen Agenten, den du selbst betreibst und dem du vertraust
 msgid "Use original"
 msgstr "Original verwenden"
 
+msgid "Use photo"
+msgstr "Foto verwenden"
+
 msgid "Use this password anyway"
 msgstr "Dieses Passwort trotzdem verwenden"
 
@@ -6859,6 +6898,15 @@ msgstr "Deine vorherige Kontoaktion läuft noch."
 
 msgid "Your previous account action is still waiting. Check your signer for approval."
 msgstr "Deine vorherige Kontoaktion wartet noch. Prüfe deinen Signer, um sie zu genehmigen."
+
+msgid "Your private contact notes and photos are deleted. Your chats stay. To sign back in, connect your remote signer again."
+msgstr "Deine privaten Kontaktnotizen und Fotos werden gelöscht. Deine Chats bleiben. Um dich wieder anzumelden, verbinde deinen Remote-Signer erneut."
+
+msgid "Your private contact notes and photos are deleted. Your key and chats stay. You can sign back in without your secret key."
+msgstr "Deine privaten Kontaktnotizen und Fotos werden gelöscht. Dein Schlüssel und deine Chats bleiben. Du kannst dich ohne deinen geheimen Schlüssel wieder anmelden."
+
+msgid "Your private contact notes and photos could not be removed from this device."
+msgstr "Deine privaten Kontaktnotizen und Fotos konnten nicht von diesem Gerät entfernt werden."
 
 msgid "Your profile"
 msgstr "Dein Profil"

@@ -64,7 +64,7 @@ contact_query_hex :: proc(ui: ^Ui_State) -> string {
 // Contact placeholders use the same round shape as their eventual photo.
 @(private)
 contact_picture :: proc(contact: Contact_Ui) -> ^rl.Texture2D {
-	if photo := url_pic(contact.pic_url); photo != nil {return photo}
+	if photo := person_picture(contact.id_hex, contact.pic_url); photo != nil {return photo}
 	return url_pic(fmt.tprintf("crop-round:%s", contact.id_hex))
 }
 
@@ -274,6 +274,8 @@ contacts_pane :: proc(ui: ^Ui_State) {
 				TEXT_LO,
 			)
 		}
+
+		contact_private_panel(ui, contact)
 
 		if nendo.box(nendo.id("IdentityEyebrow"))({padding = {top = 8}}) {
 			eyebrow(tr("IDENTITY"))

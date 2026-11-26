@@ -87,8 +87,8 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	// Save before a touch leaves the editor, including Back and navigation.
 	if ui.page == .Contacts && !ui.new_chat_open {
+		// Save before a touch leaves the nickname editor.
 		if ui.focus == .Nick &&
 		   mouse_released() &&
 		   !nendo.pointer_over(nendo.id("NickBox")) {save_nickname(ui)}
@@ -104,6 +104,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				ui.focus = .Compose
 			}
 		}
+		if handle_contact_edit(ui) {return}
 	}
 
 	// Contacts search stays in the rail; Archive owns its search in the
@@ -440,6 +441,7 @@ view_peer_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 @(private)
 reset_profile_view :: proc(ui: ^Ui_State) {
+	contact_edit_close(ui)
 	for group in ui.profile_contact.groups {delete(group.id); delete(group.title)}
 	delete(ui.profile_contact.groups)
 	for field in ([]^string{&ui.profile_contact.id_hex, &ui.profile_contact.name, &ui.profile_contact.pic_url, &ui.profile_contact.npub}) {delete(field^)}
@@ -1192,6 +1194,8 @@ finish_account_switch :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id:
 
 @(private = "file")
 account_workspace_clear :: proc(ui: ^Ui_State) {
+	contact_edit_close(ui)
+	contact_store_select("")
 	event_data_close(&ui.event_data)
 	if ui.location_open {geo_picker_close(ui)}
 	poll_close(ui)

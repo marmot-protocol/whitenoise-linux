@@ -1204,6 +1204,9 @@ msgstr "絵文字を1つか2つ選択してください。すべてのメンバ�
 msgid "Choose one-tap reactions"
 msgstr "ワンタップリアクションを選択"
 
+msgid "Choose photo"
+msgstr "写真を選ぶ"
+
 msgid "Choose someone to talk to."
 msgstr "会話する相手を選んでください。"
 
@@ -1795,6 +1798,9 @@ msgstr "別の端末グループに移動できませんでした。端末の連
 msgid "Couldn't open %s. Please try again."
 msgstr "%sを開けませんでした。もう一度お試しください。"
 
+msgid "Couldn't open that photo. Try a smaller image or a different file."
+msgstr "写真を開けませんでした。小さい画像か別のファイルを選んでください。"
+
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "バックアップを開けませんでした。パスワードを確認して、もう一度お試しください。"
 
@@ -1868,6 +1874,9 @@ msgstr "既存の連絡先を読み取れませんでした。もう一度お試
 msgid "Couldn't read your local time. Check your device's clock and try again."
 msgstr "現地時刻を取得できませんでした。端末の時計を確認してから、もう一度お試しください。"
 
+msgid "Couldn't read your saved private details. Replace or remove your private photo."
+msgstr "保存した非公開情報を読み込めませんでした。非公開の写真を差し替えるか削除してください。"
+
 msgid "Couldn't refresh automatic folders. Please try again."
 msgstr "自動フォルダーを更新できませんでした。もう一度お試しください。"
 
@@ -1940,6 +1949,9 @@ msgstr "絵文字を保存できませんでした。名前にASCII英字、数�
 
 msgid "Couldn't save your emoji. Please try again."
 msgstr "絵文字を保存できませんでした。もう一度お試しください。"
+
+msgid "Couldn't save your private note and photo. Please try again."
+msgstr "非公開のメモと写真を保存できませんでした。もう一度お試しください。"
 
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
 msgstr "署名者のセッションを暗号化された保管庫に保存できませんでした。もう一度お試しください。"
@@ -2135,6 +2147,9 @@ msgstr "切り抜き"
 
 msgid "Crop circle shape"
 msgstr "ミステリーサークルの形状"
+
+msgid "Crop contact photo"
+msgstr "連絡先の写真を切り抜く"
 
 msgid "Current"
 msgstr "現在"
@@ -2503,6 +2518,9 @@ msgstr "編集履歴"
 
 msgid "Edit message"
 msgstr "メッセージを編集"
+
+msgid "Edit private note and photo"
+msgstr "非公開のメモと写真を編集"
 
 msgid "Edit profile"
 msgstr "プロフィールを編集"
@@ -3242,14 +3260,8 @@ msgstr "この端末は、このプロフィールのメッセージを受信し
 msgid "Italian"
 msgstr "イタリア語"
 
-msgid "Its chats stay on this device. To sign back in, connect your remote signer again."
-msgstr "チャットはこの端末に残ります。再度サインインするには、リモート署名者をもう一度接続してください。"
-
 msgid "Its file is removed from this device. Themes shared into a chat stay there."
 msgstr "テーマのファイルがこの端末から削除されます。チャットで共有したテーマはそのまま残ります。"
-
-msgid "Its key and chats stay on this device. You can sign back in from Accounts or the sign-in screen without your secret key."
-msgstr "鍵とチャットはこの端末に残ります。秘密鍵がなくても、アカウントまたはサインイン画面から再度サインインできます。"
 
 msgid "Jan"
 msgstr "1月"
@@ -3536,6 +3548,9 @@ msgstr "連絡先を読み込んでいます"
 
 msgid "Loading your key packages"
 msgstr "鍵パッケージを読み込んでいます"
+
+msgid "Loading your private note and photo…"
+msgstr "非公開のメモと写真を読み込んでいます…"
 
 msgid "Loading your sticker packs…"
 msgstr "ステッカーパックを読み込んでいます…"
@@ -4183,6 +4198,9 @@ msgstr "両方の画面に同じ7つの絵文字が同じ順序で表示され�
 msgid "Only the folder is removed. Its chats stay in your chat list."
 msgstr "フォルダだけが削除されます。中のチャットはチャット一覧に残ります。"
 
+msgid "Only you can see these on this device."
+msgstr "この端末であなただけが見られます。"
+
 msgid "Only you see this name."
 msgstr "この名前は、あなたにだけ表示されます。"
 
@@ -4255,6 +4273,9 @@ msgstr "ブラウザで開いています"
 
 msgid "Opening in your file manager"
 msgstr "ファイルマネージャーで開いています"
+
+msgid "Opening picture…"
+msgstr "画像を開いています…"
 
 msgid "Opening your chat"
 msgstr "チャットを開いています"
@@ -4333,6 +4354,9 @@ msgstr "パッチ"
 
 msgid "PEOPLE"
 msgstr "ユーザー"
+
+msgid "PRIVATE NOTE AND PHOTO"
+msgstr "非公開のメモと写真"
 
 msgid "PRODUCT"
 msgstr "商品"
@@ -4576,6 +4600,9 @@ msgstr "プライベート"
 
 msgid "Private group chat over Nostr"
 msgstr "Nostr を使ったプライベートグループチャット"
+
+msgid "Private note"
+msgstr "非公開のメモ"
 
 msgid "Profile"
 msgstr "プロフィール"
@@ -4833,6 +4860,9 @@ msgstr "選択肢を削除"
 
 msgid "Remove pack"
 msgstr "パックを削除"
+
+msgid "Remove private photo"
+msgstr "非公開の写真を削除"
 
 msgid "Remove rule"
 msgstr "ルールを削除"
@@ -5155,6 +5185,9 @@ msgstr "端末の設定を保存しています…"
 msgid "Saving vote…"
 msgstr "投票を保存しています…"
 
+msgid "Saving your private note and photo…"
+msgstr "非公開のメモと写真を保存しています…"
+
 msgid "Saving your proxy settings and encrypted credentials."
 msgstr "プロキシ設定と暗号化した認証情報を保存しています。"
 
@@ -5434,6 +5467,9 @@ msgstr "買い物"
 
 msgid "Short tones when a message leaves, arrives, or fails to send."
 msgstr "メッセージの送信時、受信時、送信失敗時に短い音を鳴らします。"
+
+msgid "Shorten your private note."
+msgstr "非公開のメモを短くしてください。"
 
 msgid "Show"
 msgstr "表示"
@@ -6482,6 +6518,9 @@ msgstr "ご自身で運用する信頼できるエージェントだけに使用
 msgid "Use original"
 msgstr "元の画像を使用"
 
+msgid "Use photo"
+msgstr "この写真を使う"
+
 msgid "Use this password anyway"
 msgstr "このパスワードをそのまま使う"
 
@@ -6859,6 +6898,15 @@ msgstr "前のアカウント操作はまだ実行中です。"
 
 msgid "Your previous account action is still waiting. Check your signer for approval."
 msgstr "前のアカウント操作はまだ待機中です。署名者で承認を確認してください。"
+
+msgid "Your private contact notes and photos are deleted. Your chats stay. To sign back in, connect your remote signer again."
+msgstr "連絡先の非公開メモと写真は削除されます。チャットは残ります。再度サインインするには、リモート署名者をもう一度接続してください。"
+
+msgid "Your private contact notes and photos are deleted. Your key and chats stay. You can sign back in without your secret key."
+msgstr "連絡先の非公開メモと写真は削除されます。鍵とチャットは残ります。秘密鍵がなくても再度サインインできます。"
+
+msgid "Your private contact notes and photos could not be removed from this device."
+msgstr "連絡先の非公開メモと写真をこの端末から削除できませんでした。"
 
 msgid "Your profile"
 msgstr "あなたのプロフィール"
