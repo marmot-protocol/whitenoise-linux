@@ -6875,6 +6875,9 @@ msgstr "Il tuo nome visualizzato e il tuo profilo sono pubblici."
 msgid "Your existing and new notes are deleted after this time."
 msgstr "Le tue note già presenti e quelle nuove vengono eliminate dopo questo tempo."
 
+msgid "Your group was created without the photo you chose."
+msgstr "Il tuo gruppo è stato creato senza la foto che hai scelto."
+
 msgid "Your key stays on this device"
 msgstr "La tua chiave resta su questo dispositivo"
 

@@ -29,9 +29,8 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	dir, err := os.make_directory_temp("", "wn-restore-chat-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}
 	defer os.remove_all(dir)
-	previous_config := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
-	os.set_env("XDG_CONFIG_HOME", dir)
-	defer os.set_env("XDG_CONFIG_HOME", previous_config)
+	settings_test_dir = dir
+	defer settings_test_dir = ""
 	previous_home := data_home
 	data_home = dir
 	defer {vault_lock(); data_home = previous_home}
@@ -580,6 +579,14 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 
 	for job in account_jobs {thread.join(job.worker)}
 	account_job_drain(&ui)
+	stale := Chat_List_Work {
+		client   = client,
+		account  = strings.clone_to_cstring(account),
+		revision = chat_list_revision,
+	}
+	defer chat_list_free(&stale)
+	chat_list_read(&stale)
+	if !testing.expect(t, stale.rows != nil, stale.err) {return}
 	ui.page, ui.new_chat_open, ui.nc_page = .Chats, true, .Group
 	ui.nc_retention = 3600
 	ed_set(&ui, &ui.nc_description, "Bring a map")
@@ -599,6 +606,7 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	marmot.presented_chat_row_free(job.opened_row)
 	job.opened_row = nil
 	job.error = strings.clone("First authoritative read failed")
+	job.skipped, job.photo_requested = 1, true
 	account_job_drain(&ui)
 	frame(&ui)
 	point, found := control_point(t, nendo.id("NCRetryOpen"))
@@ -610,6 +618,16 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	for retry in account_jobs {thread.join(retry.worker)}
 	account_job_drain(&ui)
 	if !testing.expect(t, !ui.new_chat_open && ui.selected >= 0) {return}
+	testing.expect_value(t, ui.chats[ui.selected].group_id, founded)
+	testing.expect(t, strings.contains(ui.client_status, "without the photo you chose"))
+	testing.expect(t, strings.contains(ui.client_status, "1 person couldn't be added"))
+	refresh: Live
+	live_apply(&refresh, &ui, client, &stale)
+	if !testing.expect(
+		t,
+		ui.selected >= 0,
+		"A pre-create refresh leaves the new chat selected",
+	) {return}
 	testing.expect_value(t, ui.chats[ui.selected].group_id, founded)
 	details: ^marmot.Group_Details
 	status = marmot.group_details(

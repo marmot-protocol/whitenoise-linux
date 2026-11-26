@@ -24,9 +24,8 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	)
 	if !testing.expect_value(t, err, nil) {return}
 	defer os.remove_all(dir)
-	old_config := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
-	os.set_env("XDG_CONFIG_HOME", dir)
-	defer os.set_env("XDG_CONFIG_HOME", old_config)
+	settings_test_dir = dir
+	defer settings_test_dir = ""
 	deployment: ^marmot.Deployment
 	if !testing.expect_value(
 		t,
@@ -113,6 +112,9 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	save_settings(&ui)
 	load_settings(&ui)
 	ui.account_ref = "other-account"
+	open_new_chat(&ui, nil)
+	testing.expect_value(t, ui.nc_retention, 0)
+	close_new_chat(&ui)
 	settings_flip(&ui, client, "DefaultRetention1")
 	save_settings(&ui)
 	load_settings(&ui)
@@ -121,6 +123,16 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	close_new_chat(&ui)
 	ui.account_ref = account
 	ui.page = .Chats
+	for notes in ([]bool{false, true}) {
+		ui.new_chat_open, ui.nc_page = true, .Group
+		ui.nc_created.id = strings.clone("abandoned-group")
+		if notes {open_notes(&ui, nil)}
+		open_new_chat(&ui, nil)
+		layout(&ui)
+		testing.expect(t, nendo.element(nendo.id("NCSearch")).found)
+		testing.expect(t, !nendo.element(nendo.id("NCRetryOpen")).found)
+		close_new_chat(&ui)
+	}
 	for cancel in ([]bool{false, true}) {
 		layout(&ui)
 		click(t, &ui, client, nendo.id("NewChatBtn"))

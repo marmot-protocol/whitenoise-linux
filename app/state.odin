@@ -1011,7 +1011,7 @@ Ui_State :: struct {
 	nc_description:                      [dynamic]u8,
 	nc_retention:                        u64,
 	nc_retention_focus:                  int,
-	nc_created_group:                    string, // canonical id when only the open step needs retrying
+	nc_created:                          Nc_Created, // creation succeeded; only opening needs a retry
 	nc_pic:                              Pic_Draft, // group image staged for Create
 	people:                              People_Search, // directory hits for the new-chat fields
 	client_status:                       string, // written only through set_status

@@ -6874,6 +6874,9 @@ msgstr "표시 이름과 프로필은 공개됩니다."
 msgid "Your existing and new notes are deleted after this time."
 msgstr "기존 메모와 새 메모 모두 이 시간이 지나면 삭제됩니다."
 
+msgid "Your group was created without the photo you chose."
+msgstr "선택한 사진 없이 그룹이 생성되었습니다."
+
 msgid "Your key stays on this device"
 msgstr "키는 이 기기에만 보관됩니다"
 

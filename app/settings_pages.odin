@@ -2148,7 +2148,12 @@ settings_switch_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		return false
 	case .Moved:
 		if !settings_nav_focus(ui, kb_focus) {
-			scroll_into_view(nendo.id("SettingsPage"), nendo.id(kb_focus))
+			field := nendo.id(kb_focus)
+			if ui.settings_section == .Privacy &&
+			   strings.has_prefix(kb_focus, "DefaultRetention") {
+				reveal_retention_choice("DefaultRetention", field)
+			}
+			scroll_into_view(nendo.id("SettingsPage"), field)
 		}
 	case .Pressed:
 		settings_flip(ui, client, kb_focus)

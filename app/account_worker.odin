@@ -28,6 +28,7 @@ Account_Operation :: enum {
 	Read_Archived,
 	Create_Chat,
 	Open_DM,
+	Open_Chat,
 	Accept,
 	Decline,
 	Leave,
@@ -49,6 +50,7 @@ Account_Job :: struct {
 	description:                                  string,
 	pic_data:                                     []u8,
 	pic_media:                                    string,
+	photo_requested:                              bool,
 	retention:                                    u64,
 	opened_row:                                   ^marmot.Presented_Chat_Row,
 	relays:                                       []cstring,
@@ -137,7 +139,7 @@ account_job_new :: proc(
 	job.client, job.account, job.kind = client, strings.clone(owner), kind
 	job.signer, job.sign_out_intent = signer, sign_out_intent
 	job.accounts_revision = ui.accounts_revision
-	if kind == .Open_DM || kind == .Create_Chat {
+	if kind == .Open_DM || kind == .Open_Chat || kind == .Create_Chat {
 		for hex in ui.blocked {job.chat_list.blocked[strings.clone(hex)] = true}
 	}
 	if account_wiping(kind) {
@@ -288,9 +290,9 @@ account_worker :: proc(t: ^thread.Thread) {
 		}
 		status = marmot.start_direct_chat_with_options(job.client, account, target, &options, &out)
 		if out != nil {job.result = strings.clone(string(out)); marmot.string_free(out)}
+	case .Open_Chat:
+	// The canonical id is already in job.result. Only read it below.
 	case .Create_Chat:
-		// A retry already has its group id. Only read the row again.
-		if job.result != "" {break}
 		members := make([dynamic]cstring, context.temp_allocator)
 		seen := make(map[string]bool, context.temp_allocator)
 		for peer in strings.split(job.target, "\n", context.temp_allocator) {
@@ -367,7 +369,9 @@ account_worker :: proc(t: ^thread.Thread) {
 	}
 	if summary != nil {marmot.send_summary_free(summary)}
 	if status == .OK &&
-	   (job.kind == .Open_DM || (job.kind == .Create_Chat && !job.notes)) &&
+	   (job.kind == .Open_DM ||
+			   job.kind == .Open_Chat ||
+			   (job.kind == .Create_Chat && !job.notes)) &&
 	   job.result != "" {
 		id := strings.clone_to_cstring(job.result, context.temp_allocator)
 		if marmot.presented_chat_list_row(job.client, account, id, &job.opened_row) != .OK ||
@@ -570,12 +574,12 @@ account_job_free :: proc(job: ^Account_Job, join: Account_Join = .Pending) {
 	for text in ([]string{job.account, job.group, job.target, job.title, job.description, job.result, job.error}) {delete(text)}
 	delete(job.wipe_report)
 	if job.accounts != nil {marmot.account_summary_list_free(job.accounts)}
-	if job.opened_row != nil {marmot.presented_chat_row_free(job.opened_row)}
 	for text in job.fields {delete(text)}
 	for relay in job.relays {delete(relay)}
 	kp_rows_free(&job.key_rows); delete(job.key_rows)
 	nc_contacts_free(&job.contacts)
 	chat_list_free(&job.chat_list)
+	if job.opened_row != nil {marmot.presented_chat_row_free(job.opened_row)}
 	delete(job.relays); delete(job.pic_data); free(job)
 }
 @(private)
@@ -601,6 +605,10 @@ account_deletes_finish :: proc(ui: ^Ui_State) {
 account_wipe_prefs :: proc(ui: ^Ui_State, account, prefix: string) {
 	if ui.prefs.last_account == account {
 		delete(ui.prefs.last_account); ui.prefs.last_account = ""
+		ui.settings_dirty = true
+	}
+	if key, _ := delete_key(&ui.prefs.default_retention, account); key != "" {
+		delete(key)
 		ui.settings_dirty = true
 	}
 	devices_wipe_prefs(ui, account)
@@ -818,8 +826,15 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 			}
 		}
 		if job.error != "" && form_active && job.result != "" {
-			delete(ui.nc_created_group)
-			ui.nc_created_group, job.result = job.result, ""
+			delete(ui.nc_created.id)
+			ui.nc_created = {
+				id              = job.result,
+				skipped         = job.skipped,
+				photo_requested = job.photo_requested,
+			}
+			job.result = ""
+			ui.focus = .Compose
+			if pane := nendo.scroll(nendo.id("NewChatPane")); pane.found {pane.position.y = 0}
 		} else if job.error != "" &&
 		   form_active &&
 		   len(job.pic_data) > 0 &&
@@ -896,7 +911,7 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 					} else if live != nil {
 						live.refresh_dirty = true
 					}
-				case .Create_Chat, .Open_DM:
+				case .Create_Chat, .Open_DM, .Open_Chat:
 					if job.notes {
 						delete(ui.prefs.notes_group)
 						ui.prefs.notes_group = strings.clone(job.result)
@@ -909,6 +924,9 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 						ui.page, ui.focus = .Chats, .Compose
 						gs_keep_open_chat(ui, job.result)
 						if !select_by_id(ui, job.client, job.result) && job.opened_row != nil {
+							// Discard snapshots started before this row was known.
+							chat_list_revision += 1
+							if live != nil {live.refresh_dirty = true}
 							chat := row_to_ui(
 								job.client,
 								job.opened_row,
@@ -923,18 +941,22 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 							select_by_id(ui, job.client, job.result)
 						}
 					}
-					if job.skipped > 0 {
-						set_status(
-							ui,
-							fmt.aprintf(
-								tr(
-									job.skipped == 1 ? N_("%d person couldn't be added. Ask them to open White Noise, then invite them again.") : N_("%d people couldn't be added. Ask them to open White Noise, then invite them again."),
-								),
-								job.skipped,
-							),
-							.Info,
-						)
+					notice: string
+					if job.photo_requested &&
+					   job.opened_row != nil &&
+					   job.opened_row.presentation.avatar.tag != .Encrypted_Group_Image {
+						notice = tr("Your group was created without the photo you chose.")
 					}
+					if job.skipped > 0 {
+						skipped := fmt.tprintf(
+							tr(
+								job.skipped == 1 ? N_("%d person couldn't be added. Ask them to open White Noise, then invite them again.") : N_("%d people couldn't be added. Ask them to open White Noise, then invite them again."),
+							),
+							job.skipped,
+						)
+						notice = notice == "" ? skipped : fmt.tprintf("%s %s", notice, skipped)
+					}
+					if notice != "" {set_status(ui, strings.clone(notice), .Info)}
 				case .Leave, .Decline:
 					if ui.photo.account == job.account &&
 					   ui.photo.group == job.group {photo_cancel(ui)}
@@ -1002,7 +1024,7 @@ account_pending_label :: proc(kind: Account_Operation) -> string {
 		return tr("Loading your archived chats")
 	case .Create_Chat:
 		return tr("Creating your chat")
-	case .Open_DM:
+	case .Open_DM, .Open_Chat:
 		return tr("Opening your chat")
 	case .Accept:
 		return tr("Accepting your invitation")

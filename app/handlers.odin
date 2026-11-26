@@ -2098,7 +2098,7 @@ set_archived :: proc(ui: ^Ui_State, client: ^marmot.Client, group_id: string, ar
 		ui.page = .Chats
 		ui.chat_filter = .Chats
 		clear(&ui.sidebar_filter)
-		ui.new_chat_open = false
+		if ui.new_chat_open {close_new_chat(ui)}
 		ui.banner_seen = ""
 		set_status(ui, tr("Chat restored."), .Info)
 	}
@@ -2157,9 +2157,9 @@ ensure_notes :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 }
 
 open_notes :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if ui.new_chat_open {close_new_chat(ui)}
 	ensure_notes(ui, client)
 	for job in account_jobs {if job.account == ui.account_ref && job.notes {job.open_chat = true}}
-	ui.new_chat_open = false
 	ui.focus = .Compose
 	ui.page = .Chats
 	select_by_id(ui, client, ui.prefs.notes_group)
@@ -2178,6 +2178,7 @@ nc_contacts_free :: proc(rows: ^[dynamic]Contact_Ui) {
 
 @(private)
 open_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if ui.new_chat_open {close_new_chat(ui)}
 	ui.new_chat_open = true
 	ui.nc_page = .Contacts
 	ui.focus = .NC_Search
@@ -2322,11 +2323,13 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if nc_pending_label(ui) != "" {return}
-	if ui.nc_created_group != "" {
+	if ui.nc_created.id != "" {
 		if clicked("NCRetryOpen") || rl.IsKeyPressed(.ENTER) {
-			job := account_job_new(ui, client, .Create_Chat)
+			job := account_job_new(ui, client, .Open_Chat)
 			if job == nil {return}
-			job.result = strings.clone(ui.nc_created_group)
+			job.result = strings.clone(ui.nc_created.id)
+			job.skipped = ui.nc_created.skipped
+			job.photo_requested = ui.nc_created.photo_requested
 			job.form, job.open_chat = ui.nc_page, true
 			account_job_start(job)
 		}
@@ -2436,6 +2439,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		} else if at > desc {
 			ui.focus, ui.nc_retention_focus = .NC_Retention, at - desc - 1
 			field = nendo.id(NC_RETENTION_KEYS[ui.nc_retention_focus])
+			reveal_retention_choice("NCRetention", field)
 		}
 		nc_control_visible(field)
 		return
@@ -2583,8 +2587,8 @@ close_new_chat :: proc(ui: ^Ui_State) {
 	}
 	ui.nip05_ticket = 0
 	nc_members_clear(ui)
-	delete(ui.nc_created_group)
-	ui.nc_created_group = ""
+	delete(ui.nc_created.id)
+	ui.nc_created = {}
 	pic_draft_free(&ui.nc_pic)
 	ui.new_chat_open = false
 	ui.focus = .Compose
@@ -2604,6 +2608,7 @@ new_chat_create_and_open :: proc(ui: ^Ui_State, client: ^marmot.Client, name, me
 	job.description = strings.clone(strings.trim_space(string(ui.nc_description[:])))
 	job.retention = ui.nc_retention
 	if len(ui.nc_pic.data) > 0 {
+		job.photo_requested = true
 		job.pic_data = ui.nc_pic.data; job.pic_media = ui.nc_pic.media_type
 		rl.UnloadImage(ui.nc_pic.image)
 		ui.nc_pic = {}

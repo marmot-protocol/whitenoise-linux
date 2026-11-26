@@ -1344,6 +1344,21 @@ retention_choices :: proc(
 }
 
 @(private)
+reveal_retention_choice :: proc(row: string, choice: nendo.Id) {
+	container := nendo.id(row)
+	scroll := nendo.scroll(container)
+	button := nendo.element(choice)
+	if !scroll.found || !button.found {return}
+	view := nendo.element(container).rect
+	box := button.rect
+	if box.x < view.x {
+		scroll.position.x += view.x - box.x
+	} else if box.x + box.width > view.x + view.width {
+		scroll.position.x -= box.x + box.width - view.x - view.width
+	}
+}
+
+@(private)
 retention_text :: proc(secs: u64) -> string {
 	if secs == 0 {return tr("Off")}
 	units := [?]struct {
@@ -1594,6 +1609,13 @@ Nc_Page :: enum {
 }
 
 @(private)
+Nc_Created :: struct {
+	id:              string,
+	skipped:         int,
+	photo_requested: bool,
+}
+
+@(private)
 Nc_Member :: struct {
 	hex, label, pic_url: string,
 }
@@ -1605,9 +1627,7 @@ NC_CONTACT_H :: f32(64)
 nc_pending_label :: proc(ui: ^Ui_State) -> string {
 	for job in account_jobs {
 		if job.account == ui.account_ref && job.form != nil {
-			return(
-				ui.nc_created_group != "" ? tr("Opening your chat") : account_pending_label(job.kind) \
-			)
+			return account_pending_label(job.kind)
 		}
 	}
 	if ui.nip05_ticket != 0 {return tr("Looking up...")}
@@ -2023,7 +2043,7 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 	defer scrollbar(nendo.id("NewChatPane"))
 	pending := nc_pending_label(ui)
 	group := ui.nc_page == .Group
-	retry_open := ui.nc_created_group != ""
+	retry_open := ui.nc_created.id != ""
 	no_contacts := len(ui.nc_contacts) == 0
 	for job in account_jobs {if job.account == ui.account_ref && job.kind == .Read_Contacts {no_contacts = false; break}}
 	if nendo.box(nendo.id("NewChatPane"))(

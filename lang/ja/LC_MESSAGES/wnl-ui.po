@@ -6875,6 +6875,9 @@ msgstr "表示名とプロフィールは公開されます。"
 msgid "Your existing and new notes are deleted after this time."
 msgstr "既存のメモも新しいメモも、この時間が経つと削除されます。"
 
+msgid "Your group was created without the photo you chose."
+msgstr "選んだ写真を設定せずにグループを作成しました。"
+
 msgid "Your key stays on this device"
 msgstr "鍵はこの端末にとどまります"
 
