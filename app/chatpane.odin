@@ -1072,8 +1072,9 @@ info_relays_card :: proc(ui: ^Ui_State, width: f32, title: string) {
 			gap :: 8
 			icon_w :: 16
 			address_w := max(1, width - 2 * inset - gap - icon_w)
-			for url, i in ui.group_relays {
-				if nendo.box(nendo.id("InfoRelayCopy", u32(i)))(
+			seed := group_relay_seed(ui)
+			for url in ui.group_relays {
+				if nendo.box(nendo.id(url, seed))(
 				{
 					width = nendo.grow(),
 					height = nendo.fit(min = tap_size() ? tap_min() : 0),

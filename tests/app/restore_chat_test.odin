@@ -463,7 +463,15 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	text = frame(&ui)
 	testing.expect(t, strings.contains(text, "Group relays"))
 	testing.expect(t, strings.contains(text, "keep-the-whole-address"))
-	if point, ok := control_point(t, nendo.id("InfoRelayCopy", 1)); ok {
+	seed := group_relay_seed(&ui)
+	if !testing.expect_value(t, len(ui.group_relays), 2) {return}
+	testing.expect(t, !nendo.element(nendo.id("wss://127.0.0.1:9/", seed)).found)
+	ui.chats[ui.selected].conversation_kind = .DIRECT
+	ui.info_tab = .Members
+	testing.expect(t, strings.contains(frame(&ui), "Chat relays"))
+	if point, ok := control_point(t, nendo.id(long_relay, seed)); ok {
+		// Input still uses the prior layout if a refresh reorders the relays.
+		ui.group_relays[0], ui.group_relays[1] = ui.group_relays[1], ui.group_relays[0]
 		nendo.set_pointer(point, .Up)
 		forced_release = true
 		handle_chat(&ui, client)
@@ -472,7 +480,8 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		defer sdl.free(clipboard)
 		testing.expect_value(t, string(cstring(clipboard)), long_relay)
 	}
-	testing.expect(t, !nendo.element(nendo.id("InfoRelayCopy", 2)).found)
+	ui.chats[ui.selected].conversation_kind = .GROUP
+	ui.info_tab = .Settings
 	for _ in 0 ..< 3 {frame(&ui)}
 	scroll := nendo.scroll(nendo.id("MembersScroll"))
 	if !testing.expect(t, scroll.found) {return}
@@ -568,4 +577,28 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	testing.expect(t, queue_err != nil)
 	_, have_draft := ui.drafts[draft_key(account, other)]
 	testing.expect(t, !have_draft)
+}
+
+@(test)
+group_relay_identity :: proc(t: ^testing.T) {
+	testing.expect_value(
+		t,
+		group_relay_key("WSS://Relay.example:443/"),
+		group_relay_key("wss://relay.example"),
+	)
+	testing.expect_value(
+		t,
+		group_relay_key("ws://Relay.example:80/?q=1"),
+		group_relay_key("ws://relay.example?q=1"),
+	)
+	testing.expect(
+		t,
+		group_relay_key("wss://relay.example\\Upper") !=
+		group_relay_key("wss://relay.example\\upper"),
+	)
+	testing.expect(
+		t,
+		group_relay_key("wss://relay.example/room/") !=
+		group_relay_key("wss://relay.example/room"),
+	)
 }

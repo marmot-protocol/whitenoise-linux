@@ -592,19 +592,29 @@ members_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		seen := make(map[[2]string]bool, context.temp_allocator)
 		for i in 0 ..< record.relays_len {
 			url := string(record.relays[i])
-			// The scheme and host are case-insensitive, but relay paths are not.
-			authority := max(0, strings.index(url, "://") + 3)
-			end := strings.index_any(url[authority:], "/?")
-			end = end < 0 ? len(url) : authority + end
-			path := url[end:]
-			if path == "/" || strings.has_prefix(path, "/?") {path = path[1:]}
-			key := [2]string{strings.to_lower(url[:end], context.temp_allocator), path}
+			key := group_relay_key(url)
 			if seen[key] {continue}
 			seen[key] = true
 			append(&ui.group_relays, strings.clone(url))
 		}
 		ui.group_relays_status = .Ready
 	}
+}
+
+// Display deduplication is conservative: fold the authority and root slash,
+// but keep path and query bytes as configured.
+@(private)
+group_relay_key :: proc(url: string) -> [2]string {
+	scheme_end := strings.index(url, "://")
+	if scheme_end < 0 {return {url, ""}}
+	authority := scheme_end + 3
+	end := strings.index_any(url[authority:], "/?\\")
+	end = end < 0 ? len(url) : authority + end
+	endpoint := strings.to_lower(url[:end], context.temp_allocator)
+	endpoint = strings.trim_suffix(endpoint, strings.has_prefix(endpoint, "wss:") ? ":443" : ":80")
+	path := url[end:]
+	if path == "/" || strings.has_prefix(path, "/?") {path = path[1:]}
+	return {endpoint, path}
 }
 
 @(private)
