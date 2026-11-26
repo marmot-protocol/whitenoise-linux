@@ -3,7 +3,6 @@ package main
 import marmot "../marmot"
 import "core:encoding/hex"
 import "core:fmt"
-import "core:math"
 import "core:strings"
 import "nendo"
 import rl "sdlrl"
@@ -519,7 +518,18 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 							// message says. A draft replaces the last message preview,
 							// so hide its delivery tick while keeping live send state.
 							if state := chat_send_state(chat.group_id); state != .Idle {
-								send_spinner(index, state)
+								label := tr(
+									state == .Failed ? N_("Failed") : state == .Queued ? N_("Queued") : N_("Sending..."),
+								)
+								nendo.text(
+									label,
+									{
+										font = FONT_BODY,
+										size = 11,
+										color = state == .Failed ? DANGER : (SIDEBAR_SURFACE_TEXT ? detail_ink : TEXT_DIM),
+										wrap = .None,
+									},
+								)
 							} else if draft == "" &&
 							   (chat.tick == .DELIVERED || chat.tick == .PENDING) {
 								delivery_tick(chat.group_id, index, chat.tick)
@@ -611,33 +621,6 @@ chat_send_state :: proc(group_id: string) -> Send_State {
 		}
 	}
 	return state
-}
-
-// Three dots with one lit, cycling: the rail's counterpart to the
-// timeline's grayed "sending…" row.
-send_spinner :: proc(index: u32, state: Send_State) {
-	if state == .Failed {
-		nendo.text("!", {font = FONT_TITLE, size = 11, color = DANGER})
-		return
-	}
-	// Breathing rather than blinking: each dot rides the same wave a
-	// third of a turn behind the one before it, so the light travels
-	// along the row instead of stepping between three states.
-	color := state == .Queued ? TEXT_LO : ACCENT_DIM
-	if nendo.box(nendo.id("ChatRowSending", index))({gap = 3, align = {y = .Center}}) {
-		for i in 0 ..< 3 {
-			wave := f32(math.sin(rl.GetTime() * 4 - f64(i) * 0.7)) * 0.5 + 0.5
-			if nendo.box(nendo.id("ChatRowSendDot", index * 8 + u32(i)))(
-			{
-				width = nendo.fixed(3),
-				height = nendo.fixed(3),
-				color = mix_color(FIELD_BORDER, color, wave),
-				radius = rr(2),
-			},
-			) {}
-		}
-	}
-	anim_moving += 1
 }
 
 // One switcher row: avatar, name over npub tail, ACTIVE badge on the

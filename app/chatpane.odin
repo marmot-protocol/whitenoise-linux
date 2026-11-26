@@ -402,8 +402,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 						thread_root_plate(ui)
 					}
 					timeline_rows(ui, messages, cur, profile)
-					// Optimistic rows at the tail: unacked sends grayed,
-					// failed ones danger with tap-to-retry.
+					// Keep pending sends at the tail until the timeline catches up.
 					for p, i in ui.pending {
 						if p.thread == cur && pending_in_workspace(ui, p, chat.group_id) {
 							pending_row(u32(i), ui, p)
