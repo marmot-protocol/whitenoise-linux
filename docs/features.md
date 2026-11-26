@@ -21,7 +21,8 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 
 - **New chat opens a searchable contact picker.** Choose a contact, or select New group to set its name and photo.
 - **Choose who to invite before you create the group.** In **Members**, select people from the search results, or paste comma-separated public keys and select **Add**. Review the selected members and remove anyone you don't want to invite. Choose at least one person, then select **Create group**.
-- **Group settings belong to admins.** Only admins see the name, description, photo, disappearing-message, and issue-tracking controls.
+- **Only admins change group settings.** Other members can view the settings.
+- **See which relays carry a conversation.** Open **Group settings** or **Chat details** to view and copy its configured relay URLs. This list does not show live connection status. Manage account relays separately in **Network**.
 - **Only admins promote, demote, or remove members.** Nicknames change your local labels and remain available to other members.
 - **Delete a conversation when you're its only member.** In Chat details or Group settings, choose **Delete group**. This removes the conversation and its history from this device. Conversations with other members still offer **Leave**.
 - **Unread state is tracked per chat.** It shows up as badges on the rail.

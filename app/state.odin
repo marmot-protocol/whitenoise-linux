@@ -730,6 +730,12 @@ Ui_State :: struct {
 	invite_input:                        [dynamic]u8,
 	rename_input:                        [dynamic]u8,
 	group_desc:                          string, // selected group's description snapshot
+	group_relays:                        [dynamic]string,
+	group_relays_status:                 enum {
+		Loading,
+		Ready,
+		Failed,
+	},
 	staged_drafts:                       map[string][dynamic]Staged_File,
 	group_retention:                     u64, // disappearing-message timer in seconds, 0 = off
 	desc_input:                          [dynamic]u8, // hero description editor
