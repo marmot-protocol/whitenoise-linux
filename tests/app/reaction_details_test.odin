@@ -29,7 +29,7 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	ui.prefs.reduce_motion = true
 	ui.account_ref = "0000000000000000000000000000000000000000000000000000000000000001"
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Trail crew"})
-	append(&ui.accounts, Account_Row_Ui{name = "Test profile"})
+	append(&ui.accounts, Account_Row_Ui{id_hex = ui.account_ref, name = "Test profile"})
 	append(&ui.compose, "Unsent draft")
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	g_ui, g_prefs = &ui, &ui.prefs
@@ -136,22 +136,26 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	}
 	for pair, i in ([2][2]nendo.Vector2{{point, chip_point}, {chip_point, point}}) {
 		click(t, pair[0], pair[1])
-		testing.expect_value(t, reaction_pointer(&ui), i == 0)
+		testing.expect_value(t, timeline_pointer(&ui, &client), i == 0)
 		testing.expect_value(t, ui.reaction_details_id, "")
 	}
 	ui.compose_more = true
 	click(t, point, point)
-	testing.expect(t, !reaction_pointer(&ui), "the composer menu owns its outside click")
+	testing.expect(t, !timeline_pointer(&ui, &client), "the composer menu owns its outside click")
 	ui.compose_more = false
 	ui.row_menu = 0
 	click(t, point, point)
-	testing.expect(t, !reaction_pointer(&ui), "the rail menu owns its outside click")
+	testing.expect(t, !timeline_pointer(&ui, &client), "the rail menu owns its outside click")
 	ui.row_menu = -1
 
 	record.reactions.by_emoji_len = 0
 	timeline_apply(nil, &ui, &page)
 	click(t, point, chip_point)
-	testing.expect(t, reaction_pointer(&ui), "the displayed control still owns the canceled click")
+	testing.expect(
+		t,
+		timeline_pointer(&ui, &client),
+		"the displayed control still owns the canceled click",
+	)
 	testing.expect_value(t, ui.reaction_details_id, "")
 	record.reactions.by_emoji_len = len(tallies)
 	timeline_apply(nil, &ui, &page)
@@ -169,7 +173,7 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	rl.WindowShouldClose()
 	rl.PushMouseButton(.LEFT, true)
 	nendo.set_pointer(point, .Down)
-	testing.expect(t, reaction_pointer(&ui), "details owns the press")
+	testing.expect(t, timeline_pointer(&ui, &client), "details owns the press")
 	layout(&ui)
 	rows := [2]marmot.Timeline_Message_Record{record, record}
 	rows[0].message_id_hex = "another-message"
@@ -178,7 +182,7 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	rl.WindowShouldClose()
 	rl.PushMouseButton(.LEFT, false)
 	nendo.set_pointer(point, .Up)
-	testing.expect(t, reaction_pointer(&ui), "details owns the release after a repage")
+	testing.expect(t, timeline_pointer(&ui, &client), "details owns the release after a repage")
 	if !testing.expect_value(t, ui.reaction_details_id, "trailhead") {return}
 	layout(&ui)
 	testing.expect(t, !nendo.element(mention).found, "no outgoing suggestions over details")
@@ -216,4 +220,43 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	key(&ui, &client, .ENTER)
 	testing.expect_value(t, string(ui.compose[:]), "Unsent draft")
 	testing.expect_value(t, len(ui.pending), 0)
+
+	history: [42]marmot.Timeline_Message_Record
+	history[0] = record
+	for i in 1 ..< len(history) {
+		history[i] = {
+			kind           = KIND_CHAT_MESSAGE,
+			message_id_hex = fmt.ctprintf("older-%d", i),
+			sender         = people[i % len(people)],
+			plaintext      = "A message without reactions",
+		}
+	}
+	page.messages, page.messages_len = raw_data(history[:]), len(history)
+	timeline_apply(nil, &ui, &page)
+	append(
+		&ui.pending,
+		Pending_Send {
+			ticket = 42,
+			account_ref = ui.account_ref,
+			group_id = "test",
+			sender = "You",
+			body = "Failed message",
+			failed = true,
+		},
+	)
+	defer delete(ui.pending)
+	layout(&ui)
+	view := nendo.scroll(nendo.id("Timeline"))
+	view.position.y = 0
+	layout(&ui)
+	rl.PushKey(.LEFT_SHIFT, true)
+	key(&ui, &client, .TAB)
+	layout(&ui)
+	testing.expect(t, view.position.y < 0, "reverse Tab reveals the retry below the viewport")
+	key(&ui, &client, .TAB)
+	rl.PushKey(.LEFT_SHIFT, false)
+	layout(&ui)
+	key(&ui, &client, .ENTER)
+	testing.expect_value(t, ui.reaction_details_id, "trailhead")
+	testing.expect_value(t, string(ui.compose[:]), "Unsent draft")
 }

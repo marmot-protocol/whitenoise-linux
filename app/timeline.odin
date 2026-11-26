@@ -23,6 +23,11 @@ pending_can_delete :: proc(p: Pending_Send, now: time.Tick) -> bool {
 	)
 }
 
+@(private)
+pending_retry_id :: proc(ticket: int) -> nendo.Id {
+	return nendo.id("PendingRetry", u32(ticket))
+}
+
 // Per-attachment and per-reaction nendo ids share one band per message row,
 // so the same label can repeat on every row without colliding:
 //
@@ -48,6 +53,19 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 	}
 	body_color := p.failed ? DANGER : TEXT_DIM
 	can_delete := pending_can_delete(p, time.tick_now())
+	status: string
+	switch {
+	case p.thread_unavailable:
+		status = tr("Original message unavailable")
+	case p.failed:
+		status = tr("Failed")
+	case p.queued:
+		status = tr("Will retry automatically")
+	case p.forward != nil:
+		status = tr("Preparing attachments…")
+	case:
+		status = tr("Sending...")
+	}
 	if nendo.box(nendo.id("PendingRow", index))(
 	{
 		width = nendo.grow(),
@@ -60,6 +78,7 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 		if nendo.box(nendo.id("PendingCol", index))(
 		{width = nendo.grow(), direction = .Column, gap = 3},
 		) {
+			nendo.text(p.sender, {font = FONT_TITLE, size = 13, color = TEXT_DIM})
 			if nendo.box(nendo.id("PendingHead", index))(
 			{
 				width = nendo.grow(),
@@ -68,11 +87,25 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 				align = {y = .Center},
 			},
 			) {
-				nendo.text(p.sender, {font = FONT_TITLE, size = 13, color = TEXT_DIM})
 				nendo.text(
-					p.failed ? tr("Failed") : p.queued ? tr("Queued") : p.forward != nil ? tr("Preparing attachments…") : tr("Sending..."),
-					{font = FONT_BODY, size = 11, color = p.failed ? DANGER : TEXT_LO},
+					status,
+					{font = FONT_BODY, size = 11, color = p.failed ? DANGER : TEXT_DIM},
 				)
+				if p.failed && pending_send_allowed(ui, p) {
+					id := pending_retry_id(p.ticket)
+					if nendo.box(id)(
+					{
+						height = nendo.fit(min = tap_size() ? tap_min() : 24),
+						padding = {left = 8, right = 8},
+						align = {y = .Center},
+						color = hovered() ? HOVER : ROW_BG,
+						radius = rr(4),
+						border = ui.timeline_focus == id.id ? kb_ring(ACCENT) : {color = FIELD_BORDER, width = bw()},
+					},
+					) {
+						nendo.text(tr("Retry"), {font = FONT_BODY, size = 11, color = TEXT})
+					}
+				}
 				if can_delete {
 					if nendo.box(nendo.id("PendingDelete", index))(
 					{
@@ -166,12 +199,6 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 				) {
 					nendo.text(tr("Delete for me"), {font = FONT_BODY, size = 11, color = DANGER})
 				}
-			}
-			if p.failed {
-				nendo.text(
-					p.thread_unavailable ? tr("Original message unavailable") : tr("failed · tap to retry"),
-					{font = FONT_BODY, size = 11, color = DANGER},
-				)
 			}
 		}
 	}
