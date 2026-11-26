@@ -42,7 +42,7 @@
   <content_rating type="oars-1.1">
     <content_attribute id="social-chat">intense</content_attribute>
   </content_rating>
-  <!-- scripts/release.sh adds one entry per release, newest first. -->
+  <!-- scripts/rc-stamp.sh inserts the candidate version here. -->
   <releases>
     <release version="2026.11.15+1" date="2026-11-15"/>
     <release version="2026.10.23+2" date="2026-10-23"/>

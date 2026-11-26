@@ -7,6 +7,10 @@ on:
         type: string
         required: false
         default: ""
+      source_sha:
+        type: string
+        required: false
+        default: ""
     secrets:
       BOAT_CI_KEY:
         required: false
@@ -29,6 +33,10 @@ on:
         required: false
         default: ""
 
+env:
+  WN_RC_TAG: ${{ github.repository == 'marmot-protocol/whitenoise-linux' && github.ref == 'refs/heads/master' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && inputs.source_sha != '' && inputs.version || '' }}
+  WN_RELEASE_VERSION: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && inputs.version || '' }}
+
 jobs:
   cross:
     name: Cross ${{ matrix.target }} on Linux
@@ -40,9 +48,6 @@ jobs:
         shell: bash scripts/ci-boat.sh run {0}
     env:
       BOAT_CI_KEY: ${{ github.event_name != 'pull_request' && secrets.BOAT_CI_KEY || '' }}
-      WN_RELEASE_VERSION: ${{ inputs.version }}
-      RELEASE: ${{ matrix.target == 'windows-amd64' && github.event_name == 'push' && github.ref_type == 'tag' && inputs.version != '' }}
-      VCPKG_BINARY_SOURCES: ${{ matrix.target == 'windows-amd64' && github.event_name == 'push' && 'clear;files,/work/build/ci-vcpkg,readwrite' || '' }}
       # ARM64 release codegen can exceed the container's memory at six jobs.
       CARGO_BUILD_JOBS: ${{ matrix.target == 'linux-arm64' && 2 || 6 }}
       WN_BUILD_JOBS: 6
@@ -56,7 +61,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.source_sha || github.sha }}
           persist-credentials: false
+      - name: Identify package source
+        shell: bash
+        run: git rev-parse HEAD
+      - name: Enable Windows release packaging and cache
+        if: matrix.target == 'windows-amd64' && env.WN_RC_TAG != ''
+        shell: bash
+        run: |
+          printf '%s\n' 'RELEASE=true' 'VCPKG_BINARY_SOURCES=clear;files,/work/build/ci-vcpkg,readwrite' >> "$GITHUB_ENV"
       - name: Start cross build environment
         id: start
         shell: bash
@@ -103,7 +117,7 @@ jobs:
           JSIGN_STOREPASS: ${{ secrets.JSIGN_STOREPASS }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          bash scripts/version.sh "$GITHUB_REF_NAME"
+          bash scripts/version.sh "$WN_RC_TAG"
           if [ -n "$JSIGN_STORETYPE" ] && [ -n "$JSIGN_KEYSTORE_BASE64" ]; then
             export JSIGN_KEYSTORE="$RUNNER_TEMP/signing/keystore"
             (
@@ -166,7 +180,7 @@ jobs:
           path: build/cross-evidence/${{ matrix.target }}.png
           if-no-files-found: error
       - name: Retrieve new Windows vcpkg archives
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.windows-cache.outputs.cache-primary-key != '' && steps.windows-cache.outputs.cache-hit != 'true'
+        if: steps.windows-cache.outputs.cache-primary-key != '' && steps.windows-cache.outputs.cache-hit != 'true'
         id: windows-cache-export
         continue-on-error: true
         shell: bash
@@ -193,7 +207,6 @@ jobs:
         shell: bash scripts/ci-boat.sh run {0}
     env:
       BOAT_CI_KEY: ${{ github.event_name != 'pull_request' && secrets.BOAT_CI_KEY || '' }}
-      WN_RELEASE_VERSION: ${{ inputs.version }}
       WN_METRICS_WRITE_TOKEN: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && secrets.WN_METRICS_WRITE_TOKEN || '' }}
       WN_AUDIT_WRITE_TOKEN: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
       CARGO_BUILD_JOBS: 6
@@ -202,7 +215,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.source_sha || github.sha }}
           persist-credentials: false
+      - name: Identify package source
+        shell: bash
+        run: git rev-parse HEAD
       - name: Start OpenBSD build environment
         id: start
         if: github.event_name != 'pull_request'
@@ -213,7 +230,7 @@ jobs:
           esac
           bash scripts/ci-boat.sh start openbsd
       - name: Restore OpenBSD Cargo cache
-        if: github.event_name == 'push'
+        if: env.WN_RC_TAG != ''
         id: openbsd-cache
         uses: actions/cache/restore@v4
         env:
@@ -279,7 +296,7 @@ jobs:
           path: build/openbsd/wn-odin-shot.png
           if-no-files-found: error
       - name: Retrieve new OpenBSD Cargo cache
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: env.WN_RC_TAG != ''
         id: openbsd-cache-export
         continue-on-error: true
         shell: bash
@@ -315,8 +332,14 @@ jobs:
         target: [darwin-arm64, darwin-amd64]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha || github.sha }}
+          persist-credentials: false
+      - name: Identify package source
+        run: git rev-parse HEAD
       - name: Restore pinned build tool downloads
-        uses: actions/cache@v4
+        id: tools-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             ${{ runner.temp }}/tools/odin.tar.gz
@@ -325,8 +348,12 @@ jobs:
           key: cross-macos-tools-${{ runner.arch }}-${{ hashFiles('scripts/macos-setup.sh') }}
       - name: Install pinned build tools
         run: scripts/macos-setup.sh "$RUNNER_TEMP/tools"
+      - name: Validate macOS release version
+        if: env.WN_RC_TAG != ''
+        run: bash scripts/version.sh "$WN_RC_TAG"
       - name: Require macOS release signing key
-        if: inputs.version != '' || github.ref_type == 'tag'
+        id: release-signing
+        if: env.WN_RC_TAG != '' || (github.event_name == 'workflow_dispatch' && inputs.source_sha == '' && (inputs.version != '' || github.ref_type == 'tag'))
         env:
           WN_SPARKLE_PRIVATE_KEY: ${{ secrets.WN_SPARKLE_PRIVATE_KEY }}
         run: test -n "$WN_SPARKLE_PRIVATE_KEY" || { echo 'Missing WN_SPARKLE_PRIVATE_KEY for macOS release' >&2; exit 1; }
@@ -382,8 +409,7 @@ jobs:
           restore-keys: cross-cdeps-v2-${{ matrix.target }}-${{ steps.toolchain.outputs.fingerprint }}-
       - name: Build and package
         env:
-          WN_RELEASE_VERSION: ${{ inputs.version }}
-          WN_SPARKLE_PRIVATE_KEY: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && (inputs.version != '' || github.ref_type == 'tag') && secrets.WN_SPARKLE_PRIVATE_KEY || '' }}
+          WN_SPARKLE_PRIVATE_KEY: ${{ steps.release-signing.outcome == 'success' && secrets.WN_SPARKLE_PRIVATE_KEY || '' }}
           WN_METRICS_WRITE_TOKEN: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && secrets.WN_METRICS_WRITE_TOKEN || '' }}
           WN_AUDIT_WRITE_TOKEN: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
         run: |
@@ -392,8 +418,17 @@ jobs:
       - name: Remove generated observability credentials
         if: always()
         run: rm -f build/observability-tokens.toml
+      - name: Save pinned build tool downloads
+        if: success() && (env.WN_RC_TAG != '' || github.event_name == 'workflow_dispatch') && steps.tools-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ runner.temp }}/tools/odin.tar.gz
+            ${{ runner.temp }}/tools/bun.zip
+            ~/Library/Caches/Homebrew
+          key: ${{ steps.tools-cache.outputs.cache-primary-key }}
       - name: Save Cargo state
-        if: success() && steps.cargo-cache.outputs.cache-hit != 'true'
+        if: success() && (env.WN_RC_TAG != '' || github.event_name == 'workflow_dispatch') && steps.cargo-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
@@ -403,7 +438,7 @@ jobs:
             ~/.rustup/toolchains
           key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
       - name: Save C dependencies
-        if: success() && steps.cdeps-cache.outputs.cache-hit != 'true'
+        if: success() && (env.WN_RC_TAG != '' || github.event_name == 'workflow_dispatch') && steps.cdeps-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
@@ -419,7 +454,7 @@ jobs:
             !vendor/vcpkg/packages
           key: ${{ steps.cdeps-cache.outputs.cache-primary-key }}
       - name: Save vcpkg binary cache
-        if: always() && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        if: always() && (env.WN_RC_TAG != '' || github.event_name == 'workflow_dispatch') && steps.vcpkg-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ~/.cache/vcpkg/archives

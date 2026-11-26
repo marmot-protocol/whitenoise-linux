@@ -8,14 +8,23 @@ watches the repo over Nostr and runs `act/workflows/` using the
 
 | File | Runs on | Notes |
 | --- | --- | --- |
-| `act/workflows/pr-native.yml` | ngit-ci | Native Linux build and tests on each proposal. |
+| `act/workflows/pr-native.yml` | ngit-ci | Classifies the exact proposal head against the public mirror's `master`. Runs the native Linux build and tests unless the proposal qualifies for the static lane. |
 | `act/workflows/pr-precommit.yml` | ngit-ci and GitHub | Canonical quality gate. Runs `.githooks/pre-commit` against the whole tree using an isolated Git index; normalization fails the gate. The hook maintains the byte-identical `.github/workflows/pr-precommit.yml` mirror. Edit the canonical file only. |
 | `act/workflows/release-appimage.yml` | ngit-ci | Native build and tests, AppImage packaging, then a headless launch of the packaged app. Publishes the AppImage to Blossom. |
 | `act/workflows/release-cross.yml` | ngit-ci | Linux ARM64 cross-build and packaged-app smoke run. |
 | `act/workflows/release-windows.yml` | ngit-ci | Windows AMD64 cross-build and packaged-app smoke run under Wine. |
 | `act/workflows/release-android.yml` | ngit-ci | Builds and verifies a debug-signed ARM64 APK on every `master` push. Publishes it to Blossom. |
-| `.github/workflows/ci.yml` and `cross.yml` | GitHub Actions | Dispatch trusted Linux builds to Boat. macOS and pull requests use GitHub-hosted runners. |
-| `.github/workflows/release.yml` | GitHub Actions | Dispatch Linux release builds to Boat. GitHub publishes tagged releases. |
+| `.github/workflows/ci.yml` and `cross.yml` | GitHub Actions | Tests hourly Canary batches on Boat. Full PR builds, including cross builds, use GitHub-hosted runners without release credentials. |
+| `.github/workflows/release.yml` and `promote.yml` | GitHub Actions | Builds immutable release candidates from a green Canary. Promotion moves Latest without rebuilding. |
+
+The static lane requires every introduced commit to be signed by a key in
+the base tree's `packaging/ci/team-signers.asc`. Each such commit needs one
+`Local-Checks:` trailer and one `Local-Review:` trailer naming the reviews.
+These are signed author assertions, not reviews run by CI. Missing history,
+untrusted signatures, and changes to gate policy take the full build lane.
+Maintainers inspect the base-to-head diff of policy changes because both
+forges can run PR-authored workflow YAML. Neither lane skips pre-commit or
+the maintainer's review.
 
 The ngit coordinators run on exe.dev and dispatch to Boat. Their deployment
 files are on the `ci/boat-cutover` branch.

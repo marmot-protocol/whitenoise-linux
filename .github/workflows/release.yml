@@ -15,12 +15,12 @@
 # into the AppDir (SDL3, libmpv and its codec deps, poppler, cairo,
 # libarchive). Flatpak: packaging/flatpak/*.yml builds those libraries as
 # modules on the GNOME 50 runtime (freedesktop 25.08 base).
-name: Release
+name: Release candidate
 
 on:
-  # A manual run builds and smokes unsigned Flatpak/Orchard and Arch artifacts.
-  # Even when dispatched against a tag, it cannot enter publishing jobs.
   workflow_dispatch:
+  schedule:
+    - cron: '41 3 * * *'
   pull_request:
     paths:
       - .github/workflows/release.yml
@@ -28,15 +28,12 @@ on:
       - scripts/ci-container.sh
       - packaging/ci/**
       - packaging/flatpak/**
-  push:
-    # Keep the tokenless Flatpak module cache warm on the default branch.
-    branches: [master]
-    tags: ["v*"]
 
-# Warm the cache once for the latest waiting master push, without stopping
-# the current build or grouping tags, PRs, and manual runs together.
+permissions:
+  contents: read
+
 concurrency:
-  group: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && 'release-warm-master' || format('release-run-{0}', github.run_id) }}
+  group: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && 'wn-rc' || format('rc-validation-{0}', github.run_id) }}
   cancel-in-progress: false
 
 env:
@@ -58,21 +55,107 @@ env:
   APPIMAGE_EXTRACT_AND_RUN: "1"
 
 jobs:
+  stamp:
+    name: Select and stamp green Canary
+    if: github.event_name != 'pull_request' && github.repository == 'marmot-protocol/whitenoise-linux' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    environment: wn-rc-stamp
+    permissions:
+      actions: read
+      attestations: read
+      checks: read
+      contents: write
+    outputs:
+      canary_sha: ${{ steps.canary.outputs.canary_sha }}
+      canary_run_id: ${{ steps.canary.outputs.canary_run_id }}
+      tag: ${{ steps.reserve.outputs.tag }}
+      commit_sha: ${{ steps.reserve.outputs.commit_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: policy
+          persist-credentials: false
+      - name: Find an exact green Canary
+        id: canary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          source="$RUNNER_TEMP/rc-source"
+          git init -q "$source"
+          cd "$source"
+          git remote add origin "https://github.com/$GITHUB_REPOSITORY.git"
+          bash "$GITHUB_WORKSPACE/policy/scripts/canary.sh" green
+      - name: Select an unpublished source
+        id: select
+        if: steps.canary.outputs.canary_sha != ''
+        working-directory: ${{ runner.temp }}/rc-source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANARY_SHA: ${{ steps.canary.outputs.canary_sha }}
+        run: |
+          git fetch --tags origin refs/heads/master
+          bash "$GITHUB_WORKSPACE/policy/scripts/rc-select.sh" "$CANARY_SHA"
+          git checkout --detach "$CANARY_SHA"
+      - name: Require enabled immutable releases
+        if: steps.select.outputs.stamp == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.WN_RC_SETTINGS_TOKEN || github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/immutable-releases" | jq -e '.enabled == true'
+      - name: Sign the stamp commit and tag
+        id: sign
+        if: steps.select.outputs.stamp == 'true'
+        working-directory: ${{ runner.temp }}/rc-source
+        env:
+          WN_RC_GIT_SIGNING_KEY: ${{ secrets.WN_RC_GIT_SIGNING_KEY }}
+          CANARY_SHA: ${{ steps.canary.outputs.canary_sha }}
+          GIT_AUTHOR_NAME: White Noise Release CI
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: White Noise Release CI
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          stamp=$(bash "$GITHUB_WORKSPACE/policy/scripts/rc-stamp.sh" "$CANARY_SHA" "$(date -u +%F)")
+          read -r tag commit <<< "$stamp"
+          printf 'tag=%s\ncommit_sha=%s\n' "$tag" "$commit" >> "$GITHUB_OUTPUT"
+      - name: Reserve only the signed tag on GitHub
+        id: reserve
+        if: steps.sign.outputs.tag != ''
+        working-directory: ${{ runner.temp }}/rc-source
+        env:
+          GH_TOKEN: ${{ secrets.WN_RC_TAG_TOKEN || github.token }}
+          WN_RC_TAG: ${{ steps.sign.outputs.tag }}
+          WN_RC_COMMIT: ${{ steps.sign.outputs.commit_sha }}
+        run: |
+          ref="refs/tags/$WN_RC_TAG"
+          git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push --no-follow-tags origin "$ref:$ref"
+          local_oid=$(git rev-parse "$ref")
+          remote_oid=$(git ls-remote --refs origin "$ref" | cut -f1)
+          test "$local_oid" = "$remote_oid"
+          printf 'tag=%s\ncommit_sha=%s\n' "$WN_RC_TAG" "$WN_RC_COMMIT" >> "$GITHUB_OUTPUT"
+
   appimage:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    needs: stamp
+    if: needs.stamp.outputs.commit_sha != ''
     name: AppImage (x86_64)
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     environment: wn-boat-build
     env:
       BOAT_CI_KEY: ${{ secrets.BOAT_CI_KEY }}
+      WN_RC_TAG: ${{ needs.stamp.outputs.tag }}
     defaults:
       run:
         shell: bash scripts/ci-boat.sh run {0}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.stamp.outputs.commit_sha }}
           persist-credentials: false
+
+      - name: Identify package source
+        shell: bash
+        run: git rev-parse HEAD
 
       - name: Start native build guest
         id: start
@@ -80,11 +163,11 @@ jobs:
         run: bash scripts/ci-boat.sh start native
 
       - name: Check release version
-        run: bash scripts/version.sh "$GITHUB_REF_NAME"
+        run: bash scripts/version.sh "$WN_RC_TAG"
 
       - name: Set AppImage filename
         shell: bash
-        run: echo "APPIMAGE_NAME=WhiteNoise-${GITHUB_REF_NAME}-x86_64.AppImage" >> "$GITHUB_ENV"
+        run: echo "APPIMAGE_NAME=WhiteNoise-$WN_RC_TAG-x86_64.AppImage" >> "$GITHUB_ENV"
 
       - name: Build
         env:
@@ -163,6 +246,8 @@ jobs:
 
   orchard-publisher:
     name: Orchard publisher (x86_64)
+    needs: stamp
+    if: ${{ !cancelled() && (github.event_name == 'pull_request' || (needs.stamp.result == 'success' && needs.stamp.outputs.commit_sha != '')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     environment: ${{ github.event_name == 'pull_request' && 'wn-github-pr' || 'wn-boat-build' }}
@@ -175,10 +260,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.stamp.outputs.commit_sha || github.sha }}
           persist-credentials: false
 
+      - name: Identify publisher source
+        shell: bash
+        run: git rev-parse HEAD
+
       - name: Identify pinned Orchard source
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         id: orchard-source
         shell: bash
         run: |
@@ -187,7 +277,7 @@ jobs:
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
 
       - name: Restore Orchard publisher
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         id: orchard-cache
         continue-on-error: true
         uses: actions/cache/restore@v4
@@ -224,7 +314,7 @@ jobs:
         run: bash scripts/ci-boat.sh stop
 
       - name: Save Orchard publisher
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.orchard-guest.outcome == 'success' && steps.orchard-cache.outputs.cache-primary-key != ''
+        if: github.event_name != 'pull_request' && steps.orchard-guest.outcome == 'success' && steps.orchard-cache.outputs.cache-primary-key != ''
         continue-on-error: true
         uses: actions/cache/save@v4
         with:
@@ -233,7 +323,8 @@ jobs:
 
   flatpak:
     name: Flatpak (x86_64)
-    needs: orchard-publisher
+    needs: [stamp, orchard-publisher]
+    if: ${{ !cancelled() && needs.orchard-publisher.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     environment: ${{ github.event_name == 'pull_request' && 'wn-github-pr' || 'wn-boat-build' }}
@@ -242,23 +333,28 @@ jobs:
         shell: bash scripts/ci-boat.sh run {0}
     env:
       BOAT_CI_KEY: ${{ github.event_name != 'pull_request' && secrets.BOAT_CI_KEY || '' }}
+      WN_RC_TAG: ${{ needs.stamp.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.stamp.outputs.commit_sha || github.sha }}
           persist-credentials: false
+
+      - name: Identify package source and filename
+        shell: bash
+        run: |
+          sha=$(git rev-parse HEAD)
+          name=${WN_RC_TAG:-${GITHUB_REF_NAME//\//-}}
+          printf 'WN_SOURCE_SHA=%s\nWN_FLATPAK_BUNDLE=WhiteNoise-%s-x86_64.flatpak\n' "$sha" "$name" >> "$GITHUB_ENV"
+          echo "Flatpak source: $sha"
 
       - name: Start Flatpak build guest
         shell: bash
         run: bash scripts/ci-boat.sh start flatpak
 
       - name: Check release version
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-        run: bash scripts/version.sh "$GITHUB_REF_NAME"
-
-      - name: Set Flatpak filename
-        shell: bash
-        # Branch and PR refs can contain slashes.
-        run: echo "WN_FLATPAK_BUNDLE=WhiteNoise-${GITHUB_REF_NAME//\//-}-x86_64.flatpak" >> "$GITHUB_ENV"
+        if: env.WN_RC_TAG != ''
+        run: bash scripts/version.sh "$WN_RC_TAG"
 
       - name: Prepare Flatpak builder
         id: flatpak-prepare
@@ -275,7 +371,7 @@ jobs:
             > packaging/flatpak/ci-manifest.json
           flatpak-builder --user --install-deps-from=flathub --install-deps-only \
             --arch=x86_64 --state-dir=build/flatpak-state build/flatpak packaging/flatpak/ci-manifest.json
-          if [[ $GITHUB_EVENT_NAME != pull_request ]]; then
+          if [[ -n $WN_RC_TAG ]]; then
             # Hash full commit IDs for the SDK and its installed extensions.
             if digest=$({
               flatpak-builder --version || exit 1
@@ -316,10 +412,10 @@ jobs:
           mkdir -p build/flatpak-state
           tar -xzf build/flatpak-module-cache.tar.gz -C build/flatpak-state
 
-      # Only master writes this cache, before any app module runs. Save just
+      # Only RC jobs write this cache, before any app module runs. Save just
       # the installed module snapshots, not the SDK, sources, or build trees.
       - name: Build tokenless Flatpak modules
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.flatpak-cache.outputs.cache-primary-key != '' && steps.flatpak-cache.outputs.cache-hit != 'true'
+        if: env.WN_RC_TAG != '' && steps.flatpak-cache.outputs.cache-primary-key != '' && steps.flatpak-cache.outputs.cache-hit != 'true'
         id: flatpak-cache-build
         run: |
           xvfb-run --auto-servernum flatpak-builder \
@@ -342,13 +438,13 @@ jobs:
 
       - name: Build Flatpak and bundle
         env:
-          WN_METRICS_WRITE_TOKEN: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && secrets.WN_METRICS_WRITE_TOKEN || '' }}
-          WN_AUDIT_WRITE_TOKEN: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
+          WN_METRICS_WRITE_TOKEN: ${{ needs.stamp.outputs.commit_sha != '' && secrets.WN_METRICS_WRITE_TOKEN || '' }}
+          WN_AUDIT_WRITE_TOKEN: ${{ needs.stamp.outputs.commit_sha != '' && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
         run: |
           xvfb-run --auto-servernum flatpak-builder \
             --user --repo=build/flatpak-repo \
             --disable-rofiles-fuse --force-clean --jobs=6 \
-            --default-branch=master --arch=x86_64 --subject="Built from $GITHUB_SHA" \
+            --default-branch=master --arch=x86_64 --subject="Built from $WN_SOURCE_SHA" \
             --state-dir=build/flatpak-state \
             build/flatpak packaging/flatpak/ci-manifest.json
           flatpak build-bundle build/flatpak-repo \
@@ -379,7 +475,7 @@ jobs:
         run: |
           chmod +x build/orchard-publish
           args=()
-          if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/tags/* ]]; then args+=("$GITHUB_REF_NAME"); fi
+          if [[ -n "$WN_RC_TAG" ]]; then args+=("$WN_RC_TAG"); fi
           scripts/orchard-package.sh build/flatpak build/orchard-release "${args[@]}"
 
       # Install the archived bytes, not the preparer's internal layout. Remove
@@ -426,29 +522,39 @@ jobs:
         run: bash scripts/ci-boat.sh stop
 
   cross:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    needs: stamp
+    if: needs.stamp.outputs.commit_sha != ''
     uses: ./.github/workflows/cross.yml
     with:
-      version: ${{ github.ref_name }}
+      source_sha: ${{ needs.stamp.outputs.commit_sha }}
+      version: ${{ needs.stamp.outputs.tag }}
     secrets: inherit
 
   # The tarball the AUR's whitenoise-linux-bin installs, built on Arch
   # against Arch's libraries from the same metadata as whitenoise-linux-git.
   archlinux:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
+    needs: stamp
+    if: needs.stamp.outputs.commit_sha != ''
     name: Arch Linux (x86_64)
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     environment: wn-boat-build
     env:
       BOAT_CI_KEY: ${{ secrets.BOAT_CI_KEY }}
+      WN_RC_TAG: ${{ needs.stamp.outputs.tag }}
+      WN_RELEASE_VERSION: ${{ needs.stamp.outputs.tag }}
     defaults:
       run:
         shell: bash scripts/ci-boat.sh run {0}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.stamp.outputs.commit_sha }}
           persist-credentials: false
+
+      - name: Identify package source
+        shell: bash
+        run: git rev-parse HEAD
 
       - name: Start Arch build guest
         id: start
@@ -459,8 +565,7 @@ jobs:
         run: pacman -Syu --noconfirm --needed git
 
       - name: Check release version
-        if: github.event_name == 'push'
-        run: bash scripts/version.sh "$GITHUB_REF_NAME"
+        run: bash scripts/version.sh "$WN_RC_TAG"
 
       - name: Install build dependencies
         run: |
@@ -482,9 +587,8 @@ jobs:
 
       - name: Build
         env:
-          WN_RELEASE_VERSION: ${{ github.event_name == 'push' && github.ref_name || '' }}
-          WN_METRICS_WRITE_TOKEN: ${{ github.event_name == 'push' && secrets.WN_METRICS_WRITE_TOKEN || '' }}
-          WN_AUDIT_WRITE_TOKEN: ${{ github.event_name == 'push' && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
+          WN_METRICS_WRITE_TOKEN: ${{ secrets.WN_METRICS_WRITE_TOKEN }}
+          WN_AUDIT_WRITE_TOKEN: ${{ secrets.WN_AUDIT_WRITE_TOKEN }}
         run: scripts/arch-package.sh
 
       - name: Retrieve Arch package
@@ -506,104 +610,35 @@ jobs:
         shell: bash
         run: bash scripts/ci-boat.sh stop
 
-  publish:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    name: Publish release
-    needs: [appimage, flatpak, cross, archlinux]
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist
-          merge-multiple: true
-
-      # Smoke screenshots and the internal publisher are CI artifacts, not
-      # release files. Keep both out of checksums and the public release.
-      - name: Drop CI evidence
-        run: rm -f dist/*.png dist/orchard-publish
-
-      # One checksum file over everything the release ships, so a
-      # download can be verified without trusting the release page alone.
-      - name: Checksums
-        run: |
-          cd dist
-          sha256sum -- * > SHA256SUMS.txt
-          cat SHA256SUMS.txt
-
-      # scripts/release.sh writes the reviewed notes as the tag's message:
-      # its first line is the release title, the rest the body. A tag
-      # without notes (made by hand) falls back to GitHub's generated ones.
-      - uses: actions/checkout@v4
-        with:
-          path: src
-      - name: Read the release notes from the tag
-        id: notes
-        run: |
-          git -C src fetch -q --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
-          echo "name=$(git -C src tag -l --format='%(contents:subject)' "$GITHUB_REF_NAME")" >> "$GITHUB_OUTPUT"
-          git -C src tag -l --format='%(contents:body)' "$GITHUB_REF_NAME" > release-notes.md
-          if grep -q '[^[:space:]]' release-notes.md; then
-            echo "generate=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "generate=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            dist/*.AppImage
-            dist/*.zsync
-            dist/*.flatpak
-            dist/*.asset.json
-            dist/*.manifest.json
-            dist/[0-9a-f][0-9a-f][0-9a-f][0-9a-f]*
-            dist/*.oci.tgz
-            dist/*.tar.gz
-            dist/*.tar.zst
-            dist/*.zip
-            dist/*-Setup.exe
-            dist/*.nupkg
-            dist/*.win.json
-            dist/appcast-*.xml
-            dist/RELEASES
-            dist/SHA256SUMS.txt
-          name: ${{ steps.notes.outputs.name || github.ref_name }}
-          body_path: release-notes.md
-          generate_release_notes: ${{ steps.notes.outputs.generate == 'true' }}
-          prerelease: false
-          fail_on_unmatched_files: true
-
-  # Point the AUR at the release just published: render whitenoise-linux-bin
-  # and the from-source whitenoise-linux for this tag, install the former
-  # from the release asset in a clean container and boot it, check every
-  # source of the latter, then push both and whitenoise-linux-git. The push
-  # is skipped until the repository has an AUR_SSH_PRIVATE_KEY secret.
-  aur:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    name: AUR packages
-    needs: [archlinux, publish]
+  aur-check:
+    name: Verify AUR packages
+    needs: [stamp, archlinux]
+    if: needs.stamp.outputs.commit_sha != ''
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     environment: wn-boat-build
     env:
       BOAT_CI_KEY: ${{ secrets.BOAT_CI_KEY }}
+      WN_RC_TAG: ${{ needs.stamp.outputs.tag }}
     defaults:
       run:
         shell: bash scripts/ci-boat.sh run {0}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.stamp.outputs.commit_sha }}
           persist-credentials: false
 
+      - name: Identify package source
+        shell: bash
+        run: git rev-parse HEAD
+
       - name: Start Arch build guest
-        id: start
         shell: bash
         run: bash scripts/ci-boat.sh start arch
 
       - name: Install tools
-        run: pacman -Syu --noconfirm --needed git openssh namcap
+        run: pacman -Syu --noconfirm --needed git namcap
 
       - uses: actions/download-artifact@v4
         with:
@@ -612,27 +647,21 @@ jobs:
 
       - name: Send Arch package to guest
         shell: bash
-        run: bash scripts/ci-boat.sh push "dist/WhiteNoise-$GITHUB_REF_NAME-archlinux-x86_64.tar.zst"
+        run: bash scripts/ci-boat.sh push "dist/WhiteNoise-$WN_RC_TAG-archlinux-x86_64.tar.zst"
 
-      # makepkg refuses to run as root.
       - name: Render the packages
-        run: |
-          scripts/aur-bin.sh "$GITHUB_REF_NAME" "dist/WhiteNoise-$GITHUB_REF_NAME-archlinux-x86_64.tar.zst" build/aur
-          install -D -m 0644 packaging/arch/whitenoise-linux-git/PKGBUILD build/aur/whitenoise-linux-git/PKGBUILD
-          useradd -m builder
-          chown -R builder build/aur
-          su builder -c "scripts/aur-source.sh '$GITHUB_REF_NAME' build/aur"
-          for pkg in whitenoise-linux-bin whitenoise-linux-git; do
-            su builder -c "cd build/aur/$pkg && makepkg --printsrcinfo > .SRCINFO"
-          done
+        run: bash scripts/aur-render.sh
 
-      # makepkg downloads the tarball from the release, which proves the
-      # published URL and checksum. --nodeps leaves the depends to pacman -U,
-      # which pulls them from the repositories, and the headless boot
-      # catches one the list is missing.
+      # The candidate is not public yet. makepkg checks the real PKGBUILD
+      # checksum against the artifact under its future download name.
       - name: Install and boot whitenoise-linux-bin
         run: |
-          su builder -c 'cd build/aur/whitenoise-linux-bin && makepkg --nodeps'
+          archive="WhiteNoise-$WN_RC_TAG-archlinux-x86_64.tar.zst"
+          srcdest=$(mktemp -d)
+          trap 'rm -rf "$srcdest"' EXIT
+          chown builder "$srcdest"
+          install -o builder -m 0644 "dist/$archive" "$srcdest/$archive"
+          su builder -c "cd build/aur/whitenoise-linux-bin && SRCDEST='$srcdest' makepkg --nodeps"
           pacman -U --noconfirm build/aur/whitenoise-linux-bin/whitenoise-linux-bin-*.pkg.tar.zst
           namcap build/aur/whitenoise-linux-bin/PKGBUILD build/aur/whitenoise-linux-bin/whitenoise-linux-bin-*.pkg.tar.zst
           data="$(mktemp -d)"
@@ -643,48 +672,39 @@ jobs:
       - name: Verify whitenoise-linux sources
         run: su builder -c 'cd build/aur/whitenoise-linux && makepkg --verifysource --nodeps'
 
-      - name: Check for the AUR key
-        id: key
-        shell: bash
-        env:
-          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-        run: |
-          if [ -n "$AUR_SSH_PRIVATE_KEY" ]; then echo "present=true" >> "$GITHUB_OUTPUT"; fi
-
-      # The host key is the ED25519 one https://aur.archlinux.org publishes
-      # (SHA256:RFzBCUItH9LZS0cKB5UE6ceAYhBD5C8GeOBip8Z11+4).
-      - name: Push to the AUR
-        if: steps.key.outputs.present == 'true'
-        env:
-          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-        run: |
-          ssh_dir="$RUNNER_TEMP/aur-ssh"
-          install -d -m 0700 "$ssh_dir"
-          printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > "$ssh_dir/key"
-          chmod 0600 "$ssh_dir/key"
-          echo 'aur.archlinux.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEuBKrPzbawxA/k2g6NcyV5jmqwJ2s+zpgZGZ7tpLIcN' > "$ssh_dir/known_hosts"
-          export GIT_SSH_COMMAND="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes"
-          for pkg in whitenoise-linux whitenoise-linux-bin whitenoise-linux-git; do
-            repo="build/aur-git/$pkg"
-            git clone "ssh://aur@aur.archlinux.org/$pkg.git" "$repo"
-            cp "build/aur/$pkg/PKGBUILD" "build/aur/$pkg/.SRCINFO" "$repo/"
-            git -C "$repo" add PKGBUILD .SRCINFO
-            # whitenoise-linux-git changes only when its recipe does.
-            if git -C "$repo" diff --cached --quiet; then continue; fi
-            git -C "$repo" -c user.name='github-actions[bot]' \
-              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-              commit -q -m "Update to $GITHUB_REF_NAME"
-            git -C "$repo" push origin HEAD:master
-          done
-          rm -rf "$ssh_dir"
-
-      - name: Remove AUR credentials
-        if: always() && steps.start.outcome == 'success'
-        run: |
-          rm -rf "$RUNNER_TEMP/aur-ssh" build/aur-git
-          rm -f build/observability-tokens.toml
-
       - name: Stop build guest
         if: always()
         shell: bash
         run: bash scripts/ci-boat.sh stop
+
+  publish:
+    name: Publish immutable prerelease
+    needs: [stamp, appimage, flatpak, cross, archlinux, aur-check]
+    if: needs.stamp.outputs.commit_sha != ''
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: wn-release-metadata
+      queue: max
+    permissions:
+      actions: read
+      attestations: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: policy
+          persist-credentials: false
+      - name: Publish this run's assets and provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WN_RC_TAG: ${{ needs.stamp.outputs.tag }}
+          WN_RC_COMMIT: ${{ needs.stamp.outputs.commit_sha }}
+          WN_CANARY_SHA: ${{ needs.stamp.outputs.canary_sha }}
+          WN_CANARY_RUN: ${{ needs.stamp.outputs.canary_run_id }}
+        run: |
+          source="$RUNNER_TEMP/rc-source"
+          git init -q "$source"
+          cd "$source"
+          git remote add origin "https://github.com/$GITHUB_REPOSITORY.git"
+          bash "$GITHUB_WORKSPACE/policy/scripts/rc-publish.sh" "$GITHUB_WORKSPACE/dist"

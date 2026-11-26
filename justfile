@@ -32,10 +32,10 @@ test-reload:
 translations:
     @scripts/update-translations.sh
 
-# Release origin/master: bump APP_VERSION, tag v<date>-build.<n>, push both remotes.
-release *args:
+# Queue promotion of the specified immutable release candidate.
+release tag:
     @scripts/release.sh "$@"
 
-# Cut a release, wait for GitHub to publish it, then sign it for Zapstore.
-publish *args:
+# Sign and announce the specified GitHub Latest release.
+publish tag:
     @scripts/publish.sh "$@"

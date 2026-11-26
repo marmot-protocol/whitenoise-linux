@@ -1,39 +1,36 @@
 #!/usr/bin/env bash
-# Publish a release everywhere, in order:
-#
-#   1. GitHub. scripts/release.sh --tag tags the merged release PR (opened
-#      by `just release`) and pushes the tag. The tag starts
-#      .github/workflows/release.yml, which builds every package, creates
-#      the GitHub release and then updates the AUR.
-#   2. Zapstore and Orchard. Once the GitHub release exists, its AppImage,
-#      Flatpak bundle and direct-download OCI components are downloaded,
-#      checked against SHA256SUMS.txt, and announced together by
-#      scripts/zapstore.ts, signed by you. No registry or second release.
-#
-#   scripts/publish.sh          tag the merged release PR, then both steps
-#   scripts/publish.sh <tag>    an existing tag: wait for its GitHub
-#                               release if needed, then Zapstore and Orchard
-#
-# The signer is asked for first, so the build runs unattended: a bunker URL
-# (Amber, nsec.app, `nak bunker`) or an nsec for zapstore.yaml's pubkey,
-# read without echo. ZAPSTORE_SIGNER in the environment skips the prompt.
+# Announce the current stable GitHub release to Zapstore and Orchard.
+# Set ZAPSTORE_SIGNER to skip the bunker URL or nsec prompt.
 # With a bunker, approve seven events: app, two packages, three OCI components,
-# and one combined release. Older releases without Orchard outputs fail closed.
+# and one combined release.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 REPO=marmot-protocol/whitenoise-linux
-POLL_SECONDS=30
 
-if [ "$#" -gt 1 ]; then
-  echo "Usage: scripts/publish.sh [tag]" >&2
+if [ "$#" -ne 1 ]; then
+  echo "Usage: scripts/publish.sh <tag>" >&2
   exit 2
 fi
-for tool in bun nak gh git; do
+TAG="$1"
+bash scripts/version.sh --tag "$TAG" >/dev/null
+
+for tool in bun nak gh git jq; do
   if ! command -v "$tool" >/dev/null; then
     echo "scripts/publish.sh needs $tool on PATH." >&2
     exit 1
   fi
 done
+
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+NOTES="$WORK/release-notes.md"
+gh api "repos/$REPO/releases/latest" | jq -ej --arg tag "$TAG" '
+  if .tag_name == $tag and .immutable == true and .draft == false and .prerelease == false
+  then (.body // "")
+  else error("\($tag) is not the current immutable stable GitHub release")
+  end
+' > "$NOTES"
+git fetch -q "https://github.com/$REPO" "refs/tags/$TAG:refs/tags/$TAG"
 
 PUBKEY="$(sed -n 's/^pubkey: //p' zapstore.yaml)"
 if [ -z "${ZAPSTORE_SIGNER:-}" ]; then
@@ -41,8 +38,7 @@ if [ -z "${ZAPSTORE_SIGNER:-}" ]; then
   echo
 fi
 export ZAPSTORE_SIGNER
-# A wrong nsec is caught now rather than after the build. A bunker reports
-# its key only when it signs; scripts/zapstore.ts checks it then.
+# A bunker reports its key only when it signs; scripts/zapstore.ts checks it then.
 case "$ZAPSTORE_SIGNER" in
   nsec1*)
     if [ "$(printf '%s' "$ZAPSTORE_SIGNER" | nak key public)" != "$(nak decode "$PUBKEY")" ]; then
@@ -52,42 +48,6 @@ case "$ZAPSTORE_SIGNER" in
     ;;
 esac
 
-WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
-
-# 1. GitHub. release.sh deliberately leaves this checkout's HEAD unchanged.
-if [ "$#" -eq 0 ]; then
-  scripts/release.sh --tag --tag-output "$WORK/release-tag"
-  if [ ! -s "$WORK/release-tag" ]; then
-    echo 'No release was tagged; publication stopped.' >&2
-    exit 1
-  fi
-  TAG="$(<"$WORK/release-tag")"
-else
-  TAG="$1"
-fi
-if [[ ! "$TAG" =~ ^v[0-9]{4}\.([1-9]|1[0-2])\.([1-9]|[12][0-9]|3[01])-build\.([1-9][0-9]*)$ ]]; then
-  echo "Expected a release tag like v2026.10.21-build.1, got '$TAG'." >&2
-  exit 2
-fi
-if [ "$#" -gt 0 ]; then
-  git fetch -q "https://github.com/$REPO" "refs/tags/$TAG:refs/tags/$TAG"
-fi
-
-echo "Waiting for the GitHub release $TAG: https://github.com/$REPO/actions"
-until gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; do
-  # The run can take a moment to appear after the push. A finished run
-  # with no release means a build job failed.
-  run="$(gh run list -R "$REPO" --workflow release.yml --branch "$TAG" -L 1 \
-    --json status,url -q '.[0] | select(.status == "completed") | .url')"
-  if [ -n "$run" ]; then
-    echo "The release workflow finished without publishing $TAG: $run" >&2
-    exit 1
-  fi
-  sleep "$POLL_SECONDS"
-done
-
-# 2. One combined Zapstore / Orchard release
 APPIMAGE="WhiteNoise-$TAG-x86_64.AppImage"
 FLATPAK="WhiteNoise-$TAG-x86_64.flatpak"
 ORCHARD=dev.ipf.whitenoise-linux-x86_64
@@ -139,5 +99,5 @@ for file in "$APPIMAGE" "$FLATPAK" "$METADATA" "$MANIFEST" "${COMPONENTS[@]}"; d
   fi
   printf '%s\n' "$checksum" | (cd "$WORK" && sha256sum -c --strict -)
 done
-bun scripts/zapstore.ts "$TAG" "$WORK/$APPIMAGE" "$WORK/$FLATPAK" "$WORK/$METADATA"
-echo "Published $TAG on GitHub, Zapstore and Orchard."
+bun scripts/zapstore.ts "$TAG" "$WORK/$APPIMAGE" "$WORK/$FLATPAK" "$WORK/$METADATA" "$NOTES"
+echo "Announced $TAG on Zapstore and Orchard."
