@@ -328,9 +328,9 @@ any vault or identity exists. Unlock keeps its own copy without the map.
 
 `.github/workflows/release.yml` builds immutable prereleases from a green
 Canary. It signs a version commit outside `master` and tags that exact
-commit on GitHub. `promote.yml` moves Latest without rebuilding. The ngit
-desktop previews stay in place until the first qualified RC. The ngit
-Android debug APK runs on each push independently. The Flatpak manifest is
+commit on GitHub. Desktop previews come from those prereleases.
+`promote.yml` moves Latest without rebuilding. ngit builds the Android debug
+APK on each `master` push. The Flatpak manifest is
 `packaging/flatpak/dev.ipf.whitenoise.yml`; it builds
 the app inside the GNOME 50 SDK (freedesktop 25.08 base, which is what
 ships webkit2gtk-4.1 for wn-webview; libmpv and poppler as modules,

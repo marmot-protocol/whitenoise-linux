@@ -161,14 +161,12 @@ The GitHub `Release` workflow keeps one Flatpak cache warm-up running and one
 waiting for the latest `master` push. Tagged builds, PR checks, and manual runs
 are independent.
 
-The ngit staging log reports `Cross phase` durations. On ARM64, subtract
-`package` from `build_and_package` for the build time. `bundle` and `compress`
-are part of `package`, and `app_boot` is part of `boot_smoke`. The workflow
-reports artifact upload separately.
-
 ## Observability tokens come from CI secrets
 
-Publishing workflows read `WN_METRICS_WRITE_TOKEN` and `WN_AUDIT_WRITE_TOKEN` from CI secrets. Configure both on GitHub and on trusted ngit/act publishing runners, not PR runners. Local builds without them contain no write tokens.
+GitHub's desktop release jobs read `WN_METRICS_WRITE_TOKEN` and
+`WN_AUDIT_WRITE_TOKEN` from Actions secrets. PR jobs and the ngit Android
+debug build do not use them. Local builds without them contain no write
+tokens.
 
 > [!CAUTION]
 > Embedded tokens stay out of source and build logs, but they remain extractable from published binaries. Keep them write-only and narrowly scoped.
