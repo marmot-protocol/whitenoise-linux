@@ -10,9 +10,6 @@ watches the repo over Nostr and runs `act/workflows/` using the
 | --- | --- | --- |
 | `act/workflows/pr-native.yml` | ngit-ci | Classifies the exact proposal head against the public mirror's `master`. Runs the native Linux build and tests unless the proposal qualifies for the static lane. |
 | `act/workflows/pr-precommit.yml` | ngit-ci and GitHub | Canonical quality gate. Runs `.githooks/pre-commit` against the whole tree using an isolated Git index; normalization fails the gate. The hook maintains the byte-identical `.github/workflows/pr-precommit.yml` mirror. Edit the canonical file only. |
-| `act/workflows/release-appimage.yml` | ngit-ci | Native build and tests, AppImage packaging, then a headless launch of the packaged app. Publishes the AppImage to Blossom. |
-| `act/workflows/release-cross.yml` | ngit-ci | Linux ARM64 cross-build and packaged-app smoke run. |
-| `act/workflows/release-windows.yml` | ngit-ci | Windows AMD64 cross-build and packaged-app smoke run under Wine. |
 | `act/workflows/release-android.yml` | ngit-ci | Builds and verifies a debug-signed ARM64 APK on every `master` push. Publishes it to Blossom. |
 | `.github/workflows/ci.yml` and `cross.yml` | GitHub Actions | Tests hourly Canary batches on Boat. Full PR builds, including cross builds, use GitHub-hosted runners without release credentials. |
 | `.github/workflows/release.yml` and `promote.yml` | GitHub Actions | Builds immutable release candidates from a green Canary. Promotion moves Latest without rebuilding. |
@@ -38,13 +35,8 @@ GitHub runner services and their routing are independent of these services.
 
 | Slot | Work | Selectors | Coordinator |
 | --- | --- | --- | --- |
-| 1 | Staging packages | `wn-ngit-staging`, `wn-ngit-windows` | `npub1g60evye0t0adawuttrgl7xvymm7latgz86f6406kcfpx52mj8szqmjykaj` |
+| 1 | Android debug APK | `wn-ngit-staging` | `npub1g60evye0t0adawuttrgl7xvymm7latgz86f6406kcfpx52mj8szqmjykaj` |
 | 2 | PR checks | `ubuntu-24.04` | `npub16j3janvkrze82x22cl0f7p2nqeqlsck8dacfry4w58yh29gdlzxs4xdnv9` |
-
-Install the slot 1 mapping before merging a workflow that uses
-`wn-ngit-staging`. Restart `ngit-ci@1` while idle to load the mapping.
-The adapter and slot 2 do not need to restart for this change. Staging
-jobs already queued on slot 2 still run there.
 
 `runner/` contains the SDK recipe, guest boot configuration, service templates,
 slot mappings, and service-account policy. The deployed coordinator, adapter,
@@ -120,18 +112,11 @@ the guest and releases its lease.
 `scripts/ngit-stage.sh` restores the exact workflow revision
 from the coordinator's shallow checkout to the fixed `worktree/` path without
 discarding ignored build outputs. Cargo registries, toolchains, MDK targets,
-native archives, Odin objects, and AppImage
-tools persist there. `scripts/ngit-cross.sh` also preserves the cross SDK as a
-content-keyed OCI archive and retains its Rust and vcpkg state. Outputs still
-follow the existing build scripts' input keys; a cache hit does not skip tests
-or packaged-app smoke runs.
+native archives, and Odin objects persist there. A cache hit does not skip
+the native tests.
 
 The native MDK target key includes compiler and codegen settings. Changing
 `CARGO_BUILD_JOBS` keeps the same target directory.
-
-Boat's ARM64 staging workers discard the package stage and archive after each
-run. They skip package cache keys and manifests, but still check the dependency
-closure, unpack the new archive, and boot it under QEMU.
 
 Native test executables are keyed by application, test, compiler, library, and
 flag inputs. The app compiles its test executable once per input change. Each

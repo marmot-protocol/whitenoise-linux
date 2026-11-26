@@ -101,7 +101,7 @@ Maintainers regenerate the bundle with `bash scripts/emoji-bundle.sh`, using lib
 
 | Builds | Where |
 | --- | --- |
-| ngit checks and staging packages | Boat, dispatched by the exe.dev coordinator |
+| ngit checks and Android debug APK | Boat, dispatched by the exe.dev coordinator |
 | GitHub Linux CI and release builds | GitHub-hosted Ubuntu dispatches disposable Boat workers (32 GiB for Linux ARM64) |
 | OpenBSD | KVM guest inside a Boat worker |
 | GitHub pull requests | GitHub-hosted runners, no Boat credentials |
@@ -113,7 +113,7 @@ tags. Its `BOAT_CI_KEY` can start, access, and delete its own workers in
 the `wn-github-build` Boat environment. Rotate the key before it expires.
 The key stays on GitHub; the sandbox starts without injected credentials.
 Each job sends only the settings it needs and copies its artifacts back
-for upload. Only tag pushes publish releases.
+for upload. The release candidate workflow publishes desktop packages.
 
 ## Cross releases for other platforms
 
@@ -214,7 +214,7 @@ The workflow signs a child commit that changes only `APP_VERSION` and the metain
 1. Land the base-owned PR policy before the workflow cutover. Check the cutover proposal on ngit with `ngit ci status <sha> --require-ci-trust maintainer-directed --json`. It takes the build lane. On an ordinary proposal, check that the trusted signature and trailers skip the native build without skipping pre-commit.
 2. Land hourly Canary before switching both release workflows together. Once the mirror contains the new packaging code, dispatch `ci.yml` on `master`. Check that `Advance Canary` points at that commit. Dispatch again and confirm the same green SHA skips the build.
 3. Keep immutable releases enabled on GitHub. Before the first production dispatch, confirm `enabled: true` with `gh api repos/marmot-protocol/whitenoise-linux/immutable-releases` using a maintainer credential with Administration read access. Add the dedicated OpenPGP release-source public key to `packaging/ci/rc-source-signers.asc` in a reviewed change. Put the matching armored, unattended private key in `WN_RC_GIT_SIGNING_KEY` in the `master`-only `wn-rc-stamp` environment. Do not reuse the AppImage key. If the default token cannot push the tag because of workflow-file permissions, add `WN_RC_TAG_TOKEN` with repository-scoped Contents and Workflows write access.
-4. Dispatch `release.yml` on `master`. CI checks that GitHub reports the published prerelease as immutable. Verify the signed tagged source and checksums, and check that Latest did not move. Only then retire the three desktop Blossom preview workflows in a reviewed ngit change. Keep the Android debug APK lane.
+4. Dispatch `release.yml` on `master`. CI checks that GitHub reports the published prerelease as immutable. Verify the signed tagged source and checksums, and check that Latest did not move.
 5. Before the first live promotion, use an immutable prerelease in a scratch repository to check that the metadata change preserves the release ID, tag, asset IDs, and digests. After authorized promotion, verify the AppImage, Sparkle, and Windows updater feeds on Latest.
 
 `bash tests/pr-gate-test.sh` and `bash tests/release-test.sh` exercise signature policy and stamp reservation with temporary keys and local Git repositories.
@@ -296,10 +296,9 @@ The script uses the native or Flatpak KeePassXC CLI and prompts for the database
 
 ## Staging releases on ngit
 
-On each `master` push, ngit builds staging packages for Linux, Windows, and Android. Find each package under the corresponding job's Blossom artifacts. The cross-build worker needs Podman with working user namespaces and permission to run nested containers.
+On each `master` push, ngit publishes the Android debug APK in the job's Blossom artifacts. For desktop previews, use the [GitHub release candidate downloads](#test-and-promote-a-release-candidate).
 
-- **It has no macOS job yet.** Those need a Mac act runner, and until one exists macOS bundles come from the GitHub workflow.
-- **Blossom publication needs coordinator settings.** It requires the coordinator's `--blossom-servers` setting and an artifact-size limit large enough for the archives (`--blossom-max-artifact-bytes`, commonly above the default 64 MiB).
+Blossom publication requires the coordinator's `--blossom-servers` setting and a `--blossom-max-artifact-bytes` limit large enough for the APK.
 
 ### Build the Android APK locally
 
