@@ -2299,15 +2299,23 @@ nc_row_hex :: proc(ui: ^Ui_State, rows: []Contact_Order, people: []int, at: int)
 
 @(private = "file")
 nc_control_visible :: proc(id: nendo.Id) -> bool {
-	if !nendo.element(id).found {return false}
+	control := nendo.element(id)
+	if !control.found {return false}
+	box := control.rect
+	visible := true
 	for container in ([2]nendo.Id{nendo.id("NCForm"), nendo.id("NewChatPane")}) {
 		scroll := nendo.scroll(container)
 		if !scroll.found {continue}
-		top := scroll.position.y
-		scroll_into_view(container, id)
-		if scroll.position.y != top {return false}
+		view := nendo.element(container).rect
+		shift := max(view.y - box.y, 0) - max(box.y + box.height - view.y - view.height, 0)
+		if shift == 0 {continue}
+		previous := scroll.position.y
+		limit := min(view.height - scroll.content.height, 0)
+		scroll.position.y = clamp(previous + shift, limit, 0)
+		box.y += scroll.position.y - previous
+		visible = false
 	}
-	return true
+	return visible
 }
 
 // Contact selection and the group form share asynchronous creation.
@@ -2446,14 +2454,15 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	enter := rl.IsKeyPressed(.ENTER)
 	for key, i in NC_RETENTION_KEYS {
-		if clicked(key) ||
-		   (ui.focus == .NC_Retention &&
-				   ui.nc_retention_focus == i &&
-				   (enter || rl.IsKeyPressed(.SPACE))) {
-			ui.nc_retention = RETENTION_SECS[i]
-			ui.focus, ui.nc_retention_focus = .NC_Retention, i
-			return
-		}
+		keyboard :=
+			ui.focus == .NC_Retention &&
+			ui.nc_retention_focus == i &&
+			(enter || rl.IsKeyPressed(.SPACE))
+		if !keyboard && !clicked(key) {continue}
+		if keyboard && !nc_control_visible(nendo.id(key)) {return}
+		ui.nc_retention = RETENTION_SECS[i]
+		ui.focus, ui.nc_retention_focus = .NC_Retention, i
+		return
 	}
 	remove := -1
 	if ui.focus == .NC_Remove && (enter || rl.IsKeyPressed(.SPACE)) {

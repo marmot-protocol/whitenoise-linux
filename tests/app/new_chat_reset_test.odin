@@ -352,4 +352,34 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	layout(&ui)
 	back_out(t, &ui, client)
 	testing.expect_value(t, nc_group_targets(&ui), "")
+
+	rl.SetWindowSize(360, 320)
+	nendo.set_dimensions({360, 320})
+	open_new_chat(&ui, nil)
+	ui.nc_page, ui.focus = .Group, .NC_Name
+	layout(&ui)
+	for name in ([2]string{"NCForm", "NewChatPane"}) {
+		if scroll := nendo.scroll(nendo.id(name)); scroll.found {scroll.position.y = 0}
+	}
+	layout(&ui)
+	rl.PushKey(.LEFT_SHIFT, true)
+	rl.PushKey(.TAB, true)
+	handle_chat(&ui, client)
+	rl.PushKey(.TAB, false)
+	rl.PushKey(.LEFT_SHIFT, false)
+	rl.WindowShouldClose()
+	layout(&ui)
+	last_chip := nendo.id("NCRetention4")
+	chip := nendo.element(last_chip)
+	if !testing.expect(t, chip.found) {return}
+	box = chip.rect
+	nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
+	testing.expect(t, nendo.pointer_over(last_chip), "Shift+Tab reveals 4w through both panes")
+	nendo.set_pointer({0, 0}, .Up)
+	rl.PushKey(.SPACE, true)
+	handle_chat(&ui, client)
+	rl.PushKey(.SPACE, false)
+	rl.WindowShouldClose()
+	testing.expect_value(t, ui.nc_retention, 2419200)
+	close_new_chat(&ui)
 }
