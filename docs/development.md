@@ -125,9 +125,22 @@ Keep `build/cargo/native` and `build/cross/<target>/cargo` between builds. Cargo
 
 ## Where the build checks run
 
-The [GitHub build matrix](building.md#where-ci-builds-run) runs the native
-C and Odin suite, the Linux and Windows package boots, and the OpenBSD
-filesystem, helper, and startup tests.
+GitHub and ngit check the proposal head with the base tree's signing
+policy. To use the static lane, sign every commit the proposal introduces
+with an OpenPGP key trusted by that policy. Each introduced commit needs
+exactly one nonempty `Local-Checks:` trailer listing the checks you ran and
+one nonempty `Local-Review:` trailer naming the review you received. CI
+checks the trailers, not whether the checks or review happened. Missing,
+empty, or duplicate trailers fail the gate on an otherwise eligible proposal.
+Pre-commit and maintainer review still apply.
+
+Unsigned commits, untrusted signatures, missing policy, and incomplete
+history take the full build path. Changes to `.github/workflows/`, `.ngit/`,
+`.githooks/`, `scripts/pr-gate.sh`, or `packaging/ci/` also take that path,
+even if a later commit reverts them. The
+[GitHub build matrix](building.md#where-ci-builds-run)
+runs the native C and Odin suite, the Linux and Windows package boots,
+and the OpenBSD filesystem, helper, and startup tests.
 
 <details>
 <summary><b>Test signing keys and build cache keys</b></summary>
