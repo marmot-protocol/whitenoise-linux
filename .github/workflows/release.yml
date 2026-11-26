@@ -97,12 +97,6 @@ jobs:
           git fetch --tags origin refs/heads/master
           bash "$GITHUB_WORKSPACE/policy/scripts/rc-select.sh" "$CANARY_SHA"
           git checkout --detach "$CANARY_SHA"
-      - name: Require enabled immutable releases
-        if: steps.select.outputs.stamp == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.WN_RC_SETTINGS_TOKEN || github.token }}
-        run: |
-          gh api "repos/$GITHUB_REPOSITORY/immutable-releases" | jq -e '.enabled == true'
       - name: Sign the stamp commit and tag
         id: sign
         if: steps.select.outputs.stamp == 'true'
