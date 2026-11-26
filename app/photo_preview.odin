@@ -1,5 +1,5 @@
 // Native photo picks keep their original target until Use or Cancel.
-// All draft/texture ownership and transitions run on the frame thread.
+// Workers own image jobs. The frame thread owns textures and editor state.
 package main
 
 import marmot "../marmot"
@@ -12,26 +12,32 @@ Photo_Kind :: enum {
 	None,
 	Profile,
 	Group,
+	Contact,
 }
 @(private)
 Photo_Preview :: struct {
-	kind:            Photo_Kind,
-	account, group:  string,
-	pending:         bool, // stays armed even after invalidation, until the callback drains
-	disclosure_seen: bool,
-	draft:           Pic_Draft,
-	texture:         rl.Texture2D,
-	crop:            Photo_Crop,
-	crop_job:        ^Photo_Crop_Job,
-	crop_drag:       bool,
-	crop_pointer:    rl.Vector2,
-	crop_origin:     Photo_Crop,
-	crop_corner:     int, // 0 moves; 1..4 resize top-left, top-right, bottom-left, bottom-right
+	kind:                 Photo_Kind,
+	account, group, peer: string,
+	pending:              bool, // stays armed even after invalidation, until the callback drains
+	disclosure_seen:      bool,
+	draft:                Pic_Draft,
+	texture:              rl.Texture2D,
+	crop:                 Photo_Crop,
+	crop_job:             ^Photo_Crop_Job,
+	crop_drag:            bool,
+	crop_pointer:         rl.Vector2,
+	crop_origin:          Photo_Crop,
+	crop_corner:          int, // 0 moves; 1..4 resize top-left, top-right, bottom-left, bottom-right
 }
 
 @(private)
 photo_input_capture :: proc(ui: ^Ui_State) -> bool {
 	return ui.photo.pending || ui.photo.kind != .None
+}
+
+@(private)
+photo_has_modal :: proc(ui: ^Ui_State) -> bool {
+	return ui.photo.crop_job != nil || ui.photo.draft.image.data != nil
 }
 
 // Invalidation retains a tombstone for the untagged native callback. A late
@@ -41,7 +47,7 @@ photo_cancel :: proc(ui: ^Ui_State) {
 	pending := ui.photo.pending
 	if ui.photo.texture.tex != nil {rl.UnloadTexture(ui.photo.texture)}
 	pic_draft_free(&ui.photo.draft)
-	delete(ui.photo.account); delete(ui.photo.group)
+	delete(ui.photo.account); delete(ui.photo.group); delete(ui.photo.peer)
 	ui.photo = {
 		pending = pending,
 	}
@@ -57,6 +63,7 @@ photo_target_valid :: proc(ui: ^Ui_State) -> bool {
 	found := false
 	for account in ui.accounts {if account.id_hex == p.account {found = true; break}}
 	if !found {return false}
+	if p.kind == .Contact {return p.peer != "" && p.peer == contact_edit_target(ui)}
 	if p.kind == .Group {
 		if ui.selected < 0 ||
 		   ui.selected >= len(ui.chats) ||
@@ -76,6 +83,7 @@ photo_can_use :: proc(ui: ^Ui_State) -> bool {
 	if !photo_target_valid(ui) ||
 	   ui.photo.pending ||
 	   ui.photo.draft.image.data == nil {return false}
+	if ui.photo.kind == .Contact {return ui.photo.crop.active}
 	if ui.photo.kind == .Group && members_job != nil {return false}
 	for job in account_jobs {if job.account == ui.photo.account || job.kind == .Switch {return false}}
 	if signer := nip46_find(ui.photo.account);
@@ -103,6 +111,7 @@ photo_pick_begin :: proc(ui: ^Ui_State, kind: Photo_Kind) -> bool {
 	if kind == .Group && ui.selected >= 0 && ui.selected < len(ui.chats) {
 		ui.photo.group = strings.clone(ui.chats[ui.selected].group_id)
 	}
+	if kind == .Contact {ui.photo.peer = strings.clone(contact_edit_target(ui))}
 	if !photo_target_valid(ui) {photo_cancel(ui); return false}
 	ui.photo.pending = true
 	return true
@@ -115,8 +124,18 @@ photo_pick_complete :: proc(ui: ^Ui_State, paths: []string) {
 	if !ui.photo.pending {return}
 	ui.photo.pending = false
 	if len(paths) == 0 || !photo_target_valid(ui) {photo_cancel(ui); return}
+	if ui.photo.kind == .Contact {
+		photo_contact_decode_begin(&ui.photo, paths[0])
+		return
+	}
 	draft, ok := load_pic_draft(ui, paths[0])
 	if !ok {photo_cancel(ui); return}
+	photo_show_draft(ui, draft)
+}
+
+@(private)
+photo_show_draft :: proc(ui: ^Ui_State, draft: Pic_Draft) {
+	draft := draft
 	texture := rl.LoadTextureFromImage(draft.image)
 	if texture.tex == nil {
 		pic_draft_free(&draft)
@@ -129,6 +148,7 @@ photo_pick_complete :: proc(ui: ^Ui_State, paths: []string) {
 		return
 	}
 	ui.photo.draft, ui.photo.texture = draft, texture
+	if ui.photo.kind == .Contact {photo_crop_start(&ui.photo)}
 	if ui.photo.kind == .Profile {
 		kb_focus = ""
 	}
@@ -141,7 +161,7 @@ photo_check_target :: proc(ui: ^Ui_State) {
 
 @(private)
 photo_use :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if client == nil || !photo_can_use(ui) {
+	if (ui.photo.kind != .Contact && client == nil) || !photo_can_use(ui) {
 		photo_check_target(ui)
 		set_status(
 			ui,
@@ -155,15 +175,15 @@ photo_use :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		photo_crop_begin(p)
 		return
 	}
-	draft := p.draft
-	p.draft = {} // moved once; cleanup owns only the preview texture now
 	switch p.kind {
 	case .Profile:
-		upload_profile_pic(client, p.account, draft)
+		upload_profile_pic(client, p.account, p.draft)
 	case .Group:
-		upload_group_pic_for(client, p.account, p.group, draft)
-	case .None:
+		upload_group_pic_for(client, p.account, p.group, p.draft)
+	case .None, .Contact:
+		unreachable()
 	}
+	p.draft = {} // moved once; cleanup owns only the preview texture now
 	photo_cancel(ui)
 }
 
@@ -203,8 +223,9 @@ handle_photo_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		photo_cancel(ui)
 		return
 	}
+	contact_busy := ui.photo.kind == .Contact && ui.photo.crop_job != nil
 	photo_crop_drain(ui, client)
-	if ui.photo.kind == .None || ui.photo.crop_job != nil {return}
+	if contact_busy || ui.photo.kind == .None || ui.photo.crop_job != nil {return}
 	was_dragging := ui.photo.crop_drag
 	photo_crop_input(&ui.photo)
 	if was_dragging || ui.photo.crop_drag {return}
@@ -212,7 +233,8 @@ handle_photo_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		photo_crop_start(&ui.photo)
 		return
 	}
-	if clicked("PhotoOriginal") || (key == .Pressed && kb_focus == "PhotoOriginal") {
+	if ui.photo.kind != .Contact &&
+	   (clicked("PhotoOriginal") || (key == .Pressed && kb_focus == "PhotoOriginal")) {
 		ui.photo.crop = {}; ui.photo.crop_drag = false
 		return
 	}
@@ -233,11 +255,11 @@ handle_photo_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 @(private)
 photo_preview_modal :: proc(ui: ^Ui_State) {
 	image := photo_image(&ui.photo)
-	if image.data == nil {return}
 	profile := ui.photo.kind == .Profile
+	contact := ui.photo.kind == .Contact
 	width := min(f32(400), max(f32(160), f32(rl.GetScreenWidth()) / UI_ZOOM - 24))
 	edge := max(f32(24), min(width - 40, modal_h(600) - (tap_size() ? 320 : 230)))
-	scale := edge / f32(max(image.width, image.height))
+	scale := edge / f32(max(1, image.width, image.height))
 	if nendo.box(nendo.id("PhotoPreview"))(
 	{
 		width = nendo.fixed(width),
@@ -258,16 +280,17 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 	},
 	) {
 		nendo.text(
-			profile ? tr("Profile picture preview") : tr("Use this photo?"),
+			profile ? tr("Profile picture preview") : (contact ? tr("Crop contact photo") : tr("Use this photo?")),
 			{font = FONT_TITLE, size = 18, color = TEXT},
 		)
-		if nendo.box(nendo.id("PhotoImage"))(
-		{
-			width = nendo.fixed(f32(image.width) * scale),
-			height = nendo.fixed(f32(image.height) * scale),
-			image = &ui.photo.texture,
-		},
-		) {
+		if image.data != nil &&
+		   nendo.box(nendo.id("PhotoImage"))(
+		   {
+			   width = nendo.fixed(f32(image.width) * scale),
+			   height = nendo.fixed(f32(image.height) * scale),
+			   image = &ui.photo.texture,
+		   },
+		   ) {
 			if ui.photo.crop.active {
 				crop := ui.photo.crop
 				x, y, side := f32(crop.x) * scale, f32(crop.y) * scale, f32(crop.side) * scale
@@ -339,7 +362,7 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 		}
 		if ui.photo.crop_job != nil {
 			nendo.text(
-				tr("Preparing the cropped picture…"),
+				image.data == nil ? tr("Opening picture…") : tr("Preparing the cropped picture…"),
 				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
 			nendo.text(
@@ -348,7 +371,7 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 			)
 			busy_bar("PhotoCropBusy")
 		} else {
-			if nendo.box(nendo.id("PhotoCropActions"))({gap = 8}) {
+			if !contact && nendo.box(nendo.id("PhotoCropActions"))({gap = 8}) {
 				if ui.photo.crop.active {
 					micro_button(
 						"PhotoOriginal",
@@ -382,7 +405,7 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 				if nendo.box(nendo.id("PhotoGap"))({width = nendo.grow()}) {}
 			}
 			if ui.photo.crop_job == nil && !profile {
-				micro_button("PhotoUse", tr("Use"))
+				micro_button("PhotoUse", contact ? tr("Use photo") : tr("Use"))
 			}
 		}
 		if profile && ui.photo.crop_job == nil {

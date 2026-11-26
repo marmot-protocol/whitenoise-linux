@@ -498,6 +498,7 @@ vault_relock :: proc() {
 //
 //   vault.db               account secrets and the blob key
 //   offline-queue.json     unsent sends
+//   private-contacts/      private notes and photos
 //   stickers/              library.bin, personal images and cached pack art
 //   gifs/                  library.bin and saved GIF blobs
 //   media-cache/           attachments, profile-*.bin avatars, *.stt transcripts,
@@ -514,6 +515,7 @@ vault_delete :: proc() {
 
 	os.remove(vault_path())
 	os.remove(offline_path())
+	contact_store_purge_all()
 	os.remove_all(media_cache_dir())
 	os.remove_all(fmt.tprintf("%s/stickers", data_home))
 	os.remove_all(fmt.tprintf("%s/gifs", data_home))

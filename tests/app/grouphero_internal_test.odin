@@ -362,3 +362,93 @@ photo_preview_flow :: proc(t: ^testing.T) {
 	testing.expect(t, !photo_input_capture(&locked))
 	testing.expect(t, locked.photo.draft.image.data == nil && locked.photo.texture.tex == nil)
 }
+
+@(test)
+photo_contact_flow :: proc(t: ^testing.T) {
+	if !test_isolated("photo_contact_flow") {return}
+	rl.InitWindow(320, 300, "Contact photo preview")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	init_fonts()
+	load_themes(); apply_theme(0, 0); set_locale("en")
+	memory: []u8
+	init_layout(&memory, 32768, {320, 300})
+	defer delete(memory)
+	fixture := photo_test_ui()
+	ui := &fixture
+	defer photo_test_free(ui)
+	defer photo_crop_stop()
+	g_ui, g_prefs = ui, &ui.prefs
+	defer {g_ui, g_prefs = nil, nil}
+	dir, err := os.make_directory_temp("", "wn-contact-photo-*", context.temp_allocator)
+	if !testing.expect(t, err == nil) {return}
+	defer os.remove_all(dir)
+	path := fmt.tprintf("%s/photo.webp", dir)
+	bytes := photo_test_bytes()
+	defer delete(bytes)
+	if !testing.expect_value(t, os.write_entire_file(path, bytes), nil) {return}
+
+	ui.page, ui.selected_contact = .Contacts, 0
+	append(&ui.contacts, Contact_Ui{id_hex = "peer-a"}, Contact_Ui{id_hex = "peer-b"})
+	defer {delete(ui.contacts); ui.contacts = {}; ui.page = .Chats}
+	ui.contact_edit = {
+		owner = strings.clone(ui.account_ref),
+		peer  = strings.clone("peer-a"),
+	}
+	defer contact_edit_close(ui)
+
+	if !testing.expect(t, photo_pick_begin(ui, .Contact)) {return}
+	testing.expect_value(t, ui.photo.account, "account-a")
+	testing.expect_value(t, ui.photo.peer, "peer-a")
+	ui.selected_contact = 1
+	photo_check_target(ui)
+	testing.expect(t, ui.photo.pending && ui.photo.kind == .None)
+	photo_pick_complete(ui, []string{path})
+	testing.expect(t, !photo_input_capture(ui))
+	ui.selected_contact = 0
+
+	if !testing.expect(t, photo_pick_begin(ui, .Contact)) {return}
+	photo_pick_complete(ui, []string{path})
+	if !testing.expect(t, ui.photo.crop_job != nil && photo_has_modal(ui)) {return}
+	photo_test_layout(ui)
+	testing.expect(t, nendo.element(nendo.id("PhotoCropBusy")).found)
+	testing.expect(t, !nendo.element(nendo.id("PhotoUse")).found)
+	thread.join(ui.photo.crop_job.worker)
+	testing.expect_value(t, ui.photo.crop_job.path, "")
+	ui.account_ref = "account-b"
+	photo_crop_drain(ui, nil)
+	testing.expect(t, !photo_input_capture(ui) && ui.contact_edit.change == .Keep)
+	ui.account_ref = "account-a"
+
+	groups, sends := len(gimg_queue), len(send_threads)
+	for cancel in ([2]bool{true, false}) {
+		if !testing.expect(t, photo_pick_begin(ui, .Contact)) {return}
+		photo_pick_complete(ui, []string{path})
+		if !testing.expect(t, ui.photo.crop_job != nil) {return}
+		thread.join(ui.photo.crop_job.worker)
+		photo_crop_drain(ui, nil)
+		if !testing.expect(t, ui.photo.crop.active && ui.photo.draft.data == nil) {return}
+		photo_test_layout(ui)
+		testing.expect(t, nendo.element(nendo.id("PhotoUse")).found)
+		testing.expect(t, !nendo.element(nendo.id("PhotoOriginal")).found)
+		photo_use(ui, nil)
+		if !testing.expect(t, ui.photo.crop_job != nil) {return}
+		thread.join(ui.photo.crop_job.worker)
+		if cancel {photo_cancel(ui)}
+		photo_crop_drain(ui, nil)
+		testing.expect(t, !photo_input_capture(ui))
+		if cancel {
+			testing.expect(t, ui.contact_edit.change == .Keep && len(ui.contact_edit.photo) == 0)
+		} else {
+			testing.expect(
+				t,
+				ui.contact_edit.change == .Replace && ui.contact_edit.preview.tex != nil,
+			)
+			png := ui.contact_edit.photo
+			testing.expect(t, strings.has_prefix(string(png), "\x89PNG\r\n\x1a\n"))
+		}
+	}
+	testing.expect_value(t, len(gimg_queue), groups)
+	testing.expect_value(t, len(send_threads), sends)
+	testing.expect(t, !ppic_busy)
+}

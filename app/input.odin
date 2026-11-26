@@ -303,7 +303,7 @@ field_sel :: proc(ui: ^Ui_State, buf: ^[dynamic]u8) -> (lo, hi, head: int) {
 
 // Physical Home/End bounds and visual Up/Down targets. Single-line
 // fields treat the whole buffer as one line.
-set_lines :: proc(ed: ^edit.State, multiline: bool) {
+set_lines :: proc(ed: ^edit.State, multiline: bool, mode: Wrap_Mode = .Compose) {
 	text := string(ed.builder.buf[:])
 	head := clamp(ed.selection[0], 0, len(text))
 
@@ -318,17 +318,19 @@ set_lines :: proc(ed: ^edit.State, multiline: bool) {
 
 	// Match the rendered rows and horizontal position, including emoji.
 	// A shared wrap boundary belongs to the upper row, as in chat_pane.
-	lines := compose_lines(text)
+	lines := compose_lines(text, mode = mode)
 	for line, i in lines {
 		if head > line[1] {continue}
-		x := compose_width(text[line[0]:head])
+		prefix := text[line[0]:head]
+		x :=
+			mode == .Plain ? rl.MeasureTextLine(FONT_BODY, BODY_FS, prefix, 0).x : compose_width(prefix)
 		if i > 0 {
 			prev := lines[i - 1]
-			ed.up_index = prev[0] + hit_compose_line(text[prev[0]:prev[1]], x)
+			ed.up_index = prev[0] + hit_compose_line(text[prev[0]:prev[1]], x, mode)
 		}
 		if i + 1 < len(lines) {
 			next := lines[i + 1]
-			ed.down_index = next[0] + hit_compose_line(text[next[0]:next[1]], x)
+			ed.down_index = next[0] + hit_compose_line(text[next[0]:next[1]], x, mode)
 		}
 		break
 	}
@@ -400,10 +402,11 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) -> (type
 		buf == &gate_pw ||
 		buf == &gate_pw2 ||
 		vault_pw_field(ui, buf)
-	set_lines(ed, multiline)
+	private_note := buf == &ui.contact_edit.note
+	set_lines(ed, multiline, private_note ? .Plain : .Compose)
 	// Composer chips are one caret step (mentions.odin).
-	prev_step := multiline ? compose_prev : prev_grapheme
-	next_step := multiline ? compose_next : next_grapheme
+	prev_step := multiline && !private_note ? compose_prev : prev_grapheme
+	next_step := multiline && !private_note ? compose_next : next_grapheme
 
 	if key_hit(.BACKSPACE) {
 		switch {
@@ -517,7 +520,7 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) -> (type
 	}
 
 	// Select-to-copy, the Linux primary selection.
-	if !masked && ed.selection != prev_sel && edit.has_selection(ed) {
+	if !masked && !private_note && ed.selection != prev_sel && edit.has_selection(ed) {
 		rl.SetPrimaryText(
 			strings.clone_to_cstring(edit.current_selected_text(ed), context.temp_allocator),
 		)
@@ -700,7 +703,8 @@ field_mouse :: proc(
 // Byte offset nearest to x in one composer line, mirroring the widths
 // compose_line draws: mention chips whole, emoji graphemes as 18px
 // tiles, text per glyph. A chip only yields its two edges.
-hit_compose_line :: proc(line: string, x: f32) -> int {
+hit_compose_line :: proc(line: string, x: f32, mode: Wrap_Mode = .Compose) -> int {
+	if mode == .Plain {return hit_plain(line, x, BODY_FS)}
 	pen: f32 = 0
 	skip := 0
 	it := utf8.decode_grapheme_iterator_make(line)
@@ -773,12 +777,13 @@ compose_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8 = nil, focus: Focus = .Co
 
 	// The first line row whose bottom edge is under the pointer takes
 	// the hit; past the last row the caret lands in the last line.
+	mode := focus == .ContactNote ? Wrap_Mode.Plain : .Compose
 	hit := len(text)
-	for r, i in compose_lines(text) {
+	for r, i in compose_lines(text, mode = mode) {
 		row := nendo.element(nendo.id("ComposeLine", u32(i)))
 		if !row.found || my < row.rect.y + row.rect.height || r[1] == len(text) {
 			origin := row.found ? row.rect.x : box.rect.x
-			hit = r[0] + hit_compose_line(text[r[0]:r[1]], mx - origin)
+			hit = r[0] + hit_compose_line(text[r[0]:r[1]], mx - origin, mode)
 			break
 		}
 	}

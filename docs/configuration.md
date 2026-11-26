@@ -17,7 +17,7 @@ This page covers where White Noise keeps its files, which settings survive a res
 
 | Location | Default | Holds |
 | --- | --- | --- |
-| Data directory | `~/.local/share/whitenoise`, or the app's first argument | The vault, the media cache, the offline queue, and any custom theme packs you drop in its `themes/` subdirectory |
+| Data directory | `~/.local/share/whitenoise`, or the app's first argument | The vault, the media cache, the offline queue, encrypted private contact details, and any custom theme packs you drop in `themes/` |
 | UI preferences | `$XDG_CONFIG_HOME/whitenoise/settings.json` | Theme, accent, locale, notification toggles, nicknames |
 
 ## What comes back after a restart
