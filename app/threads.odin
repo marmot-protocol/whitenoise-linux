@@ -92,6 +92,7 @@ thread_back :: proc(ui: ^Ui_State) {
 	gs_flash_jump(ui, ui.jump_id)
 	delete(ui.thread_stack[len(ui.thread_stack) - 1])
 	pop(&ui.thread_stack)
+	ui.replying = ""
 	thread_check_placement(ui)
 	ui.scroll_pending = false
 	thread_kick()
@@ -106,6 +107,7 @@ thread_clear :: proc(ui: ^Ui_State) {
 		delete(id)
 	}
 	clear(&ui.thread_stack)
+	ui.replying = ""
 	thread_check_placement(ui)
 }
 

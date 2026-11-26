@@ -115,7 +115,9 @@ thread_placement_ignores_stale_routes :: proc(t: ^testing.T) {
 	testing.expect_value(t, thread_placement_state(&ui), Thread_Placement.Checking)
 
 	nested_revision := job.thread_request.revision
+	ui.replying = "nested reply"
 	thread_back(&ui)
+	testing.expect_value(t, ui.replying, "")
 	job.thread_result = {nested_revision, .Ready}
 	timeline_drain(&ui, nil)
 	testing.expect_value(t, thread_cur(&ui), "parent")
@@ -139,6 +141,17 @@ thread_placement_ignores_stale_routes :: proc(t: ^testing.T) {
 
 @(test)
 thread_poll_canonical_tags :: proc(t: ^testing.T) {
+	values: [6][4]cstring
+	storage: [6]marmot.Message_Tag
+	quote: cstring = "quoted-id"
+	plain := poll_message_tags(nil, nil, nil, &values, &storage)
+	testing.expect_value(t, len(plain), 0)
+	quoted := poll_message_tags(nil, quote, nil, &values, &storage)
+	if !testing.expect_value(t, len(quoted), 1) {return}
+	testing.expect_value(t, quoted[0].values_len, uint(2))
+	testing.expect_value(t, string(quoted[0].values[0]), "q")
+	testing.expect_value(t, string(quoted[0].values[1]), string(quote))
+
 	placement := marmot.Thread_Reply_Context {
 		root_message_id_hex = "root-id",
 		root_author         = "alice",
@@ -147,23 +160,43 @@ thread_poll_canonical_tags :: proc(t: ^testing.T) {
 	for parent, i in ([]cstring{"root-id", "parent-id"}) {
 		placement.parent_author = i == 0 ? placement.root_author : "bob"
 		placement.parent_kind = i == 0 ? placement.root_kind : KIND_THREAD
-		values: [5][4]cstring
-		tags := poll_thread_tags(parent, &placement, &values)
+		tags := poll_message_tags(parent, i == 0 ? nil : quote, &placement, &values, &storage)
 		root := []cstring{"E", "root-id", "", "alice"}
 		child := []cstring{"e", parent, "", placement.parent_author}
-		expected := [5][]cstring {
+		expected := [6][]cstring {
 			root,
 			{"K", "9"},
 			{"P", "alice"},
 			child,
 			{"k", i == 0 ? "9" : "1111"},
+			{"q", "quoted-id"},
 		}
+		if !testing.expect_value(t, len(tags), 5 + i) {continue}
 		for tag, j in tags {
 			if !testing.expect_value(t, tag.values_len, uint(len(expected[j]))) {continue}
 			for value, k in expected[j] {
 				testing.expect_value(t, string(tag.values[k]), string(value))
 			}
 		}
+	}
+}
+
+@(test)
+poll_keeps_reselected_reply :: proc(t: ^testing.T) {
+	if !test_isolated("poll_keeps_reselected_reply") {return}
+	for selection in ([]u64{1, 3}) {
+		ui := Ui_State {
+			poll_open      = true,
+			poll_ticket    = 1,
+			replying       = "original message",
+			reply_revision = selection,
+		}
+		// The same message is still selected, either from before the send
+		// or after changing to a different reply and back.
+		append(&ops_done, Op_Done{ticket = 1, op = .Poll_Create, reply_revision = 1})
+		drain_ops(&ui, nil)
+		testing.expect(t, !ui.poll_open, "a successful send closes the poll")
+		testing.expect_value(t, ui.replying, selection == 1 ? "" : "original message")
 	}
 }
 
