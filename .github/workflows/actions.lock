@@ -13,12 +13,14 @@ workflows:
         - 'cross-platform-actions/action@v1.6.0'
     '.github/workflows/pr-precommit.yml':
         - 'actions/checkout@v4'
+    '.github/workflows/promote.yml':
+        - 'actions/checkout@v4'
+        - 'danconwaydev/setup-ngit@v3'
     '.github/workflows/release.yml':
         - 'actions/cache@v4'
         - 'actions/checkout@v4'
         - 'actions/download-artifact@v4'
         - 'actions/upload-artifact@v4'
-        - 'softprops/action-gh-release@v2'
 dependencies:
     'actions/cache@v4':
         ref: 'v4'
@@ -45,8 +47,8 @@ dependencies:
         commit: 'sha1-e0b9770014ba65d5e0815f15b74031c3a635f641'
         owner_id: 81875667
         repo_id: 358691884
-    'softprops/action-gh-release@v2':
-        ref: 'v2'
-        commit: 'sha1-3bb12739c298aeb8a4eeaf626c5b8d85266b0e65'
-        owner_id: 2242
-        repo_id: 204253808
+    'danconwaydev/setup-ngit@v3':
+        ref: 'v3'
+        commit: 'sha1-0b62b3e83f8bfceffdb952a1f47c821ba5e4f9c7'
+        owner_id: 114834599
+        repo_id: 1354753110
