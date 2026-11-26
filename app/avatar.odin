@@ -1,4 +1,4 @@
-// Published pictures take precedence over identity and group crop circles.
+// Contact overrides and published pictures take precedence over crop circles.
 package main
 
 import "core:fmt"
@@ -73,6 +73,21 @@ avatar_initials :: proc(name: string) -> string {
 		)
 	}
 	return name[:next_grapheme(name, next_grapheme(name, 0))]
+}
+
+@(private)
+contact_portrait :: proc(owner, peer: string) -> ^rl.Texture2D {
+	if owner == "" || peer == "" || owner == peer {return nil}
+	if record := contact_store_entry(owner, peer); record != nil {return record.photo}
+	return nil
+}
+
+@(private)
+person_picture :: proc(peer, public_url: string) -> ^rl.Texture2D {
+	if g_ui != nil {
+		if photo := contact_portrait(g_ui.account_ref, peer); photo != nil {return photo}
+	}
+	return url_pic(public_url)
 }
 
 // A profile picture when one is loaded (pre-masked round pixels from

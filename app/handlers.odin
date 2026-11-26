@@ -333,6 +333,7 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // the subscriptions phase.
 // The input buffer that currently receives typed characters.
 active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
+	if ui.focus == .ContactNote {return &ui.contact_edit.note}
 	if ui.focus == .Device_Name {return &ui.devices.name}
 	if ui.focus == .Device_Own_Name {return &ui.devices.own_name}
 	if ui.folder_open {

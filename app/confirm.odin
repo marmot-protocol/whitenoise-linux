@@ -148,11 +148,11 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		if c.idx == 1 {
 			return N_(
 				"Sign out of this account?",
-			), N_("Its chats stay on this device. To sign back in, connect your remote signer again."), N_("Sign out")
+			), N_("Your private contact notes and photos are deleted. Your chats stay. To sign back in, connect your remote signer again."), N_("Sign out")
 		}
 		return N_(
 			"Sign out of this account?",
-		), N_("Its key and chats stay on this device. You can sign back in from Accounts or the sign-in screen without your secret key."), N_("Sign out")
+		), N_("Your private contact notes and photos are deleted. Your key and chats stay. You can sign back in without your secret key."), N_("Sign out")
 	case .Wipe_Account:
 		if c.idx == 1 {
 			return N_(

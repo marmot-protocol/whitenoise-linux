@@ -11,6 +11,24 @@ import "nendo"
 import rl "sdlrl"
 
 @(test)
+banner_closes_on_switch :: proc(t: ^testing.T) {
+	ui := Ui_State {
+		account_ref = "account-a",
+		page        = .Contacts,
+	}
+	set_status(&ui, "A private save failed", .Error)
+	banner_tick(&ui)
+	testing.expect_value(t, ui.banner, "A private save failed")
+
+	ui.account_ref = "account-b"
+	banner_tick(&ui)
+	testing.expect_value(t, ui.banner, "")
+	ui.account_ref = "account-a"
+	banner_tick(&ui)
+	testing.expect_value(t, ui.banner, "")
+}
+
+@(test)
 test_toast_owns_folder :: proc(t: ^testing.T) {
 	when ODIN_OS != .OpenBSD && ODIN_PLATFORM_SUBTARGET != .Android {
 		file :: "/tmp/white-noise/export.txt"

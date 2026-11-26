@@ -41,9 +41,7 @@ WRAP_CACHE_BYTES :: 4 * 1024 * 1024
 @(private)
 wrap_clear :: proc() {
 	context.allocator = runtime.default_context().allocator
-	delete(compose_cache.text)
-	delete(compose_cache.lines)
-	compose_cache = {}
+	compose_cache_forget()
 	for key, lines in wrap_cache {
 		delete(key.text)
 		delete(key.fonts)

@@ -409,7 +409,7 @@ mention_popover :: proc(ui: ^Ui_State) {
 					member.id_hex,
 					member.name,
 					22,
-					url_pic(member.pic_url),
+					person_picture(member.id_hex, member.pic_url),
 				)
 				nendo.text(
 					text_ellipsis(member.name, width - 54, FONT_BODY, 13),

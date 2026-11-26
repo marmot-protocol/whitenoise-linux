@@ -329,6 +329,7 @@ Focus :: enum {
 	Lud16, // profile lightning-address box
 	Relay, // profile add-relay box
 	Nick, // contact nickname box
+	ContactNote,
 	Fwd, // forward-picker filter box
 	GSearch, // global-search modal box
 	GSearch_Sender,
@@ -867,6 +868,7 @@ Ui_State :: struct {
 	blocked_open:                        map[string]bool, // first message id of a blocked run revealed in this chat visit
 	hidden:                              map[string]bool, // message id → "Delete for me" hide (hidden.json)
 	nick_input:                          [dynamic]u8, // contact-page nickname editor
+	contact_edit:                        Contact_Edit,
 	qr_open:                             bool, // contact QR modal
 	qr_tex:                              ^rl.Texture2D,
 	qr_npub:                             string,

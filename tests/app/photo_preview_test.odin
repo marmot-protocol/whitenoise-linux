@@ -1,6 +1,8 @@
 package main
 
 import "core:encoding/base64"
+import "core:encoding/endian"
+import "core:hash"
 import "core:os"
 import "core:strings"
 import "core:testing"
@@ -10,13 +12,17 @@ import rl "sdlrl"
 photo_crop_pixels :: proc(t: ^testing.T) {
 	// Distinct RGBA pixels, including alpha, expose offsets/stride mistakes.
 	pixels: [4 * 3 * 4]u8
-	for i in 0..<12 {
+	for i in 0 ..< 12 {
 		pixels[i * 4 + 0] = u8(i)
 		pixels[i * 4 + 1] = u8(100 + i)
 		pixels[i * 4 + 2] = 200
 		pixels[i * 4 + 3] = u8(20 + i)
 	}
-	source := rl.Image{data = &pixels[0], width = 4, height = 3}
+	source := rl.Image {
+		data   = &pixels[0],
+		width  = 4,
+		height = 3,
+	}
 	draft, ok := photo_crop_draft(source, {true, 1, 1, 2})
 	if !testing.expect(t, ok) {return}
 	defer pic_draft_free(&draft)
@@ -28,11 +34,13 @@ photo_crop_pixels :: proc(t: ^testing.T) {
 	testing.expect_value(t, decoded.height, i32(2))
 	actual := ([^]u8)(decoded.data)[:16]
 	for original, i in ([]int{5, 6, 9, 10}) {
-		for channel in 0..<4 {testing.expect_value(t, actual[i * 4 + channel], pixels[original * 4 + channel])}
+		for channel in 0 ..< 4 {testing.expect_value(t, actual[i * 4 + channel], pixels[original * 4 + channel])}
 	}
 	bad, bad_ok := photo_crop_draft(source, {true, 3, 1, 2})
 	testing.expect(t, !bad_ok && bad.data == nil && bad.image.data == nil)
-	p := Photo_Preview{draft = {image = source}}
+	p := Photo_Preview {
+		draft = {image = source},
+	}
 	photo_crop_start(&p)
 	testing.expect_value(t, p.crop.side, i32(3))
 	p.crop.x = 100; p.crop.y = -100; p.crop.side = 2
@@ -46,9 +54,11 @@ photo_crop_pixels :: proc(t: ^testing.T) {
 
 @(test)
 photo_crop_corner_resize :: proc(t: ^testing.T) {
-	p := Photo_Preview{draft = {image = {width = 800, height = 600}}}
+	p := Photo_Preview {
+		draft = {image = {width = 800, height = 600}},
+	}
 	origin := Photo_Crop{true, 200, 150, 200}
-	for corner in 1..=4 {
+	for corner in 1 ..= 4 {
 		p.crop, p.crop_origin, p.crop_corner = origin, origin, corner
 		left := corner == 1 || corner == 3
 		top := corner == 1 || corner == 2
@@ -84,7 +94,10 @@ photo_test_bytes :: proc() -> []u8 {
 }
 
 photo_test_ui :: proc() -> Ui_State {
-	ui := Ui_State{account_ref = "account-a", selected = 0}
+	ui := Ui_State {
+		account_ref = "account-a",
+		selected    = 0,
+	}
 	append(&ui.accounts, Account_Row_Ui{id_hex = "account-a"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "group-a"})
 	append(&ui.members, Member_Ui{is_self = true, is_admin = true})
@@ -108,7 +121,11 @@ photo_preview_targets :: proc(t: ^testing.T) {
 	ui.account_ref = "account-b"
 	photo_check_target(&ui)
 	testing.expect_value(t, ui.photo.kind, Photo_Kind.None)
-	testing.expect(t, ui.photo.pending && photo_input_capture(&ui), "Invalidation retains the callback tombstone")
+	testing.expect(
+		t,
+		ui.photo.pending && photo_input_capture(&ui),
+		"Invalidation retains the callback tombstone",
+	)
 	photo_pick_complete(&ui, []string{"/does/not/exist.png"})
 	testing.expect(t, !photo_input_capture(&ui))
 	testing.expect_value(t, len(ui.staged), 0)
@@ -131,7 +148,11 @@ photo_preview_targets :: proc(t: ^testing.T) {
 	clear(&ui.accounts)
 	testing.expect(t, !photo_target_valid(&ui), "Removed accounts cannot confirm")
 	append(&ui.accounts, Account_Row_Ui{id_hex = "account-a"})
-	job := Account_Job{account = "account-a", group = "group-a", kind = .Leave}
+	job := Account_Job {
+		account = "account-a",
+		group   = "group-a",
+		kind    = .Leave,
+	}
 	old_jobs := account_jobs
 	account_jobs = {}
 	append(&account_jobs, &job)
@@ -165,7 +186,10 @@ photo_preview_invalid_files :: proc(t: ^testing.T) {
 
 @(test)
 photo_profile_result_account :: proc(t: ^testing.T) {
-	ui := Ui_State{account_ref = "account-b", my_pic_url = "existing-b"}
+	ui := Ui_State {
+		account_ref = "account-b",
+		my_pic_url  = "existing-b",
+	}
 	adopt_profile_pic(&ui, "account-a", strings.clone("uploaded-a"))
 	testing.expect_value(t, ui.my_pic_url, "existing-b")
 	testing.expect(t, !ui.profile.pic_set)
@@ -173,4 +197,71 @@ photo_profile_result_account :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.my_pic_url, "uploaded-b")
 	testing.expect(t, ui.profile.pic_set)
 	delete(ui.my_pic_url)
+}
+
+@(test)
+photo_contact_exif :: proc(t: ^testing.T) {
+	LITTLE :: "II\x2a\x00\x08\x00\x00\x00\x01\x00\x12\x01\x03\x00\x01\x00\x00\x00\x06\x00\x00\x00\x00\x00\x00\x00"
+	BIG :: "MM\x00\x2a\x00\x00\x00\x08\x00\x01\x01\x12\x00\x03\x00\x00\x00\x01\x00\x08\x00\x00\x00\x00\x00\x00"
+	JPEG :: "\xff\xd8\xff\xe1\x00\x22Exif\x00\x00" + LITTLE
+	WEBP :: "RIFF\x26\x00\x00\x00WEBPEXIF\x1a\x00\x00\x00" + BIG
+	for fixture, i in ([2]string{JPEG, WEBP}) {
+		bytes := transmute([]u8)fixture
+		for end in 0 ..< len(bytes) {testing.expect_value(t, photo_orientation(bytes[:end]), u16(1))}
+		testing.expect_value(t, photo_orientation(bytes), i == 0 ? u16(6) : u16(8))
+	}
+	// Insert a real PNG eXIf chunk after IHDR and send it through the decoder.
+	pixels := [16]u8{1, 0, 0, 255, 2, 0, 0, 255, 3, 0, 0, 255, 4, 0, 0, 255}
+	plain, ok := photo_crop_draft(
+		{data = raw_data(pixels[:]), width = 2, height = 2},
+		{true, 0, 0, 2},
+	)
+	if !testing.expect(t, ok) {return}
+	defer pic_draft_free(&plain)
+	chunk: [12 + len(LITTLE)]u8
+	endian.unchecked_put_u32be(chunk[:], len(LITTLE))
+	copy(chunk[4:], transmute([]u8)string("eXIf" + LITTLE))
+	endian.unchecked_put_u32be(chunk[len(chunk) - 4:], hash.crc32(chunk[4:len(chunk) - 4]))
+	with_exif := make([]u8, len(plain.data) + len(chunk), context.temp_allocator)
+	copy(with_exif, plain.data[:33])
+	copy(with_exif[33:], chunk[:])
+	copy(with_exif[33 + len(chunk):], plain.data[33:])
+	decoded := photo_contact_decode(with_exif)
+	if !testing.expect(t, decoded.image.data != nil) {return}
+	defer pic_draft_free(&decoded)
+	testing.expect(t, decoded.data == nil, "Original encoded bytes must not enter the preview")
+	for value, i in ([4]u8{3, 1, 4, 2}) {testing.expect_value(t, decoded.image.data[i * 4], value)}
+	clean, clean_ok := photo_crop_draft(decoded.image, {true, 0, 0, 2}, .Contact_Crop)
+	if !testing.expect(t, clean_ok) {return}
+	defer pic_draft_free(&clean)
+	testing.expect_value(t, photo_orientation(clean.data), u16(1))
+	testing.expect(t, !strings.contains(string(clean.data), "eXIf"))
+}
+
+@(test)
+photo_contact_crop_cap :: proc(t: ^testing.T) {
+	W :: 530
+	H :: 528
+	SIDE :: 520
+	X :: 7
+	Y :: 3
+	pixels := make([][4]u8, W * H, context.temp_allocator)
+	for y in Y ..< Y + SIDE {
+		for x in X ..< X + SIDE {pixels[y * W + x] = {40, 100, 200, 128}}
+	}
+	source := rl.Image {
+		data   = ([^]u8)(raw_data(pixels)),
+		width  = W,
+		height = H,
+	}
+	draft, ok := photo_crop_draft(source, {true, X, Y, SIDE}, .Contact_Crop)
+	if !testing.expect(t, ok) {return}
+	defer pic_draft_free(&draft)
+	testing.expect_value(t, draft.image.width, i32(512))
+	testing.expect_value(t, draft.image.height, i32(512))
+	testing.expect(t, 0 < len(draft.data) && len(draft.data) <= 2 * 1024 * 1024)
+	rgba := ([^][4]u8)(draft.image.data)
+	for corner in ([4]int{0, 511, 511 * 512, 512 * 512 - 1}) {
+		testing.expect_value(t, rgba[corner], [4]u8{40, 100, 200, 128})
+	}
 }

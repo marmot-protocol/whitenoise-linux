@@ -776,6 +776,7 @@ status_reveal_file :: proc(ui: ^Ui_State, path: string) {
 
 @(private)
 Banner_Screen :: struct {
+	account:     [64]u8,
 	page:        Page,
 	section:     Settings_Section,
 	chat:        u64, // hash of the chat's group ID, not its sortable row index
@@ -789,6 +790,7 @@ banner_screen :: proc(ui: ^Ui_State) -> Banner_Screen {
 		page        = ui.page,
 		add_account = ui.add_account_open,
 	}
+	copy(screen.account[:], ui.account_ref)
 	if screen.add_account {return screen}
 	if ui.new_chat_open {
 		screen.new_chat = ui.nc_page
