@@ -424,6 +424,13 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 	return &ui.compose
 }
 
+@(private)
+retry_pending :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
+	p.failed = false
+	p.attempts = 0 // Restart the automatic retry budget.
+	spawn_send(ui, client, p)
+}
+
 handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if slash_open(ui) &&
 	   mouse_pressed() &&
@@ -542,7 +549,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				break
 			}
 		}
-		// Tap a failed optimistic row to retry the send.
 		for &p, i in ui.pending {
 			if ui.selected < 0 || ui.selected >= len(ui.chats) {break}
 			if !pending_in_workspace(ui, p, ui.chats[ui.selected].group_id) ||
@@ -557,14 +563,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if nendo.pointer_over(nendo.id("PendingDelete", u32(i))) ||
 			   nendo.pointer_over(nendo.id("PendingDeleteEnd", u32(i))) {
 				delete_pending(ui, i)
-				return
-			}
-			if p.failed &&
-			   pending_send_allowed(ui, p) &&
-			   nendo.pointer_over(nendo.id("PendingRow", u32(i))) {
-				p.failed = false
-				p.attempts = 0 // a manual retry restarts the auto-retry cap
-				spawn_send(ui, client, &p)
 				return
 			}
 		}
@@ -748,7 +746,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		handle_group_files(ui)
 		return
 	}
-	if handle_reaction_keys(ui) {return}
+	if timeline_keys(ui, client) {return}
 	// With the webxdc modal open the page owns the keyboard: skip the
 	// composer edit, or it drains the typed runes before
 	// handle_web_input can forward them.
@@ -1975,7 +1973,9 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int)
 		if i < index {index -= 1}
 	}
 	ui.selected = index
-	ui.reaction_focus = 0
+	ui.timeline_focus = 0
+	ui.timeline_retry_back = {}
+	ui.timeline_press = 0
 	key := draft_key(ui.account_ref, ui.chats[index].group_id)
 	ui.staged = staged_draft_take(ui, key)
 	ui.search_open = false

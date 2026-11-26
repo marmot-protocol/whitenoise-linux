@@ -678,7 +678,7 @@ members_clear :: proc(ui: ^Ui_State) {
 // and clears the composer immediately. A worker thread runs the
 // blocking marmot call, and the frame loop drains completions (ack
 // replaces the row with the confirmed record via reload; failure
-// turns it danger with tap-to-retry).
+// leaves the row in place with its retry status).
 //
 //   Enter ──► ui.pending + worker ──► sends_done ──► drain_sends
 //                (grayed row)          (mutex)     (drop row + reload,

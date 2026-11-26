@@ -703,7 +703,11 @@ Ui_State :: struct {
 	offline_unowned_warned:              bool,
 	react_pending:                       [dynamic]Pending_React, // optimistic reactions awaiting ack
 	reaction_details_id:                 string, // message ID borrowed from messages
-	reaction_focus, reaction_press:      u32, // message-keyed nendo button IDs
+	timeline_focus, timeline_press:      u32, // stable nendo button IDs
+	timeline_retry_back:                 struct {
+		focus: u32,
+		y:     f32,
+	},
 	compose:                             [dynamic]u8,
 	// One shared caret/selection/undo state, targeting whichever input
 	// buffer was edited last (ed_target). ed_view temporarily wraps the

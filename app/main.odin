@@ -234,7 +234,8 @@ build_layout_pass :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Comm
 		menu_press = {}
 		composer_capture_press(ui)
 		kb_focus = ""
-		ui.reaction_focus = 0
+		ui.timeline_focus = 0
+		ui.timeline_retry_back = {}
 	}
 	nendo.begin()
 
@@ -1155,8 +1156,12 @@ app_main :: proc() {
 			handle_file_drop(&ui) // publish preparation chips before this frame's layout
 			pointer = archive_pointer_position(ui.page, pointer)
 			nendo.set_pointer(pointer, (rl.IsMouseButtonDown(.LEFT)) ? .Down : .Up)
-			reaction_captured :=
-				!overlay_captured && !photo_captured && !location_captured && reaction_pointer(&ui)
+			timeline_captured := false
+			if overlay_captured || photo_captured || location_captured {
+				ui.timeline_press = 0
+			} else if client != nil {
+				timeline_captured = timeline_pointer(&ui, client)
+			}
 			ui.picker_hit_revision = ui.picker_custom_revision
 			picker_sample_click(&ui)
 			fwd_sample_pointer(&ui)
@@ -1167,7 +1172,7 @@ app_main :: proc() {
 			if !photo_captured &&
 			   !location_captured &&
 			   !overlay_captured &&
-			   !reaction_captured &&
+			   !timeline_captured &&
 			   rl.IsMouseButtonReleased(.LEFT) &&
 			   text_drag != nil {
 				if text_drag != &ui.login_input &&
@@ -1197,7 +1202,7 @@ app_main :: proc() {
 				!photo_captured &&
 				!location_captured &&
 				!overlay_captured &&
-				!reaction_captured &&
+				!timeline_captured &&
 				!modal_open(&ui) &&
 				!ui.picker_open &&
 				!ui.folder_menu_open &&
@@ -1579,7 +1584,7 @@ app_main :: proc() {
 			update_drag_scroll(
 				&ui,
 				composer_captured ||
-				reaction_captured ||
+				timeline_captured ||
 				native_drag ||
 				text_drag != nil ||
 				orbit_hover != nil ||
@@ -1588,7 +1593,7 @@ app_main :: proc() {
 				fan_open() ||
 				video_bar_active(),
 			)
-			if composer_captured || reaction_captured {
+			if composer_captured || timeline_captured {
 				long_pressed = false
 			} else {
 				long_press_tick() // before any handler reads long_pressed
@@ -1596,7 +1601,7 @@ app_main :: proc() {
 			blur_field, blur_focus := touch_field, ui.focus
 			shell_captured :=
 				composer_captured ||
-				reaction_captured ||
+				timeline_captured ||
 				photo_captured ||
 				location_captured ||
 				overlay_captured
@@ -1621,7 +1626,7 @@ app_main :: proc() {
 			   !ui.poll_open &&
 			   !ui.timestamp.open &&
 			   !ui.ctx_open &&
-			   ui.reaction_focus == 0 &&
+			   ui.timeline_focus == 0 &&
 			   !ui.mi_open &&
 			   !ui.chat_head_menu &&
 			   !ui.compose_more &&
@@ -1676,7 +1681,7 @@ app_main :: proc() {
 			// After consumed input, dispatch the top visible modal.
 			if settings_captured {
 				settings_search_field(&ui)
-			} else if composer_captured || reaction_captured || shell_back || foreground_captured {
+			} else if composer_captured || timeline_captured || shell_back || foreground_captured {
 				// Already handled.
 			} else if photo_captured {
 				if photo_interactive &&
