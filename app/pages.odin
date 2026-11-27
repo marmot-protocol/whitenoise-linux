@@ -1227,7 +1227,8 @@ account_workspace_clear :: proc(ui: ^Ui_State) {
 	ui.selected, ui.row_menu, ui.member_menu, ui.selected_contact = -1, -1, -1, -1
 	ui.show_members, ui.group_files_open, ui.search_open, ui.chat_head_menu =
 		false, false, false, false
-	ui.ctx_open, ui.hist_open, ui.raw_open, ui.enc_open = false, false, false, false
+	close_msg_menu(ui)
+	ui.hist_open, ui.raw_open, ui.enc_open = false, false, false
 	ui.peer_open, ui.qr_open, ui.fwd_open, ui.picker_open, ui.sticker_open =
 		false, false, false, false, false
 	ui.folder_open, ui.folder_menu_open, ui.mi_open, ui.pal_open = false, false, false, false

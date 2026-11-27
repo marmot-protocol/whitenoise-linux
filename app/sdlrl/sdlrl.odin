@@ -92,6 +92,7 @@ KeyboardKey :: enum {
 	EQUAL,
 	MINUS,
 	ZERO,
+	F10,
 }
 
 MouseButton :: enum {
@@ -246,6 +247,7 @@ SCANCODES := [KeyboardKey]sdl.Scancode {
 	.EQUAL         = .EQUALS,
 	.MINUS         = .MINUS,
 	.ZERO          = ._0,
+	.F10           = .F10,
 }
 
 // ── Window / frame loop ─────────────────────────────────────────────

@@ -35,6 +35,9 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {
 		g_ui, g_prefs, kb_focus = nil, nil, ""
+		close_msg_menu(&ui)
+		delete(ui.ctx_items)
+		delete(ui.reply_hint)
 		edit.destroy(&ui.ed)
 		delete(ui.compose); delete(ui.accounts); delete(ui.chats)
 		delete(ui.messages_account); delete(ui.messages_group)
@@ -89,11 +92,68 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	}
 	layout(&ui)
 	key(&ui, &client, .TAB)
+	more := message_more_id("trailhead")
+	if !testing.expect_value(t, ui.timeline_focus, more.id) {return}
+	commands := layout(&ui)
+	testing.expect(t, shows(commands, "⋯"), "the focused message exposes More actions")
+
+	event: sdl.Event
+	event.type = .KEY_DOWN
+	event.key.scancode = .LSHIFT
+	testing.expect(t, sdl.PushEvent(&event))
+	event.key.scancode = .F10
+	testing.expect(t, sdl.PushEvent(&event))
+	rl.WindowShouldClose()
+	handle_chat(&ui, &client)
+	event.type = .KEY_UP
+	testing.expect(t, sdl.PushEvent(&event))
+	event.key.scancode = .LSHIFT
+	testing.expect(t, sdl.PushEvent(&event))
+	if !testing.expect_value(t, ui.ctx_message, "trailhead") {return}
+	commands = layout(&ui)
+	testing.expect(t, shows(commands, "Copy text"))
+	key(&ui, &client, .DOWN)
+	layout(&ui)
+	key(&ui, &client, .ESCAPE)
+	testing.expect(t, !ui.ctx_open)
+	testing.expect_value(t, ui.timeline_focus, more.id)
+	layout(&ui)
+	key(&ui, &client, .ENTER)
+	layout(&ui)
+	for _ in 0 ..< len(ui.ctx_items) {
+		if ui.ctx_focus == nendo.id("CtxCopy").id {break}
+		key(&ui, &client, .DOWN)
+		layout(&ui)
+	}
+	key(&ui, &client, .ENTER)
+	clipboard := sdl.GetClipboardText()
+	defer sdl.free(clipboard)
+	testing.expect_value(t, string(cstring(clipboard)), "Meet at the trailhead?")
+	testing.expect_value(t, ui.timeline_focus, more.id)
+	layout(&ui)
+	key(&ui, &client, .ENTER)
+	if !testing.expect_value(t, ui.ctx_message, "trailhead") {return}
+	rows_with_menu := [2]marmot.Timeline_Message_Record{record, record}
+	rows_with_menu[0].message_id_hex = "earlier-message"
+	page.messages, page.messages_len = raw_data(rows_with_menu[:]), len(rows_with_menu)
+	timeline_apply(nil, &ui, &page)
+	layout(&ui)
+	key(&ui, &client, .DOWN)
+	layout(&ui)
+	key(&ui, &client, .ENTER)
+	if !testing.expect_value(t, ui.replying, "trailhead") {return}
+	testing.expect_value(t, string(ui.compose[:]), "Unsent draft")
+	ui.replying = ""
+	page.messages, page.messages_len = &record, 1
+	timeline_apply(nil, &ui, &page)
+	layout(&ui)
+	key(&ui, &client, .TAB)
+	key(&ui, &client, .TAB)
 	key(&ui, &client, .ENTER)
 	if !testing.expect_value(t, ui.reaction_details_id, "trailhead") {return}
 	testing.expect_value(t, string(ui.compose[:]), "Unsent draft")
 	testing.expect_value(t, len(ui.react_pending), 0)
-	commands := layout(&ui)
+	commands = layout(&ui)
 	testing.expect(
 		t,
 		shows(commands, profile_label(nil, string(people[1]))),
@@ -134,6 +194,58 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 		rl.WindowShouldClose()
 		nendo.set_pointer(to, .Up)
 	}
+	// The hover control and right click both open the same menu.
+	box := nendo.element(more).rect
+	more_at := nendo.Vector2{box.x + box.width / 2, box.y + box.height / 2}
+	nendo.set_pointer(more_at, .Up)
+	testing.expect(t, shows(layout(&ui), "⋯"))
+	click(t, more_at, chip_point)
+	testing.expect(t, timeline_pointer(&ui, &client))
+	testing.expect(t, !ui.ctx_open, "releasing away from More cancels the click")
+	click(t, more_at, more_at)
+	testing.expect(t, timeline_pointer(&ui, &client))
+	testing.expect_value(t, ui.ctx_message, "trailhead")
+	testing.expect(t, shows(layout(&ui), "Copy text"))
+	key(&ui, &client, .ESCAPE)
+	layout(&ui)
+	rl.WindowShouldClose()
+	rl.PushMouseButton(.RIGHT, true)
+	nendo.set_pointer(chip_point, .Up)
+	handle_chat(&ui, &client)
+	testing.expect_value(t, ui.ctx_message, "trailhead")
+	testing.expect(t, shows(layout(&ui), "Copy text"))
+	rl.PushMouseButton(.RIGHT, false)
+	// A menu consumes an outside press through release even if the
+	// targeted message is tombstoned between those two frames.
+	send := nendo.element(nendo.id("SendBtn")).rect
+	send_at := nendo.Vector2{send.x + send.width / 2, send.y + send.height / 2}
+	rl.WindowShouldClose()
+	rl.PushMouseButton(.LEFT, true)
+	nendo.set_pointer(send_at, .Down)
+	layout(&ui)
+	record.deleted = true
+	timeline_apply(nil, &ui, &page)
+	layout(&ui)
+	handle_ctx_menu(&ui, &client)
+	testing.expect(t, ui.ctx_open)
+	rl.WindowShouldClose()
+	rl.PushMouseButton(.LEFT, false)
+	nendo.set_pointer(send_at, .Up)
+	testing.expect(t, !composer_clicked("SendBtn"))
+	handle_ctx_menu(&ui, &client)
+	testing.expect(t, !ui.ctx_open)
+	rl.WindowShouldClose()
+	layout(&ui)
+	handle_chat(&ui, &client) // an idle frame does not give focus to the composer
+	key(&ui, &client, .ENTER)
+	key(&ui, &client, .ENTER)
+	testing.expect_value(t, len(ui.pending), 0)
+	record.deleted = false
+	timeline_apply(nil, &ui, &page)
+	testing.expect_value(t, string(ui.compose[:]), "Unsent draft")
+	ui.timeline_focus = 0
+	layout(&ui)
+
 	for pair, i in ([2][2]nendo.Vector2{{point, chip_point}, {chip_point, point}}) {
 		click(t, pair[0], pair[1])
 		testing.expect_value(t, timeline_pointer(&ui, &client), i == 0)
@@ -228,7 +340,7 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 			kind           = KIND_CHAT_MESSAGE,
 			message_id_hex = fmt.ctprintf("older-%d", i),
 			sender         = people[i % len(people)],
-			plaintext      = "A message without reactions",
+			deleted        = true,
 		}
 	}
 	page.messages, page.messages_len = raw_data(history[:]), len(history)
@@ -259,4 +371,59 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	key(&ui, &client, .ENTER)
 	testing.expect_value(t, ui.reaction_details_id, "trailhead")
 	testing.expect_value(t, string(ui.compose[:]), "Unsent draft")
+	key(&ui, &client, .ESCAPE)
+	view.position.y = 0
+	layout(&ui)
+	viewport := nendo.element(nendo.id("Timeline")).rect
+	button_box := nendo.element(more).rect
+	view.position.y -= button_box.y + button_box.height - viewport.y + 3
+	layout(&ui)
+	row := nendo.element(nendo.id("MsgRow", 0)).rect
+	rl.WindowShouldClose()
+	rl.PushMouseButton(.RIGHT, true)
+	nendo.set_pointer({row.x + 100, row.y + row.height - 5}, .Up)
+	handle_chat(&ui, &client)
+	if !testing.expect_value(t, ui.ctx_message, "trailhead") {return}
+	rl.PushMouseButton(.RIGHT, false)
+	layout(&ui)
+	timeline := nendo.id("Timeline")
+	thumb := nendo.element(nendo.id("ScrollThumb", timeline.id))
+	if !testing.expect(t, thumb.found) {return}
+	rl.WindowShouldClose()
+	rl.PushMouseButton(.LEFT, true)
+	nendo.set_pointer({thumb.rect.x + 1, thumb.rect.y + 1}, .Down)
+	layout(&ui)
+	testing.expect(t, scroll_drag.container != timeline.id, "the background thumb cannot grab")
+	rl.PushMouseButton(.LEFT, false)
+	key(&ui, &client, .ESCAPE)
+	layout(&ui)
+	testing.expect(
+		t,
+		nendo.element(more).rect.y >= viewport.y - 0.5,
+		"Esc reveals the restored focus",
+	)
+
+	// Notes use a small floating overflow control. On touch its hidden
+	// geometry must not intercept a swipe or the long-press timer.
+	ui.prefs.notes_group = "test"
+	view.position.y = 0
+	layout(&ui)
+	box = nendo.element(more).rect
+	more_at = {box.x + box.width / 2, box.y + box.height / 2}
+	rl.InjectFinger(.Down, more_at.x, more_at.y)
+	rl.WindowShouldClose()
+	nendo.set_pointer(more_at, .Down)
+	testing.expect(t, !timeline_pointer(&ui, &client))
+	update_drag_scroll(&ui, false)
+	long_pressed = true
+	handle_chat(&ui, &client)
+	long_pressed = false
+	if !testing.expect_value(t, ui.ctx_message, "trailhead") {return}
+	position := view.position.y
+	rl.InjectFinger(.Move, more_at.x, more_at.y - 80)
+	rl.WindowShouldClose()
+	update_drag_scroll(&ui, true)
+	testing.expect_value(t, view.position.y, position)
+	rl.InjectFinger(.Up, more_at.x, more_at.y)
+	rl.WindowShouldClose()
 }

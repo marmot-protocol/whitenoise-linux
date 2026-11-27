@@ -432,6 +432,7 @@ composer_press: u32
 composer_capture_press :: proc(ui: ^Ui_State) {
 	// The hit list belongs to the last displayed layout, before tools move.
 	composer_press = 0
+	if ui.ctx_open {return}
 	if !nendo.pointer_over(nendo.id("ComposeTools")) &&
 	   !nendo.pointer_over(nendo.id("ComposeMoreMenu")) {return}
 	for name in ([2]string{"SendBtn", "ComposeCustomize"}) {

@@ -30,8 +30,16 @@ reaction_details_button :: proc(message: string) {
 }
 
 @(private = "file")
-reaction_pointer_id :: proc(messages: []Msg_Ui) -> u32 {
+timeline_message_pointer :: proc(ui: ^Ui_State, messages: []Msg_Ui) -> u32 {
 	for msg in messages {
+		if message_menu_allowed(ui, msg) {
+			id := message_more_id(msg.id)
+			// Only the full-size button is shown on touch rows. The smaller
+			// desktop overlay must leave swipes and long presses alone.
+			if nendo.pointer_over(id) &&
+			   (!rl.TouchActive() ||
+					   nendo.element(id).rect.height >= tap_min() - 0.5) {return id.id}
+		}
 		if len(msg.reactions) == 0 || len(msg.reactions[0].senders) == 0 {continue}
 		id := reaction_button_id(msg.id)
 		if nendo.pointer_over(id) {return id.id}
@@ -111,10 +119,10 @@ timeline_pointer :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		if p := pending_retry_at(ui); p != nil {
 			ui.timeline_press = pending_retry_id(p.ticket).id
 		} else {
-			ui.timeline_press = reaction_pointer_id(ui.messages[:])
+			ui.timeline_press = timeline_message_pointer(ui, ui.messages[:])
 			// A worker may replace the rows before the displayed layout is hit-tested.
 			if ui.timeline_press ==
-			   0 {ui.timeline_press = reaction_pointer_id(retired_messages[:])}
+			   0 {ui.timeline_press = timeline_message_pointer(ui, retired_messages[:])}
 		}
 		if press_at != position || release_at != position {nendo.set_pointer(release_at, .Up)}
 	}
@@ -128,6 +136,10 @@ timeline_pointer :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 				return true
 			}
 			for msg in ui.messages {
+				if message_menu_allowed(ui, msg) && message_more_id(msg.id).id == press_id {
+					open_msg_menu(ui, msg.id, .Button)
+					break
+				}
 				if len(msg.reactions) == 0 || len(msg.reactions[0].senders) == 0 {continue}
 				if reaction_button_id(msg.id).id == press_id {
 					reaction_modal_open(ui, msg.id)
@@ -177,18 +189,20 @@ timeline_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		return true
 	}
 	step := tab_step()
-	activate := focused && (rl.IsKeyPressed(.ENTER) || rl.IsKeyPressed(.SPACE))
+	menu_key := focused && shift_down() && rl.IsKeyPressed(.F10)
+	activate := focused && (menu_key || rl.IsKeyPressed(.ENTER) || rl.IsKeyPressed(.SPACE))
 	if !focused && step == 0 {return false}
 
 	timeline := nendo.id("Timeline")
 	view := nendo.element(timeline).rect
-	if focused && !timeline_button_visible({id = ui.timeline_focus}, view) {
-		ui.timeline_focus = 0
+	if focused &&
+	   ui.timeline_focus != timeline.id &&
+	   !timeline_button_visible({id = ui.timeline_focus}, view) {
+		// Focus belongs to the timeline even if a worker removes its button.
+		ui.timeline_focus = timeline.id
 		ui.timeline_retry_back = {}
-		// A key polled before the button disappeared must not send a draft.
-		if activate {return true}
-		focused = false
 	}
+	if ui.timeline_focus == timeline.id && step == 0 {return true}
 	if step == 0 && !activate {return focused}
 
 	Target :: struct {
@@ -196,23 +210,31 @@ timeline_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		retry: bool,
 	}
 	first, next: Target
-	visible_reaction: u32
+	visible_message: u32
 	found_focus, focus_is_retry := false, false
-	// Pending rows follow reactions in visual order and remain tabbable offscreen.
+	// Each message has a menu and may also have reaction details. Retry
+	// follows both, in visual order, and remains tabbable offscreen.
 	group, thread_id := ui.chats[ui.selected].group_id, thread_cur(ui)
-	count := len(ui.messages) + len(ui.pending)
+	message_controls := 2 * len(ui.messages)
+	count := message_controls + len(ui.pending)
 	for i in 0 ..< count {
 		index := step < 0 ? count - i - 1 : i
-		is_retry := index >= len(ui.messages)
+		is_retry := index >= message_controls
+		is_menu := !is_retry && index % 2 == 0
 		id: nendo.Id
 		if !is_retry {
-			msg := &ui.messages[index]
-			if len(msg.reactions) == 0 || len(msg.reactions[0].senders) == 0 {continue}
-			id = reaction_button_id(msg.id)
+			msg := &ui.messages[index / 2]
+			if is_menu {
+				if !message_menu_allowed(ui, msg^) {continue}
+				id = message_more_id(msg.id)
+			} else {
+				if len(msg.reactions) == 0 || len(msg.reactions[0].senders) == 0 {continue}
+				id = reaction_button_id(msg.id)
+			}
 			if !timeline_button_visible(id, view) {continue}
-			if visible_reaction == 0 {visible_reaction = id.id}
+			if visible_message == 0 {visible_message = id.id}
 		} else {
-			p := &ui.pending[index - len(ui.messages)]
+			p := &ui.pending[index - message_controls]
 			if !p.failed ||
 			   p.thread != thread_id ||
 			   !pending_in_workspace(ui, p^, group) ||
@@ -228,12 +250,17 @@ timeline_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		if id.id == ui.timeline_focus {
 			if step == 0 {
 				if !is_retry {
-					reaction_modal_open(ui, ui.messages[index].id)
-					kb_focus = "ReactionDetailsClose"
-				} else {
+					msg := ui.messages[index / 2]
+					if is_menu || menu_key {
+						if message_menu_allowed(ui, msg) {open_msg_menu(ui, msg.id, .Keyboard)}
+					} else {
+						reaction_modal_open(ui, msg.id)
+						kb_focus = "ReactionDetailsClose"
+					}
+				} else if !menu_key {
 					ui.timeline_focus = 0
 					ui.timeline_retry_back = {}
-					retry_pending(ui, client, &ui.pending[index - len(ui.messages)])
+					retry_pending(ui, client, &ui.pending[index - message_controls])
 				}
 				return true
 			}
@@ -245,12 +272,12 @@ timeline_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	}
 	target := step == 0 ? Target{} : (found_focus ? next : first)
 	if scroll := nendo.scroll(timeline); scroll.found {
-		// Reaction controls only participate while visible. Remember the
+		// Message controls only participate while visible. Remember the
 		// viewport before a Retry can scroll the previous control out of it.
 		if target.retry && found_focus && !focus_is_retry {
 			ui.timeline_retry_back = {ui.timeline_focus, scroll.position.y}
 		} else if target.retry && !found_focus && step < 0 {
-			ui.timeline_retry_back = {visible_reaction, scroll.position.y}
+			ui.timeline_retry_back = {visible_message, scroll.position.y}
 		} else if !target.retry &&
 		   step < 0 &&
 		   focus_is_retry &&

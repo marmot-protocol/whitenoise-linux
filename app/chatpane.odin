@@ -69,11 +69,11 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 	if nendo.box(nendo.id("ChatPane"))(
 	{width = nendo.grow(), height = nendo.grow(), direction = .Column},
 	) {
-		if active &&
-		   open_now(nendo.id("CtxMenu"), ui.ctx_open) &&
-		   ui.ctx_msg >= 0 &&
-		   ui.ctx_msg < len(ui.messages) {
-			context_menu(ui)
+		if active {
+			open_now(nendo.id("CtxMenu"), ui.ctx_open)
+			if ui.ctx_open {
+				if msg := context_message(ui); msg != nil {context_menu(ui, msg^)}
+			}
 		}
 		if open_now(nendo.id("HistModal"), ui.hist_open) &&
 		   ui.hist_msg >= 0 &&
