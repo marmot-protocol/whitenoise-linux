@@ -1,7 +1,7 @@
 package main
 
 // nendo and the UI caches are global. Run this check alone:
-// SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=chat_title_overflow
+// tests/odin.sh app -- -tests:chat_title_overflow
 import marmot "../marmot"
 import "base:runtime"
 import "core:fmt"
@@ -133,7 +133,8 @@ thread_reply_count_layout :: proc(t: ^testing.T) {
 
 @(test)
 chat_title_overflow :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "chat_title_overflow" {return}
+	if !test_isolated("chat_title_overflow") {return}
+	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(987, 1382, "Layout regression")
 	defer rl.CloseWindow()
 	UI_ZOOM = 1.875
@@ -151,13 +152,20 @@ chat_title_overflow :: proc(t: ^testing.T) {
 		member_menu      = -1,
 		selected_contact = -1,
 	}
-	g_ui = &ui
-	g_prefs = &ui.prefs
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {g_ui, g_prefs = nil, nil; set_locale("en")}
 	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	defer delete(ui.accounts)
 	ui.prefs.rail_w = RAIL_W_MIN
-	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "01e88b174112addb56b562777c32c5f"})
+	append(
+		&ui.chats,
+		Chat_Row_Ui {
+			group_id = "test",
+			title = "01e88b174112addb56b562777c32c5f",
+			conversation_kind = .GROUP,
+		},
+	)
 	defer delete(ui.chats)
 	append(
 		&ui.messages,
@@ -177,82 +185,97 @@ chat_title_overflow :: proc(t: ^testing.T) {
 	)
 	append(&ui.messages, Msg_Ui{system = true, body = "Disappearing timer changed", at = "12:00"})
 	defer delete(ui.messages)
+	Search_Step :: enum {
+		Closed,
+		Opening,
+		Closing,
+		Reduced_Motion,
+	}
 	for locale in ([]string{"en", "it", "de", "ja", "ko", "fi"}) {
 		set_locale(locale)
-		for search in ([]bool{false, true}) {
-			ui.search_open = search
-			for width in ([]f32{526.4, 340, 400, 700}) {
-				rl.SetWindowSize(i32(width * UI_ZOOM), 1382)
-				nendo.set_dimensions({width, 700})
-				commands := build_layout(&ui, 0)
-				for id in ([]string{"ChatPane", "ChatHeader", "SearchBtn", "FilesBtn", "BellBtn", "MembersBtn", "Composer"}) {
-					element := nendo.element(nendo.id(id))
-					testing.expect(t, element.found, id)
-					testing.expect(t, element.rect.x + element.rect.width <= width + 0.01, id)
-				}
-				view := nendo.element(nendo.id("ChatHeadTitleClip")).rect
-				clipped := false
-				for command in commands {
-					if command.kind == .Scissor_Start && command.rect == view {
-						clipped = true
-					}
-				}
-				testing.expect(t, clipped, "title must be clipped inside the header")
-				for id in ([]string{"FilesBtn", "SearchBtn", "BellBtn", "MembersBtn"}) {
-					nendo.set_pointer({-100, -100}, .Up)
-					anim_snap_all()
+		for width in ([]f32{526.4, 340, 400, 700}) {
+			rl.SetWindowSize(i32(width * UI_ZOOM), 1382)
+			nendo.set_dimensions({width, 700})
+			phone := width < PHONE_W
+			anim_snap_all()
+			collapsed, expanded: f32
+			for step in Search_Step {
+				ui.search_open = step == .Opening || step == .Reduced_Motion
+				ui.prefs.reduce_motion = step == .Reduced_Motion
+				frames := !phone && (step == .Opening || step == .Closing) ? 6 : 1
+				first, last: f32
+				for frame in 0 ..< frames {
 					anim_tick(0.02)
-					build_layout(&ui, 0)
-					button := nendo.element(nendo.id(id)).rect
-					pointer := nendo.Vector2 {
-						button.x + button.width / 2,
-						button.y + button.height / 2,
+					commands := build_layout(&ui, 0)
+					for id in ([]string{"ChatPane", "ChatHeader", "ChatHeadTitleClip", "SearchBtn", "Composer", "ChatBack", "ChatHeadMore", "FilesBtn", "BellBtn", "GroupSettingsBtn", "MembersBtn"}) {
+						element := nendo.element(nendo.id(id))
+						expected := true
+						switch id {
+						case "ChatBack", "ChatHeadMore":
+							expected = phone
+						case "FilesBtn", "BellBtn", "GroupSettingsBtn", "MembersBtn":
+							expected = !phone
+						}
+						testing.expectf(
+							t,
+							element.found == expected,
+							"%s at %.1f (%s)",
+							id,
+							width,
+							locale,
+						)
+						if element.found {
+							testing.expect(
+								t,
+								element.rect.x >= 0 &&
+								element.rect.x + element.rect.width <= width + 0.01,
+								id,
+							)
+						}
 					}
-					first_width: f32
-					for frame in 0 ..< 5 {
-						nendo.set_pointer(pointer, .Up)
-						anim_tick(0.02)
-						build_layout(&ui, 0)
-						expanded := nendo.element(nendo.id(id)).rect
-						if frame == 0 {first_width = expanded.width}
-						testing.expect(t, expanded.width > button.width, id)
+					testing.expect_value(
+						t,
+						nendo.element(nendo.id("SearchBar")).found,
+						ui.search_open,
+					)
+					view := nendo.element(nendo.id("ChatHeadTitleClip")).rect
+					clipped := false
+					for command in commands {
+						if command.kind == .Scissor_Start &&
+						   command.clip.x &&
+						   command.rect == view {
+							clipped = true
+							break
+						}
+					}
+					testing.expect(t, clipped, "title must be clipped inside the header")
+					previous_width := last
+					last = nendo.element(nendo.id("SearchBtn")).rect.width
+					if frame == 0 {first = last}
+					if frame == 5 {testing.expect_value(t, last, previous_width)}
+				}
+				switch step {
+				case .Closed:
+					collapsed = last
+				case .Opening:
+					if phone {
+						testing.expect_value(t, last, collapsed)
+					} else {
 						testing.expect(
 							t,
-							expanded.x <= pointer.x && expanded.x + expanded.width >= pointer.x,
-							id,
+							collapsed < first && first < last,
+							"active search label animates",
 						)
-						testing.expect(t, expanded.x + expanded.width <= width + 0.01, id)
-						right := nendo.element(nendo.id("MembersBtn")).rect
-						testing.expect(t, right.x + right.width <= width + 0.01, id)
 					}
-					full := nendo.element(nendo.id(id)).rect.width
-					testing.expect(
-						t,
-						full > first_width,
-						"label must animate rather than appear instantly",
-					)
-					anim_tick(0.02)
-					build_layout(&ui, 0)
-					testing.expect(
-						t,
-						nendo.element(nendo.id(id)).rect.width == full,
-						"animation must finish in 100 ms",
-					)
-					nendo.set_pointer({-100, -100}, .Up)
-					for _ in 0 ..< 5 {anim_tick(0.02); build_layout(&ui, 0)}
-					testing.expect_value(t, nendo.element(nendo.id(id)).rect.width, button.width)
-					ui.prefs.reduce_motion = true
-					nendo.set_pointer(pointer, .Up)
-					anim_tick(0.02)
-					build_layout(&ui, 0)
-					testing.expect_value(t, nendo.element(nendo.id(id)).rect.width, full)
-					ui.prefs.reduce_motion = false
+					expanded = last
+				case .Closing:
+					testing.expect_value(t, last, collapsed)
+				case .Reduced_Motion:
+					testing.expect_value(t, last, expanded)
 				}
-				nendo.set_pointer({-100, -100}, .Up)
 			}
 		}
 	}
-	set_locale("en")
 }
 
 // A preview too long for its row ends in an ellipsis inside the clip,
