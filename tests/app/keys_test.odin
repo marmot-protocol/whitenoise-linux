@@ -13,7 +13,7 @@ import sdl "vendor:sdl3"
 
 @(test)
 keys_package_layout :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "keys_package_layout" {return}
+	if !test_isolated("keys_package_layout") {return}
 	context.allocator = runtime.default_context().allocator
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
@@ -70,42 +70,80 @@ keys_package_layout :: proc(t: ^testing.T) {
 			relay_urls = relays,
 		},
 	)
-	settings_open(&ui, nil, .Account, "KpStatus")
-	for locale in ([]string{"en", "it", "de", "ja", "ko", "fi"}) {
-		set_locale(locale)
-		for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
-		settings_resolve_scroll(&ui)
-		commands := build_layout(&ui, 0)
-		row := nendo.element(nendo.id("KpRow", 0))
-		testing.expect(t, row.found && row.rect.height > 0, "package has a visible row")
-		testing.expect(
-			t,
-			!nendo.element(nendo.id("KpRow", 1)).found,
-			"overlapping locations do not add a package row",
-		)
-		box := row.rect
-		text_count := 0
-		for command in commands {
-			b := command.rect
-			if command.kind != .Text ||
-			   b.x < box.x ||
-			   b.y < box.y ||
-			   b.y >= box.y + box.height {continue}
-			text_count += 1
-			testing.expect(
-				t,
-				b.x >= box.x && b.x + b.width <= box.x + box.width + 0.1,
-				"row text fits horizontally",
-			)
-			testing.expect(
-				t,
-				b.y + b.height <= box.y + box.height + 0.1,
-				"row text fits vertically",
-			)
+	for size in ([2][2]i32{{340, 1312}, {1024, 700}}) {
+		UI_ZOOM = size[0] == 340 ? 1.875 : 1
+		UI_SCALE = UI_ZOOM
+		rl.SetWindowSize(size[0], size[1])
+		nendo.set_dimensions({f32(size[0]) / UI_ZOOM, f32(size[1]) / UI_ZOOM})
+		for locale in ([]string{"en", "it", "de", "ja", "ko", "fi"}) {
+			set_locale(locale)
+			settings_open(&ui, nil, .Account, "KpStatus")
+			for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+			settings_resolve_scroll(&ui)
+			commands := build_layout(&ui, 0)
+			location_lines := keys_check_package_row(t, commands, ui.kp_list[0], locale)
+			if size[0] == 340 && locale == "en" {
+				testing.expect(
+					t,
+					location_lines > 1,
+					"location wraps at phone width and high zoom",
+				)
+			}
 		}
-		testing.expect(t, text_count > 0, "package row renders text")
 	}
 	keys_public_layout(t, &ui)
+}
+
+@(private = "file")
+keys_check_package_row :: proc(
+	t: ^testing.T,
+	commands: []nendo.Render_Command,
+	kp: Kp_Row,
+	locale: string,
+) -> int {
+	row := nendo.element(nendo.id("KpRow", 0))
+	testing.expect(t, row.found && row.rect.height > 0, "package has a visible row")
+	testing.expect(
+		t,
+		!nendo.element(nendo.id("KpRow", 1)).found,
+		"overlapping locations do not add a package row",
+	)
+	box := row.rect
+	next, lines: int
+	location := kp_location(kp)
+	for text in ([3]string{short_hex(kp.id), kp.at, location}) {
+		remaining := text
+		lines = 0
+		for next < len(commands) && remaining != "" {
+			command := commands[next]
+			next += 1
+			if command.kind != .Text {continue}
+			line := strings.trim_space(command.text.text)
+			if line == "" {continue}
+			if text == location {
+				if !strings.has_prefix(remaining, line) {continue}
+			} else if line != remaining {
+				continue
+			}
+			b := command.rect
+			testing.expectf(
+				t,
+				b.x >= box.x &&
+				b.y >= box.y &&
+				b.x + b.width <= box.x + box.width + 0.1 &&
+				b.y + b.height <= box.y + box.height + 0.1,
+				"%s: %q bounds %v must fit in key package row %v",
+				locale,
+				line,
+				b,
+				box,
+			)
+			remaining = strings.trim_space(remaining[len(line):])
+			lines += 1
+		}
+		testing.expectf(t, remaining == "", "%s: missing row text %q", locale, remaining)
+	}
+	return lines
 }
 
 @(private = "file")
