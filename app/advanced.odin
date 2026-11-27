@@ -20,7 +20,7 @@ import rl "sdlrl"
 
 import marmot "../marmot"
 
-APP_VERSION :: "2026.11.15+1" // YYYY.M.D + increasing build revision
+APP_VERSION :: "2026.11.27+2" // YYYY.M.D + increasing build revision
 
 Audit_File :: struct {
 	path:  string,

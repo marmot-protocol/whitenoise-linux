@@ -44,6 +44,7 @@
   </content_rating>
   <!-- scripts/rc-stamp.sh inserts the candidate version here. -->
   <releases>
+    <release version="2026.11.27+2" date="2026-11-27"/>
     <release version="2026.11.15+1" date="2026-11-15"/>
     <release version="2026.10.23+2" date="2026-10-23"/>
     <release version="2026.10.23+1" date="2026-10-23"/>
