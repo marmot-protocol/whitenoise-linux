@@ -1,32 +1,90 @@
 package main
 
+import "core:fmt"
+import "core:strings"
+
 import marmot "../marmot"
 import "nendo"
 import rl "sdlrl"
 
 @(private)
-reaction_button_id :: proc(message: string) -> nendo.Id {
-	return nendo.id("ReactionDetailsButton", nendo.id(message).id)
+reaction_chip_id :: proc(message: u32, emoji: string) -> nendo.Id {
+	return nendo.id("MsgReactionChip", nendo.id(emoji, message).id)
+}
+
+@(private = "file")
+REACTION_SENDER_GAP :: 6
+
+@(private = "file")
+reaction_sender :: proc(sender: string, width: f32, ink: nendo.Color, size: u16) {
+	name := strings.trim_space(mention_label(sender))
+	if end := strings.index_any(name, "\r\n"); end >= 0 {name = name[:end]}
+	photo := person_picture(sender, profile_info(g_client, sender).pic_url)
+	SIDE :: 14
+	avatar("ReactionSenderAvatar", nendo.open_id(), sender, name, SIDE, photo)
+	nendo.text(
+		text_ellipsis(name, width - SIDE - REACTION_SENDER_GAP, FONT_BODY, size),
+		{font = FONT_BODY, size = size, color = ink, wrap = .None},
+	)
 }
 
 @(private)
-reaction_details_button :: proc(message: string) {
-	id := reaction_button_id(message)
-	focused := g_ui.timeline_focus == id.id
-	size := tap_size() ? tap_min() : 24
-	if nendo.box(id)(
+reaction_peek :: proc(id: nendo.Id, strip: nendo.Id, senders: []string) {
+	anchor := nendo.element(id)
+	if !anchor.found {return}
+	view := nendo.element(nendo.id("Timeline")).rect
+	if g_ui.timeline_focus.id.id == id.id &&
+	   !timeline_button_visible(id, reaction_clip(view, strip)) {return}
+	PEEK_NAMES :: 3
+	LINE_H :: 18
+	shown := min(PEEK_NAMES, len(senders))
+	more := len(senders) - shown
+	width := min(f32(174), view.width - 16)
+	height := f32(shown + int(more > 0)) * LINE_H + 12
+	r := anchor.rect
+	y := r.y - height - 6
+	if y < view.y + 8 {y = r.y + r.height + 6}
+	x := clamp(r.x + (r.width - width) / 2, view.x + 8, view.x + view.width - width - 8)
+	top := clamp(y, 8, max(8, f32(rl.GetScreenHeight()) / UI_ZOOM - height - 8))
+	if nendo.box(nendo.id_local("ReactionPeek"))(
 	{
-		width = nendo.fixed(size),
-		height = nendo.fixed(size),
-		align = {x = .Center, y = .Center},
-		color = hovered() ? HOVER : ROW_BG,
-		radius = rr(10),
-		border = focused ? kb_ring(ACCENT) : {},
+		width = nendo.fixed(width),
+		direction = .Column,
+		padding = {left = 10, right = 10, top = 6, bottom = 6},
+		floating = {attach_to = .Root, z = 18, offset = {x, top}, pointer = .Passthrough},
+		color = TOOLTIP,
+		radius = rr(6),
+		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		nendo.text(ICON_PEOPLE, {font = FONT_ICON, size = 12, color = TEXT})
-		if !modal_open(g_ui) && (focused || hovered()) {tooltip(tr("Reaction details"), .Above)}
+		for sender, i in senders[:shown] {
+			if nendo.box(nendo.id_local("ReactionPeekLine", u32(i)))(
+			{height = nendo.fixed(LINE_H), align = {y = .Center}, gap = REACTION_SENDER_GAP},
+			) {
+				reaction_sender(sender, width - 20, POPOVER_TEXT, 12)
+			}
+		}
+		if more > 0 {
+			nendo.text(
+				fmt.tprintf(tr("+%d more"), more),
+				{
+					font = FONT_BODY,
+					size = 11,
+					line_height = LINE_H,
+					color = TEXT_DIM,
+					wrap = .None,
+				},
+			)
+		}
 	}
+}
+
+@(private)
+has_reaction_senders :: proc(reactions: []Reaction_Ui) -> bool {
+	for chip in reactions {
+		if len(chip.senders) > 0 {return true}
+	}
+	return false
 }
 
 @(private = "file")
@@ -40,15 +98,12 @@ timeline_message_pointer :: proc(ui: ^Ui_State, messages: []Msg_Ui) -> u32 {
 			   (!rl.TouchActive() ||
 					   nendo.element(id).rect.height >= tap_min() - 0.5) {return id.id}
 		}
-		if len(msg.reactions) == 0 || len(msg.reactions[0].senders) == 0 {continue}
-		id := reaction_button_id(msg.id)
-		if nendo.pointer_over(id) {return id.id}
 	}
 	return 0
 }
 
-@(private = "file")
-reaction_modal_open :: proc(ui: ^Ui_State, message: string) {
+@(private)
+reaction_modal_open :: proc(ui: ^Ui_State, message: string, return_to: Timeline_Control) {
 	fan_cancel()
 	if ui.mention_active {
 		ui.mention_dismissed = ui.mention_at_b
@@ -59,12 +114,15 @@ reaction_modal_open :: proc(ui: ^Ui_State, message: string) {
 		ui.shortcode_active = false
 	}
 	if slash_open(ui) {ui.slash.dismissed = true}
-	// Closing composer popovers must not capture clicks over the modal.
-	for name in ([]string{"MentionPop", "ShortcodePop", "FxPanel"}) {
+	// Outgoing popovers must not capture clicks over the modal.
+	for name in ([]string{"CtxMenu", "MentionPop", "ShortcodePop", "FxPanel"}) {
 		delete_key(&opens, nendo.id(name).id)
 	}
 	scroll_residual = {}
 	ui.reaction_details_id = message
+	ui.reaction_return = return_to
+	ui.timeline_focus = {}
+	kb_focus = "ReactionDetailsClose"
 }
 
 @(private = "file")
@@ -140,11 +198,6 @@ timeline_pointer :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 					open_msg_menu(ui, msg.id, .Button)
 					break
 				}
-				if len(msg.reactions) == 0 || len(msg.reactions[0].senders) == 0 {continue}
-				if reaction_button_id(msg.id).id == press_id {
-					reaction_modal_open(ui, msg.id)
-					break
-				}
 			}
 		}
 	} else if !rl.IsMouseButtonDown(.LEFT) && !pressed {
@@ -152,6 +205,13 @@ timeline_pointer :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		return false
 	}
 	return true
+}
+
+@(private = "file")
+reaction_clip :: proc(view: nendo.Rect, strip: nendo.Id) -> nendo.Rect {
+	row := nendo.element(strip).rect
+	left := max(view.x, row.x)
+	return {left, view.y, min(view.x + view.width, row.x + row.width) - left, view.height}
 }
 
 @(private = "file")
@@ -169,7 +229,8 @@ timeline_button_visible :: proc(id: nendo.Id, view: nendo.Rect) -> bool {
 @(private)
 timeline_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	if ui.show_members || web_modal.open {return false}
-	focused := ui.timeline_focus != 0
+	focus := ui.timeline_focus
+	focused := focus.id.id != 0
 	if !focused &&
 	   (ui.focus == .Filter ||
 			   ui.poll_open ||
@@ -184,7 +245,7 @@ timeline_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		return false
 	}
 	if focused && rl.IsKeyPressed(.ESCAPE) {
-		ui.timeline_focus = 0
+		ui.timeline_focus = {}
 		ui.timeline_retry_back = {}
 		return true
 	}
@@ -195,103 +256,123 @@ timeline_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 
 	timeline := nendo.id("Timeline")
 	view := nendo.element(timeline).rect
-	if focused &&
-	   ui.timeline_focus != timeline.id &&
-	   !timeline_button_visible({id = ui.timeline_focus}, view) {
-		// Focus belongs to the timeline even if a worker removes its button.
-		ui.timeline_focus = timeline.id
+	focus_view := focus.strip.id != 0 ? reaction_clip(view, focus.strip) : view
+	if focused && focus.id != timeline && !timeline_button_visible(focus.id, focus_view) {
 		ui.timeline_retry_back = {}
+		// A refresh or scroll can remove the focused control without a keypress.
+		focus = {
+			id = timeline,
+		}
+		ui.timeline_focus = focus
 	}
-	if ui.timeline_focus == timeline.id && step == 0 {return true}
+	if focus.id == timeline && step == 0 {return true}
 	if step == 0 && !activate {return focused}
 
-	Target :: struct {
-		id:    nendo.Id,
-		retry: bool,
-	}
-	first, next: Target
-	visible_message: u32
-	found_focus, focus_is_retry := false, false
-	// Each message has a menu and may also have reaction details. Retry
-	// follows both, in visual order, and remains tabbable offscreen.
+	first, next, visible_message: Timeline_Control
+	found_focus, focus_is_retry, first_is_retry, next_is_retry := false, false, false, false
+	// Retry follows the visible message controls and remains tabbable offscreen.
 	group, thread_id := ui.chats[ui.selected].group_id, thread_cur(ui)
-	message_controls := 2 * len(ui.messages)
-	count := message_controls + len(ui.pending)
+	count := len(ui.messages) + len(ui.pending)
 	for i in 0 ..< count {
 		index := step < 0 ? count - i - 1 : i
-		is_retry := index >= message_controls
-		is_menu := !is_retry && index % 2 == 0
-		id: nendo.Id
-		if !is_retry {
-			msg := &ui.messages[index / 2]
-			if is_menu {
+		is_retry := index >= len(ui.messages)
+		msg: ^Msg_Ui
+		retry: ^Pending_Send
+		seed: u32
+		strip: nendo.Id
+		clip: nendo.Rect
+		slots := 1
+		if is_retry {
+			retry = &ui.pending[index - len(ui.messages)]
+			if !retry.failed ||
+			   retry.thread != thread_id ||
+			   !pending_in_workspace(ui, retry^, group) ||
+			   !pending_send_allowed(ui, retry^) {continue}
+		} else {
+			msg = &ui.messages[index]
+			slots += len(msg.reactions)
+			if slots > 1 {
+				seed = nendo.id(msg.id).id
+				strip = nendo.id("MsgReactions", seed)
+				clip = reaction_clip(view, strip)
+			}
+		}
+		for j in 0 ..< slots {
+			slot := step < 0 ? slots - j - 1 : j
+			id: nendo.Id
+			candidate := Timeline_Control{}
+			if is_retry {
+				id = pending_retry_id(retry.ticket)
+				button := nendo.element(id)
+				if !button.found ||
+				   button.rect.x < view.x - 0.5 ||
+				   button.rect.x + button.rect.width > view.x + view.width + 0.5 {continue}
+			} else if slot == 0 {
 				if !message_menu_allowed(ui, msg^) {continue}
 				id = message_more_id(msg.id)
+				if !timeline_button_visible(id, view) {continue}
 			} else {
-				if len(msg.reactions) == 0 || len(msg.reactions[0].senders) == 0 {continue}
-				id = reaction_button_id(msg.id)
+				chip := &msg.reactions[slot - 1]
+				if len(chip.senders) == 0 {continue}
+				id = reaction_chip_id(seed, chip.emoji)
+				box := nendo.element(id)
+				if !box.found ||
+				   box.rect.width > clip.width + 0.5 ||
+				   box.rect.y < view.y - 0.5 ||
+				   box.rect.y + box.rect.height > view.y + view.height + 0.5 {continue}
+				candidate.strip = strip
 			}
-			if !timeline_button_visible(id, view) {continue}
-			if visible_message == 0 {visible_message = id.id}
-		} else {
-			p := &ui.pending[index - message_controls]
-			if !p.failed ||
-			   p.thread != thread_id ||
-			   !pending_in_workspace(ui, p^, group) ||
-			   !pending_send_allowed(ui, p^) {continue}
-			id = pending_retry_id(p.ticket)
-			button := nendo.element(id)
-			if !button.found ||
-			   button.rect.x < view.x - 0.5 ||
-			   button.rect.x + button.rect.width > view.x + view.width + 0.5 {continue}
-		}
-		candidate := Target{id, is_retry}
-		if first.id.id == 0 {first = candidate}
-		if id.id == ui.timeline_focus {
-			if step == 0 {
-				if !is_retry {
-					msg := ui.messages[index / 2]
-					if is_menu || menu_key {
-						if message_menu_allowed(ui, msg) {open_msg_menu(ui, msg.id, .Keyboard)}
+			candidate.id = id
+			if !is_retry && visible_message.id.id == 0 {visible_message = candidate}
+			if first.id.id == 0 {first, first_is_retry = candidate, is_retry}
+			if id.id == focus.id.id {
+				if step == 0 {
+					if is_retry {
+						if menu_key {return true}
+						ui.timeline_focus = {}
+						ui.timeline_retry_back = {}
+						retry_pending(ui, client, retry)
+					} else if slot == 0 || menu_key {
+						if message_menu_allowed(ui, msg^) {open_msg_menu(ui, msg.id, .Keyboard)}
 					} else {
-						reaction_modal_open(ui, msg.id)
-						kb_focus = "ReactionDetailsClose"
+						reaction_modal_open(ui, msg.id, focus)
 					}
-				} else if !menu_key {
-					ui.timeline_focus = 0
-					ui.timeline_retry_back = {}
-					retry_pending(ui, client, &ui.pending[index - message_controls])
+					return true
 				}
-				return true
+				found_focus, focus_is_retry = true, is_retry
+			} else if found_focus {
+				next, next_is_retry = candidate, is_retry
+				break
 			}
-			found_focus, focus_is_retry = true, is_retry
-		} else if found_focus {
-			next = candidate
-			break
 		}
+		if next.id.id != 0 {break}
 	}
-	target := step == 0 ? Target{} : (found_focus ? next : first)
+	target := step == 0 ? Timeline_Control{} : (found_focus ? next : first)
+	retry_target := target.id.id != 0 && (found_focus ? next_is_retry : first_is_retry)
 	if scroll := nendo.scroll(timeline); scroll.found {
-		// Message controls only participate while visible. Remember the
-		// viewport before a Retry can scroll the previous control out of it.
-		if target.retry && found_focus && !focus_is_retry {
-			ui.timeline_retry_back = {ui.timeline_focus, scroll.position.y}
-		} else if target.retry && !found_focus && step < 0 {
+		// Remember where the previous control was before Retry scrolls the timeline.
+		if retry_target && found_focus && !focus_is_retry {
+			ui.timeline_retry_back = {focus, scroll.position.y}
+		} else if retry_target && !found_focus && step < 0 {
 			ui.timeline_retry_back = {visible_message, scroll.position.y}
-		} else if !target.retry &&
+		} else if !retry_target &&
 		   step < 0 &&
 		   focus_is_retry &&
-		   ui.timeline_retry_back.focus != 0 {
-			ui.timeline_focus = ui.timeline_retry_back.focus
+		   ui.timeline_retry_back.focus.id.id != 0 {
+			target = ui.timeline_retry_back.focus
 			scroll.position.y = ui.timeline_retry_back.y
-			ui.timeline_retry_back = {}
-			return true
 		}
 	}
-	if !target.retry {ui.timeline_retry_back = {}}
-	ui.timeline_focus = target.id.id
-	if target.retry {scroll_into_view(timeline, target.id)}
-	return focused || ui.timeline_focus != 0
+	if !retry_target {ui.timeline_retry_back = {}}
+	ui.timeline_focus = target
+	if retry_target {scroll_into_view(timeline, target.id)}
+	if strip := nendo.scroll(target.strip); strip.found {
+		view := reaction_clip(view, target.strip)
+		box := nendo.element(target.id).rect
+		strip.position.x +=
+			max(0, view.x - box.x) - max(0, box.x + box.width - view.x - view.width)
+	}
+	return activate || focused || target.id.id != 0
 }
 
 REACTION_LINE_H :: f32(24)
@@ -385,7 +466,7 @@ reaction_details_lines :: proc(chips: []Reaction_Ui, count: int, width: f32) {
 				height = nendo.fixed(REACTION_LINE_H),
 				align = {y = .Center},
 				padding = {left = header ? 8 : 20},
-				gap = 6,
+				gap = REACTION_SENDER_GAP,
 				color = header ? ROW_BG : {},
 				radius = rr(6),
 			},
@@ -398,11 +479,7 @@ reaction_details_lines :: proc(chips: []Reaction_Ui, count: int, width: f32) {
 						nendo.text(chip.label, {font = FONT_TITLE, size = 13, color = TEXT})
 					}
 				} else {
-					name := profile_label(g_client, chip.senders[i - start - 1])
-					nendo.text(
-						text_ellipsis(name, width, FONT_BODY, 13),
-						{font = FONT_BODY, size = 13, color = TEXT},
-					)
+					reaction_sender(chip.senders[i - start - 1], width, TEXT, 13)
 				}
 			}
 		}
@@ -416,6 +493,7 @@ reaction_modal_close :: proc(ui: ^Ui_State) {
 	   scroll.found {scroll.position^ = {}}
 	scroll_residual = {}
 	ui.reaction_details_id = ""
+	ui.timeline_focus, ui.reaction_return = ui.reaction_return, {}
 	if kb_focus == "ReactionDetailsClose" {kb_focus = ""}
 }
 

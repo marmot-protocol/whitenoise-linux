@@ -293,6 +293,12 @@ Reaction_Ui :: struct {
 	senders: []string, // owned IDs of confirmed reactors
 }
 
+@(private)
+Timeline_Control :: struct {
+	id:    nendo.Id,
+	strip: nendo.Id, // zero for a pending-send Retry control
+}
+
 // A react/unreact still on the wire, overlaid onto the timeline so the
 // chip appears the instant it is clicked. Dropped by drain_ops on the
 // ack; a reload in between re-applies whatever is still pending.
@@ -706,9 +712,11 @@ Ui_State :: struct {
 	offline_unowned_warned:              bool,
 	react_pending:                       [dynamic]Pending_React, // optimistic reactions awaiting ack
 	reaction_details_id:                 string, // message ID borrowed from messages
-	timeline_focus, timeline_press:      u32, // stable nendo button IDs
+	reaction_return:                     Timeline_Control,
+	timeline_focus:                      Timeline_Control,
+	timeline_press:                      u32, // stable nendo ID of a pressed Retry
 	timeline_retry_back:                 struct {
-		focus: u32,
+		focus: Timeline_Control,
 		y:     f32,
 	},
 	compose:                             [dynamic]u8,
@@ -759,7 +767,8 @@ Ui_State :: struct {
 	ctx_open:                            bool, // message context menu
 	ctx_message:                         string, // owned message ID, not its current row index
 	ctx_items:                           [dynamic]nendo.Id, // current menu order, including quick reactions
-	ctx_focus, ctx_return:               u32, // selected menu item and timeline control to restore
+	ctx_focus:                           u32, // selected menu item
+	ctx_return:                          Timeline_Control,
 	ctx_keyboard:                        bool,
 	ctx_x:                               f32, // panel anchor, layout coords
 	ctx_y:                               f32,
