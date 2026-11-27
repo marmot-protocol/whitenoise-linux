@@ -326,11 +326,12 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 	)
 	media_start := len(ui.chats)
 	for fixture in ([2]struct {
-			title: cstring,
-			kind:  Chat_Attachment_Kind,
-		}{{"Image chat", .Photo}, {"Video chat", .Video}}) {
+			title, caption: cstring,
+			kind:           Chat_Attachment_Kind,
+		}{{"Image chat", "Look at this", .Photo}, {"Video chat", nil, .Video}}) {
 		last := marmot.Chat_List_Message_Preview {
 			kind                = 9,
+			plaintext           = fixture.caption,
 			sender              = account,
 			has_attachment_kind = true,
 			attachment_kind     = i32(fixture.kind),
@@ -425,7 +426,7 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 			testing.expect_value(t, again, frame)
 			commands = build_layout(&ui, 0)
 		}
-		for want, i in ([]string{"You:\uf03eImage", "You:\uf03dVideo", "Look at Nostr event today", "Nostr event", "Invalid Nostr reference"}) {
+		for want, i in ([]string{"You:\uf03eLook at this", "You:\uf03dVideo", "Look at Nostr event today", "Nostr event", "Invalid Nostr reference"}) {
 			text, inside := shown(commands, u32(3 + i))
 			testing.expect_value(t, text, want)
 			testing.expect(t, inside, text)

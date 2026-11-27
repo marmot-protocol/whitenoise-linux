@@ -258,7 +258,7 @@ chat_attachment_preview :: proc(t: ^testing.T) {
 		{nil, PREVIEW_SELF, 0, 1, true, false, "You: Image"},
 		{"  \n", "peer", 0, 2, true, false, "Images"},
 		{"Look at this", PREVIEW_SELF, 0, 1, true, false, "You: Look at this"},
-		{"", PREVIEW_SELF, 0, 0, false, false, ""},
+		{"Just text", PREVIEW_SELF, 0, 0, false, false, "You: Just text"},
 		{"", PREVIEW_SELF, 0, 1, true, true, ""},
 		{"", PREVIEW_SELF, 1, 1, true, false, "You: Video"},
 		{"  \n", "peer", 1, 2, true, false, "Videos"},
@@ -294,7 +294,7 @@ chat_attachment_preview :: proc(t: ^testing.T) {
 		}
 		testing.expect_value(t, ui.preview, want)
 		icon: Chat_Preview_Icon
-		if tc.has_kind && !tc.deleted && strings.trim_space(string(tc.body)) == "" {
+		if tc.has_kind && !tc.deleted {
 			label := strings.trim_prefix(tc.want, "You: ")
 			icon = {icons[tc.kind], len(want) - len(label)}
 		}

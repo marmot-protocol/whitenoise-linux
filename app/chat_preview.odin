@@ -14,6 +14,17 @@ Chat_Attachment_Kind :: enum i32 {
 	Mixed,
 }
 
+@(private = "file")
+CHAT_ATTACHMENT_PREVIEWS := [Chat_Attachment_Kind]struct {
+	glyph, label, plural: string,
+} {
+	.Photo = {GROUP_FILE_ICONS[.Images], N_("Image"), N_("Images")},
+	.Video = {GROUP_FILE_ICONS[.Videos], N_("Video"), N_("Videos")},
+	.Audio = {GROUP_FILE_ICONS[.Audio], N_("Audio message"), ""},
+	.File  = {GROUP_FILE_ICONS[.Documents], N_("File"), N_("Files")},
+	.Mixed = {ICON_CLIP, N_("Attachments"), ""},
+}
+
 @(private)
 Chat_Preview :: struct {
 	text: string,
@@ -23,7 +34,7 @@ Chat_Preview :: struct {
 @(private)
 Chat_Preview_Icon :: struct {
 	glyph: string, // static glyph, separate from the text used in notifications
-	at:    int, // byte offset of the attachment label
+	at:    int, // byte offset of the caption or attachment label
 }
 
 @(private)
@@ -79,28 +90,14 @@ chat_row_preview :: proc(
 		preview.text = tr("Unsupported event")
 	} else {
 		preview.text = strings.trim_space(reading_text(client, raw))
-		if preview.text == "" && last.has_attachment_kind {
-			multiple := last.attachment_count > 1
-			switch Chat_Attachment_Kind(last.attachment_kind) {
-			case .Photo:
-				preview = {
-					multiple ? tr("Images") : tr("Image"),
-					{glyph = GROUP_FILE_ICONS[.Images]},
-				}
-			case .Video:
-				preview = {
-					multiple ? tr("Videos") : tr("Video"),
-					{glyph = GROUP_FILE_ICONS[.Videos]},
-				}
-			case .Audio:
-				preview = {tr("Audio message"), {glyph = GROUP_FILE_ICONS[.Audio]}}
-			case .File:
-				preview = {
-					multiple ? tr("Files") : tr("File"),
-					{glyph = GROUP_FILE_ICONS[.Documents]},
-				}
-			case .Mixed:
-				preview = {tr("Attachments"), {glyph = ICON_CLIP}}
+		kind := Chat_Attachment_Kind(last.attachment_kind)
+		if last.has_attachment_kind && kind >= .Photo && kind <= .Mixed {
+			attachment := &CHAT_ATTACHMENT_PREVIEWS[kind]
+			preview.icon.glyph = attachment.glyph
+			if preview.text == "" {
+				preview.text = tr(
+					last.attachment_count > 1 && attachment.plural != "" ? attachment.plural : attachment.label,
+				)
 			}
 		}
 	}
