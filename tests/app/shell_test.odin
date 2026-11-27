@@ -573,11 +573,11 @@ settings_modal_reflow :: proc(t: ^testing.T, ui: ^Ui_State) {
 	forced_release = true
 	defer {forced_release = false}
 	ui.lang_open = true
-	testing.expect(t, !handle_shell_foreground(ui, false), "A child dialog owns the release")
+	testing.expect(t, !handle_shell_foreground(ui, nil, false), "A child dialog owns the release")
 	ui.lang_open = false
-	testing.expect(t, !handle_shell_foreground(ui, true), "A captured release stays consumed")
+	testing.expect(t, !handle_shell_foreground(ui, nil, true), "A captured release stays consumed")
 	testing.expect(t, ui.stt.file != nil)
-	testing.expect(t, handle_shell_foreground(ui, false), "Settings can cancel the download")
+	testing.expect(t, handle_shell_foreground(ui, nil, false), "Settings can cancel the download")
 	testing.expect(t, ui.stt.file == nil)
 }
 

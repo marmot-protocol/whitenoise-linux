@@ -896,7 +896,7 @@ handle_row_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if nendo.pointer_over(nendo.id("RowArchive")) {
-		confirm_ask(ui, .Archive_Chat, gid, ui.chats[index].title)
+		start_archive_job(ui, client, gid, .Archive_Chat)
 		return
 	}
 	if nendo.pointer_over(nendo.id("RowPin")) {

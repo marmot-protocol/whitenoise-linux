@@ -25,7 +25,6 @@ Confirm_Kind :: enum {
 	Leave_Group,
 	Leave_Chat,
 	Delete_Group,
-	Archive_Chat,
 	Block,
 	Remove_Contact,
 	Delete_Theme,
@@ -90,10 +89,6 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		return N_(
 			"Block this contact?",
 		), N_("Their messages stay hidden until you show them. Nothing is published, and you can unblock them here."), N_("Block")
-	case .Archive_Chat:
-		return N_(
-			"Archive this chat?",
-		), N_("You can find it in Archived and restore it to your chat list there."), N_("Archive")
 	case .Delete_Theme:
 		return N_(
 			"Delete this theme?",
@@ -234,8 +229,7 @@ confirm_ask :: proc(
 		idx  = idx,
 	}
 	#partial switch kind {
-	case .Archive_Chat,
-	     .Leave_Group,
+	case .Leave_Group,
 	     .Leave_Chat,
 	     .Delete_Group,
 	     .Reset_Devices,
@@ -296,13 +290,11 @@ confirm_modal :: proc(ui: ^Ui_State) {
 		nendo.text(tr(title), {font = FONT_TITLE, size = 18, color = TEXT})
 		scrollbar(nendo.id("ConfirmModal"), 17)
 		account_subject := shown.kind == .Wipe_Account || shown.kind == .Wipe_Unlinked
-		if len(ui.confirm.name) > 0 && (account_subject || shown.kind == .Archive_Chat) {
+		if len(ui.confirm.name) > 0 && account_subject {
 			if nendo.box(nendo.id("ConfirmAccount"))(
 			{width = nendo.grow(), gap = 10, align = {y = .Center}},
 			) {
-				if account_subject {
-					avatar("ConfirmAvatar", 0, ui.confirm.arg, ui.confirm.name, 36)
-				}
+				avatar("ConfirmAvatar", 0, ui.confirm.arg, ui.confirm.name, 36)
 				nendo.text(ui.confirm.name, {font = FONT_TITLE, size = 16, color = TEXT})
 			}
 		} else if len(ui.confirm.name) > 0 {
@@ -356,12 +348,9 @@ confirm_modal :: proc(ui: ^Ui_State) {
 				height = nendo.fit(min = tap_size() ? tap_min() : 0),
 				padding = {left = 16, right = 16, top = 9, bottom = 9},
 				align = {x = .Center, y = .Center},
-				color = shown.kind == .Say_GM || shown.kind == .Archive_Chat ? ACCENT : (hovered() ? DANGER : ROW_BG),
+				color = shown.kind == .Say_GM ? ACCENT : (hovered() ? DANGER : ROW_BG),
 				radius = rr(9),
-				border = {
-					color = shown.kind == .Say_GM || shown.kind == .Archive_Chat ? ACCENT : DANGER,
-					width = bw(),
-				},
+				border = {color = shown.kind == .Say_GM ? ACCENT : DANGER, width = bw()},
 			},
 			) {
 				nendo.text(
@@ -369,7 +358,7 @@ confirm_modal :: proc(ui: ^Ui_State) {
 					{
 						font = FONT_TITLE,
 						size = 13,
-						color = shown.kind == .Say_GM || shown.kind == .Archive_Chat ? ON_ACCENT : (hovered() ? BG : DANGER),
+						color = shown.kind == .Say_GM ? ON_ACCENT : (hovered() ? BG : DANGER),
 					},
 				)
 			}
@@ -423,11 +412,6 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		   ui.chats[ui.selected].group_id != c.arg {return}
 		kind := c.kind == .Delete_Group ? Account_Operation.Delete_Conversation : .Leave
 		account_job_start(account_job_new(ui, client, kind))
-	case .Archive_Chat:
-		// A background account switch must not retarget the captured intent.
-		if c.account != ui.account_ref {return}
-		// The menu's chat may not be the selected conversation.
-		set_archived(ui, client, c.arg, true)
 	case .Block:
 		ui.blocked[strings.clone(c.arg)] = true
 		save_settings(ui)

@@ -351,6 +351,8 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 			ui.account_ref = "missing-offline-account"
 			mouse_at(&ui, client, point, true)
 			mouse_at(&ui, client, point, false)
+			for job in account_jobs {thread.join(job.worker)}
+			account_job_drain(&ui)
 			testing.expect_value(t, ui.page, Page.Archived)
 			testing.expect_value(t, ui.chat_filter, Chat_Filter.Unread)
 			testing.expect_value(t, string(ui.sidebar_filter[:]), "Restored")
@@ -360,8 +362,6 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 			testing.expect_value(t, len(ui.staged_drafts[draft_key(account, other)]), 0)
 			testing.expect(t, strings.has_prefix(ui.client_status, "Couldn't unarchive."))
 			testing.expect_value(t, ui.client_status_kind, Status_Kind.Error)
-			for job in account_jobs {thread.join(job.worker)}
-			account_job_drain(&ui)
 			ui.account_ref = account
 			for _ in 0 ..< 3 {frame(&ui)}
 			point, found = control_point(t, id)
@@ -379,6 +379,17 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		} else {
 			mouse_at(&ui, client, point, true)
 			mouse_at(&ui, client, point, false)
+		}
+		for job in account_jobs {thread.join(job.worker)}
+		live: Live
+		if other_selected {chat_list_revision += 1} 	// A timeline read can fence this snapshot.
+		account_job_drain(&ui, &live)
+		if other_selected {
+			testing.expect(t, live.refresh_dirty)
+			testing.expect(t, load_chat_list(client, account, &ui))
+			load_archived(client, &ui)
+			for job in account_jobs {thread.join(job.worker)}
+			account_job_drain(&ui)
 		}
 		// Restore confirms in place: Archive keeps its page, filter and search,
 		// and no conversation opens.
@@ -407,8 +418,6 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		text := frame(&ui)
 		testing.expect(t, strings.contains(text, "Chat restored."), "Success is visibly confirmed")
 		timeline_stop()
-		for job in account_jobs {thread.join(job.worker)}
-		account_job_drain(&ui)
 		testing.expect_value(t, len(ui.archived), 0)
 		testing.expect_value(t, ui.drafts[draft_key(account, other)], "Keep this draft")
 		testing.expect_value(t, ui.selected, -1)
@@ -445,6 +454,122 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 
 	ui.page, ui.chat_filter = .Chats, .Chats
 	ui.client_status = ""
+	clear(&ui.sidebar_filter)
+	for chat, i in ui.chats {
+		if chat.group_id == other {ui.row_menu = i; break}
+	}
+	ui.row_menu_x, ui.row_menu_y = 100, 80
+	for _ in 0 ..< 3 {frame(&ui)}
+	menu_point, menu_found := control_point(t, nendo.id("RowArchive"))
+	if !menu_found {return}
+	nendo.set_pointer(menu_point, .Down)
+	menu_press = {}
+	forced_press = true
+	build_layout(&ui, 0)
+	forced_press = false
+	forced_release = true
+	handle_chat(&ui, client)
+	forced_release = false
+	// Opening Archive while the write is pending must not queue a notice
+	// that replaces Undo before its first frame.
+	load_archived(client, &ui)
+	for job in account_jobs {thread.join(job.worker)}
+	account_job_drain(&ui)
+	if !testing.expect_value(t, len(ui.archived), 1) ||
+	   !testing.expect_value(t, len(ui.chats), 1) {return}
+	testing.expect_value(t, ui.archived[0].group_id, other)
+	testing.expect_value(t, ui.selected, 0)
+	testing.expect_value(t, ui.chats[0].group_id, target)
+	text := frame(&ui)
+	testing.expect(t, strings.contains(text, "Chat archived.") && strings.contains(text, "Undo"))
+	set_status(&ui, tr("Couldn't refresh automatic folders. Please try again."), .Error)
+	text = frame(&ui)
+	testing.expect(t, strings.contains(text, "Chat archived.") && strings.contains(text, "Undo"))
+	undo_id := nendo.id("ToastUndo", ui.toast_archive.serial)
+	undo_point, undo_found := control_point(t, undo_id)
+	if !undo_found {return}
+	undo_mouse :: proc(
+		ui: ^Ui_State,
+		client: ^marmot.Client,
+		at: nendo.Vector2,
+		down: bool,
+	) -> bool {
+		rl.WindowShouldClose()
+		rl.PushMouseButton(.LEFT, down)
+		nendo.set_pointer(at, down ? .Down : .Up)
+		return handle_shell_foreground(ui, client, false)
+	}
+	// Lifting over Undo after pressing outside it must leave the chat archived.
+	undo_mouse(&ui, client, {0, 0}, true)
+	undo_mouse(&ui, client, undo_point, false)
+	testing.expect_value(t, len(account_jobs), 0)
+	// A different account cannot use the hit box left by the previous frame.
+	testing.expect(t, undo_mouse(&ui, client, undo_point, true))
+	ui.account_ref = "missing-offline-account"
+	testing.expect(t, !undo_mouse(&ui, client, undo_point, false))
+	ui.account_ref = account
+	ui.toast_archive.serial += 1 // The replacement has not been drawn yet.
+	testing.expect(t, !undo_mouse(&ui, client, undo_point, true))
+	testing.expect(t, !undo_mouse(&ui, client, undo_point, false))
+	frame(&ui)
+	undo_id = nendo.id("ToastUndo", ui.toast_archive.serial)
+	undo_point, undo_found = control_point(t, undo_id)
+	if !undo_found {return}
+	load_archived(client, &ui)
+	undo_mouse(&ui, client, undo_point, true)
+	undo_mouse(&ui, client, undo_point, false)
+	testing.expect(t, strings.contains(frame(&ui), "Undo"))
+	for job in account_jobs {thread.join(job.worker)}
+	account_job_drain(&ui)
+	if !testing.expect(t, start_archive_job(&ui, client, "missing-group", .Archive_Chat)) {return}
+	for job in account_jobs {thread.join(job.worker)}
+	account_job_drain(&ui)
+	text = frame(&ui)
+	testing.expect(
+		t,
+		strings.contains(text, "Couldn't archive.") && strings.contains(text, "Undo"),
+	)
+	undo_point, undo_found = control_point(t, undo_id)
+	if !undo_found {return}
+	testing.expect(t, undo_mouse(&ui, client, undo_point, true))
+	testing.expect(t, undo_mouse(&ui, client, undo_point, false))
+	for job in account_jobs {thread.join(job.worker)}
+	account_job_drain(&ui)
+	if !testing.expect_value(t, len(ui.archived), 0) ||
+	   !testing.expect_value(t, len(ui.chats), 2) ||
+	   !testing.expect(t, ui.selected >= 0) {return}
+	testing.expect_value(t, ui.chats[ui.selected].group_id, target)
+	testing.expect_value(t, raw_data(ui.staged), staged)
+	testing.expect(t, strings.contains(frame(&ui), "Chat restored."))
+	testing.expect(t, !nendo.element(undo_id).found)
+
+	// Another action reads the new list before the archive completion can
+	// park this conversation. The visible menu must not retain its old index.
+	if ui.selected != 0 {ui.chats[0], ui.chats[1] = ui.chats[1], ui.chats[0]}
+	ui.selected = 0
+	ui.row_menu = 1
+	ed_set(&ui, &ui.compose, "Park this draft")
+	if !testing.expect(t, start_archive_job(&ui, client, target, .Archive_Chat)) {return}
+	for job in account_jobs {thread.join(job.worker)}
+	testing.expect(t, load_chat_list(client, account, &ui))
+	account_job_drain(&ui)
+	testing.expect_value(t, ui.selected, -1)
+	testing.expect_value(t, ui.row_menu, -1)
+	testing.expect_value(t, ui.drafts[draft_key(account, target)], "Park this draft")
+	testing.expect_value(t, raw_data(ui.staged_drafts[draft_key(account, target)]), staged)
+	frame(&ui)
+	undo_point, undo_found = control_point(t, nendo.id("ToastUndo", ui.toast_archive.serial))
+	if !undo_found {return}
+	undo_mouse(&ui, client, undo_point, true)
+	undo_mouse(&ui, client, undo_point, false)
+	for job in account_jobs {thread.join(job.worker)}
+	account_job_drain(&ui)
+	testing.expect_value(t, ui.selected, -1)
+	if !testing.expect(t, select_by_id(&ui, client, target)) {return}
+	testing.expect_value(t, string(ui.compose[:]), "Park this draft")
+	testing.expect_value(t, raw_data(ui.staged), staged)
+	ui.client_status = ""
+
 	open_group_info(&ui, client, .Settings)
 	defer close_group_info(&ui)
 	for _ in 0 ..< 3 {frame(&ui)}
@@ -454,7 +579,7 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		scroll := nendo.scroll(view)
 		scroll.position.y -= max(0, relay_card.rect.y - nendo.element(view).rect.y)
 	}
-	text := frame(&ui)
+	text = frame(&ui)
 	testing.expect(t, strings.contains(text, "Loading relays…"))
 	thread.join(members_job.worker)
 	members_drain(&ui, client)

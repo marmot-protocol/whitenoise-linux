@@ -31,10 +31,11 @@ eyebrow :: proc(text: string) {
 
 // Small bordered chip: 11px label, hairline border, hover fill.
 // Pass a color to tint border and label (DANGER).
-micro_button :: proc(id_str: string, label: string, color: nendo.Color = {}) {
+micro_button :: proc(id_str: string, label: string, color: nendo.Color = {}, index: u32 = 0) {
+	id := nendo.id(id_str, index)
 	tinted := color.a != 0
-	down := press_down(nendo.id(id_str))
-	if nendo.box(nendo.id(id_str))(
+	down := press_down(id)
+	if nendo.box(id)(
 	{
 		width = nendo.fit(tap_size() ? tap_min() : 0, 0),
 		height = nendo.fit(tap_size() ? tap_min() : 0, 0),

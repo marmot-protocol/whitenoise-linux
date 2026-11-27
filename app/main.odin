@@ -165,8 +165,34 @@ shell_child_open :: proc(ui: ^Ui_State) -> bool {
 }
 
 @(private)
-handle_shell_foreground :: proc(ui: ^Ui_State, captured: bool) -> bool {
-	if captured || !mouse_released() || shell_child_open(ui) {return false}
+handle_shell_foreground :: proc(ui: ^Ui_State, client: ^marmot.Client, captured: bool) -> bool {
+	blocked := captured || shell_child_open(ui)
+	undo_id := nendo.id("ToastUndo", ui.toast_archive.serial)
+	undo_hit := !blocked && toast_undo_active(ui) && nendo.pointer_over(undo_id)
+	if mouse_pressed() {
+		ui.toast_archive.pressed = undo_hit
+		if undo_hit && rl.IsMouseButtonPressed(.LEFT) && rl.IsMouseButtonReleased(.LEFT) {
+			point, stationary := rl.GetCoalescedLeftClick()
+			bounds := nendo.element(undo_id).rect
+			x, y := point.x / UI_ZOOM, point.y / UI_ZOOM
+			ui.toast_archive.pressed =
+				stationary &&
+				x >= bounds.x &&
+				x < bounds.x + bounds.width &&
+				y >= bounds.y &&
+				y < bounds.y + bounds.height
+		}
+	}
+	if !mouse_released() {return mouse_pressed() && ui.toast_archive.pressed}
+	pressed := ui.toast_archive.pressed
+	ui.toast_archive.pressed = false
+	if blocked {return false}
+	if undo_hit {
+		if pressed && start_archive_job(ui, client, ui.toast_archive.group, .Undo_Archive) {
+			ui.toast_until = 0
+		}
+		return true
+	}
 	if ui.toast_reveal != "" && nendo.pointer_over(nendo.id("ToastReveal")) {
 		open_external(ui.toast_reveal)
 		toast(ui, tr("Opening in your file manager"))
@@ -1677,6 +1703,7 @@ app_main :: proc() {
 			}
 			foreground_captured := handle_shell_foreground(
 				&ui,
+				client,
 				shell_captured || shell_back || settings_captured || child_captured,
 			)
 

@@ -284,8 +284,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 					   ui.archived[index].group_id != ui.archive_press.group_id) {return}
 			switch action {
 			case .Restore:
-				set_archived(ui, client, ui.archived[index].group_id, false)
-				load_archived(client, ui)
+				start_archive_job(ui, client, ui.archived[index].group_id, .Restore_Chat)
 			case .Open:
 				select_archived_chat(ui, client, index)
 			case .None:
@@ -1217,6 +1216,7 @@ account_workspace_clear :: proc(ui: ^Ui_State) {
 	thread_clear(ui)
 	chat_list_revision += 1
 	archive_press_clear(ui)
+	if ui.toast_archive.group != "" {ui.toast_until = 0}
 	chats_replace(&ui.chats, {}); chats_replace(&ui.archived, {})
 	clear(&ui.rail_rows)
 	chat_members_free(&ui.chat_members); ui.chat_members_read = false
@@ -2043,23 +2043,29 @@ chat_list_apply :: proc(
 	}
 	previous := chat_facts_previous(ui.chats[:], job.failed_facts + deferred_facts)
 	fresh := make([dynamic]Chat_Row_Ui, 0, int(rows.rows_len))
+	selected_index := -1
 	for i in 0 ..< rows.rows_len {
 		if rows.rows[i].row.archived {continue}
-		append(&fresh, chat_work_row_to_ui(job, &rows.rows[i], previous))
+		chat := chat_work_row_to_ui(job, &rows.rows[i], previous)
+		if selected_group != "" && chat.group_id == selected_group {selected_index = len(fresh)}
+		append(&fresh, chat)
+	}
+	// A read can see an archive before the account worker delivers its result.
+	if selected_group != "" && selected_index < 0 && !search_only {park_conversation(ui)}
+	if index := ui.row_menu;
+	   index >= 0 &&
+	   (index >= len(ui.chats) ||
+			   index >= len(fresh) ||
+			   fresh[index].group_id != ui.chats[index].group_id) {
+		ui.row_menu = -1
 	}
 	ui.chat_members, job.members = job.members, nil
 	chats_replace(&ui.chats, fresh, fence_reads = true)
-	if search_only {
+	ui.selected = selected_index
+	if search_only && selected_index < 0 {
+		count := len(ui.chats)
 		gs_keep_open_chat(ui, selected_group)
-	}
-	ui.selected = -1
-	if selected_group != "" {
-		for chat, i in ui.chats {
-			if chat.group_id == selected_group {
-				ui.selected = i
-				break
-			}
-		}
+		if len(ui.chats) > count {ui.selected = count}
 	}
 	ui.my_pic_url = profile_info(job.client, string(job.account)).pic_url
 	queue_group_pics(ui, job.client)

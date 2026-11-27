@@ -1033,6 +1033,7 @@ Ui_State :: struct {
 	toast:                               string, // transient confirmation ("Copied")
 	toast_until:                         f64, // rl.GetTime() deadline; 0 = no toast
 	toast_reveal:                        string, // folder behind the toast's "Show in folder"; owned, "" = none
+	toast_archive:                       Toast_Archive, // account and chat behind the Undo button
 	pal_open:                            bool, // command palette (Ctrl+P)
 	pal_source_focus:                    Focus,
 	pal_input:                           [dynamic]u8,

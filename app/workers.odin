@@ -444,10 +444,10 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	// Coalesce events while a read is running; never wait for that read on a frame.
 	if live.refresh != nil || !live.refresh_dirty || client == nil || ui.account_ref == "" {return}
 	include_archived := ui.page == .Archived
-	if include_archived {
-		for pending in account_jobs {
-			if pending.kind == .Read_Archived && pending.account == ui.account_ref {return}
-		}
+	for pending in account_jobs {
+		if pending.account == ui.account_ref &&
+		   (archive_job_kind(pending.kind) ||
+				   (include_archived && pending.kind == .Read_Archived)) {return}
 	}
 	live.refresh_dirty = false
 	job = new(Chat_List_Work)
