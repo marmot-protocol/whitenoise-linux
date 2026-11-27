@@ -261,7 +261,7 @@ build_layout_pass :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Comm
 		menu_press = {}
 		composer_capture_press(ui)
 		kb_focus = ""
-		ui.timeline_focus = 0
+		ui.timeline_focus = {}
 		ui.timeline_retry_back = {}
 	}
 	nendo.begin()
@@ -1663,7 +1663,7 @@ app_main :: proc() {
 			   !ui.poll_open &&
 			   !ui.timestamp.open &&
 			   !ui.ctx_open &&
-			   ui.timeline_focus == 0 &&
+			   ui.timeline_focus.id.id == 0 &&
 			   !ui.mi_open &&
 			   !ui.chat_head_menu &&
 			   !ui.compose_more &&

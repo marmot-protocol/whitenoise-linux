@@ -38,6 +38,7 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 		close_msg_menu(&ui)
 		delete(ui.ctx_items)
 		delete(ui.reply_hint)
+		forced_press, forced_release, long_pressed, menu_press = false, false, false, {}
 		edit.destroy(&ui.ed)
 		delete(ui.compose); delete(ui.accounts); delete(ui.chats)
 		delete(ui.messages_account); delete(ui.messages_group)
@@ -74,6 +75,7 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	client: marmot.Client
 
 	layout :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
+		anim_tick(1.0 / 60)
 		commands: []nendo.Render_Command
 		for _ in 0 ..< 3 {commands = build_layout(ui, 0)}
 		return commands
@@ -90,11 +92,36 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 		if ui.reaction_details_id == "" {handle_chat(ui, client)} else {handle_reaction_modal(ui)}
 		rl.PushKey(k, false)
 	}
-	layout(&ui)
+	hold_menu :: proc(ui: ^Ui_State, client: ^marmot.Client, row_index: u32) {
+		row := nendo.element(nendo.id("MsgRow", row_index)).rect
+		nendo.set_pointer({row.x + row.width / 2, row.y + row.height / 2}, .Down)
+		long_pressed = true
+		handle_chat(ui, client)
+		long_pressed = false
+	}
+	first_name := profile_label(nil, string(people[1]))
+	last_name := profile_label(nil, string(last[0]))
+	commands := layout(&ui)
+	testing.expect(t, !shows(commands, first_name), "the roster starts hidden")
+	chip := nendo.element(reaction_chip_id(nendo.id("trailhead").id, "👍"))
+	if !testing.expect(t, chip.found) {return}
+	nendo.set_pointer({chip.rect.x + chip.rect.width / 2, chip.rect.y + chip.rect.height / 2}, .Up)
+	commands = layout(&ui)
+	testing.expect(t, shows(commands, first_name), "hover previews this emoji's senders")
+	testing.expect(t, shows(commands, "+21 more"), "large rosters have a bounded preview")
+	testing.expect(t, !shows(commands, last_name), "the other emoji's sender is not previewed")
+	nendo.set_pointer({-1, -1}, .Up)
+	commands = layout(&ui)
+	testing.expect(
+		t,
+		!shows(commands, first_name),
+		"the preview dismisses when the pointer leaves",
+	)
+
 	key(&ui, &client, .TAB)
 	more := message_more_id("trailhead")
-	if !testing.expect_value(t, ui.timeline_focus, more.id) {return}
-	commands := layout(&ui)
+	if !testing.expect_value(t, ui.timeline_focus.id, more) {return}
+	commands = layout(&ui)
 	testing.expect(t, shows(commands, "⋯"), "the focused message exposes More actions")
 
 	event: sdl.Event
@@ -116,7 +143,7 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	layout(&ui)
 	key(&ui, &client, .ESCAPE)
 	testing.expect(t, !ui.ctx_open)
-	testing.expect_value(t, ui.timeline_focus, more.id)
+	testing.expect_value(t, ui.timeline_focus.id, more)
 	layout(&ui)
 	key(&ui, &client, .ENTER)
 	layout(&ui)
@@ -129,7 +156,7 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	clipboard := sdl.GetClipboardText()
 	defer sdl.free(clipboard)
 	testing.expect_value(t, string(cstring(clipboard)), "Meet at the trailhead?")
-	testing.expect_value(t, ui.timeline_focus, more.id)
+	testing.expect_value(t, ui.timeline_focus.id, more)
 	layout(&ui)
 	key(&ui, &client, .ENTER)
 	if !testing.expect_value(t, ui.ctx_message, "trailhead") {return}
@@ -138,8 +165,11 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	page.messages, page.messages_len = raw_data(rows_with_menu[:]), len(rows_with_menu)
 	timeline_apply(nil, &ui, &page)
 	layout(&ui)
-	key(&ui, &client, .DOWN)
-	layout(&ui)
+	for _ in 0 ..< len(ui.ctx_items) {
+		if ui.ctx_focus == nendo.id("CtxReply").id {break}
+		key(&ui, &client, .DOWN)
+		layout(&ui)
+	}
 	key(&ui, &client, .ENTER)
 	if !testing.expect_value(t, ui.replying, "trailhead") {return}
 	testing.expect_value(t, string(ui.compose[:]), "Unsent draft")
@@ -149,34 +179,26 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	layout(&ui)
 	key(&ui, &client, .TAB)
 	key(&ui, &client, .TAB)
+	commands = layout(&ui)
+	testing.expect(t, shows(commands, first_name), "Tab previews the first chip without a pointer")
+	key(&ui, &client, .TAB)
+	commands = layout(&ui)
+	testing.expect(t, shows(commands, last_name), "Tab advances to the next chip's roster")
+	testing.expect(t, !shows(commands, first_name), "only the focused chip is previewed")
 	key(&ui, &client, .ENTER)
 	if !testing.expect_value(t, ui.reaction_details_id, "trailhead") {return}
 	testing.expect_value(t, string(ui.compose[:]), "Unsent draft")
 	testing.expect_value(t, len(ui.react_pending), 0)
 	commands = layout(&ui)
-	testing.expect(
-		t,
-		shows(commands, profile_label(nil, string(people[1]))),
-		"first emoji's sender",
-	)
+	testing.expect(t, shows(commands, first_name), "first emoji's sender")
 	key(&ui, &client, .END)
 	commands = layout(&ui)
-	testing.expect(
-		t,
-		shows(commands, profile_label(nil, string(last[0]))),
-		"other emoji beyond the first viewport",
-	)
+	testing.expect(t, shows(commands, last_name), "other emoji beyond the first viewport")
 	key(&ui, &client, .ESCAPE)
 	testing.expect_value(t, ui.reaction_details_id, "")
-	layout(&ui)
 
-	button := nendo.element(reaction_button_id("trailhead"))
-	if !testing.expect(t, button.found) {return}
-	point := nendo.Vector2 {
-		button.rect.x + button.rect.width / 2,
-		button.rect.y + button.rect.height / 2,
-	}
-	chip := nendo.element(nendo.id("MsgReactionChip", msg_slot_id(0, 0)))
+	layout(&ui)
+	chip = nendo.element(reaction_chip_id(nendo.id("trailhead").id, "👍"))
 	if !testing.expect(t, chip.found) {return}
 	chip_point := nendo.Vector2 {
 		chip.rect.x + chip.rect.width / 2,
@@ -243,37 +265,31 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	record.deleted = false
 	timeline_apply(nil, &ui, &page)
 	testing.expect_value(t, string(ui.compose[:]), "Unsent draft")
-	ui.timeline_focus = 0
+	ui.timeline_focus = {}
 	layout(&ui)
 
-	for pair, i in ([2][2]nendo.Vector2{{point, chip_point}, {chip_point, point}}) {
-		click(t, pair[0], pair[1])
-		testing.expect_value(t, timeline_pointer(&ui, &client), i == 0)
-		testing.expect_value(t, ui.reaction_details_id, "")
-	}
 	ui.compose_more = true
-	click(t, point, point)
+	click(t, more_at, more_at)
 	testing.expect(t, !timeline_pointer(&ui, &client), "the composer menu owns its outside click")
 	ui.compose_more = false
 	ui.row_menu = 0
-	click(t, point, point)
+	click(t, more_at, more_at)
 	testing.expect(t, !timeline_pointer(&ui, &client), "the rail menu owns its outside click")
 	ui.row_menu = -1
 
-	record.reactions.by_emoji_len = 0
+	record.deleted = true
 	timeline_apply(nil, &ui, &page)
-	click(t, point, chip_point)
+	click(t, more_at, chip_point)
 	testing.expect(
 		t,
 		timeline_pointer(&ui, &client),
 		"the displayed control still owns the canceled click",
 	)
-	testing.expect_value(t, ui.reaction_details_id, "")
-	record.reactions.by_emoji_len = len(tallies)
+	testing.expect(t, !ui.ctx_open)
+	record.deleted = false
 	timeline_apply(nil, &ui, &page)
 	ui.prefs.reduce_motion = false
 	ui.mention_active = true
-	anim_tick(1.0 / 60)
 	layout(&ui)
 	mention := nendo.id("MentionPop")
 	testing.expect(
@@ -282,21 +298,28 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 		"suggestions are visible before opening details",
 	)
 
-	rl.WindowShouldClose()
-	rl.PushMouseButton(.LEFT, true)
-	nendo.set_pointer(point, .Down)
-	testing.expect(t, timeline_pointer(&ui, &client), "details owns the press")
-	layout(&ui)
+	hold_menu(&ui, &client, 0)
+	if !testing.expect(t, ui.ctx_open, "touch hold opens the message menu") {return}
+
 	rows := [2]marmot.Timeline_Message_Record{record, record}
 	rows[0].message_id_hex = "another-message"
+	rows[0].reactions = {}
 	page.messages, page.messages_len = raw_data(rows[:]), len(rows)
 	timeline_apply(nil, &ui, &page)
-	rl.WindowShouldClose()
-	rl.PushMouseButton(.LEFT, false)
-	nendo.set_pointer(point, .Up)
-	testing.expect(t, timeline_pointer(&ui, &client), "details owns the release after a repage")
+	commands = layout(&ui)
+	testing.expect(t, !shows(commands, last_name), "the menu hides the peek")
+	view_item := nendo.element(nendo.id("CtxViewReactions"))
+	if !testing.expect(t, view_item.found, "the message menu offers the full roster") {return}
+	nendo.set_pointer({view_item.rect.x + 12, view_item.rect.y + 12}, .Down)
+	forced_press = true
+	layout(&ui)
+	forced_press = false
+	forced_release = true
+	handle_chat(&ui, &client)
+	forced_release = false
 	if !testing.expect_value(t, ui.reaction_details_id, "trailhead") {return}
 	layout(&ui)
+	testing.expect(t, !nendo.element(nendo.id("CtxViewReactions")).found, "the menu closes")
 	testing.expect(t, !nendo.element(mention).found, "no outgoing suggestions over details")
 	ui.prefs.reduce_motion = true
 	testing.expect_value(t, len(ui.react_pending), 0)
@@ -332,6 +355,65 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	key(&ui, &client, .ENTER)
 	testing.expect_value(t, string(ui.compose[:]), "Unsent draft")
 	testing.expect_value(t, len(ui.pending), 0)
+
+	page.messages, page.messages_len = raw_data(rows[:]), len(rows)
+	timeline_apply(nil, &ui, &page)
+	layout(&ui)
+	hold_menu(&ui, &client, 0)
+	timeline_apply(nil, &ui, &page)
+	layout(&ui)
+	testing.expect(t, nendo.element(nendo.id("CtxCopy")).found, "reusing a row keeps its menu")
+	testing.expect(
+		t,
+		!nendo.element(nendo.id("CtxViewReactions")).found,
+		"no roster on a plain message",
+	)
+	key(&ui, &client, .ESCAPE)
+	layout(&ui)
+	hold_menu(&ui, &client, 1)
+	layout(&ui)
+	view_item = nendo.element(nendo.id("CtxViewReactions"))
+	if !testing.expect(t, view_item.found) {return}
+	rl.PushMouseButton(.LEFT, true)
+	nendo.set_pointer({view_item.rect.x + 12, view_item.rect.y + 12}, .Down)
+	layout(&ui)
+	page.messages_len = 1
+	timeline_apply(nil, &ui, &page)
+	layout(&ui)
+	testing.expect(t, timeline_pointer(&ui, &client), "the dismissed menu retains the press")
+	testing.expect(t, !nendo.element(nendo.id("CtxMenu")).found, "the missing message has no menu")
+	chat_row := nendo.element(nendo.id("ChatRow", 0))
+	if !testing.expect(t, chat_row.found) {return}
+	nendo.set_pointer({chat_row.rect.x + 8, chat_row.rect.y + 8}, .Up)
+	rl.PushMouseButton(.LEFT, false)
+	testing.expect(t, timeline_pointer(&ui, &client), "release over the chat list is consumed")
+	testing.expect(t, !ui.ctx_open, "the menu releases its capture when the button lifts")
+	testing.expect_value(t, ui.reaction_details_id, "")
+
+	wide: [16]marmot.Timeline_Reaction_Emoji
+	wide[0] = tallies[0]
+	for i in 1 ..< len(wide) {
+		wide[i] = tallies[1]
+		wide[i].emoji = fmt.ctprintf(":test-reaction-%02d:", i)
+	}
+	rows[1].reactions = {
+		by_emoji     = raw_data(wide[:]),
+		by_emoji_len = len(wide),
+	}
+	page.messages, page.messages_len = &rows[1], 1
+	timeline_apply(nil, &ui, &page)
+	nendo.set_pointer({-1, -1}, .Up)
+	layout(&ui)
+	key(&ui, &client, .TAB)
+	key(&ui, &client, .TAB)
+	testing.expect(t, shows(layout(&ui), first_name), "the first chip is focused before scrolling")
+	strip := nendo.scroll(nendo.id("MsgReactions", nendo.id("trailhead").id))
+	if !testing.expect(t, strip.found && strip.content.width > strip.viewport.width + 20) {return}
+	strip.position.x = -20
+	layout(&ui)
+	testing.expect(t, timeline_keys(&ui, &client), "a clipped chip leaves focus in the timeline")
+	testing.expect_value(t, ui.timeline_focus.id, nendo.id("Timeline"))
+	strip.position.x = 0
 
 	history: [42]marmot.Timeline_Message_Record
 	history[0] = record

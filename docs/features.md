@@ -42,7 +42,7 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 
 - **Messages are Markdown.** Bodies support typeset `$` math blocks, reactions, replies, edits with history, forwarding, and search.
 - **Open More actions on a message.** Hover over the message and select **⋯**, or press Tab until the button has focus and press Shift+F10 or Enter. Use Up and Down to choose an action, then Enter to run it. Escape returns focus to the message. Right-click opens the same menu.
-- **See who reacted to a message.** Select the people icon beside its reaction chips, or press Tab to focus the icon and Enter to open **Reaction details**. Select an emoji chip itself to toggle your reaction.
+- **See who reacted to a message.** Hover over an emoji chip or focus it with Tab to preview who sent that emoji. For the full list, right-click or touch and hold the message and choose **View reactions**, or press Enter on a focused chip. Clicking a chip toggles your reaction.
 - **A thread stays readable when you can't reply.** You can reply to a parent outside the visible page if this device still has it and can place the reply in the thread. If not, the existing replies and your draft stay in place.
 - **Enter sends; Shift+Enter starts a new line.** You can also click **Send** at the right end of the toolbar. Click the checkmark to save an edit.
 - **Type `/` in an empty draft to open commands.** Keep typing to filter. Use the arrow keys and Enter or Tab, or click a command. Escape closes the menu without changing your draft. `/shrug` inserts a shrug without sending it.
