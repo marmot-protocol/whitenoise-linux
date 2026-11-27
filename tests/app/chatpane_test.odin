@@ -595,10 +595,28 @@ chat_row_draft_preview :: proc(t: ^testing.T) {
 		testing.expect(t, nendo.element(nendo.id("Tick", 4)).found)
 	}
 
-	// Active optimistic send spinner stays visible alongside a draft.
+	// A pending send stays visible alongside the next message's draft.
 	append(&ui.pending, Pending_Send{account_ref = "acct-draft", group_id = "g-short"})
 	for _ in 0 ..< 2 {anim_snap_all(); build_layout(&ui, 0)}
-	testing.expect(t, nendo.element(nendo.id("ChatRowSending", 0)).found)
+	commands := build_layout(&ui, 0)
+	draft_text, _, _, draft_inside := preview_runs(commands, 0)
+	testing.expect_value(t, draft_text, "Draft:See you at five")
+	testing.expect(t, draft_inside, draft_text)
+	preview := nendo.element(nendo.id("ChatRowPrev", 0)).rect
+	sending_visible := false
+	for command in commands {
+		box := command.rect
+		if command.kind == .Text &&
+		   command.text.text == "Sending..." &&
+		   box.x >= preview.x &&
+		   box.x + box.width <= preview.x + preview.width + 0.5 &&
+		   box.y >= preview.y &&
+		   box.y + box.height <= preview.y + preview.height + 0.5 {
+			sending_visible = true
+			break
+		}
+	}
+	testing.expect(t, sending_visible, "The draft row must show its pending send")
 	clear(&ui.pending)
 
 	// Selecting row 0 uses live composer text and immediately clears when emptied.
