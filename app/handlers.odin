@@ -1775,19 +1775,7 @@ close_msg_menu :: proc(ui: ^Ui_State) {
 	ui.ctx_focus, ui.ctx_return = 0, {}
 }
 
-@(private = "file")
-restore_menu_focus :: proc(ui: ^Ui_State, control: Timeline_Control) {
-	timeline := nendo.id("Timeline")
-	if nendo.element(control.id).found {
-		ui.timeline_focus = control
-		scroll_into_view(timeline, control.id)
-	} else {
-		ui.timeline_focus = {
-			id = timeline,
-		}
-	}
-}
-
+@(private)
 handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	msg := context_message(ui)
 	if ui.selected < 0 || ui.selected >= len(ui.chats) || msg == nil {
@@ -1803,7 +1791,7 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	menu := nendo.id("CtxMenu")
 	if rl.IsKeyPressed(.ESCAPE) || (rl.IsMouseButtonPressed(.RIGHT) && !nendo.pointer_over(menu)) {
-		restore_menu_focus(ui, ui.ctx_return)
+		restore_timeline_focus(ui, ui.ctx_return)
 		close_msg_menu(ui)
 		return
 	}
@@ -1860,7 +1848,7 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if item.id != 0 && activate_ctx_item(ui, client, msg^, item) {
 		ui.timeline_focus = {}
 	} else {
-		restore_menu_focus(ui, return_to)
+		restore_timeline_focus(ui, return_to)
 	}
 }
 

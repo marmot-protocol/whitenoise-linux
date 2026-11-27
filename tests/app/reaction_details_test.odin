@@ -379,6 +379,7 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 		wide[i] = tallies[1]
 		wide[i].emoji = fmt.ctprintf(":test-reaction-%02d:", i)
 	}
+	wide[len(wide) - 1].emoji = fmt.ctprintf(":%0128d:", 1)
 	rows[1].reactions = {
 		by_emoji     = raw_data(wide[:]),
 		by_emoji_len = len(wide),
@@ -401,8 +402,43 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	testing.expect(
 		t,
 		strip.position.x < -20 && shows(layout(&ui), last_name),
-		"Tab reveals the last chip",
+		"Tab reveals the last chip even with a long missing shortcode",
 	)
+	last_scroll := strip.position.x
+	key(&ui, &client, .ENTER)
+	if !testing.expect_value(t, ui.reaction_details_id, "trailhead") {return}
+	strip.position.x = -20
+	layout(&ui)
+	key(&ui, &client, .ESCAPE)
+	testing.expect(
+		t,
+		strip.position.x <= last_scroll + 0.5 && shows(layout(&ui), last_name),
+		"Esc reveals the return chip after its strip scrolls",
+	)
+	append(
+		&ui.react_pending,
+		Pending_React{ticket = 1, msg_id = "trailhead", emoji = string(wide[len(wide) - 1].emoji)},
+	)
+	defer delete(ui.react_pending)
+	rows[1].reactions.by_emoji_len -= 1
+	timeline_apply(nil, &ui, &page)
+	layout(&ui)
+	key(&ui, &client, .ENTER)
+	layout(&ui)
+	key(&ui, &client, .ENTER)
+	testing.expect_value(t, ui.reaction_details_id, "")
+	testing.expect_value(t, ui.timeline_focus.id, nendo.id("Timeline"))
+	testing.expect_value(t, len(ui.pending), 0)
+	testing.expect_value(t, string(ui.compose[:]), "Unsent draft")
+	clear(&ui.react_pending)
+	rows[1].reactions.by_emoji_len = len(wide)
+	timeline_apply(nil, &ui, &page)
+	strip.position.x = last_scroll
+	ui.timeline_focus = {
+		id    = last_chip,
+		strip = nendo.id("MsgReactions", nendo.id("trailhead").id),
+	}
+	layout(&ui)
 	strip.position.x = -20
 	layout(&ui)
 	testing.expect(
@@ -482,6 +518,23 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 		nendo.element(more).rect.y >= viewport.y - 0.5,
 		"Esc reveals the restored focus",
 	)
+	key(&ui, &client, .ENTER)
+	layout(&ui)
+	for _ in ui.ctx_items {
+		if ui.ctx_focus == nendo.id("CtxViewReactions").id {break}
+		key(&ui, &client, .DOWN)
+		layout(&ui)
+	}
+	key(&ui, &client, .ENTER)
+	if !testing.expect_value(t, ui.reaction_details_id, "trailhead") {return}
+	view.position.y -= nendo.element(more).rect.y + button_box.height - viewport.y + 8
+	layout(&ui)
+	testing.expect(t, nendo.element(more).rect.y < viewport.y, "scroll hides More actions")
+	key(&ui, &client, .ESCAPE)
+	layout(&ui)
+	key(&ui, &client, .ENTER)
+	testing.expect_value(t, ui.ctx_message, "trailhead")
+	key(&ui, &client, .ESCAPE)
 
 	// Notes use a small floating overflow control. On touch its hidden
 	// geometry must not intercept a swipe or the long-press timer.

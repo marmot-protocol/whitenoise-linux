@@ -1980,12 +1980,14 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 									count_roll(slot, chip.count, was, roll)
 								}
 							} else {
+								label_w := body_wrap_w() - 2 * f32(8 + pad)
 								nendo.text(
-									chip.label,
+									text_ellipsis(chip.label, label_w, FONT_BODY, 12),
 									{
 										font = FONT_BODY,
 										size = 12,
 										color = chip.ghost ? TEXT_LO : TEXT,
+										wrap = .None,
 									},
 								)
 							}

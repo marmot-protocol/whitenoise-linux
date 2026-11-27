@@ -215,6 +215,30 @@ reaction_clip :: proc(view: nendo.Rect, strip: nendo.Id) -> nendo.Rect {
 }
 
 @(private = "file")
+reveal_reaction_focus :: proc(control: Timeline_Control, view: nendo.Rect) {
+	if control.strip.id == 0 {return}
+	strip := nendo.scroll(control.strip)
+	if !strip.found {return}
+	clip := reaction_clip(view, control.strip)
+	box := nendo.element(control.id).rect
+	strip.position.x += max(0, clip.x - box.x) - max(0, box.x + box.width - clip.x - clip.width)
+}
+
+@(private)
+restore_timeline_focus :: proc(ui: ^Ui_State, control: Timeline_Control) {
+	timeline := nendo.id("Timeline")
+	if !nendo.element(control.id).found {
+		ui.timeline_focus = {
+			id = timeline,
+		}
+		return
+	}
+	ui.timeline_focus = control
+	scroll_into_view(timeline, control.id)
+	reveal_reaction_focus(control, nendo.element(timeline).rect)
+}
+
+@(private = "file")
 timeline_button_visible :: proc(id: nendo.Id, view: nendo.Rect) -> bool {
 	button := nendo.element(id)
 	return(
@@ -347,7 +371,14 @@ timeline_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		}
 		if next.id.id != 0 {break}
 	}
-	target := step == 0 ? Timeline_Control{} : (found_focus ? next : first)
+	if activate {
+		ui.timeline_focus = {
+			id = timeline,
+		}
+		ui.timeline_retry_back = {}
+		return true
+	}
+	target := found_focus ? next : first
 	retry_target := target.id.id != 0 && (found_focus ? next_is_retry : first_is_retry)
 	if scroll := nendo.scroll(timeline); scroll.found {
 		// Remember where the previous control was before Retry scrolls the timeline.
@@ -366,13 +397,8 @@ timeline_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	if !retry_target {ui.timeline_retry_back = {}}
 	ui.timeline_focus = target
 	if retry_target {scroll_into_view(timeline, target.id)}
-	if strip := nendo.scroll(target.strip); strip.found {
-		view := reaction_clip(view, target.strip)
-		box := nendo.element(target.id).rect
-		strip.position.x +=
-			max(0, view.x - box.x) - max(0, box.x + box.width - view.x - view.width)
-	}
-	return activate || focused || target.id.id != 0
+	reveal_reaction_focus(target, view)
+	return focused || target.id.id != 0
 }
 
 REACTION_LINE_H :: f32(24)
@@ -493,7 +519,8 @@ reaction_modal_close :: proc(ui: ^Ui_State) {
 	   scroll.found {scroll.position^ = {}}
 	scroll_residual = {}
 	ui.reaction_details_id = ""
-	ui.timeline_focus, ui.reaction_return = ui.reaction_return, {}
+	if ui.reaction_return.id.id != 0 {restore_timeline_focus(ui, ui.reaction_return)}
+	ui.reaction_return = {}
 	if kb_focus == "ReactionDetailsClose" {kb_focus = ""}
 }
 
