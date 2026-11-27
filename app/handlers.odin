@@ -1026,11 +1026,13 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				confirm_ask(ui, .Delete_All, msg.id, msg_preview(msg))
 				return
 			}
-			for chip, j in msg.reactions {
-				if !read_only &&
-				   nendo.pointer_over(nendo.id("MsgReactionChip", msg_slot_id(u32(i), j))) {
-					message_op(ui, client, chip.mine ? .Unreact : .React, msg.id, chip.emoji)
-					return
+			if !read_only && len(msg.reactions) > 0 {
+				seed := nendo.id(msg.id).id
+				for chip in msg.reactions {
+					if nendo.pointer_over(reaction_chip_id(seed, chip.emoji)) {
+						message_op(ui, client, chip.mine ? .Unreact : .React, msg.id, chip.emoji)
+						return
+					}
 				}
 			}
 			for _, j in msg.poll_opts {
@@ -1770,37 +1772,26 @@ close_msg_menu :: proc(ui: ^Ui_State) {
 	delete(ui.ctx_message)
 	ui.ctx_message = ""
 	clear(&ui.ctx_items)
-	ui.ctx_focus, ui.ctx_return = 0, 0
+	ui.ctx_focus, ui.ctx_return = 0, {}
 }
 
-@(private = "file")
-restore_menu_focus :: proc(ui: ^Ui_State, id: u32) {
-	timeline := nendo.id("Timeline")
-	button := nendo.Id {
-		id = id,
-	}
-	if nendo.element(button).found {
-		ui.timeline_focus = id
-		scroll_into_view(timeline, button)
-	} else {
-		ui.timeline_focus = timeline.id
-	}
-}
-
+@(private)
 handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	msg := context_message(ui)
 	if ui.selected < 0 || ui.selected >= len(ui.chats) || msg == nil {
 		// The menu owned this press. Keep the release out of the page even
 		// when a timeline update has removed the menu from the layout.
 		if !rl.IsMouseButtonDown(.LEFT) {
-			ui.timeline_focus = nendo.id("Timeline").id
+			ui.timeline_focus = {
+				id = nendo.id("Timeline"),
+			}
 			close_msg_menu(ui)
 		}
 		return
 	}
 	menu := nendo.id("CtxMenu")
 	if rl.IsKeyPressed(.ESCAPE) || (rl.IsMouseButtonPressed(.RIGHT) && !nendo.pointer_over(menu)) {
-		restore_menu_focus(ui, ui.ctx_return)
+		restore_timeline_focus(ui, ui.ctx_return)
 		close_msg_menu(ui)
 		return
 	}
@@ -1848,10 +1839,16 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if key && item.id == 0 {return}
 	return_to := ui.ctx_return
 	close_msg_menu(ui)
+	if item == nendo.id("CtxViewReactions") &&
+	   !msg.deleted &&
+	   has_reaction_senders(msg.reactions[:]) {
+		reaction_modal_open(ui, msg.id, return_to)
+		return
+	}
 	if item.id != 0 && activate_ctx_item(ui, client, msg^, item) {
-		ui.timeline_focus = 0
+		ui.timeline_focus = {}
 	} else {
-		restore_menu_focus(ui, return_to)
+		restore_timeline_focus(ui, return_to)
 	}
 }
 
@@ -2042,11 +2039,13 @@ open_msg_menu :: proc(ui: ^Ui_State, message: string, origin: Msg_Menu_Origin) {
 	ui.ctx_open = true
 	ui.ctx_message = strings.clone(message)
 	ui.ctx_keyboard = origin == .Keyboard
-	ui.ctx_return = message_more_id(message).id
+	ui.ctx_return = {
+		id = message_more_id(message),
+	}
 	if origin == .Keyboard {ui.ctx_return = ui.timeline_focus}
 	at := nendo.pointer().position
 	if origin != .Pointer {
-		if box := nendo.element({id = ui.ctx_return}); box.found {
+		if box := nendo.element(ui.ctx_return.id); box.found {
 			at = {box.rect.x, box.rect.y + box.rect.height + 4}
 		}
 	}
@@ -2086,7 +2085,7 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int)
 		if i < index {index -= 1}
 	}
 	ui.selected = index
-	ui.timeline_focus = 0
+	ui.timeline_focus = {}
 	ui.timeline_retry_back = {}
 	ui.timeline_press = 0
 	key := draft_key(ui.account_ref, ui.chats[index].group_id)

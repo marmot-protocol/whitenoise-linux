@@ -318,6 +318,9 @@ context_menu :: proc(ui: ^Ui_State, msg: Msg_Ui) {
 			read_only := ui.selected >= 0 && ui.chats[ui.selected].archived
 			if !read_only &&
 			   !single_pane() {ctx_item("CtxReact", ICON_SMILE, tr("Add reaction"), menu = ui)}
+			if has_reaction_senders(msg.reactions[:]) {
+				ctx_item("CtxViewReactions", ICON_PEOPLE, tr("View reactions"), menu = ui)
+			}
 			if !read_only && len(msg.thread_of) == 0 {
 				ctx_item("CtxReply", ICON_REPLY, tr("Reply"), menu = ui)
 			}

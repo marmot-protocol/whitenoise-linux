@@ -100,7 +100,7 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 						align = {y = .Center},
 						color = hovered() ? HOVER : ROW_BG,
 						radius = rr(4),
-						border = ui.timeline_focus == id.id ? kb_ring(ACCENT) : {color = FIELD_BORDER, width = bw()},
+						border = ui.timeline_focus.id.id == id.id ? kb_ring(ACCENT) : {color = FIELD_BORDER, width = bw()},
 					},
 					) {
 						nendo.text(tr("Retry"), {font = FONT_BODY, size = 11, color = TEXT})
@@ -885,7 +885,7 @@ message_menu_allowed :: proc(ui: ^Ui_State, msg: Msg_Ui) -> bool {
 @(private = "file")
 message_actions_button :: proc(ui: ^Ui_State, msg: Msg_Ui, reveal: bool, height: f32) {
 	id := message_more_id(msg.id)
-	focused := ui.timeline_focus == id.id
+	focused := ui.timeline_focus.id.id == id.id
 	shown := reveal || focused || (ui.ctx_open && ui.ctx_message == msg.id)
 	if nendo.box(id)(
 	{
@@ -1927,83 +1927,85 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			}
 			// Reactions close the row, under the body.
 			if len(msg.reactions) > 0 {
-				if nendo.box(nendo.id("MsgReactionRow", index))(
-				{width = nendo.grow(), gap = 6, align = {y = .Center}},
+				seed := nendo.id(msg.id).id
+				strip := nendo.id("MsgReactions", seed)
+				if nendo.box(strip)(
+				{width = nendo.grow(), gap = 6, clip = {x = true, scroll = true}},
 				) {
-					if len(msg.reactions[0].senders) > 0 {
-						reaction_details_button(msg.id)
-					}
-					if nendo.box(nendo.id("MsgReactions", index))(
-					{width = nendo.grow(), gap = 6, clip = {x = true, scroll = true}},
-					) {
-						for chip, j in msg.reactions {
-							slot := msg_slot_id(index, j)
-							// A chip whose count changed swells and settles, and
-							// the number itself rolls over.
-							pop, was, roll := bump(
-								nendo.id("MsgReactionChip", slot).id,
-								chip.count,
-							)
-							pad := bump_pad(pop)
-							// A chip whose react/unreact is still on the wire is
-							// drawn faded, the same tell as a pending send row.
-							if nendo.box(nendo.id("MsgReactionChip", slot))(
-							{
-								width = nendo.fit(min = tap_size() ? tap_min() : 0),
-								height = nendo.fit(min = tap_size() ? tap_min() : 0),
-								padding = {left = 8 + pad, right = 8 + pad, top = 3, bottom = 3},
-								gap = 4,
-								align = {y = .Center},
-								color = ROW_BG,
-								radius = rr(10),
-								border = chip.mine ? nendo.Border{color = chip.ghost ? ACCENT_DIM : ACCENT, width = bw()} : {},
-							},
-							) {
-								// Emoji tile + count, text fallback when the
-								// sheet has no tile for this emoji.
-								if tex := emoji_tex(chip.emoji); tex != nil {
-									if nendo.box(nendo.id("MsgReactionImg", slot))(
-									{width = nendo.fixed(14), aspect = 1, image = tex},
-									) {}
-									if chip.ghost {
-										// Nothing to roll: the count is a guess
-										// until the ack lands.
-										nendo.text(
-											chip.count,
-											{font = FONT_BODY, size = COUNT_FS, color = TEXT_LO},
-										)
-									} else {
-										count_roll(slot, chip.count, was, roll)
-									}
-								} else {
+					for chip, j in msg.reactions {
+						slot := msg_slot_id(index, j)
+						id := reaction_chip_id(seed, chip.emoji)
+						focused := g_ui != nil && g_ui.timeline_focus.id.id == id.id
+						border: nendo.Border
+						if focused {
+							border = kb_ring(ACCENT)
+						} else if chip.mine {
+							border = {
+								color = chip.ghost ? ACCENT_DIM : ACCENT,
+								width = bw(),
+							}
+						}
+						// A chip whose count changed swells and settles, and
+						// the number itself rolls over.
+						pop, was, roll := bump(nendo.id("MsgReactionBump", slot).id, chip.count)
+						pad := bump_pad(pop)
+						// A chip whose react/unreact is still on the wire is
+						// drawn faded, the same tell as a pending send row.
+						if nendo.box(id)(
+						{
+							width = nendo.fit(min = tap_size() ? tap_min() : 0),
+							height = nendo.fit(min = tap_size() ? tap_min() : 0),
+							padding = {left = 8 + pad, right = 8 + pad, top = 3, bottom = 3},
+							gap = 4,
+							align = {y = .Center},
+							color = ROW_BG,
+							radius = rr(10),
+							border = border,
+						},
+						) {
+							// Emoji tile + count, text fallback when the
+							// sheet has no tile for this emoji.
+							if tex := emoji_tex(chip.emoji); tex != nil {
+								if nendo.box(nendo.id("MsgReactionImg", slot))(
+								{width = nendo.fixed(14), aspect = 1, image = tex},
+								) {}
+								if chip.ghost {
+									// Nothing to roll: the count is a guess
+									// until the ack lands.
 									nendo.text(
-										chip.label,
-										{
-											font = FONT_BODY,
-											size = 12,
-											color = chip.ghost ? TEXT_LO : TEXT,
-										},
+										chip.count,
+										{font = FONT_BODY, size = COUNT_FS, color = TEXT_LO},
 									)
+								} else {
+									count_roll(slot, chip.count, was, roll)
 								}
-								// Who reacted, on hover. Above the chip: the row may
-								// sit against the compose box.
-								if len(chip.senders) > 0 && hovered() {
-									names := make(
-										[]string,
-										len(chip.senders),
-										context.temp_allocator,
-									)
-									for sender, s in chip.senders {names[s] = profile_label(g_client, sender)}
-									tooltip(
-										strings.join(names, ", ", context.temp_allocator),
-										.Above,
-									)
-								}
+							} else {
+								label_w := body_wrap_w() - 2 * f32(8 + pad)
+								nendo.text(
+									text_ellipsis(chip.label, label_w, FONT_BODY, 12),
+									{
+										font = FONT_BODY,
+										size = 12,
+										color = chip.ghost ? TEXT_LO : TEXT,
+										wrap = .None,
+									},
+								)
+							}
+							if g_ui != nil &&
+							   len(chip.senders) > 0 &&
+							   (focused ||
+									   (hovered() &&
+											   !rl.TouchActive() &&
+											   g_ui.timeline_focus.strip.id == 0)) &&
+							   !g_ui.ctx_open &&
+							   !g_ui.picker_open &&
+							   !modal_open(g_ui) {
+								reaction_peek(id, strip, chip.senders)
 							}
 						}
 					}
 				}
-				scrollbar(nendo.id("MsgReactions", index))
+				scrollbar(strip)
 			}
 
 			// Thread reply count, click opens the panel on this root.
