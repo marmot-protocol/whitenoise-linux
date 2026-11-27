@@ -13,7 +13,7 @@ Chat_List_Work :: struct {
 	account:          cstring,
 	rows:             ^marmot.Presented_Chat_List,
 	previews:         map[string]^marmot.Timeline_Page, // only fallback system pages; keys borrow rows
-	reading_previews: map[string]string, // keys borrow rows; owned, final reading previews
+	reading_previews: map[string]Chat_Preview, // keys borrow rows; preview text is owned
 	blocked:          map[string]bool, // owned copy of ui.blocked; the worker must not read Ui_State
 	members:          map[string][]string, // group id to member pubkey hex, read only when read_members
 	read_members:     bool, // some folder rule looks at membership
@@ -98,7 +98,8 @@ chat_prepare_preview :: proc(
 	if system_page != nil {
 		job.previews[string(row.group_id_hex)] = system_page
 	} else {
-		job.reading_previews[string(row.group_id_hex)] = strings.clone(preview)
+		preview.text = strings.clone(preview.text)
+		job.reading_previews[string(row.group_id_hex)] = preview
 	}
 }
 
@@ -153,7 +154,7 @@ chat_list_free :: proc(job: ^Chat_List_Work) {
 	if job.worker != nil {thread.join(job.worker); thread.destroy(job.worker)}
 	for _, page in job.previews {if page != nil {marmot.timeline_page_free(page)}}
 	delete(job.previews)
-	for _, preview in job.reading_previews {delete(preview)}
+	for _, preview in job.reading_previews {delete(preview.text)}
 	delete(job.reading_previews)
 	for hex in job.blocked {delete(hex)}
 	delete(job.blocked)

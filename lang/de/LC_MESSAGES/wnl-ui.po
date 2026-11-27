@@ -729,6 +729,9 @@ msgstr "Datei anhängen"
 msgid "Attachment"
 msgstr "Anhang"
 
+msgid "Attachments"
+msgstr "Anhänge"
+
 msgid "Attachments, avatars, transcripts and map tiles."
 msgstr "Anhänge, Profilbilder, Transkripte und Kartenkacheln."
 
@@ -2767,6 +2770,9 @@ msgstr "Feldrahmen"
 msgid "Field hover"
 msgstr "Feld bei Hover"
 
+msgid "File"
+msgstr "Datei"
+
 msgid "Files"
 msgstr "Dateien"
 
@@ -3100,6 +3106,9 @@ msgstr "Verknüpfe die Geräte nicht, wenn die Codes nicht übereinstimmen. Vers
 
 msgid "If you forgot this password, you can try again or close White Noise without deleting anything. Starting over deletes the vault and its protected local data, including chats and pending sends. Review the deletion before deciding."
 msgstr "Wenn du dieses Passwort vergessen hast, kannst du es erneut versuchen oder White Noise schließen, ohne etwas zu löschen. Wenn du neu anfängst, werden der Tresor und die geschützten lokalen Daten gelöscht, einschließlich Chats und ausstehender Nachrichten. Prüfe vor deiner Entscheidung, was gelöscht wird."
+
+msgid "Image"
+msgstr "Bild"
 
 msgid "Image didn't load. Click to retry."
 msgstr "Das Bild wurde nicht geladen. Klicke, um es erneut zu versuchen."
@@ -6577,6 +6586,9 @@ msgstr "Download wird überprüft..."
 
 msgid "Vertex normals"
 msgstr "Vertexnormalen"
+
+msgid "Video"
+msgstr "Video"
 
 msgid "Videos"
 msgstr "Videos"

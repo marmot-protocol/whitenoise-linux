@@ -361,16 +361,16 @@ surfaces_read_effective_content :: proc(t: ^testing.T) {
 		last_message = &last,
 	}
 	preview, system_page := chat_row_preview(client, &row, "self", nil, &page, .Worker)
-	testing.expect_value(t, preview, "second edit")
+	testing.expect_value(t, preview.text, "second edit")
 	testing.expect_value(t, system_page, nil)
 
 	last.kind = 21
 	last.plaintext = "**Video caption**"
 	preview, system_page = chat_row_preview(client, &row, "self", nil, &page, .Worker)
-	testing.expect_value(t, preview, "Unsupported event")
+	testing.expect_value(t, preview.text, "Unsupported event")
 	testing.expect_value(t, system_page, nil)
 
 	last.deleted = true
 	preview, _ = chat_row_preview(client, &row, "self", nil, &page, .Worker)
-	testing.expect_value(t, preview, "")
+	testing.expect_value(t, preview.text, "")
 }

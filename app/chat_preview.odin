@@ -5,6 +5,37 @@ import "core:fmt"
 import "core:strings"
 
 @(private)
+Chat_Attachment_Kind :: enum i32 {
+	// MarmotChatListAttachmentKind
+	Photo,
+	Video,
+	Audio,
+	File,
+	Mixed,
+}
+
+@(private)
+Chat_Preview :: struct {
+	text: string,
+	icon: Chat_Preview_Icon,
+}
+
+@(private)
+Chat_Preview_Icon :: struct {
+	glyph: string, // static glyph, separate from the text used in notifications
+	at:    int, // byte offset of the attachment label
+}
+
+@(private)
+prefix_chat_preview :: proc(preview: ^Chat_Preview, with_sender: string) {
+	// The translated sender templates end with the preview text.
+	if preview.icon.glyph != "" {
+		preview.icon.at = len(with_sender) - len(preview.text)
+	}
+	preview.text = with_sender
+}
+
+@(private)
 Chat_Preview_Mode :: enum {
 	Immediate,
 	Worker,
@@ -21,17 +52,17 @@ chat_row_preview :: proc(
 	page: ^marmot.Timeline_Page = nil,
 	mode: Chat_Preview_Mode = .Immediate,
 ) -> (
-	preview: string,
+	preview: Chat_Preview,
 	system_page: ^marmot.Timeline_Page,
 ) {
 	last := row.last_message
-	if last == nil || last.deleted {return "", nil}
+	if last == nil || last.deleted {return {}, nil}
 	mine := message_is_mine(nil, last.sender, account_ref)
 	is_blocked := !mine && last.sender != nil && blocked[string(last.sender)]
 	raw := last.plaintext != nil ? string(last.plaintext) : ""
 	class := record_class(last.kind, raw)
 	if class == .System && last.group_system != nil {
-		return rail_preview(system_text(client, last.group_system)), nil
+		return {text = rail_preview(system_text(client, last.group_system))}, nil
 	}
 	if is_blocked || (class != .Message && class != .Unsupported) {
 		page := page
@@ -40,22 +71,44 @@ chat_row_preview :: proc(
 		phrased, system := preview_text(client, page, account_ref, blocked, mode)
 		// Profile labels use UI-owned caches. Only these fallback pages
 		// survive worker preparation, to be phrased on UI adoption.
-		if system && mode == .Worker {return "", page}
+		if system && mode == .Worker {return {}, page}
 		if owned && page != nil {marmot.timeline_page_free(page)}
-		if phrased == "" {return "", nil}
-		return rail_preview(phrased), nil
+		return {text = rail_preview(phrased)}, nil
 	}
 	if class == .Unsupported {
-		preview = tr("Unsupported event")
-	} else if strings.trim_space(raw) == "" &&
-	   last.has_attachment_kind &&
-	   last.attachment_kind == CHAT_ATTACHMENT_AUDIO {
-		preview = tr("Audio message")
+		preview.text = tr("Unsupported event")
 	} else {
-		preview = reading_text(client, raw)
+		preview.text = strings.trim_space(reading_text(client, raw))
+		if preview.text == "" && last.has_attachment_kind {
+			multiple := last.attachment_count > 1
+			switch Chat_Attachment_Kind(last.attachment_kind) {
+			case .Photo:
+				preview = {
+					multiple ? tr("Images") : tr("Image"),
+					{glyph = GROUP_FILE_ICONS[.Images]},
+				}
+			case .Video:
+				preview = {
+					multiple ? tr("Videos") : tr("Video"),
+					{glyph = GROUP_FILE_ICONS[.Videos]},
+				}
+			case .Audio:
+				preview = {tr("Audio message"), {glyph = GROUP_FILE_ICONS[.Audio]}}
+			case .File:
+				preview = {
+					multiple ? tr("Files") : tr("File"),
+					{glyph = GROUP_FILE_ICONS[.Documents]},
+				}
+			case .Mixed:
+				preview = {tr("Attachments"), {glyph = ICON_CLIP}}
+			}
+		}
 	}
-	if mine && strings.trim_space(preview) != "" {preview = fmt.tprintf(tr("You: %s"), preview)}
-	return rail_preview(preview), nil
+	if mine && preview.text != "" {
+		prefix_chat_preview(&preview, fmt.tprintf(tr("You: %s"), preview.text))
+	}
+	preview.text = rail_preview(preview.text)
+	return preview, nil
 }
 
 // Decode the whole link before either preview limit can cut its checksum.

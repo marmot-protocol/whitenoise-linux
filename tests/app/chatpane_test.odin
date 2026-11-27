@@ -262,7 +262,7 @@ chat_title_overflow :: proc(t: ^testing.T) {
 chat_preview_ellipsis :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "chat_preview_ellipsis" {return}
 	context.allocator = runtime.default_context().allocator
-	rl.InitWindow(1400, 600, "Chat previews")
+	rl.InitWindow(1400, 700, "Chat previews")
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1
 	init_fonts()
@@ -270,7 +270,7 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 	apply_theme(0, 0)
 	set_locale("en")
 	memory: []u8
-	init_layout(&memory, 32768, {1400, 600})
+	init_layout(&memory, 32768, {1400, 700})
 	defer delete(memory)
 	ui := Ui_State {
 		selected         = -1,
@@ -280,7 +280,8 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 	}
 	ui.prefs.rail_w = RAIL_W_MIN
 	ui.prefs.reduce_motion = true
-	ui.account_ref = "offline-fixture"
+	account :: "1111111111111111111111111111111111111111111111111111111111111111"
+	ui.account_ref = account
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	long_word :=
 		"Pneumonoultramicroscopicsilicovolcanoconiosis" +
@@ -299,8 +300,27 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 			preview = "Are you still coming to the marmot meetup tonight? Bring snacks 🧀 and water 🥾",
 			tick = .PENDING,
 		},
-		Chat_Row_Ui{group_id = "d", title = "Short", preview = "See you there"},
 	)
+	media_start := len(ui.chats)
+	for fixture in ([2]struct {
+			title: cstring,
+			kind:  Chat_Attachment_Kind,
+		}{{"Image chat", .Photo}, {"Video chat", .Video}}) {
+		last := marmot.Chat_List_Message_Preview {
+			kind                = 9,
+			sender              = account,
+			has_attachment_kind = true,
+			attachment_kind     = i32(fixture.kind),
+			attachment_count    = 1,
+			delivery_state      = .DELIVERED,
+		}
+		row := marmot.Presented_Chat_Row {
+			row = {group_id_hex = fixture.title, last_message = &last},
+			presentation = {title = {tag = .Literal, body = {literal = fixture.title}}},
+		}
+		append(&ui.chats, row_to_ui(nil, &row, ui.account_ref))
+	}
+	media_end := len(ui.chats)
 	token := strings.trim_prefix(TEST_PRIMAL, "https://primal.net/e/")
 	short_event := fmt.tprintf("Look at nostr:%s today", token)
 	ordinary_url := fmt.tprintf("https://example.com/%s", token)
@@ -326,7 +346,7 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 			Chat_Row_Ui {
 				group_id = fmt.tprintf("event-%d", i),
 				title = "Event link",
-				preview = preview,
+				preview = preview.text,
 			},
 		)
 	}
@@ -338,10 +358,11 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 		last_message = &url_message,
 	}
 	url_preview, _ := chat_row_preview(nil, &url_row, ui.account_ref, nil)
-	testing.expect_value(t, url_preview, ordinary_url)
+	testing.expect_value(t, url_preview.text, ordinary_url)
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {
 		g_ui, g_prefs = nil, nil
+		for chat in ui.chats[media_start:media_end] {chat_free(chat)}
 		delete(ui.accounts); delete(ui.chats); delete(ui.rail_rows)
 		wrap_clear()
 	}
@@ -381,10 +402,8 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 			testing.expect_value(t, again, frame)
 			commands = build_layout(&ui, 0)
 		}
-		text, _ := shown(commands, 3)
-		testing.expect_value(t, text, "See you there")
-		for want, i in ([]string{"Look at Nostr event today", "Nostr event", "Invalid Nostr reference"}) {
-			text, inside := shown(commands, u32(4 + i))
+		for want, i in ([]string{"You:\uf03eImage", "You:\uf03dVideo", "Look at Nostr event today", "Nostr event", "Invalid Nostr reference"}) {
+			text, inside := shown(commands, u32(3 + i))
 			testing.expect_value(t, text, want)
 			testing.expect(t, inside, text)
 		}
@@ -393,6 +412,20 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-chat-previews-%d.png", rail_w))
 		rl.EndDrawing()
 	}
+
+	clip := nendo.element(nendo.id("ChatRowPrevClip", u32(media_start))).rect
+	room := clip.width - rl.MeasureTextLine(FONT_BODY, 12, ":…", 0).x - 2
+	glyph_width := rl.MeasureTextLine(FONT_BODY, 12, "W", 0).x
+	sender := strings.repeat("W", int(room / glyph_width), context.temp_allocator)
+	chat := &ui.chats[media_start]
+	preview, icon := chat.preview, chat.preview_icon
+	defer {chat.preview, chat.preview_icon = preview, icon}
+	chat.preview = fmt.tprintf("%s: Image", sender)
+	chat.preview_icon.at = len(sender) + len(": ")
+	commands := build_layout(&ui, 0)
+	text, inside := shown(commands, u32(media_start))
+	testing.expect_value(t, text, fmt.tprintf("%s:…", sender))
+	testing.expect(t, inside, text)
 }
 
 @(test)
@@ -486,7 +519,8 @@ chat_row_draft_preview :: proc(t: ^testing.T) {
 		Chat_Row_Ui {
 			group_id = "g-short",
 			title = "Short draft",
-			preview = "Previous message",
+			preview = "Image",
+			preview_icon = {glyph = GROUP_FILE_ICONS[.Images]},
 			tick = .DELIVERED,
 		},
 		Chat_Row_Ui {
@@ -625,7 +659,7 @@ chat_row_draft_preview :: proc(t: ^testing.T) {
 	for _ in 0 ..< 2 {anim_snap_all(); build_layout(&ui, 0)}
 	cleared_text, _, cleared_has, _ := preview_runs(build_layout(&ui, 0), 0)
 	testing.expect(t, !cleared_has, "Empty composer on active row must not show stale draft")
-	testing.expect_value(t, cleared_text, "Previous message")
+	testing.expect_value(t, cleared_text, fmt.tprintf("%sImage", GROUP_FILE_ICONS[.Images]))
 	testing.expect(t, nendo.element(nendo.id("Tick", 0)).found)
 
 	append(&ui.compose, "Typing live")
@@ -653,7 +687,8 @@ chat_row_draft_preview :: proc(t: ^testing.T) {
 		Chat_Row_Ui {
 			group_id = "g-arch",
 			title = "Archived chat",
-			preview = "Old archived message",
+			preview = "Video",
+			preview_icon = {glyph = GROUP_FILE_ICONS[.Videos]},
 			archived = true,
 		},
 	)

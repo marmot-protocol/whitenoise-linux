@@ -1774,9 +1774,6 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 	return client
 }
 
-@(private)
-CHAT_ATTACHMENT_AUDIO :: i32(2) // MarmotChatListAttachmentKind::Audio
-
 // Snapshot the account's chat list into UI-owned strings.
 // Match Android's absent-name test after unsafe controls/formatting are
 // stripped. ZWJ/ZWNJ remain meaningful in shaping and emoji sequences.
@@ -1843,7 +1840,7 @@ row_to_ui :: proc(
 	presented: ^marmot.Presented_Chat_Row,
 	account_ref: string,
 	previews: map[string]^marmot.Timeline_Page = nil,
-	reading_previews: map[string]string = nil,
+	reading_previews: map[string]Chat_Preview = nil,
 	members: map[string][]string = nil,
 ) -> Chat_Row_Ui {
 	row := &presented.row
@@ -1879,7 +1876,7 @@ row_to_ui :: proc(
 	case .Placeholder:
 	}
 
-	preview: string
+	preview: Chat_Preview
 	mine, blocked: bool
 	if row.last_message != nil {
 		mine = message_is_mine(nil, row.last_message.sender, account_ref)
@@ -1905,13 +1902,13 @@ row_to_ui :: proc(
 	if kind == .GROUP &&
 	   !mine &&
 	   !blocked &&
-	   preview != "" &&
+	   preview.text != "" &&
 	   row.last_message != nil &&
 	   row.last_message.sender != nil &&
 	   record_class(row.last_message.kind, string(row.last_message.plaintext)) == .Message {
 		// A group row names who sent its last message, when that is a message.
 		if sender := sender_label(string(row.last_message.sender)); sender != "" {
-			preview = fmt.tprintf(tr("%s: %s"), sender, preview)
+			prefix_chat_preview(&preview, fmt.tprintf(tr("%s: %s"), sender, preview.text))
 		}
 	}
 
@@ -1927,7 +1924,8 @@ row_to_ui :: proc(
 			.GROUP || strings.trim(string(row.group_name), " ") != "",
 		peer_hex            = strings.clone(peer),
 		title               = strings.clone(title),
-		preview             = strings.clone(preview),
+		preview             = strings.clone(preview.text),
+		preview_icon        = preview.icon,
 		at                  = format_activity(row.activity_sort_at),
 		activity_at         = row.activity_sort_at,
 		unread              = row.unread_count,

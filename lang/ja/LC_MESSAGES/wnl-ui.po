@@ -729,6 +729,9 @@ msgstr "ファイルを添付"
 msgid "Attachment"
 msgstr "添付ファイル"
 
+msgid "Attachments"
+msgstr "添付ファイル"
+
 msgid "Attachments, avatars, transcripts and map tiles."
 msgstr "添付ファイル、アバター、文字起こし、地図タイルです。"
 
@@ -2767,6 +2770,9 @@ msgstr "入力欄の枠線"
 msgid "Field hover"
 msgstr "入力欄のホバー"
 
+msgid "File"
+msgstr "ファイル"
+
 msgid "Files"
 msgstr "ファイル"
 
@@ -3100,6 +3106,9 @@ msgstr "コードが一致しない場合は連携しないでください。両
 
 msgid "If you forgot this password, you can try again or close White Noise without deleting anything. Starting over deletes the vault and its protected local data, including chats and pending sends. Review the deletion before deciding."
 msgstr "このパスワードを忘れた場合は、何も削除せずに、もう一度入力を試すかWhite Noiseを閉じることができます。最初からやり直すと、保管庫と、チャットや送信待ちのメッセージを含む保護された端末内のデータが削除されます。削除内容を確認してから判断してください。"
+
+msgid "Image"
+msgstr "画像"
 
 msgid "Image didn't load. Click to retry."
 msgstr "画像を読み込めませんでした。クリックして再試行してください。"
@@ -6577,6 +6586,9 @@ msgstr "ダウンロードを確認中..."
 
 msgid "Vertex normals"
 msgstr "頂点法線"
+
+msgid "Video"
+msgstr "動画"
 
 msgid "Videos"
 msgstr "動画"

@@ -107,7 +107,7 @@ chat_markdown_reading_preview :: proc(t: ^testing.T) {
 			// UI adoption consumes a prepared worker snapshot, including empty
 			// entries, without parsing the retained source again.
 			prepared, _ := chat_row_preview(client, &row.row, PREVIEW_SELF, nil)
-			previews := make(map[string]string, context.temp_allocator)
+			previews := make(map[string]Chat_Preview, context.temp_allocator)
 			previews["group"] = prepared
 			last.plaintext = "**not the prepared preview**"
 			adopted := row_to_ui(nil, &row, PREVIEW_SELF, nil, previews)
@@ -115,6 +115,25 @@ chat_markdown_reading_preview :: proc(t: ^testing.T) {
 			chat_free(adopted)
 		}
 	}
+	video := marmot.Chat_List_Message_Preview {
+		kind                = 9,
+		plaintext           = "---",
+		has_attachment_kind = true,
+		attachment_kind     = 1,
+		attachment_count    = 1,
+	}
+	video_row := marmot.Presented_Chat_Row {
+		row = {group_id_hex = "video", last_message = &video},
+	}
+	video_preview, _ := chat_row_preview(client, &video_row.row, PREVIEW_SELF, nil, nil, .Worker)
+	previews := make(map[string]Chat_Preview, context.temp_allocator)
+	previews["video"] = video_preview
+	video_chat := row_to_ui(nil, &video_row, PREVIEW_SELF, nil, previews)
+	testing.expect_value(t, video_chat.preview, "Video")
+	testing.expect_value(t, video_chat.preview_icon.glyph, "\uf03d")
+	testing.expect_value(t, video_chat.preview_icon.at, 0)
+	chat_free(video_chat)
+
 	// A blocked newest message falls back to reading text from the same
 	// bounded timeline window, skipping payloads that the timeline hides.
 	records := [?]marmot.Timeline_Message_Record {
@@ -152,9 +171,8 @@ chat_markdown_reading_preview :: proc(t: ^testing.T) {
 		&page,
 		.Worker,
 	)
-	testing.expect_value(t, prepared, "You: older link")
+	testing.expect_value(t, prepared.text, "You: older link")
 	testing.expect_value(t, system_page, nil)
-	previews := make(map[string]string, context.temp_allocator)
 	previews["fallback"] = prepared
 	fallback := row_to_ui(nil, &row, PREVIEW_SELF, nil, previews)
 	testing.expect_value(t, fallback.preview, "You: older link")
@@ -228,18 +246,41 @@ chat_blocked_and_system_preview :: proc(t: ^testing.T) {
 }
 
 @(test)
-chat_audio_preview :: proc(t: ^testing.T) {
-	for tc in ([]struct {
-			body, sender:      cstring,
-			kind:              i32,
-			has_kind, deleted: bool,
-			want:              string,
-		}{{"", PREVIEW_SELF, CHAT_ATTACHMENT_AUDIO, true, false, "You: Audio message"}, {nil, PREVIEW_SELF, CHAT_ATTACHMENT_AUDIO, true, false, "You: Audio message"}, {"  \n", "peer", CHAT_ATTACHMENT_AUDIO, true, false, "Audio message"}, {"Listen to this", PREVIEW_SELF, CHAT_ATTACHMENT_AUDIO, true, false, "You: Listen to this"}, {"", PREVIEW_SELF, CHAT_ATTACHMENT_AUDIO, false, false, ""}, {"", PREVIEW_SELF, CHAT_ATTACHMENT_AUDIO, true, true, ""}, {"", PREVIEW_SELF, 0, true, false, ""}}) {
+chat_attachment_preview :: proc(t: ^testing.T) {
+	// Pass the C enum's values independently of the app's mirror.
+	cases := [?]struct {
+		body, sender:      cstring,
+		kind:              i32,
+		count:             u32,
+		has_kind, deleted: bool,
+		want:              string,
+	} {
+		{nil, PREVIEW_SELF, 0, 1, true, false, "You: Image"},
+		{"  \n", "peer", 0, 2, true, false, "Images"},
+		{"Look at this", PREVIEW_SELF, 0, 1, true, false, "You: Look at this"},
+		{"", PREVIEW_SELF, 0, 0, false, false, ""},
+		{"", PREVIEW_SELF, 0, 1, true, true, ""},
+		{"", PREVIEW_SELF, 1, 1, true, false, "You: Video"},
+		{"  \n", "peer", 1, 2, true, false, "Videos"},
+		{"Watch this", "peer", 1, 1, true, false, "Watch this"},
+		{"", PREVIEW_SELF, 2, 1, true, false, "You: Audio message"},
+		{nil, PREVIEW_SELF, 2, 1, true, false, "You: Audio message"},
+		{"  \n", "peer", 2, 1, true, false, "Audio message"},
+		{"Listen to this", PREVIEW_SELF, 2, 1, true, false, "You: Listen to this"},
+		{"", PREVIEW_SELF, 2, 0, false, false, ""},
+		{"", PREVIEW_SELF, 2, 1, true, true, ""},
+		{nil, "peer", 3, 1, true, false, "File"},
+		{nil, "peer", 3, 2, true, false, "Files"},
+		{nil, "peer", 4, 2, true, false, "Attachments"},
+	}
+	icons := [5]string{"\uf03e", "\uf03d", "\uf001", "\uf15c", "\uf0c6"}
+	for tc in cases {
 		last := marmot.Chat_List_Message_Preview {
 			plaintext           = tc.body,
 			sender              = tc.sender,
 			kind                = 9,
 			attachment_kind     = tc.kind,
+			attachment_count    = tc.count,
 			has_attachment_kind = tc.has_kind,
 			deleted             = tc.deleted,
 		}
@@ -252,6 +293,12 @@ chat_audio_preview :: proc(t: ^testing.T) {
 			want = strings.concatenate({sender_label("peer"), ": ", want}, context.temp_allocator)
 		}
 		testing.expect_value(t, ui.preview, want)
+		icon: Chat_Preview_Icon
+		if tc.has_kind && !tc.deleted && strings.trim_space(string(tc.body)) == "" {
+			label := strings.trim_prefix(tc.want, "You: ")
+			icon = {icons[tc.kind], len(want) - len(label)}
+		}
+		testing.expect_value(t, ui.preview_icon, icon)
 		chat_free(ui)
 	}
 }

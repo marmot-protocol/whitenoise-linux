@@ -246,6 +246,7 @@ Chat_Row_Ui :: struct {
 	peer_hex:            string, // accepted DM counterparty; owned independently of avatar selection
 	title:               string,
 	preview:             string,
+	preview_icon:        Chat_Preview_Icon,
 	at:                  string, // last activity: clock today, "Yesterday", else the date
 	activity_at:         u64, // activity_sort_at, so `at` can be reformatted
 	unread:              u64,

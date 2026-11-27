@@ -728,6 +728,9 @@ msgstr "파일 첨부"
 msgid "Attachment"
 msgstr "첨부 파일"
 
+msgid "Attachments"
+msgstr "첨부 파일"
+
 msgid "Attachments, avatars, transcripts and map tiles."
 msgstr "첨부 파일, 아바타, 받아쓴 내용, 지도 타일입니다."
 
@@ -2766,6 +2769,9 @@ msgstr "입력란 테두리"
 msgid "Field hover"
 msgstr "입력란 호버"
 
+msgid "File"
+msgstr "파일"
+
 msgid "Files"
 msgstr "파일"
 
@@ -3099,6 +3105,9 @@ msgstr "코드가 일치하지 않으면 연결하지 마세요. 두 기기 모�
 
 msgid "If you forgot this password, you can try again or close White Noise without deleting anything. Starting over deletes the vault and its protected local data, including chats and pending sends. Review the deletion before deciding."
 msgstr "이 비밀번호를 잊었다면 다시 시도하거나 아무것도 삭제하지 않고 White Noise를 닫을 수 있습니다. 새로 시작하면 금고와 금고에서 보호하는 로컬 데이터가 삭제됩니다. 채팅과 전송 대기 중인 메시지도 삭제됩니다. 결정하기 전에 삭제되는 항목을 확인하세요."
+
+msgid "Image"
+msgstr "이미지"
 
 msgid "Image didn't load. Click to retry."
 msgstr "이미지를 불러오지 못했습니다. 클릭하여 다시 시도하세요."
@@ -6576,6 +6585,9 @@ msgstr "다운로드 확인 중..."
 
 msgid "Vertex normals"
 msgstr "정점 법선"
+
+msgid "Video"
+msgstr "동영상"
 
 msgid "Videos"
 msgstr "동영상"

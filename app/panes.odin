@@ -340,7 +340,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 		int(index) < len(g_ui.filter_previews) &&
 		g_ui.filter_previews[index] != ""
 	if filter_hit {
-		chat.preview = g_ui.filter_previews[index]
+		chat.preview, chat.preview_icon = g_ui.filter_previews[index], {}
 	}
 	draft := filter_hit ? "" : chat_draft_text(g_ui, chat)
 	if nendo.box(nendo.id("ChatRow", index))(
@@ -486,28 +486,14 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 						{width = nendo.grow(), gap = 6, align = {y = .Center}},
 						) {
 							if len(preview) > 0 {
-								// One clipped line. A preview with an emoji, mention
-								// or link renders as several inline elements, which
-								// nendo would otherwise stack down the row; clipping
-								// the axis gives them unbounded width instead, so the
-								// overflow is cut rather than wrapped.
-								if nendo.box(nendo.id("ChatRowPrevClip", index))(
-								{
-									width = nendo.grow(),
-									height = nendo.fixed(16),
-									gap = draft != "" ? 4 : 0,
-									align = {y = .Center},
-									clip = {x = true},
-								},
-								) {
-									row_preview(
-										index,
-										preview,
-										SIDEBAR_SURFACE_TEXT ? detail_ink : TEXT_DIM,
-										draft != "" ? tr("Draft:") : "",
-										draft_ink,
-									)
-								}
+								row_preview(
+									index,
+									preview,
+									draft != "" ? {} : chat.preview_icon,
+									SIDEBAR_SURFACE_TEXT ? detail_ink : TEXT_DIM,
+									draft != "" ? tr("Draft:") : "",
+									draft_ink,
+								)
 							} else if nendo.box(nendo.id("ChatRowPrevGap", index))(
 							{width = nendo.grow()},
 							) {
@@ -545,9 +531,8 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 }
 
 // The row's one-line preview, ended with an ellipsis inside the
-// ChatRowPrevClip it sits in. That clip is the row's only growing child,
-// so its width is the room left of the tick whatever the text is, and
-// last frame's box is this frame's room. A row's first frame draws the
+// ChatRowPrevClip it sits in. Use the previous frame's width after the
+// delivery tick, then reserve space for the inline icon. The first frame draws the
 // line uncut; the clip hides the overflow until the box exists.
 //   Are you still coming to the marmot meetup to|   clipped
 //   Are you still coming to the marmot meetup…   |   fitted
@@ -555,40 +540,67 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 row_preview :: proc(
 	index: u32,
 	preview: string,
-	ink: nendo.Color = {},
-	prefix: string = "",
-	prefix_ink: nendo.Color = {},
+	icon: Chat_Preview_Icon,
+	ink: nendo.Color,
+	draft_prefix: string,
+	draft_ink: nendo.Color,
 ) {
+	icon_size :: 10
+	gap :: 4
+	ink := ink.a == 0 ? TEXT_DIM : ink
 	tile_px := body_tile_size(preview, 12)
 	end := strings.index_byte(preview, '\n')
 	if end < 0 {
 		end = len(preview)
 	}
+	show_icon := icon.glyph != "" && icon.at < end
 	shown := preview
 	clip, laid_out := element_box(nendo.id("ChatRowPrevClip", index))
-	avail := clip.width
-	if prefix != "" {
-		nendo.text(
-			prefix,
-			{
-				font = FONT_BODY,
-				size = 12,
-				color = prefix_ink.a == 0 ? ACCENT : prefix_ink,
-				wrap = .None,
-			},
-		)
-		avail -= rl.MeasureTextLine(FONT_BODY, 12, prefix, 0).x + 4
+	if laid_out && clip.width >= 40 {
+		room := clip.width
+		if draft_prefix != "" {
+			room -= rl.MeasureTextLine(FONT_BODY, 12, draft_prefix, 0).x + gap
+		} else if show_icon {
+			room -=
+				rl.MeasureTextLine(FONT_ICON, icon_size, icon.glyph, 0).x +
+				(icon.at > 0 ? 2 * gap : gap)
+		}
+		if (draft_prefix == "" || room >= 20) &&
+		   (end < len(preview) || rune_fit(preview, 0, end, room, 12, tile_px = tile_px) < end) {
+			ellipsis := rl.MeasureTextLine(FONT_BODY, 12, "…", 0).x + 2
+			cut := rune_fit(preview, 0, end, room - ellipsis, 12, tile_px = tile_px)
+			if show_icon && cut <= icon.at {
+				show_icon = false
+				cut = rune_fit(preview, 0, icon.at, clip.width - ellipsis, 12, tile_px = tile_px)
+			}
+			shown = fmt.tprintf("%s…", strings.trim_right_space(preview[:cut]))
+		}
 	}
-	if laid_out &&
-	   clip.width >= 40 &&
-	   avail >= 20 &&
-	   (end < len(preview) || rune_fit(preview, 0, end, avail, 12, tile_px = tile_px) < end) {
-		// Room for the ellipsis and the 2px gap a chip leaves before it.
-		room := avail - rl.MeasureTextLine(FONT_BODY, 12, "…", 0).x - 2
-		cut := rune_fit(preview, 0, end, room, 12, tile_px = tile_px)
-		shown = fmt.tprintf("%s…", strings.trim_right_space(preview[:cut]))
+	if nendo.box(nendo.id("ChatRowPrevClip", index))(
+	{
+		width = nendo.grow(),
+		height = nendo.fixed(16),
+		gap = draft_prefix != "" || show_icon ? gap : 0,
+		align = {y = .Center},
+		clip = {x = true},
+	},
+	) {
+		id := 0xC0000 + 2 * index
+		if draft_prefix != "" {
+			nendo.text(
+				draft_prefix,
+				{font = FONT_BODY, size = 12, color = draft_ink, wrap = .None},
+			)
+		} else if show_icon {
+			if icon.at > 0 {
+				prefix := strings.trim_right_space(shown[:icon.at])
+				body_line(id + 1, prefix, 12, ink, tile_px = tile_px)
+			}
+			nendo.text(icon.glyph, {font = FONT_ICON, size = icon_size, color = ink})
+			shown = shown[icon.at:]
+		}
+		body_line(id, shown, 12, ink, tile_px = tile_px)
 	}
-	body_line(0xC0000 + index, shown, 12, ink.a == 0 ? TEXT_DIM : ink, tile_px = tile_px)
 }
 
 // What the rail row says about this chat's optimistic sends

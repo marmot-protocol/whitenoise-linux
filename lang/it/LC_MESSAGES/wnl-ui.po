@@ -729,6 +729,9 @@ msgstr "Allega un file"
 msgid "Attachment"
 msgstr "Allegato"
 
+msgid "Attachments"
+msgstr "Allegati"
+
 msgid "Attachments, avatars, transcripts and map tiles."
 msgstr "Allegati, avatar, trascrizioni e mappe."
 
@@ -2767,6 +2770,9 @@ msgstr "Bordo campo"
 msgid "Field hover"
 msgstr "Campo al passaggio"
 
+msgid "File"
+msgstr "File"
+
 msgid "Files"
 msgstr "File"
 
@@ -3100,6 +3106,9 @@ msgstr "Se i codici non corrispondono, non collegare i dispositivi. Riprova solo
 
 msgid "If you forgot this password, you can try again or close White Noise without deleting anything. Starting over deletes the vault and its protected local data, including chats and pending sends. Review the deletion before deciding."
 msgstr "Se hai dimenticato questa password, puoi riprovare o chiudere White Noise senza eliminare nulla. Ricominciare elimina la cassaforte e i dati locali che protegge, comprese le chat e gli invii in attesa. Prima di decidere, controlla cosa verrà eliminato."
+
+msgid "Image"
+msgstr "Immagine"
 
 msgid "Image didn't load. Click to retry."
 msgstr "Immagine non caricata. Clicca per riprovare."
@@ -6577,6 +6586,9 @@ msgstr "Verifica del download..."
 
 msgid "Vertex normals"
 msgstr "Normali dei vertici"
+
+msgid "Video"
+msgstr "Video"
 
 msgid "Videos"
 msgstr "Video"
