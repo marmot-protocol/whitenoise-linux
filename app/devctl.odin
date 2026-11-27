@@ -644,8 +644,10 @@ devctl_run :: proc(ui: ^Ui_State, client: ^marmot.Client, frame: int, line: stri
 				break
 			}
 		}
-		set_archived(ui, client, group_id, on_off == "on")
-		fmt.printfln("devctl: archived=%v %s", on_off == "on", group_id)
+		kind := on_off == "on" ? Account_Operation.Archive_Chat : .Restore_Chat
+		if start_archive_job(ui, client, group_id, kind) {
+			fmt.printfln("devctl: queued %v %s", kind, group_id)
+		}
 
 	case "state", "timings":
 		snapshot := verb == "state" ? debug_state_json(ui) : timings_json(client)

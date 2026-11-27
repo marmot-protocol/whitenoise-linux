@@ -5,6 +5,7 @@ import "core:os"
 import "core:strings"
 import "core:testing"
 import "core:text/edit"
+import "core:thread"
 
 import marmot "../marmot"
 import "nendo"
@@ -90,86 +91,32 @@ archive_chat_dispatch :: proc(t: ^testing.T) {
 		return testing.expect(t, nendo.pointer_over(id), "dispatch target is reachable")
 	}
 
-	// A menu can target a different chat from the selected conversation.
-	// Every new action must ask again, including after Cancel or Escape.
-	owner :: "0000000000000000000000000000000000000000000000000000000000000000"
-	other :: "1111111111111111111111111111111111111111111111111111111111111111"
-	for cancel in ([]string{"ConfirmCancel", "escape", "backdrop", "switch-click", "switch-enter", "confirm-click", "confirm-enter"}) {
-		delete(ui.account_ref)
-		ui.account_ref = strings.clone(owner)
-		if len(ui.chats) == 0 {
-			append(
-				&ui.chats,
-				chat_clone({group_id = "selected-chat", title = "Open conversation"}),
-				chat_clone({group_id = "menu-chat", title = "Archive example"}),
-			)
-		}
-		ui.selected = 0
-		ui.row_menu, ui.row_menu_x, ui.row_menu_y = 1, 100, 80
-		for _ in 0 ..< 3 {frame(&ui)}
-		if !point(t, "RowArchive") {return}
-		// A menu row acts only when the press also landed on it.
-		menu_press = {}
-		forced_press = true
-		build_layout(&ui, 0)
-		forced_press = false
-		forced_release = true
-		handle_chat(&ui, client)
-		forced_release = false
-		if !testing.expect(t, ui.confirm.kind != .None, cancel) {return}
-		testing.expect_value(t, ui.row_menu, -1)
-		testing.expect_value(t, ui.selected, 0)
-		testing.expect_value(t, len(ui.chats), 2)
-		testing.expect_value(t, ui.confirm.arg, "menu-chat")
-		testing.expect_value(t, ui.confirm.name, "Archive example")
-		testing.expect_value(t, ui.client_status, "")
-		text := frame(&ui)
-		testing.expect(t, strings.contains(text, "Archive this chat?"))
-		testing.expect(t, strings.contains(text, "Archived"))
-		testing.expect(t, strings.contains(text, "restore"))
-		testing.expect(t, strings.contains(text, "Archive example"))
-		switched := strings.has_prefix(cancel, "switch-")
-		if switched {
-			finish_account_switch(&ui, client, other)
-			testing.expect_value(t, ui.account_ref, other)
-			// The nonexistent account fails the real list read. Clear only
-			// that error so an archive attempt would produce a new error.
-			testing.expect(t, strings.has_prefix(ui.client_status, "Chat list failed:"))
-			delete(ui.client_status); ui.client_status = ""
-		}
-		if cancel == "escape" {
-			rl.PushKey(.ESCAPE, true)
-			handle_confirm(&ui, client)
-			rl.PushKey(.ESCAPE, false)
-		} else if cancel == "confirm-enter" || cancel == "switch-enter" {
-			rl.PushKey(.ENTER, true)
-			handle_confirm(&ui, client)
-			rl.PushKey(.ENTER, false)
-		} else {
-			if cancel == "backdrop" {nendo.set_pointer({1, 1}, .Up)} else {
-				if !point(
-					t,
-					cancel == "confirm-click" || cancel == "switch-click" ? "ConfirmGo" : cancel,
-				) {return}
-			}
-			forced_release = true
-			handle_confirm(&ui, client)
-			forced_release = false
-		}
-		testing.expect_value(t, ui.confirm.kind, Confirm_Kind.None)
-		testing.expect_value(t, ui.selected, switched ? -1 : 0)
-		if !testing.expect_value(t, len(ui.chats), switched ? 0 : 2) {return}
-		if !switched {
-			testing.expect_value(t, ui.chats[0].group_id, "selected-chat")
-			testing.expect_value(t, ui.chats[1].group_id, "menu-chat")
-		}
-		if strings.has_prefix(cancel, "confirm-") {
-			// Real ABI failure: confirmation must still use the existing error
-			// path and never claim success or remove the selected conversation.
-			testing.expect(t, strings.has_prefix(ui.client_status, "Couldn't archive."))
-			testing.expect_value(t, ui.client_status_kind, Status_Kind.Error)
-			delete(ui.client_status); ui.client_status = ""
-		} else {testing.expect_value(t, ui.client_status, "")}
-		for _ in 0 ..< 3 {frame(&ui)}
-	}
+	ui.account_ref = "0000000000000000000000000000000000000000000000000000000000000000"
+	append(
+		&ui.chats,
+		chat_clone({group_id = "selected-chat", title = "Open conversation"}),
+		chat_clone({group_id = "menu-chat", title = "Archive example"}),
+	)
+	ui.row_menu, ui.row_menu_x, ui.row_menu_y = 1, 100, 80
+	for _ in 0 ..< 3 {frame(&ui)}
+	if !point(t, "RowArchive") {return}
+	menu_press = {}
+	forced_press = true
+	build_layout(&ui, 0)
+	forced_press = false
+	forced_release = true
+	handle_chat(&ui, client)
+	forced_release = false
+	text := frame(&ui)
+	testing.expect(t, strings.contains(text, "Archiving your chat"))
+	testing.expect(t, !nendo.element(nendo.id("ConfirmModal")).found)
+	testing.expect(t, !nendo.element(nendo.id("ToastUndo")).found)
+	for job in account_jobs {thread.join(job.worker)}
+	account_job_drain(&ui)
+	banner_tick(&ui)
+	text = frame(&ui)
+	testing.expect(t, strings.contains(text, "Couldn't archive."))
+	testing.expect(t, !nendo.element(nendo.id("ToastUndo")).found)
+	testing.expect_value(t, ui.selected, 0)
+	testing.expect_value(t, len(ui.chats), 2)
 }

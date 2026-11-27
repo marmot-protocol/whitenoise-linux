@@ -31,6 +31,9 @@ Account_Operation :: enum {
 	Open_Chat,
 	Accept,
 	Decline,
+	Archive_Chat,
+	Restore_Chat,
+	Undo_Archive,
 	Leave,
 	Delete_Conversation,
 	Description,
@@ -107,6 +110,9 @@ account_job_new :: proc(
 		if job.account == owner ||
 		   (kind == .Switch && job.kind == .Switch) ||
 		   (account_wiping(kind) && account_wiping(job.kind)) {
+			// The pending row already shows the work. An Info toast would replace
+			// Undo, including one about to be posted by the archive worker.
+			if archive_job_kind(job.kind) || toast_undo_active(ui) {return nil}
 			waiting_for_signer := job.signer != nil && !account_exit(job.kind)
 			set_status(
 				ui,
@@ -119,6 +125,7 @@ account_job_new :: proc(
 	signer := nip46_find(owner)
 	if !account_exit(kind) &&
 	   kind != .Read_Archived &&
+	   !archive_job_kind(kind) &&
 	   signer != nil &&
 	   (signer.attach != nil || !signer.registered) {
 		if kind == .Switch {signer.switch_requested = true}
@@ -164,6 +171,35 @@ account_job_start :: proc(job: ^Account_Job) {
 		return
 	}
 	account_worker_start(job)
+}
+
+@(private)
+archive_job_kind :: proc(kind: Account_Operation) -> bool {
+	return kind == .Archive_Chat || kind == .Restore_Chat || kind == .Undo_Archive
+}
+
+@(private)
+start_archive_job :: proc(
+	ui: ^Ui_State,
+	client: ^marmot.Client,
+	group: string,
+	kind: Account_Operation,
+) -> bool {
+	job := account_job_new(ui, client, kind)
+	if job == nil {return false}
+	job.signer = nil
+	delete(job.group)
+	job.group = strings.clone(group)
+	job.open_chat = kind == .Restore_Chat && ui.page == .Chats
+	// No list fetched before the write can replace its result.
+	chat_list_revision += 1
+	job.chat_list.client = client
+	job.chat_list.account = strings.clone_to_cstring(job.account)
+	job.chat_list.include_archived = true
+	job.chat_list.revision = chat_list_revision
+	chat_list_snapshot(&job.chat_list, ui)
+	account_job_start(job)
+	return true
 }
 
 @(private = "file")
@@ -344,6 +380,22 @@ account_worker :: proc(t: ^thread.Thread) {
 		out: ^marmot.Group_Invite_Decline_Result
 		status = marmot.decline_group_invite(job.client, account, group, &out)
 		if out != nil {marmot.group_invite_decline_result_free(out)}
+	case .Archive_Chat, .Restore_Chat, .Undo_Archive:
+		out: ^marmot.App_Group_Record
+		archived := job.kind == .Archive_Chat
+		status = marmot.set_group_archived(job.client, account, group, archived, &out)
+		if out != nil {marmot.app_group_record_free(out)}
+		if status == .OK {
+			chat_list_read(&job.chat_list)
+		} else {
+			reason := marmot.last_error()
+			defer delete(reason)
+			job.error = fmt.aprintf(
+				archived ? tr("Couldn't archive. %s") : tr("Couldn't unarchive. %s"),
+				reason,
+			)
+		}
+		return
 	case .Leave:
 		status = marmot.leave_group(job.client, account, group, &summary)
 	case .Delete_Conversation:
@@ -751,6 +803,48 @@ conversation_deleted :: proc(ui: ^Ui_State, job: ^Account_Job) {
 	clear(&ui.rail_rows)
 }
 
+@(private = "file")
+apply_archive_job :: proc(ui: ^Ui_State, job: ^Account_Job, live: ^Live) {
+	if ui.account_ref != job.account || account_revoked(ui, job.account) {return}
+	if job.error != "" {
+		set_status(ui, strings.clone(job.error), .Error)
+		return
+	}
+	list := &job.chat_list
+	list_ready := list.revision == chat_list_revision && list.err == "" && list.rows != nil
+	open_target := ui.selected >= 0 && ui.chats[ui.selected].group_id == job.group
+	if (job.kind == .Archive_Chat && open_target) ||
+	   (job.kind == .Restore_Chat &&
+			   (ui.page == .Archived || (job.open_chat && list_ready && ui.page == .Chats))) {
+		park_conversation(ui)
+	}
+	if !list_ready {
+		if live != nil {live.refresh_dirty = true}
+	} else {
+		chat_list_apply(ui, list)
+		if job.open_chat && ui.page == .Chats {
+			if !select_by_id(ui, job.client, job.group) {
+				set_status(ui, tr("Couldn't open the restored chat. Please try again."), .Error)
+				return
+			}
+			ui.chat_filter = .Chats
+			clear(&ui.sidebar_filter)
+			if ui.new_chat_open {close_new_chat(ui)}
+		}
+	}
+	if job.kind == .Archive_Chat {
+		toast(ui, tr("Chat archived."))
+		ui.toast_until = rl.GetTime() + TOAST_ACTION_SECS
+		ui.toast_archive = {
+			account = strings.clone(job.account),
+			group   = strings.clone(job.group),
+			serial  = ui.toast_archive.serial + 1,
+		}
+	} else {
+		set_status(ui, tr("Chat restored."), .Info)
+	}
+}
+
 @(private)
 account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 	jobs: for i := len(account_jobs) - 1; i >= 0; i -= 1 {
@@ -774,6 +868,12 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 		}
 		if !thread.is_done(job.worker) {continue}
 		thread.join(job.worker)
+		if archive_job_kind(job.kind) {
+			ordered_remove(&account_jobs, i)
+			apply_archive_job(ui, job, live)
+			account_job_free(job, .Joined)
+			continue
+		}
 		if account_exit(job.kind) {
 			ordered_remove(&account_jobs, i)
 			account_exit_apply(ui, job)
@@ -982,6 +1082,9 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 				     .Remove,
 				     .Wipe,
 				     .Wipe_Unlinked,
+				     .Archive_Chat,
+				     .Restore_Chat,
+				     .Undo_Archive,
 				     .Delete_Conversation:
 				}
 			}
@@ -1030,6 +1133,10 @@ account_pending_label :: proc(kind: Account_Operation) -> string {
 		return tr("Accepting your invitation")
 	case .Decline:
 		return tr("Declining your invitation")
+	case .Archive_Chat:
+		return tr("Archiving your chat")
+	case .Restore_Chat, .Undo_Archive:
+		return tr("Restoring your chat")
 	case .Leave:
 		return tr("Leaving your group")
 	case .Delete_Conversation:

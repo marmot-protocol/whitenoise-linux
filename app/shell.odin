@@ -825,7 +825,7 @@ banner_tick :: proc(ui: ^Ui_State) {
 		if ui.toast_reveal != "" {ui.toast_until = rl.GetTime() + TOAST_ACTION_SECS}
 		return
 	}
-	ui.toast_until = 0
+	if !toast_undo_active(ui) {ui.toast_until = 0}
 	ui.banner = ui.client_status
 	ui.banner_kind = ui.client_status_kind
 }
@@ -944,6 +944,22 @@ modal_backdrop :: proc(
 TOAST_SECS :: 4.0
 TOAST_ACTION_SECS :: 8.0 // long enough to reach the toast's button
 
+@(private)
+Toast_Archive :: struct {
+	account, group: string,
+	serial:         u32,
+	pressed:        bool,
+}
+
+@(private)
+toast_undo_active :: proc(ui: ^Ui_State) -> bool {
+	return(
+		ui.toast_archive.group != "" &&
+		ui.toast_archive.account == ui.account_ref &&
+		rl.GetTime() < ui.toast_until \
+	)
+}
+
 // Transient confirmation for actions with no visible result of their
 // own (copy chips, mostly).
 toast :: proc(ui: ^Ui_State, text: string) {
@@ -951,6 +967,11 @@ toast :: proc(ui: ^Ui_State, text: string) {
 	ui.toast = strings.clone(text)
 	ui.toast_until = rl.GetTime() + TOAST_SECS
 	delete(ui.toast_reveal); ui.toast_reveal = ""
+	delete(ui.toast_archive.account)
+	delete(ui.toast_archive.group)
+	ui.toast_archive = {
+		serial = ui.toast_archive.serial,
+	}
 }
 
 // Copy chips have no visible result of their own, so every one of them
@@ -964,8 +985,10 @@ toast_layer :: proc(ui: ^Ui_State) {
 	if len(ui.toast) == 0 || rl.GetTime() > ui.toast_until {
 		return
 	}
+	undo := toast_undo_active(ui)
+	action := undo || ui.toast_reveal != ""
 	// An actionable toast stays while the pointer is on it.
-	if ui.toast_reveal != "" && nendo.pointer_over(nendo.id("Toast")) {
+	if action && nendo.pointer_over(nendo.id("Toast")) {
 		ui.toast_until = max(ui.toast_until, rl.GetTime() + 1)
 	}
 	frame_deadline = min(frame_deadline, ui.toast_until)
@@ -989,7 +1012,7 @@ toast_layer :: proc(ui: ^Ui_State) {
 	if nendo.box(nendo.id("Toast"))(
 	{
 		width = nendo.fit(max = fit_w(420)),
-		padding = {left = 16, right = ui.toast_reveal != "" ? 9 : 16, top = 9, bottom = 9},
+		padding = {left = 16, right = action ? 9 : 16, top = 9, bottom = 9},
 		gap = 12,
 		align = {y = .Center},
 		floating = {
@@ -1005,7 +1028,11 @@ toast_layer :: proc(ui: ^Ui_State) {
 	},
 	) {
 		nendo.text(ui.toast, {font = FONT_BODY, size = 12, color = TEXT})
-		if ui.toast_reveal != "" {micro_button("ToastReveal", tr("Show in folder"))}
+		if undo {
+			micro_button("ToastUndo", tr("Undo"), index = ui.toast_archive.serial)
+		} else if ui.toast_reveal != "" {
+			micro_button("ToastReveal", tr("Show in folder"))
+		}
 	}
 }
 

@@ -263,6 +263,8 @@ Each folder and nested rule group can match all of its children or any one of th
 | Is archived | Is in Archive |
 
 Archived chats use the same folder placement in Archive and stay out of Chats.
+Choose **Archive** in a chat's menu to move it there. Select **Undo** in the
+confirmation toast to bring it back, or open **Archive** and choose **Restore** later.
 
 - **Hand placement wins over rules.** Choosing "Follow folder rules" in the move dialog hands the chat back to the rules.
 - **Deleting a folder asks first.** This applies from both Settings and its context menu; only the folder is removed and its chats stay in your chat list.
