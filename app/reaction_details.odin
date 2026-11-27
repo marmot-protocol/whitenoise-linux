@@ -12,6 +12,22 @@ reaction_chip_id :: proc(message: u32, emoji: string) -> nendo.Id {
 	return nendo.id("MsgReactionChip", nendo.id(emoji, message).id)
 }
 
+@(private = "file")
+REACTION_SENDER_GAP :: 6
+
+@(private = "file")
+reaction_sender :: proc(sender: string, width: f32, ink: nendo.Color, size: u16) {
+	name := strings.trim_space(mention_label(sender))
+	if end := strings.index_any(name, "\r\n"); end >= 0 {name = name[:end]}
+	photo := person_picture(sender, profile_info(g_client, sender).pic_url)
+	SIDE :: 14
+	avatar("ReactionSenderAvatar", nendo.open_id(), sender, name, SIDE, photo)
+	nendo.text(
+		text_ellipsis(name, width - SIDE - REACTION_SENDER_GAP, FONT_BODY, size),
+		{font = FONT_BODY, size = size, color = ink, wrap = .None},
+	)
+}
+
 @(private)
 reaction_peek :: proc(id: nendo.Id, strip: nendo.Id, senders: []string) {
 	anchor := nendo.element(id)
@@ -41,19 +57,12 @@ reaction_peek :: proc(id: nendo.Id, strip: nendo.Id, senders: []string) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		for sender in senders[:shown] {
-			name := strings.trim_space(profile_label(g_client, sender))
-			if end := strings.index_any(name, "\r\n"); end >= 0 {name = name[:end]}
-			nendo.text(
-				text_ellipsis(name, width - 20, FONT_BODY, 12),
-				{
-					font = FONT_BODY,
-					size = 12,
-					line_height = LINE_H,
-					color = POPOVER_TEXT,
-					wrap = .None,
-				},
-			)
+		for sender, i in senders[:shown] {
+			if nendo.box(nendo.id_local("ReactionPeekLine", u32(i)))(
+			{height = nendo.fixed(LINE_H), align = {y = .Center}, gap = REACTION_SENDER_GAP},
+			) {
+				reaction_sender(sender, width - 20, POPOVER_TEXT, 12)
+			}
 		}
 		if more > 0 {
 			nendo.text(
@@ -454,7 +463,7 @@ reaction_details_lines :: proc(chips: []Reaction_Ui, count: int, width: f32) {
 				height = nendo.fixed(REACTION_LINE_H),
 				align = {y = .Center},
 				padding = {left = header ? 8 : 20},
-				gap = 6,
+				gap = REACTION_SENDER_GAP,
 				color = header ? ROW_BG : {},
 				radius = rr(6),
 			},
@@ -467,11 +476,7 @@ reaction_details_lines :: proc(chips: []Reaction_Ui, count: int, width: f32) {
 						nendo.text(chip.label, {font = FONT_TITLE, size = 13, color = TEXT})
 					}
 				} else {
-					name := profile_label(g_client, chip.senders[i - start - 1])
-					nendo.text(
-						text_ellipsis(name, width, FONT_BODY, 13),
-						{font = FONT_BODY, size = 13, color = TEXT},
-					)
+					reaction_sender(chip.senders[i - start - 1], width, TEXT, 13)
 				}
 			}
 		}

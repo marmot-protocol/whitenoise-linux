@@ -2,6 +2,7 @@ package main
 
 import marmot "../marmot"
 import "base:runtime"
+import "core:encoding/hex"
 import "core:fmt"
 import "core:testing"
 import "core:text/edit"
@@ -51,6 +52,26 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	people: [24]cstring
 	for &sender, i in people {sender = fmt.ctprintf("%064x", i + 1)}
 	last: [1]cstring = {fmt.ctprintf("%064x", len(people) + 1)}
+	key_hex := string(people[1])
+	payload: [42]u8
+	payload[2], payload[3], payload[36], payload[37] = 2, 32, 3, 4
+	hex.decode_into_buffer(transmute([]u8)key_hex, payload[4:36])
+	shape_ref := bech32_encode("naddr", payload[:])
+	nev_cards[shape_ref] = {
+		done = true,
+	}
+	defer {delete_key(&nev_cards, shape_ref); delete(shape_ref)}
+	pixels: [64][4]u8
+	for &pixel in pixels {pixel = {180, 102, 154, 255}}
+	PHOTO_URL :: "starter://reaction-test"
+	register_starter_pic(
+		key_hex,
+		"Mira Vale",
+		PHOTO_URL,
+		{data = &pixels[0][0], width = 8, height = 8},
+	)
+	portrait := local_pic(PHOTO_URL)
+	if !testing.expect(t, portrait != nil && portrait.tex != nil) {return}
 	tallies := [?]marmot.Timeline_Reaction_Emoji {
 		{
 			emoji = "👍",
@@ -86,6 +107,12 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 		}
 		return false
 	}
+	shows_portrait :: proc(commands: []nendo.Render_Command, photo: ^rl.Texture2D) -> bool {
+		for command in commands {
+			if command.kind == .Image && command.image.image == rawptr(photo) {return true}
+		}
+		return false
+	}
 	key :: proc(ui: ^Ui_State, client: ^marmot.Client, k: rl.KeyboardKey) {
 		rl.WindowShouldClose()
 		rl.PushKey(k, true)
@@ -108,6 +135,7 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	nendo.set_pointer({chip.rect.x + chip.rect.width / 2, chip.rect.y + chip.rect.height / 2}, .Up)
 	commands = layout(&ui)
 	testing.expect(t, shows(commands, first_name), "hover previews this emoji's senders")
+	testing.expect(t, shows_portrait(commands, portrait), "hover shows the sender's profile photo")
 	testing.expect(t, shows(commands, "+21 more"), "large rosters have a bounded preview")
 	testing.expect(t, !shows(commands, last_name), "the other emoji's sender is not previewed")
 	nendo.set_pointer({-1, -1}, .Up)
@@ -191,6 +219,11 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	testing.expect_value(t, len(ui.react_pending), 0)
 	commands = layout(&ui)
 	testing.expect(t, shows(commands, first_name), "first emoji's sender")
+	testing.expect(
+		t,
+		shows_portrait(commands, portrait),
+		"the roster shows the sender's profile photo",
+	)
 	key(&ui, &client, .END)
 	commands = layout(&ui)
 	testing.expect(t, shows(commands, last_name), "other emoji beyond the first viewport")
