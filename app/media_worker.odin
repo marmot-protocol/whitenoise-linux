@@ -585,6 +585,26 @@ media_job_free :: proc(job: ^Media_Job) {
 	free(job)
 }
 
+@(private = "file")
+row_has_emoji :: proc(msg: ^Msg_Ui, token: string) -> bool {
+	if strings.contains(msg.body, token) || strings.contains(msg.reply_text, token) {
+		return true
+	}
+	for &block in msg.blocks {
+		if strings.contains(block.text, token) {
+			return true
+		}
+		for row in block.cells {
+			for cell in row {
+				if strings.contains(cell, token) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 @(private)
 media_drain :: proc(ui: ^Ui_State) {
 	at_bottom := false
@@ -614,7 +634,15 @@ media_drain :: proc(ui: ^Ui_State) {
 		thread.destroy(job.worker)
 		media_publish(job)
 		view, _ := media_cached(job.kind, job.key)
+		emoji_token := job.kind == .Emoji && view != nil ? fmt.tprintf(":%s:", job.key) : ""
+		if emoji_token != "" {
+			wrap_flush = true
+		}
 		for &msg in ui.messages {
+			if emoji_token != "" && row_has_emoji(&msg, emoji_token) {
+				msg.row_measure = {}
+				ui.scroll_pending ||= at_bottom
+			}
 			if job.external_gif && giphy_message_url(msg.body) == job.key {
 				msg.row_measure = {}
 				ui.scroll_pending ||= at_bottom

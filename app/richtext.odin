@@ -50,6 +50,9 @@ Inline_Link :: struct {
 	place:      Link_Place,
 }
 
+@(private)
+LINK_INSET :: 2
+
 // Where a link sits on its source line. Alone, nothing but spaces
 // share the line, and a GitHub link becomes a card of its own row;
 // Inline, it is part of a sentence and stays a chip in the text flow.
@@ -109,7 +112,9 @@ inline_segs :: proc(
 			continue
 		}
 		if text_literal(fonts, i) {i += 1; continue}
-		if end, ref := nostr_at(text, i); ref.kind != .None {
+		limit :=
+			link_index < len(links) ? min(len(text), links[link_index].start - offset) : len(text)
+		if end, ref := nostr_at(text[:limit], i); ref.kind != .None {
 			if i >
 			   plain_start {append(&segs, Inline_Seg{text = text[plain_start:i], fonts = text_fonts(fonts, plain_start, i)})}
 			seg := Inline_Seg {
@@ -128,7 +133,7 @@ inline_segs :: proc(
 		if r == 'm' || r == 'M' {
 			// marmot://profile deep link becomes one mention chip too;
 			// clicking it opens the profile like a mention.
-			if end, hx, ok := marmot_link_at(text, i); ok {
+			if end, hx, ok := marmot_link_at(text[:limit], i); ok {
 				if i > plain_start {
 					append(
 						&segs,
@@ -195,7 +200,7 @@ inline_segs :: proc(
 		if r == 'h' {
 			// http(s) URL becomes its own seg; bodies draw it as a link
 			// that routes through the external-link guard.
-			if end, link, ok := url_at(text, i); ok {
+			if end, link, ok := url_at(text[:limit], i); ok {
 				if i > plain_start {
 					append(
 						&segs,
@@ -218,7 +223,7 @@ inline_segs :: proc(
 		tex: ^rl.Texture2D
 		switch {
 		case r == ':':
-			if end, custom := shortcode_at(text, i); custom != nil {
+			if end, custom := shortcode_at(text[:limit], i); custom != nil {
 				next, tex = end, custom
 			}
 		case is_emoji_rune(r) || (r >= '0' && r <= '9') || r == '#' || r == '*':
@@ -251,6 +256,14 @@ inline_segs :: proc(
 @(private)
 link_cards_enabled :: proc() -> bool {
 	return gh_cards_on && (g_ui == nil || !g_ui.prefs.disable_link_previews)
+}
+
+@(private = "file")
+body_wrap_mode :: proc() -> Wrap_Mode {
+	if !link_cards_enabled() {
+		return .Text
+	}
+	return nev_depth > 0 ? .Links : .Cards
 }
 
 // A URL drawn as a card of its own row rather than as a link run. A
@@ -371,8 +384,9 @@ render_segs :: proc(
 			if _, geo := geo_ref(segs[k + 1].url); geo {continue}
 		}
 		if seg.tex != nil {
+			w, ratio := emoji_tile_w(seg.tex, tile_px)
 			if nendo.box(nendo.id("SegEmoji", id * 128 + u32(k)))(
-			{width = nendo.fixed(tile_px), aspect = 1, image = seg.tex},
+			{width = nendo.fixed(w), aspect = ratio, image = seg.tex},
 			) {}
 		} else if card && nev_image_url(seg.url) {
 			image_link(id * 128 + u32(k), seg.url, font_size, max(1, att_w() - 24))
@@ -414,7 +428,7 @@ render_segs :: proc(
 			if card {jitsi_probe(seg.url)}
 			if nendo.box(nendo.id("SegLink", id * 128 + u32(k)))(
 			{
-				padding = {left = 2, right = 2},
+				padding = {left = LINK_INSET, right = LINK_INSET},
 				color = hovered() ? HOVER : {},
 				radius = rr(4),
 				border = {color = ACCENT, width = {bottom = 1}},
@@ -878,7 +892,17 @@ md_table :: proc(
 								context.temp_allocator,
 							)
 						}
-						for line in wrapped_lines(text, inner_w, 13, fonts = fonts) {
+						links :=
+							r < len(cell_links) && c < len(cell_links[r]) ? cell_links[r][c][:] : nil
+						tile_px := body_tile_size(text, 13, fonts = fonts, links = links)
+						mode := body_wrap_mode()
+						runs := body_link_runs(text, fonts, links, 0, mode)
+						labels := wrap_labels(text, runs, mode)
+						first := 0
+						for line in wrapped_lines(text, inner_w, 13, mode, fonts, tile_px, labels) {
+							for first < len(runs) && runs[first].end <= line.start {first += 1}
+							last := first
+							for last < len(runs) && runs[last].start < line.end {last += 1}
 							if nendo.box()(
 							{
 								width = nendo.fixed(inner_w),
@@ -892,8 +916,9 @@ md_table :: proc(
 									text[line.start:line.end],
 									13,
 									color,
+									tile_px = tile_px,
 									fonts = text_fonts(fonts, line.start, line.end),
-									links = r < len(cell_links) && c < len(cell_links[r]) ? cell_links[r][c][:] : nil,
+									links = runs[first:last],
 									offset = line.start,
 								)
 							}
@@ -1298,41 +1323,17 @@ md_blocks :: proc(
 	return false
 }
 
-// One body_line per physical line. `selectable` registers the lines
-// with bodysel.odin, which needs each line's byte range inside `text`;
-// the walk therefore slices `text` itself instead of split_lines, whose
-// copies carry no offsets. Selectable bodies are also wrapped here
-// rather than by nendo: a selection highlight splits a line into three
-// spans, and nendo only wraps a whole Text element. Break points come
-// from measured widths.
-// `wrap_w` forces wrapping at that width for non-selectable bodies
-// whose container nendo can't wrap into (reply previews, edit history).
-body_text :: proc(
-	id: u32,
-	text: string,
-	font_size: u16,
-	color: nendo.Color,
-	selectable := false,
-	wrap_w: f32 = 0,
-	max_lines: int = max(int),
-	fonts: string = "",
-	emoji := Emoji_Scale.Inline,
-	links: []Inline_Link = nil,
-	link_offset: int = 0,
-) -> int {
-	wrap := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
-	tile_px := body_tile_size(text, font_size, emoji)
-	mode: Wrap_Mode = link_cards_enabled() ? .Cards : .Text
-	if mode == .Cards && nev_depth > 0 {mode = .Links}
-	lines := wrapped_lines(text, wrap, font_size, mode, fonts, tile_px)
-	count := len(lines)
-	lines = lines[:min(len(lines), max_lines)]
-	// Parse destinations before wrapping: every visible fragment keeps
-	// the original URL, including a fragment without an http prefix.
+// Resolve destinations before wrapping so each fragment keeps the full URL.
+@(private = "file")
+body_link_runs :: proc(
+	text, fonts: string,
+	links: []Inline_Link,
+	link_offset: int,
+	mode: Wrap_Mode,
+) -> []Inline_Link {
 	runs := make([dynamic]Inline_Link, context.temp_allocator)
-	visible_end := len(lines) > 0 ? lines[len(lines) - 1].end : 0
 	link_index := 0
-	for at := 0; at < visible_end; {
+	for at := 0; at < len(text); {
 		for link_index < len(links) && links[link_index].end <= at + link_offset {link_index += 1}
 		if link_index < len(links) && links[link_index].start <= at + link_offset {
 			link := links[link_index]
@@ -1364,13 +1365,48 @@ body_text :: proc(
 			at = end
 		} else {at += 1}
 	}
-	first := 0
+	return runs[:]
+}
+
+// One body_line per physical line. `selectable` registers the lines
+// with bodysel.odin, which needs each line's byte range inside `text`;
+// the walk therefore slices `text` itself instead of split_lines, whose
+// copies carry no offsets. Selectable bodies are also wrapped here
+// rather than by nendo: a selection highlight splits a line into three
+// spans, and nendo only wraps a whole Text element. Break points come
+// from measured widths.
+// `wrap_w` forces wrapping at that width for non-selectable bodies
+// whose container nendo can't wrap into (reply previews, edit history).
+body_text :: proc(
+	id: u32,
+	text: string,
+	font_size: u16,
+	color: nendo.Color,
+	selectable := false,
+	wrap_w: f32 = 0,
+	max_lines: int = max(int),
+	fonts: string = "",
+	emoji := Emoji_Scale.Inline,
+	links: []Inline_Link = nil,
+	link_offset: int = 0,
+) -> int {
+	wrap := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
+	tile_px := body_tile_size(text, font_size, emoji, fonts, links, link_offset)
+	mode := body_wrap_mode()
+	runs := body_link_runs(text, fonts, links, link_offset, mode)
+	labels := wrap_labels(text, runs, mode)
+	lines := wrapped_lines(text, wrap, font_size, mode, fonts, tile_px, labels)
+	count := len(lines)
+	lines = lines[:min(len(lines), max_lines)]
+	first, label_index := 0, 0
 	for line in lines {
 		for first < len(runs) && runs[first].end <= line.start {first += 1}
 		last := first
 		for last < len(runs) && runs[last].start < line.end {last += 1}
 		line_id := id * 8 + line.index
 		if selectable {
+			for label_index < len(labels) &&
+			    labels[label_index].end <= line.start {label_index += 1}
 			sel_register(
 				line_id,
 				id,
@@ -1381,6 +1417,7 @@ body_text :: proc(
 				tile_px,
 				text_fonts(fonts, line.start, line.end),
 				mode,
+				labels[label_index:],
 			)
 			body_line(
 				line_id,
@@ -1516,13 +1553,24 @@ excerpt_body :: proc(
 
 // Plain fallback for pending messages and records without parsed blocks.
 @(private)
-message_excerpt :: proc(id: u32, text: string, color: nendo.Color, state: Excerpt = {}) -> bool {
+message_excerpt :: proc(
+	id: u32,
+	text: string,
+	color: nendo.Color,
+	state: Excerpt = {},
+	emoji := Emoji_Scale.Inline,
+) -> bool {
 	threshold := message_line_limit()
-	if threshold == max(int) ||
-	   len(wrapped_lines(text, body_wrap_w(), BODY_FS)) <= threshold {return false}
+	if threshold == max(int) {return false}
+	width := body_wrap_w()
+	tile_px := body_tile_size(text, BODY_FS, emoji)
+	runs := body_link_runs(text, "", nil, 0, .Text)
+	labels := wrap_labels(text, runs, .Text)
+	if len(wrapped_lines(text, width, BODY_FS, tile_px = tile_px, labels = labels)) <=
+	   threshold {return false}
 	cards := gh_cards_on
 	gh_cards_on = false
-	excerpt_body(id, text, nil, state, body_wrap_w(), color)
+	excerpt_body(id, text, nil, state, width, color, emoji = emoji)
 	gh_cards_on = cards
 	message_more(id, state)
 	return true
@@ -1579,26 +1627,98 @@ att_w :: proc(w: f32 = 320) -> f32 {
 	return min(w, body_wrap_w())
 }
 
-// How a body of at most six emoji and nothing else draws them. Inline
-// (quotes, previews, rows) uses 28px tiles; Jumbo (a message body)
-// uses the art's native EMOJI_SIDE physical pixels, ~85 logical at 1.5x.
+// How a body of at most six Unicode emoji, or one standalone custom
+// :shortcode: emoji, draws its tiles. Inline (quotes, previews, rows)
+// uses 28px for Unicode emoji and inline size for custom emoji; Jumbo
+// (a message body) uses the art's native EMOJI_SIDE physical pixels,
+// ~85 logical at 1.5x.
 @(private)
 Emoji_Scale :: enum {
 	Inline,
 	Jumbo,
 }
 
+@(private)
+jumbo_emoji_size :: proc() -> f32 {
+	// A phone runs at UI_SCALE 1, where native pixels make 128px tiles
+	// that fill half a screen row; cap them near the desktop's size.
+	jumbo := f32(EMOJI_SIDE) / UI_SCALE
+	if single_pane() {
+		jumbo = min(jumbo, 64)
+	}
+	return jumbo
+}
+
+// Drawn width and aspect ratio of an emoji tile bounded by `tile_px` on
+// both sides. Square art stays tile_px x tile_px; non-square custom
+// emoji keep their proportions instead of stretching.
+@(private)
+emoji_tile_w :: proc(tex: ^rl.Texture2D, tile_px: f32) -> (w, ratio: f32) {
+	if tex == nil || tex.width <= 0 || tex.height <= 0 {
+		return tile_px, 1
+	}
+	ratio = f32(tex.width) / f32(tex.height)
+	return min(tile_px, tile_px * ratio), ratio
+}
+
+// The single resolvable :shortcode: texture when `text` contains only
+// that shortcode and optional whitespace, outside literal code/math and
+// markdown link spans.
+@(private)
+standalone_custom_emoji :: proc(
+	text: string,
+	fonts: string = "",
+	links: []Inline_Link = nil,
+	link_offset: int = 0,
+) -> ^rl.Texture2D {
+	trimmed_left := strings.trim_left_space(text)
+	start := len(text) - len(trimmed_left)
+	trimmed := strings.trim_right_space(trimmed_left)
+	if len(trimmed) == 0 || trimmed[0] != ':' {
+		return nil
+	}
+	end, tex := shortcode_at(trimmed, 0)
+	if tex == nil || end != len(trimmed) {
+		return nil
+	}
+	if len(fonts) > 0 {
+		for i in start ..< start + end {
+			if text_literal(fonts, i) {
+				return nil
+			}
+		}
+	}
+	for link in links {
+		if link.end > link_offset + start && link.start < link_offset + start + end {
+			return nil
+		}
+	}
+	return tex
+}
+
 // Pick emoji size for the whole body, so a short wrapped tail does
 // not grow larger than the tiles used to measure its line.
 @(private)
-body_tile_size :: proc(text: string, font_size: u16, scale := Emoji_Scale.Inline) -> f32 {
+body_tile_size :: proc(
+	text: string,
+	font_size: u16,
+	scale := Emoji_Scale.Inline,
+	fonts: string = "",
+	links: []Inline_Link = nil,
+	link_offset: int = 0,
+) -> f32 {
 	text_px := f32(font_size) + 4
+	if scale == .Jumbo && standalone_custom_emoji(text, fonts, links, link_offset) != nil {
+		return max(jumbo_emoji_size(), text_px)
+	}
 	tiles := 0
 	it := utf8.decode_grapheme_iterator_make(text)
-	for cluster, _ in rl.grapheme_iterate(&it) {
-		if text_emoji(cluster) != nil {
+	for cluster, g in rl.grapheme_iterate(&it) {
+		if !text_literal(fonts, g.byte_index) && text_emoji(cluster) != nil {
 			tiles += 1
-			if tiles > 6 {return text_px}
+			if tiles > 6 {
+				return text_px
+			}
 		} else if len(strings.trim_space(cluster)) > 0 {
 			return text_px
 		}
@@ -1606,11 +1726,7 @@ body_tile_size :: proc(text: string, font_size: u16, scale := Emoji_Scale.Inline
 	if tiles == 0 {
 		return text_px
 	}
-	// A phone runs at UI_SCALE 1, where native pixels make 128px tiles
-	// that fill half a screen row; cap them near the desktop's size.
-	jumbo := f32(EMOJI_SIDE) / UI_SCALE
-	if single_pane() {jumbo = min(jumbo, 64)}
-	return scale == .Jumbo ? jumbo : 28
+	return scale == .Jumbo ? max(jumbo_emoji_size(), text_px) : 28
 }
 
 @(private)
@@ -1648,11 +1764,24 @@ wrap_break :: proc(
 	tile_px: f32 = 0,
 	fonts: string = "",
 	plain_font: u16 = FONT_BODY,
+	labels: []Wrap_Label = nil,
 ) -> int {
 	// Only measure the current line. Measuring the whole next word
 	// rescans a long unbroken suffix once per line (quadratic work).
 	cjk_cut := at
-	fit := rune_fit(text, at, end, width, font_size, mode, tile_px, fonts, &cjk_cut, plain_font)
+	fit := rune_fit(
+		text,
+		at,
+		end,
+		width,
+		font_size,
+		mode,
+		tile_px,
+		fonts,
+		&cjk_cut,
+		plain_font,
+		labels,
+	)
 	if fit == end || text[fit] == ' ' {
 		return fit
 	}
@@ -1676,8 +1805,12 @@ wrap_break :: proc(
 		word += 1
 	}
 	if mode == .Cards && !text_literal(fonts, word) {
-		if tok_end, _, _, is_event := nevent_at(text, word);
-		   is_event && tok_end <= end {return tok_end}
+		remaining := labels
+		label, _ := wrap_label_at(&remaining, word)
+		if word < label.start || word >= label.end {
+			limit := word < label.start ? min(end, label.start) : end
+			if tok_end, _, _, is_event := nevent_at(text[:limit], word); is_event {return tok_end}
+		}
 	}
 	return fit
 }
@@ -1694,21 +1827,25 @@ rune_fit :: proc(
 	fonts: string = "",
 	cjk_cut: ^int = nil,
 	plain_font: u16 = FONT_BODY,
+	labels: []Wrap_Label = nil,
 ) -> int {
+	labels := labels
 	pen: f32 = 0
 	previous_emoji := false
 	previous: rune
-	skip := at
+	base := at
 	it := utf8.decode_grapheme_iterator_make(text[at:end])
 	for cluster, grapheme in rl.grapheme_iterate(&it) {
-		i := at + grapheme.byte_index
-		if i < skip {continue}
+		i := base + grapheme.byte_index
 		if cjk_cut != nil {
 			r, _ := utf8.decode_rune_in_string(cluster)
 			if i > at && wrap_cjk_break(previous, r) {cjk_cut^ = i}
 			previous = r
 		}
-		literal := mode == .Plain || text_literal(fonts, i)
+		label, boundary := wrap_label_at(&labels, i)
+		linked := label.start <= i && i < label.end
+		literal := linked || mode == .Plain || text_literal(fonts, i)
+		limit := i < label.start ? min(end, label.start) : end
 		// Chips are atoms; composer segments sit flush, bodies 2px apart.
 		next, atom_width := 0, f32(0)
 		switch {
@@ -1716,13 +1853,23 @@ rune_fit :: proc(
 		case mode == .Compose:
 			next, atom_width = compose_atom(text[:end], i)
 		case:
-			next, atom_width = body_atom(text[:end], i, font_size, mode)
-			if i > at {atom_width += 2}
+			next, atom_width = body_atom(text[:limit], i, font_size, mode)
+			if next == 0 && text[i] == ':' {
+				if sc_end, tex := shortcode_at(text[:limit], i); tex != nil {
+					tile := tile_px > 0 ? tile_px : f32(font_size) + 4
+					w, _ := emoji_tile_w(tex, tile)
+					next, atom_width = sc_end, w
+				}
+			}
+			if next > i && i > at {
+				atom_width += 2
+			}
 		}
 		if next > i {
 			if i > at && pen + atom_width > width {return i}
 			pen += atom_width
-			skip, previous_emoji = next, true
+			base, previous_emoji = next, true
+			it = utf8.decode_grapheme_iterator_make(text[next:end])
 			previous = 0
 			continue
 		}
@@ -1730,8 +1877,9 @@ rune_fit :: proc(
 		adv := rl.MeasureTextLine(font, font_size, cluster, 0).x
 		emoji := !literal && text_emoji(cluster) != nil
 		if emoji {adv = mode == .Compose ? 18 : (tile_px > 0 ? tile_px : f32(font_size) + 4)}
+		if linked && (i == at || i == label.start) {adv += 2 * f32(label.inset)}
 		// Body segments have a 2px gap; plain graphemes share one run.
-		if mode != .Compose && i > at && (emoji || previous_emoji) {adv += 2}
+		if mode != .Compose && i > at && (emoji || previous_emoji || boundary) {adv += 2}
 		if i > at && pen + adv > width {
 			return i
 		}

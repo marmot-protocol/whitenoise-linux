@@ -100,24 +100,23 @@ NEV_PULL_REQUEST_KIND :: 1618
 NEV_ISSUE_KIND :: 1621
 
 Nev_Card :: struct {
-	excerpt:       Excerpt,
-	product:       Nev_Product,
-	geocache:      Nev_Geocache,
-	highlight:     Nev_Highlight,
-	patch:         Nev_Patch,
-	done:          bool, // fetch finished; raw == "" then means not found
-	kind:          i64,
-	pubkey:        string,
-	content:       string,
-	subject:       string, // NIP-34 patch, pull request or issue title, owned
-	subject_fonts: string, // cached title font map for bounded wrapping
-	created:       i64,
-	stamp:         string, // created formatted for the header, set on drain
-	raw:           string, // bare event object as received
-	id:            string, // signed id, not the address used as the cache key
-	tags:          json.Array, // owned only by cards using the fallback
-	summary:       Event_Summary,
-	blocks:        [dynamic]Md_Block_Ui, // content as markdown blocks, built on drain
+	excerpt:   Excerpt,
+	product:   Nev_Product,
+	geocache:  Nev_Geocache,
+	highlight: Nev_Highlight,
+	patch:     Nev_Patch,
+	done:      bool, // fetch finished; raw == "" then means not found
+	kind:      i64,
+	pubkey:    string,
+	content:   string,
+	subject:   string, // NIP-34 patch, pull request or issue title, owned
+	created:   i64,
+	stamp:     string, // created formatted for the header, set on drain
+	raw:       string, // bare event object as received
+	id:        string, // signed id, not the address used as the cache key
+	tags:      json.Array, // owned only by cards using the fallback
+	summary:   Event_Summary,
+	blocks:    [dynamic]Md_Block_Ui, // content as markdown blocks, built on drain
 }
 
 // event id hex → card. An entry appears the frame the token is first
@@ -499,8 +498,6 @@ nev_parse :: proc(body: []u8, shape: Nev_Shape, key: string = "") -> (card: Nev_
 			subject, is_string := values[1].(json.String)
 			if name != "subject" || !is_string {continue}
 			card.subject = strings.clone(subject)
-			font := [1]u8{FONT_TITLE}
-			card.subject_fonts = strings.repeat(string(font[:]), len(subject))
 			break
 		}
 	}
@@ -525,7 +522,7 @@ nev_parse :: proc(body: []u8, shape: Nev_Shape, key: string = "") -> (card: Nev_
 
 @(private)
 nev_card_free :: proc(card: ^Nev_Card) {
-	for s in ([]string{card.raw, card.content, card.pubkey, card.stamp, card.subject, card.subject_fonts, card.id, card.summary.title, card.summary.description, card.summary.details, card.patch.repository, card.patch.series, card.highlight.comment, card.highlight.surrounding, card.highlight.fonts}) {delete(s)}
+	for s in ([]string{card.raw, card.content, card.pubkey, card.stamp, card.subject, card.id, card.summary.title, card.summary.description, card.summary.details, card.patch.repository, card.patch.series, card.highlight.comment, card.highlight.surrounding, card.highlight.fonts}) {delete(s)}
 	delete(card.patch.lines)
 	for source in card.highlight.sources {delete(source.text); delete(source.url)}
 	for author in card.highlight.authors {delete(author.pubkey); delete(author.role)}
@@ -797,8 +794,8 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 							card.subject,
 							inner_w,
 							20,
-							.Text,
-							card.subject_fonts,
+							.Plain,
+							plain_font = FONT_TITLE,
 						)
 						for line, i in lines[:min(len(lines), 3)] {
 							text := card.subject[line.start:line.end]
@@ -1097,7 +1094,7 @@ nev_highlight_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 				state.expanded || message_line_limit() == max(int) ? max(int) : (selected ? message_line_limit() : 2)
 			text := passage
 			if index == 0 && limit < max(int) {
-				lines := wrapped_lines(passage, quote_w, size, .Text)
+				lines := wrapped_lines(passage, quote_w, size, .Plain)
 				if len(lines) >
 				   limit {text = passage[lines[len(lines) - limit].start:]; more = true}
 			}

@@ -2,19 +2,22 @@ package main
 
 import "base:runtime"
 import "core:fmt"
+import "core:mem"
 import "core:strings"
 
 import rl "sdlrl"
 
 @(private)
 Wrap_Key :: struct {
-	text:    string,
-	width:   f32,
-	scale:   f32,
-	size:    u16,
-	mode:    Wrap_Mode,
-	fonts:   string,
-	tile_px: f32, // 0 = body_tile_size's pick
+	text:       string,
+	width:      f32,
+	scale:      f32,
+	size:       u16,
+	mode:       Wrap_Mode,
+	fonts:      string,
+	tile_px:    f32, // 0 = body_tile_size's pick
+	labels:     string,
+	plain_font: u16,
 }
 @(private)
 Wrap_Mode :: enum {
@@ -29,6 +32,45 @@ Wrap_Line :: struct {
 	start, end: int,
 	index:      u32,
 }
+
+@(private)
+Wrap_Label :: struct {
+	start, end: int,
+	inset:      int,
+}
+
+@(private)
+wrap_labels :: proc(text: string, links: []Inline_Link, mode: Wrap_Mode) -> []Wrap_Label {
+	if len(links) == 0 {return nil}
+	labels := make([]Wrap_Label, len(links), context.temp_allocator)
+	count := 0
+	for link in links {
+		start, end := max(0, link.start), min(len(text), link.end)
+		if start >= end {continue}
+		if (mode == .Cards || mode == .Links) && text[start:end] == link.url {
+			// A URL that is its own label can still draw as a preview or GitHub chip.
+			if _, gh := gh_ref(link.url);
+			   gh || link_card(link.url, link_place(text, start, end)) {continue}
+		}
+		labels[count] = {start, end, link.url == "" ? 0 : LINK_INSET}
+		count += 1
+	}
+	return labels[:count]
+}
+
+@(private)
+wrap_label_at :: proc(labels: ^[]Wrap_Label, at: int) -> (label: Wrap_Label, boundary: bool) {
+	for len(labels^) > 0 && labels^[0].end <= at {
+		boundary = boundary || labels^[0].end == at
+		labels^ = labels^[1:]
+	}
+	if len(labels^) > 0 {
+		label = labels^[0]
+		boundary = boundary || label.start == at
+	}
+	return
+}
+
 @(private)
 wrap_cache: map[Wrap_Key][]Wrap_Line
 @(private)
@@ -45,6 +87,7 @@ wrap_clear :: proc() {
 	for key, lines in wrap_cache {
 		delete(key.text)
 		delete(key.fonts)
+		delete(key.labels)
 		delete(lines)
 	}
 	clear(&wrap_cache)
@@ -60,12 +103,24 @@ wrapped_lines :: proc(
 	mode: Wrap_Mode = .Text,
 	fonts: string = "",
 	tile_px: f32 = 0,
+	labels: []Wrap_Label = nil,
+	plain_font: u16 = FONT_BODY,
 ) -> []Wrap_Line {
-	key := Wrap_Key{text, width, UI_SCALE, size, mode, fonts, tile_px}
+	key := Wrap_Key {
+		text,
+		width,
+		UI_SCALE,
+		size,
+		mode,
+		fonts,
+		tile_px,
+		string(mem.slice_to_bytes(labels)),
+		plain_font,
+	}
 	if lines, hit := wrap_cache[key]; hit && !wrap_flush {return lines}
 	lines := make([dynamic]Wrap_Line, context.temp_allocator)
-	plan_wrap_lines(&lines, text, width, size, mode, fonts, tile_px)
-	bytes := len(text) + len(fonts) + len(lines) * size_of(Wrap_Line)
+	plan_wrap_lines(&lines, text, width, size, mode, fonts, tile_px, plain_font, labels)
+	bytes := len(text) + len(fonts) + len(key.labels) + len(lines) * size_of(Wrap_Line)
 	if bytes > WRAP_CACHE_BYTES {return lines[:]}
 	// Evict between frames: a nested link card may still be reading an
 	// outer paragraph's spans. Large misses use this frame's scratch space.
@@ -77,6 +132,7 @@ wrapped_lines :: proc(
 	context.allocator = runtime.default_context().allocator
 	key.text = strings.clone(text)
 	key.fonts = strings.clone(fonts)
+	key.labels = strings.clone(key.labels)
 	owned := make([]Wrap_Line, len(lines))
 	copy(owned, lines[:])
 	wrap_cache[key] = owned
@@ -94,7 +150,9 @@ plan_wrap_lines :: proc(
 	fonts: string = "",
 	tile_px: f32 = 0,
 	plain_font: u16 = FONT_BODY,
+	labels: []Wrap_Label = nil,
 ) {
+	labels := labels
 	tile_px := tile_px
 	if mode != .Plain && tile_px <= 0 {
 		tile_px = mode == .Compose ? 18 : body_tile_size(text, size)
@@ -111,16 +169,20 @@ plan_wrap_lines :: proc(
 			// than the column. Keep source offsets for selection/copy.
 			card_at, card_end := end, end
 			if mode == .Cards || mode == .Links {
+				scan_labels := labels
 				for scan := at; scan < end; scan += 1 {
+					label, _ := wrap_label_at(&scan_labels, scan)
+					if scan < label.end && scan >= label.start {scan = label.end - 1; continue}
 					if text_literal(fonts, scan) {continue}
+					limit := scan < label.start ? min(end, label.start) : end
 					if mode == .Cards {
-						if next, _, _, ok := nevent_at(text[:end], scan); ok {
+						if next, _, _, ok := nevent_at(text[:limit], scan); ok {
 							card_at, card_end = scan, next
 							break
 						}
 					}
 					if text[scan] != 'h' {continue}
-					if next, url, ok := url_at(text[:end], scan); ok {
+					if next, url, ok := url_at(text[:limit], scan); ok {
 						if link_card(url, link_place(text, scan, next)) {
 							card_at, card_end = scan, next
 							// Android's "Location: <url>" puts its caption
@@ -133,8 +195,9 @@ plan_wrap_lines :: proc(
 				}
 			}
 			for at < card_at {
+				for len(labels) > 0 && labels[0].end <= at {labels = labels[1:]}
 				cut :=
-					width > 0 ? wrap_break(text, at, card_at, width, size, mode, tile_px, fonts, plain_font) : card_at
+					width > 0 ? wrap_break(text, at, card_at, width, size, mode, tile_px, fonts, plain_font, labels) : card_at
 				append(lines, Wrap_Line{at, cut, i})
 				i += 1
 				at = cut

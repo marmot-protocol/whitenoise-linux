@@ -59,7 +59,7 @@ sticker_copy :: proc(
 	if nendo.box(nendo.id("StickerCopy", id))(
 	{width = nendo.fixed(width), direction = .Column, gap = 2},
 	) {
-		for line in wrapped_lines(text, width, size, .Text) {
+		for line in wrapped_lines(text, width, size, .Plain) {
 			nendo.text(
 				text[line.start:line.end],
 				{font = FONT_BODY, size = size, color = color, wrap = .None},

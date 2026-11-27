@@ -177,14 +177,22 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 				) {}
 			}
 
-			if !message_excerpt(0xF00000 + index * 8, p.body, body_color, p.excerpt) {
+			has_other_content := p.sticker.pack != "" || p.sticker.sha != "" || p.gif != nil
+			for a in p.atts {
+				if a.emoji == "" {
+					has_other_content = true
+					break
+				}
+			}
+			emoji_scale: Emoji_Scale = has_other_content ? .Inline : .Jumbo
+			if !message_excerpt(0xF00000 + index * 8, p.body, body_color, p.excerpt, emoji_scale) {
 				body_text(
 					0xF00000 + index * 8,
 					p.body,
 					14,
 					body_color,
 					wrap_w = body_wrap_w(),
-					emoji = .Jumbo,
+					emoji = emoji_scale,
 				)
 			}
 			if can_delete {
@@ -1784,13 +1792,22 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				}
 			}
 
+			has_other_content :=
+				msg.sticker.sha != "" || len(msg.theme_name) > 0 || len(msg.poll_opts) > 0
+			for slot in msg.attachments {
+				if slot.kind != .Emoji {
+					has_other_content = true
+					break
+				}
+			}
+			emoji_scale: Emoji_Scale = has_other_content ? .Inline : .Jumbo
 			cropped :=
 				!replaced &&
 				len(msg.blocks) == 0 &&
 				!msg.deleted &&
-				message_excerpt(index * 4096, msg.body, message_ink, msg.excerpt)
+				message_excerpt(index * 4096, msg.body, message_ink, msg.excerpt, emoji_scale)
 			if !replaced && !cropped && len(msg.blocks) == 0 && len(msg.body) > 0 {
-				body_text(index * 4096, msg.body, 14, message_ink, true, emoji = .Jumbo)
+				body_text(index * 4096, msg.body, 14, message_ink, true, emoji = emoji_scale)
 			}
 
 			// A shared theme: swatches off the pack itself, so the offer
@@ -1818,7 +1835,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				   msg.excerpt,
 				   body_wrap_w(),
 				   message_ink,
-				   emoji = .Jumbo,
+				   emoji = emoji_scale,
 			   ) {
 				message_more(index * 4096, msg.excerpt)
 			}

@@ -77,7 +77,7 @@ unsupported_event_card :: proc(
 				if nendo.box(nendo.id_local("UnsupportedEventDescription"))(
 				{width = nendo.fixed(inner), direction = .Column, gap = 2},
 				) {
-					lines := wrapped_lines(summary.description, inner, 13)
+					lines := wrapped_lines(summary.description, inner, 13, .Plain)
 					for line, i in lines[:min(len(lines), MAX_LINES)] {
 						text := summary.description[line.start:line.end]
 						if i == MAX_LINES - 1 &&
@@ -287,7 +287,7 @@ event_data_text :: proc(value: string, width: f32, font, size: u16, color: nendo
 	MAX_LINES :: 6
 	cut := len(text) > MAX_BYTES
 	if cut {text = text[:rune_snap(text, MAX_BYTES)]}
-	lines := wrapped_lines(text, width, size)
+	lines := wrapped_lines(text, width, size, .Plain, plain_font = font)
 	shown := min(len(lines), MAX_LINES)
 	for line, i in lines[:shown] {
 		part := text[line.start:line.end]

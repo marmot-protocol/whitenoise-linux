@@ -747,7 +747,7 @@ tor_detail :: proc(key, value: string, width: f32) {
 		if nendo.box()({direction = .Column, width = nendo.grow(), gap = 2}) {
 			// wrapped_lines hard-breaks tokens with no space, like URLs,
 			// which nendo's word wrap would let run past the tile.
-			for line in wrapped_lines(value, width, 11) {
+			for line in wrapped_lines(value, width, 11, .Plain) {
 				nendo.text(
 					value[line.start:line.end],
 					{font = FONT_BODY, size = 11, color = TEXT, wrap = .None},

@@ -132,8 +132,12 @@ custom_emoji_scan :: proc() {
 		if pack := picker_pack_at(g_ui.picker_pack, g_ui.picker_pack_revision); pack != nil {
 			coordinate = strings.clone(pack.coordinate, context.temp_allocator)
 		}
+		for &msg in g_ui.messages {
+			msg.row_measure = {}
+		}
 	}
 	emoji_revision += 1
+	wrap_flush = true
 	custom_emoji_scanned = true
 	for name in custom_emoji_names {
 		delete(name)
