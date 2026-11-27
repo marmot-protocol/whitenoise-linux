@@ -80,8 +80,6 @@ nev_patch_parse :: proc(card: ^Nev_Card, ev: json.Object) {
 		}
 	}
 	card.subject = strings.clone(subject)
-	font := [1]u8{FONT_TITLE}
-	card.subject_fonts = strings.repeat(string(font[:]), len(card.subject))
 	diff_at := strings.has_prefix(body, "diff --git ") ? 0 : strings.index(body, "\ndiff --git ")
 	if diff_at > 0 {diff_at += 1}
 	p.description = diff_at >= 0 ? body[:diff_at] : body

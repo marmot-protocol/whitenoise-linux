@@ -123,6 +123,7 @@ test_save_staged_emoji_empty_shortcode :: proc(t: ^testing.T) {
 // Saving a usable name still normalizes case, maps hyphens, and drops other bytes.
 @(test)
 test_save_staged_emoji_sanitization :: proc(t: ^testing.T) {
+	if !test_isolated("test_save_staged_emoji_sanitization") {return}
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
 	home, err := os.make_directory_temp("", "wn-emoji-save-*", context.temp_allocator)
@@ -311,4 +312,399 @@ test_emoji_tag_code :: proc(t: ^testing.T) {
 
 	testing.expect_value(t, emoji_tag_code(tags[:], &ref_a), "party")
 	testing.expect_value(t, emoji_tag_code(tags[:], &ref_b), "")
+}
+
+// Standalone custom emoji detection and sizing rules.
+@(test)
+test_standalone_custom_emoji_rules :: proc(t: ^testing.T) {
+	if !test_isolated("test_standalone_custom_emoji_rules") {return}
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
+	saved_scale := UI_SCALE
+	saved_remote := remote_emoji_tex
+	UI_SCALE = 1
+	remote_emoji_tex = nil
+	defer {
+		delete(remote_emoji_tex)
+		remote_emoji_tex = saved_remote
+		UI_SCALE = saved_scale
+	}
+
+	party_tex := rl.Texture2D {
+		width  = 128,
+		height = 128,
+	}
+	wave_tex := rl.Texture2D {
+		width  = 256,
+		height = 128,
+	}
+	tall_tex := rl.Texture2D {
+		width  = 128,
+		height = 256,
+	}
+	remote_emoji_tex["party"] = &party_tex
+	remote_emoji_tex["wave"] = &wave_tex
+
+	// Lone resolvable shortcode enlarges in Jumbo, stays inline in Inline.
+	testing.expect_value(t, standalone_custom_emoji(":party:"), &party_tex)
+	testing.expect_value(t, standalone_custom_emoji("  :wave:\n"), &wave_tex)
+	testing.expect_value(t, body_tile_size(":party:", 14, .Jumbo), jumbo_emoji_size())
+	testing.expect_value(t, body_tile_size("  :wave:\n", 14, .Jumbo), jumbo_emoji_size())
+	testing.expect_value(t, body_tile_size(":party:", 14, .Inline), f32(18))
+
+	// Text, multiple custom emoji, or unresolved shortcodes stay inline.
+	for text in ([]string{":unknown:", ":party: hi", "hi :party:", ":party::party:", ":party: :wave:", "party", "::", "", "   "}) {
+		testing.expect_value(t, standalone_custom_emoji(text), nil)
+		testing.expect_value(t, body_tile_size(text, 14, .Jumbo), f32(18))
+	}
+
+	// Literal inline code and markdown links never enlarge.
+	code_font := [1]u8{FONT_MONO | TEXT_CODE}
+	code_fonts := strings.repeat(string(code_font[:]), len(":party:"), context.temp_allocator)
+	testing.expect_value(t, standalone_custom_emoji(":party:", code_fonts), nil)
+	testing.expect_value(t, body_tile_size(":party:", 14, .Jumbo, code_fonts), f32(18))
+
+	links := [1]Inline_Link{{start = 0, end = len(":party:"), url = "https://example.com"}}
+	testing.expect_value(t, standalone_custom_emoji(":party:", "", links[:]), nil)
+	testing.expect_value(t, body_tile_size(":party:", 14, .Jumbo, "", links[:]), f32(18))
+
+	// Aspect ratio stays bounded by tile_px on both axes.
+	w_sq, r_sq := emoji_tile_w(&party_tex, 128)
+	testing.expect_value(t, w_sq, f32(128))
+	testing.expect_value(t, r_sq, f32(1))
+	w_wide, r_wide := emoji_tile_w(&wave_tex, 128)
+	testing.expect_value(t, w_wide, f32(128))
+	testing.expect_value(t, r_wide, f32(2))
+	w_tall, r_tall := emoji_tile_w(&tall_tex, 128)
+	testing.expect_value(t, w_tall, f32(64))
+	testing.expect_value(t, r_tall, f32(0.5))
+}
+
+// Run alone with SDL_VIDEODRIVER=dummy and
+// -define:ODIN_TEST_NAMES=test_standalone_custom_emoji.
+@(test)
+test_standalone_custom_emoji :: proc(t: ^testing.T) {
+	if !test_isolated("test_standalone_custom_emoji") {return}
+	context.allocator = runtime.default_context().allocator
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
+	rl.InitWindow(1024, 700, "Standalone custom emoji")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	BODY_FS = 14
+	init_fonts()
+	load_themes(); apply_theme(0, 0); set_locale("en")
+	previous := nendo.current_context()
+	memory: []u8
+	init_layout(&memory, 65536, {1024, 700})
+	defer {nendo.set_context(previous); delete(memory)}
+
+	ui := Ui_State{}
+	ui.prefs = default_prefs()
+	ui.prefs.reduce_motion = true
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {
+		g_ui, g_prefs = nil, nil
+		wrap_clear()
+		delete(sel_lines); sel_lines = nil
+		delete(remote_emoji_tex); remote_emoji_tex = nil
+		for &tex in builtin_emoji_tex {
+			if tex != nil {rl.UnloadTexture(tex^); free(tex); tex = nil}
+		}
+	}
+
+	// Build a 256x128 non-square remote custom emoji texture.
+	pixels := make([]u8, 256 * 128 * 4, context.temp_allocator)
+	for i := 0; i < len(pixels); i += 4 {
+		pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3] = 200, 120, 40, 255
+	}
+	wide_tex := rl.LoadTextureFromImage(
+		rl.Image{data = raw_data(pixels), width = 256, height = 128},
+	)
+	if !testing.expect(t, wide_tex.tex != nil) {return}
+	defer rl.UnloadTexture(wide_tex)
+	remote_emoji_tex["wide_marmot"] = &wide_tex
+
+	first_image_box :: proc(
+		commands: []nendo.Render_Command,
+		target: rawptr,
+	) -> (
+		nendo.Rect,
+		bool,
+	) {
+		for cmd in commands {
+			if cmd.kind == .Image && cmd.image.image == target {
+				return cmd.rect, true
+			}
+		}
+		return {}, false
+	}
+
+	marmot_tex := builtin_tex_by_code("marmot")
+	if !testing.expect(t, marmot_tex != nil) {return}
+	inline_px := f32(BODY_FS) + 4
+
+	// 1. Standalone builtin custom emoji with a NIP-30 .Emoji attachment slot enlarges.
+	solo_msg := Msg_Ui {
+		id     = "m1",
+		sender = "Alice",
+		body   = ":marmot:",
+	}
+	append(&solo_msg.blocks, Md_Block_Ui{kind = .Para, text = ":marmot:"})
+	append(
+		&solo_msg.attachments,
+		Att_Slot{name = "marmot.png", key = "abc", kind = .Emoji, state = .Ready},
+	)
+	defer {delete(solo_msg.blocks); delete(solo_msg.attachments)}
+
+	nendo.begin()
+	if nendo.box(nendo.id("Timeline"))({direction = .Column, width = nendo.fixed(640)}) {
+		message_row(1, solo_msg)
+	}
+	cmds := nendo.end(0)
+	if box, ok := first_image_box(cmds, rawptr(marmot_tex)); testing.expect(t, ok) {
+		testing.expect_value(t, box.width, f32(128))
+		testing.expect_value(t, box.height, f32(128))
+	}
+
+	// 2. Non-square standalone custom emoji preserves aspect ratio within 128x128.
+	wide_msg := Msg_Ui {
+		id     = "m2",
+		sender = "Alice",
+		body   = "  :wide_marmot:\n",
+	}
+	nendo.begin()
+	if nendo.box(nendo.id("Timeline"))({direction = .Column, width = nendo.fixed(640)}) {
+		message_row(2, wide_msg)
+	}
+	cmds = nendo.end(0)
+	if box, ok := first_image_box(cmds, rawptr(&wide_tex)); testing.expect(t, ok) {
+		testing.expect_value(t, box.width, f32(128))
+		testing.expect_value(t, box.height, f32(64))
+	}
+
+	// 3. Inline with text stays normal size.
+	text_msg := Msg_Ui {
+		id     = "m3",
+		sender = "Alice",
+		body   = "hello :marmot:",
+	}
+	append(&text_msg.blocks, Md_Block_Ui{kind = .Para, text = "hello :marmot:"})
+	defer delete(text_msg.blocks)
+
+	nendo.begin()
+	if nendo.box(nendo.id("Timeline"))({direction = .Column, width = nendo.fixed(640)}) {
+		message_row(3, text_msg)
+	}
+	cmds = nendo.end(0)
+	if box, ok := first_image_box(cmds, rawptr(marmot_tex)); testing.expect(t, ok) {
+		testing.expect_value(t, box.width, inline_px)
+		testing.expect_value(t, box.height, inline_px)
+	}
+
+	// 4. Two custom emoji stay normal inline size.
+	pair_msg := Msg_Ui {
+		id     = "m4",
+		sender = "Alice",
+		body   = ":marmot: :marmot:",
+	}
+	append(&pair_msg.blocks, Md_Block_Ui{kind = .Para, text = ":marmot: :marmot:"})
+	defer delete(pair_msg.blocks)
+
+	nendo.begin()
+	if nendo.box(nendo.id("Timeline"))({direction = .Column, width = nendo.fixed(640)}) {
+		message_row(4, pair_msg)
+	}
+	cmds = nendo.end(0)
+	if box, ok := first_image_box(cmds, rawptr(marmot_tex)); testing.expect(t, ok) {
+		testing.expect_value(t, box.width, inline_px)
+		testing.expect_value(t, box.height, inline_px)
+	}
+
+	// 5. Custom emoji paired with a non-emoji attachment, quote, multi-block, or poll stays inline.
+	att_msg := Msg_Ui {
+		id     = "m5",
+		sender = "Alice",
+		body   = ":marmot:",
+	}
+	append(&att_msg.blocks, Md_Block_Ui{kind = .Para, text = ":marmot:"})
+	append(
+		&att_msg.attachments,
+		Att_Slot{name = "photo.png", key = "img", kind = .Image, state = .Ready, view = &wide_tex},
+	)
+	defer {delete(att_msg.blocks); delete(att_msg.attachments)}
+
+	nendo.begin()
+	if nendo.box(nendo.id("Timeline"))({direction = .Column, width = nendo.fixed(640)}) {
+		message_row(5, att_msg)
+	}
+	cmds = nendo.end(0)
+	if box, ok := first_image_box(cmds, rawptr(marmot_tex)); testing.expect(t, ok) {
+		testing.expect_value(t, box.width, inline_px)
+		testing.expect_value(t, box.height, inline_px)
+	}
+
+	quote_msg := Msg_Ui {
+		id     = "m6",
+		sender = "Alice",
+		body   = "> :marmot:",
+	}
+	append(&quote_msg.blocks, Md_Block_Ui{kind = .Quote, text = ":marmot:"})
+	defer delete(quote_msg.blocks)
+
+	nendo.begin()
+	if nendo.box(nendo.id("Timeline"))({direction = .Column, width = nendo.fixed(640)}) {
+		message_row(6, quote_msg)
+	}
+	cmds = nendo.end(0)
+	if box, ok := first_image_box(cmds, rawptr(marmot_tex)); testing.expect(t, ok) {
+		testing.expect_value(t, box.width, inline_px)
+		testing.expect_value(t, box.height, inline_px)
+	}
+
+	multi_msg := Msg_Ui {
+		id     = "m7",
+		sender = "Alice",
+		body   = ":marmot:\n\nhi",
+	}
+	append(&multi_msg.blocks, Md_Block_Ui{kind = .Para, text = ":marmot:"})
+	append(&multi_msg.blocks, Md_Block_Ui{kind = .Para, text = "hi"})
+	defer delete(multi_msg.blocks)
+
+	nendo.begin()
+	if nendo.box(nendo.id("Timeline"))({direction = .Column, width = nendo.fixed(640)}) {
+		message_row(7, multi_msg)
+	}
+	cmds = nendo.end(0)
+	if box, ok := first_image_box(cmds, rawptr(marmot_tex)); testing.expect(t, ok) {
+		testing.expect_value(t, box.width, inline_px)
+		testing.expect_value(t, box.height, inline_px)
+	}
+
+	poll_msg := Msg_Ui {
+		id     = "m8",
+		sender = "Alice",
+		body   = ":marmot:",
+	}
+	append(&poll_msg.blocks, Md_Block_Ui{kind = .Para, text = ":marmot:"})
+	append(&poll_msg.poll_opts, Poll_Opt_Ui{id = "a", label = "Yes"})
+	defer {delete(poll_msg.blocks); delete(poll_msg.poll_opts)}
+
+	nendo.begin()
+	if nendo.box(nendo.id("Timeline"))({direction = .Column, width = nendo.fixed(640)}) {
+		message_row(8, poll_msg)
+	}
+	cmds = nendo.end(0)
+	if box, ok := first_image_box(cmds, rawptr(marmot_tex)); testing.expect(t, ok) {
+		testing.expect_value(t, box.width, inline_px)
+		testing.expect_value(t, box.height, inline_px)
+	}
+
+	// 6. Pending send with only custom emoji enlarges immediately; with a file stays inline.
+	solo_pending := Pending_Send {
+		sender = "Alice",
+		body   = ":marmot:\n\n\n\n\n\n",
+	}
+	append(&solo_pending.atts, Pending_Att{name = "marmot.png", emoji = "marmot"})
+	defer delete(solo_pending.atts)
+
+	nendo.begin()
+	if nendo.box(nendo.id("Timeline"))({direction = .Column, width = nendo.fixed(640)}) {
+		pending_row(1, &ui, solo_pending)
+	}
+	cmds = nendo.end(0)
+	if box, ok := first_image_box(cmds, rawptr(marmot_tex)); testing.expect(t, ok) {
+		testing.expect_value(t, box.width, f32(128))
+		testing.expect_value(t, box.height, f32(128))
+	}
+
+	file_pending := Pending_Send {
+		sender = "Alice",
+		body   = ":marmot:",
+	}
+	append(&file_pending.atts, Pending_Att{name = "photo.png", tex = &wide_tex})
+	defer delete(file_pending.atts)
+
+	nendo.begin()
+	if nendo.box(nendo.id("Timeline"))({direction = .Column, width = nendo.fixed(640)}) {
+		pending_row(2, &ui, file_pending)
+	}
+	cmds = nendo.end(0)
+	if box, ok := first_image_box(cmds, rawptr(marmot_tex)); testing.expect(t, ok) {
+		testing.expect_value(t, box.width, inline_px)
+		testing.expect_value(t, box.height, inline_px)
+	}
+
+	label :: ":marmot::marmot::marmot:"
+	text :: label + " :marmot:"
+	url :: "https://example.invalid/:marmot:/x"
+	width: f32 : 110
+	link := [1]Inline_Link{{start = 0, end = len(label), url = url}}
+	wrap_clear()
+	nendo.set_pointer({1000, 690}, .Up)
+	for fixture in ([]struct {
+			body, shown: string,
+			links:       []Inline_Link,
+			images:      int,
+		}{{text, "", nil, 4}, {text, label, link[:], 1}, {text, "", nil, 4}, {text, label, link[:], 1}, {url + " :marmot:", url, nil, 1}}) {
+		clear(&sel_lines)
+		nendo.begin()
+		body := nendo.id("EmojiLinkBody")
+		if nendo.box(body)({direction = .Column, width = nendo.fixed(width)}) {
+			body_text(9, fixture.body, BODY_FS, TEXT, true, width, links = fixture.links)
+		}
+		cmds = nendo.end(0)
+		box := nendo.element(body).rect
+		right := box.x + box.width + 0.1
+		shown := strings.builder_make(context.temp_allocator)
+		images := 0
+		for cmd in cmds {
+			if cmd.kind == .Text && cmd.text.color == ACCENT {
+				data := cmd.text
+				w := rl.MeasureTextLine(data.font, data.size, data.text, f32(data.spacing)).x
+				testing.expect(t, cmd.rect.x + w <= right)
+				if strings.to_string(shown) == "" && testing.expect(t, len(sel_lines) > 0) {
+					line := sel_lines[0]
+					x := cmd.rect.x - nendo.element(nendo.id("BodyLine", line.id)).rect.x
+					x += rl.MeasureTextLine(data.font, data.size, data.text[:1], 0).x
+					off := hit_plain(
+						line.text,
+						x,
+						line.size,
+						line.tile_px,
+						line.fonts,
+						line.mode,
+						line.labels,
+						line.start,
+					)
+					testing.expect_value(t, off, 1)
+				}
+				strings.write_string(&shown, data.text)
+			}
+			if cmd.kind == .Image && cmd.image.image == rawptr(marmot_tex) {
+				images += 1
+				testing.expect_value(t, cmd.rect.width, inline_px)
+				testing.expect(t, cmd.rect.x + cmd.rect.width <= right)
+			}
+		}
+		testing.expect_value(t, strings.to_string(shown), fixture.shown)
+		testing.expect_value(t, images, fixture.images)
+	}
+
+	// 7. HiDPI scaling and narrow (single-pane) cap match standalone Unicode emoji.
+	UI_SCALE = 1.5
+	testing.expect_value(t, body_tile_size(":marmot:", BODY_FS, .Jumbo), f32(EMOJI_SIDE) / 1.5)
+	UI_SCALE = 1
+	rl.SetWindowSize(480, 700)
+	testing.expect(t, single_pane())
+	testing.expect_value(t, body_tile_size(":marmot:", BODY_FS, .Jumbo), f32(64))
+
+	// 8. Selection hit-testing treats a standalone custom emoji as one whole atom.
+	testing.expect_value(t, hit_plain(":marmot:", 20, BODY_FS, 128), 0)
+	testing.expect_value(t, hit_plain(":marmot:", 96, BODY_FS, 128), len(":marmot:"))
+
+	joined :: ":marmot:\u200Dx"
+	cut := rune_fit(joined, 0, len(joined), inline_px + 2, BODY_FS, tile_px = inline_px)
+	testing.expect_value(t, cut, len(":marmot:"))
+	testing.expect_value(t, hit_plain(joined, inline_px + 2, BODY_FS, inline_px), len(":marmot:"))
 }

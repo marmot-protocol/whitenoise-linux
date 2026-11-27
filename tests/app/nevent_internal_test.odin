@@ -198,7 +198,7 @@ preview_metadata_ownership :: proc(t: ^testing.T) {
 nev_highlight_test_free :: proc(card: Nev_Card) {
 	blocks_free(card.blocks)
 	delete(card.patch.repository); delete(card.patch.series); delete(card.patch.lines)
-	for value in ([]string{card.raw, card.content, card.pubkey, card.stamp, card.subject, card.subject_fonts, card.highlight.comment, card.highlight.surrounding}) {delete(value)}
+	for value in ([]string{card.raw, card.content, card.pubkey, card.stamp, card.subject, card.highlight.comment, card.highlight.surrounding}) {delete(value)}
 	delete(card.highlight.fonts)
 	for source in card.highlight.sources {delete(source.text); delete(source.url)}
 	for author in card.highlight.authors {delete(author.pubkey); delete(author.role)}
@@ -841,7 +841,6 @@ git_card_layout :: proc(t: ^testing.T) {
 		delete(
 			card.raw,
 		); delete(card.content); delete(card.pubkey); delete(card.stamp); delete(card.subject)
-		delete(card.subject_fonts)
 		delete_key(&nev_cards, key)
 	}
 }

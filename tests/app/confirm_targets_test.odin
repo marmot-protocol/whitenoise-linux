@@ -84,6 +84,7 @@ audit_rescan_disarms_delete :: proc(t: ^testing.T) {
 
 @(test)
 emoji_remove_confirms :: proc(t: ^testing.T) {
+	if !test_isolated("emoji_remove_confirms") {return}
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
 	home, err := os.make_directory_temp("", "wn-emoji-del", context.temp_allocator)

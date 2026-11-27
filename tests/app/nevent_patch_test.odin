@@ -50,6 +50,6 @@ patch_metadata :: proc(t: ^testing.T) {
 @(private)
 nev_patch_test_free :: proc(card: Nev_Card) {
 	delete(card.raw); delete(card.content); delete(card.pubkey)
-	delete(card.subject); delete(card.subject_fonts)
+	delete(card.subject)
 	delete(card.patch.repository); delete(card.patch.series); delete(card.patch.lines)
 }

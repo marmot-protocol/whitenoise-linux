@@ -595,33 +595,49 @@ hit_plain :: proc(
 	tile_px: f32 = 0,
 	fonts: string = "",
 	mode := Wrap_Mode.Text,
+	labels: []Wrap_Label = nil,
+	offset: int = 0,
 ) -> int {
+	labels := labels
 	pen: f32 = 0
 	previous_emoji := false
-	skip := 0
+	base := 0
 	it := utf8.decode_grapheme_iterator_make(text)
 	for cluster, grapheme in rl.grapheme_iterate(&it) {
-		i := grapheme.byte_index
-		if i < skip {continue}
-		literal := text_literal(fonts, i)
+		i := base + grapheme.byte_index
+		at := offset + i
+		label, boundary := wrap_label_at(&labels, at)
+		linked := label.start <= at && at < label.end
+		literal := linked || text_literal(fonts, i)
 		if tile_px > 0 && !literal {
-			if end, width := body_atom(text, i, font_size, mode); end > i {
+			limit := at < label.start ? min(len(text), label.start - offset) : len(text)
+			end, width := body_atom(text[:limit], i, font_size, mode)
+			if end == 0 && text[i] == ':' {
+				if sc_end, tex := shortcode_at(text[:limit], i); tex != nil {
+					end = sc_end
+					width, _ = emoji_tile_w(tex, tile_px)
+				}
+			}
+			if end > i {
 				if i > 0 {pen += 2}
 				if x < pen + width / 2 {return i}
 				if x < pen + width {return end}
 				pen += width
-				skip, previous_emoji = end, true
+				base, previous_emoji = end, true
+				it = utf8.decode_grapheme_iterator_make(text[end:])
 				continue
 			}
 		}
-		adv := rl.MeasureTextLine(text_font(fonts, grapheme.byte_index), font_size, cluster, 0).x
+		adv := rl.MeasureTextLine(text_font(fonts, i), font_size, cluster, 0).x
 		emoji := tile_px > 0 && !literal && text_emoji(cluster) != nil
 		if emoji {adv = tile_px}
-		if grapheme.byte_index > 0 && (emoji || previous_emoji) {pen += 2}
+		if i > 0 && (emoji || previous_emoji || boundary) {pen += 2}
+		if linked && (i == 0 || at == label.start) {pen += f32(label.inset)}
 		if x < pen + adv / 2 {
-			return grapheme.byte_index
+			return i
 		}
 		pen += adv
+		if linked && at + len(cluster) == label.end {pen += f32(label.inset)}
 		previous_emoji = emoji
 	}
 	return len(text)
