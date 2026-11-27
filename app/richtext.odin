@@ -371,8 +371,9 @@ render_segs :: proc(
 			if _, geo := geo_ref(segs[k + 1].url); geo {continue}
 		}
 		if seg.tex != nil {
+			w, ratio := emoji_tile_w(seg.tex, tile_px)
 			if nendo.box(nendo.id("SegEmoji", id * 128 + u32(k)))(
-			{width = nendo.fixed(tile_px), aspect = 1, image = seg.tex},
+			{width = nendo.fixed(w), aspect = ratio, image = seg.tex},
 			) {}
 		} else if card && nev_image_url(seg.url) {
 			image_link(id * 128 + u32(k), seg.url, font_size, max(1, att_w() - 24))
@@ -1321,7 +1322,7 @@ body_text :: proc(
 	link_offset: int = 0,
 ) -> int {
 	wrap := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
-	tile_px := body_tile_size(text, font_size, emoji)
+	tile_px := body_tile_size(text, font_size, emoji, fonts, links, link_offset)
 	mode: Wrap_Mode = link_cards_enabled() ? .Cards : .Text
 	if mode == .Cards && nev_depth > 0 {mode = .Links}
 	lines := wrapped_lines(text, wrap, font_size, mode, fonts, tile_px)
@@ -1579,26 +1580,98 @@ att_w :: proc(w: f32 = 320) -> f32 {
 	return min(w, body_wrap_w())
 }
 
-// How a body of at most six emoji and nothing else draws them. Inline
-// (quotes, previews, rows) uses 28px tiles; Jumbo (a message body)
-// uses the art's native EMOJI_SIDE physical pixels, ~85 logical at 1.5x.
+// How a body of at most six Unicode emoji, or one standalone custom
+// :shortcode: emoji, draws its tiles. Inline (quotes, previews, rows)
+// uses 28px for Unicode emoji and inline size for custom emoji; Jumbo
+// (a message body) uses the art's native EMOJI_SIDE physical pixels,
+// ~85 logical at 1.5x.
 @(private)
 Emoji_Scale :: enum {
 	Inline,
 	Jumbo,
 }
 
+@(private)
+jumbo_emoji_size :: proc() -> f32 {
+	// A phone runs at UI_SCALE 1, where native pixels make 128px tiles
+	// that fill half a screen row; cap them near the desktop's size.
+	jumbo := f32(EMOJI_SIDE) / UI_SCALE
+	if single_pane() {
+		jumbo = min(jumbo, 64)
+	}
+	return jumbo
+}
+
+// Drawn width and aspect ratio of an emoji tile bounded by `tile_px` on
+// both sides. Square art stays tile_px x tile_px; non-square custom
+// emoji keep their proportions instead of stretching.
+@(private)
+emoji_tile_w :: proc(tex: ^rl.Texture2D, tile_px: f32) -> (w, ratio: f32) {
+	if tex == nil || tex.width <= 0 || tex.height <= 0 {
+		return tile_px, 1
+	}
+	ratio = f32(tex.width) / f32(tex.height)
+	return min(tile_px, tile_px * ratio), ratio
+}
+
+// The single resolvable :shortcode: texture when `text` contains only
+// that shortcode and optional whitespace, outside literal code/math and
+// markdown link spans.
+@(private)
+standalone_custom_emoji :: proc(
+	text: string,
+	fonts: string = "",
+	links: []Inline_Link = nil,
+	link_offset: int = 0,
+) -> ^rl.Texture2D {
+	trimmed_left := strings.trim_left_space(text)
+	start := len(text) - len(trimmed_left)
+	trimmed := strings.trim_right_space(trimmed_left)
+	if len(trimmed) == 0 || trimmed[0] != ':' {
+		return nil
+	}
+	end, tex := shortcode_at(trimmed, 0)
+	if tex == nil || end != len(trimmed) {
+		return nil
+	}
+	if len(fonts) > 0 {
+		for i in start ..< start + end {
+			if text_literal(fonts, i) {
+				return nil
+			}
+		}
+	}
+	for link in links {
+		if link.end > link_offset + start && link.start < link_offset + start + end {
+			return nil
+		}
+	}
+	return tex
+}
+
 // Pick emoji size for the whole body, so a short wrapped tail does
 // not grow larger than the tiles used to measure its line.
 @(private)
-body_tile_size :: proc(text: string, font_size: u16, scale := Emoji_Scale.Inline) -> f32 {
+body_tile_size :: proc(
+	text: string,
+	font_size: u16,
+	scale := Emoji_Scale.Inline,
+	fonts: string = "",
+	links: []Inline_Link = nil,
+	link_offset: int = 0,
+) -> f32 {
 	text_px := f32(font_size) + 4
+	if scale == .Jumbo && standalone_custom_emoji(text, fonts, links, link_offset) != nil {
+		return max(jumbo_emoji_size(), text_px)
+	}
 	tiles := 0
 	it := utf8.decode_grapheme_iterator_make(text)
-	for cluster, _ in rl.grapheme_iterate(&it) {
-		if text_emoji(cluster) != nil {
+	for cluster, g in rl.grapheme_iterate(&it) {
+		if !text_literal(fonts, g.byte_index) && text_emoji(cluster) != nil {
 			tiles += 1
-			if tiles > 6 {return text_px}
+			if tiles > 6 {
+				return text_px
+			}
 		} else if len(strings.trim_space(cluster)) > 0 {
 			return text_px
 		}
@@ -1606,11 +1679,7 @@ body_tile_size :: proc(text: string, font_size: u16, scale := Emoji_Scale.Inline
 	if tiles == 0 {
 		return text_px
 	}
-	// A phone runs at UI_SCALE 1, where native pixels make 128px tiles
-	// that fill half a screen row; cap them near the desktop's size.
-	jumbo := f32(EMOJI_SIDE) / UI_SCALE
-	if single_pane() {jumbo = min(jumbo, 64)}
-	return scale == .Jumbo ? jumbo : 28
+	return scale == .Jumbo ? max(jumbo_emoji_size(), text_px) : 28
 }
 
 @(private)
@@ -1717,7 +1786,16 @@ rune_fit :: proc(
 			next, atom_width = compose_atom(text[:end], i)
 		case:
 			next, atom_width = body_atom(text[:end], i, font_size, mode)
-			if i > at {atom_width += 2}
+			if next == 0 && text[i] == ':' {
+				if sc_end, tex := shortcode_at(text[:end], i); tex != nil {
+					tile := tile_px > 0 ? tile_px : f32(font_size) + 4
+					w, _ := emoji_tile_w(tex, tile)
+					next, atom_width = sc_end, w
+				}
+			}
+			if next > i && i > at {
+				atom_width += 2
+			}
 		}
 		if next > i {
 			if i > at && pen + atom_width > width {return i}

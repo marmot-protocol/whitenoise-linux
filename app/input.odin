@@ -613,6 +613,23 @@ hit_plain :: proc(
 				skip, previous_emoji = end, true
 				continue
 			}
+			if text[i] == ':' {
+				if end, tex := shortcode_at(text, i); tex != nil {
+					width, _ := emoji_tile_w(tex, tile_px)
+					if i > 0 {
+						pen += 2
+					}
+					if x < pen + width / 2 {
+						return i
+					}
+					if x < pen + width {
+						return end
+					}
+					pen += width
+					skip, previous_emoji = end, true
+					continue
+				}
+			}
 		}
 		adv := rl.MeasureTextLine(text_font(fonts, grapheme.byte_index), font_size, cluster, 0).x
 		emoji := tile_px > 0 && !literal && text_emoji(cluster) != nil

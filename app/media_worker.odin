@@ -614,7 +614,15 @@ media_drain :: proc(ui: ^Ui_State) {
 		thread.destroy(job.worker)
 		media_publish(job)
 		view, _ := media_cached(job.kind, job.key)
+		emoji_token := job.kind == .Emoji && view != nil ? fmt.tprintf(":%s:", job.key) : ""
+		if emoji_token != "" {
+			wrap_flush = true
+		}
 		for &msg in ui.messages {
+			if emoji_token != "" && strings.contains(msg.body, emoji_token) {
+				msg.row_measure = {}
+				ui.scroll_pending ||= at_bottom
+			}
 			if job.external_gif && giphy_message_url(msg.body) == job.key {
 				msg.row_measure = {}
 				ui.scroll_pending ||= at_bottom

@@ -134,6 +134,7 @@ custom_emoji_scan :: proc() {
 		}
 	}
 	emoji_revision += 1
+	wrap_flush = true
 	custom_emoji_scanned = true
 	for name in custom_emoji_names {
 		delete(name)
