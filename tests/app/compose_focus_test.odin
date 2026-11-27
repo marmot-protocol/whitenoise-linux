@@ -92,22 +92,26 @@ ctx_reply_edit_focus :: proc(t: ^testing.T) {
 	}
 
 	ui := Ui_State {
-		selected = -1,
 		row_menu = -1,
 	}
 	defer {
+		close_msg_menu(&ui)
+		delete(ui.ctx_items)
+		delete(ui.chats)
 		delete(ui.messages)
 		delete(ui.compose)
 		delete(ui.reply_hint)
 	}
+	append(&ui.chats, Chat_Row_Ui{group_id = "test"})
 	append(&ui.messages, Msg_Ui{id = "m", sender = "you", body = "hello", mine = true})
 	client: marmot.Client
 
 	for item in ([]string{"CtxReply", "CtxEdit"}) {
 		ui.focus = .Search
-		ui.ctx_open = true
+		open_msg_menu(&ui, "m", .Pointer)
+		ui.ctx_x, ui.ctx_y = 24, 24
 		nendo.begin()
-		context_menu(&ui)
+		context_menu(&ui, ui.messages[0])
 		nendo.end(0)
 		box := nendo.element(nendo.id(item)).rect
 		nendo.set_pointer({box.x + 4, box.y + 4}, .Up)
@@ -115,7 +119,7 @@ ctx_reply_edit_focus :: proc(t: ^testing.T) {
 		menu_press = {}
 		forced_press = true
 		nendo.begin()
-		context_menu(&ui)
+		context_menu(&ui, ui.messages[0])
 		nendo.end(0)
 		forced_press = false
 		forced_release = true
@@ -126,6 +130,15 @@ ctx_reply_edit_focus :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.replying, "m")
 	testing.expect_value(t, ui.editing, "m")
 	testing.expect_value(t, string(ui.compose[:]), "hello")
+
+	append(&ui.thread_stack, "m")
+	defer delete(ui.thread_stack)
+	open_msg_menu(&ui, "m", .Pointer)
+	nendo.begin()
+	context_menu(&ui, ui.messages[0])
+	nendo.end(0)
+	testing.expect(t, nendo.element(nendo.id("CtxCopy")).found)
+	testing.expect(t, !nendo.element(nendo.id("CtxThread")).found)
 }
 
 // Escape closes the chat filter or drops a reply, and never takes the

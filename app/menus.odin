@@ -15,17 +15,31 @@ message_url :: proc(msg: Msg_Ui) -> string {
 	return ""
 }
 
-ctx_item :: proc(id_str: string, glyph: string, label: string, color: nendo.Color = {}) {
-	menu_press_mark(nendo.id(id_str))
-	if nendo.box(nendo.id(id_str))(
+ctx_item :: proc(
+	id_str: string,
+	glyph: string,
+	label: string,
+	color: nendo.Color = {},
+	menu: ^Ui_State = nil,
+) {
+	id := nendo.id(id_str)
+	focused := false
+	if menu != nil {
+		if menu.ctx_keyboard && menu.ctx_focus == 0 {menu.ctx_focus = id.id}
+		focused = ctx_add(menu, id)
+	} else {
+		menu_press_mark(id)
+	}
+	if nendo.box(id)(
 	{
 		width = nendo.grow(),
 		height = nendo.fit(min = tap_size() ? tap_min() : 32),
 		padding = {left = 10, right = 16},
 		gap = 9,
 		align = {y = .Center},
-		color = hovered() ? HOVER : {},
+		color = focused || hovered() ? HOVER : {},
 		radius = rr(6),
+		border = focused ? kb_ring(ACCENT) : {},
 	},
 	) {
 		if nendo.box(nendo.id_local("CtxGlyph"))(
@@ -193,17 +207,22 @@ sheet_title :: proc(title: string, detail: string = "") {
 	}
 }
 
-context_menu :: proc(ui: ^Ui_State) {
-	msg := ui.messages[ui.ctx_msg]
+@(private = "file")
+ctx_add :: proc(ui: ^Ui_State, id: nendo.Id) -> bool {
+	append(&ui.ctx_items, id)
+	menu_press_mark(id)
+	return ui.ctx_focus == id.id
+}
 
-	// The open-time clamp in handlers.odin guesses the height; re-clamp
-	// against the box nendo actually laid out, so a tall menu (own message,
-	// attachments, dev mode) never runs past the window bottom.
-	y := ui.ctx_y
-	x := ui.ctx_x
+context_menu :: proc(ui: ^Ui_State, msg: Msg_Ui) {
+	clear(&ui.ctx_items)
+
+	// Use the measured panel when available; the initial layout needs a size estimate.
+	w, h := f32(240), f32(330)
 	if box, laid_out := element_box(nendo.id("CtxMenu")); laid_out {
-		x, y = panel_pos(x, y, box.width, box.height)
+		w, h = box.width, box.height
 	}
+	x, y := panel_pos(ui.ctx_x, ui.ctx_y, w, h)
 
 	if nendo.box(nendo.id("CtxMenu"))(
 	{
@@ -245,14 +264,16 @@ context_menu :: proc(ui: ^Ui_State) {
 				},
 				) {
 					for emoji, i in ui.prefs.quick_reactions {
-						menu_press_mark(nendo.id("CtxQuick", u32(i)))
-						if nendo.box(nendo.id("CtxQuick", u32(i)))(
+						id := nendo.id("CtxQuick", u32(i))
+						focused := ctx_add(ui, id)
+						if nendo.box(id)(
 						{
 							width = nendo.fixed(tap_size() ? tap_min() : 28),
 							height = nendo.fixed(tap_size() ? tap_min() : 28),
 							align = {x = .Center, y = .Center},
-							color = hovered() ? HOVER : {},
+							color = focused || hovered() ? HOVER : {},
 							radius = rr(8),
+							border = focused ? kb_ring(ACCENT) : {},
 						},
 						) {
 							if tex := emoji_tex(emoji); tex != nil {
@@ -264,14 +285,15 @@ context_menu :: proc(ui: ^Ui_State) {
 							}
 						}
 					}
-					menu_press_mark(nendo.id("CtxQuickPlus"))
+					focused := ctx_add(ui, nendo.id("CtxQuickPlus"))
 					if nendo.box(nendo.id("CtxQuickPlus"))(
 					{
 						width = nendo.fixed(tap_size() ? tap_min() : 28),
 						height = nendo.fixed(tap_size() ? tap_min() : 28),
 						align = {x = .Center, y = .Center},
-						color = hovered() ? HOVER : {},
+						color = focused || hovered() ? HOVER : {},
 						radius = rr(8),
+						border = focused ? kb_ring(ACCENT) : {},
 					},
 					) {
 						nendo.text("+", {font = FONT_BODY, size = 15, color = TEXT})
@@ -294,30 +316,33 @@ context_menu :: proc(ui: ^Ui_State) {
 
 			}
 			read_only := ui.selected >= 0 && ui.chats[ui.selected].archived
-			if !read_only && !single_pane() {ctx_item("CtxReact", ICON_SMILE, tr("Add reaction"))}
+			if !read_only &&
+			   !single_pane() {ctx_item("CtxReact", ICON_SMILE, tr("Add reaction"), menu = ui)}
 			if !read_only && len(msg.thread_of) == 0 {
-				ctx_item("CtxReply", ICON_REPLY, tr("Reply"))
+				ctx_item("CtxReply", ICON_REPLY, tr("Reply"), menu = ui)
 			}
-			ctx_item("CtxThread", ICON_COMMENTS, tr("Reply in thread"))
+			if msg.id != thread_cur(ui) {
+				ctx_item("CtxThread", ICON_COMMENTS, tr("Reply in thread"), menu = ui)
+			}
 			if !read_only && message_can_edit(msg) {
-				ctx_item("CtxEdit", ICON_PENCIL, tr("Edit message"))
+				ctx_item("CtxEdit", ICON_PENCIL, tr("Edit message"), menu = ui)
 			}
 			if len(msg.body) > 0 {
-				ctx_item("CtxCopy", ICON_COPY, tr("Copy text"))
+				ctx_item("CtxCopy", ICON_COPY, tr("Copy text"), menu = ui)
 				when ODIN_OS == .Linux {
 					if translation_eligible(ui, msg) {
-						ctx_item("CtxTranslate", ICON_COMMENTS, tr("Translate"))
+						ctx_item("CtxTranslate", ICON_COMMENTS, tr("Translate"), menu = ui)
 					}
 				}
 				if ui.prefs.tts_enabled {
-					ctx_item("CtxRead", ICON_COMMENTS, tr("Read aloud"))
+					ctx_item("CtxRead", ICON_COMMENTS, tr("Read aloud"), menu = ui)
 				}
 			}
 			if message_url(msg) != "" {
-				ctx_item("CtxCopyLink", ICON_COPY, tr("Copy link"))
-				ctx_item("CtxOpenLink", ICON_GLOBE, tr("Open link"))
+				ctx_item("CtxCopyLink", ICON_COPY, tr("Copy link"), menu = ui)
+				ctx_item("CtxOpenLink", ICON_GLOBE, tr("Open link"), menu = ui)
 			}
-			if !msg.unsupported {ctx_item("CtxForward", ICON_FORWARD, tr("Forward"))}
+			if !msg.unsupported {ctx_item("CtxForward", ICON_FORWARD, tr("Forward"), menu = ui)}
 			for slot, i in msg.attachments {
 				if slot.state == .Rejected {
 					continue
@@ -326,6 +351,7 @@ context_menu :: proc(ui: ^Ui_State) {
 					fmt.tprintf("CtxSave%d", i),
 					ICON_DOWNLOAD,
 					fmt.tprintf(tr("Save %s"), slot.name),
+					menu = ui,
 				)
 			}
 			if !read_only {
@@ -337,12 +363,12 @@ context_menu :: proc(ui: ^Ui_State) {
 					color = BORDER_2,
 				},
 				) {}
-				ctx_item("CtxDelMe", ICON_TRASH, tr("Delete for me"), DANGER)
-				if msg.mine {ctx_item("CtxDelAll", ICON_BAN, tr("Delete for everyone"), DANGER)}
+				ctx_item("CtxDelMe", ICON_TRASH, tr("Delete for me"), DANGER, ui)
+				if msg.mine {ctx_item("CtxDelAll", ICON_BAN, tr("Delete for everyone"), DANGER, ui)}
 			}
 		}
 		if ui.prefs.dev_mode {
-			ctx_item("CtxRaw", ICON_CODE, tr("View raw event"))
+			ctx_item("CtxRaw", ICON_CODE, tr("View raw event"), menu = ui)
 		}
 	}
 	scrollbar(nendo.id("CtxMenu"), 11)

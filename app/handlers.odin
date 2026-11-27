@@ -616,12 +616,9 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if (rl.IsMouseButtonPressed(.RIGHT) || long_pressed) && ui.selected >= 0 {
 		for msg, i in ui.messages {
-			// A tombstone's only menu row is the dev-mode View raw.
-			if msg.deleted && !ui.prefs.dev_mode {
-				continue
-			}
+			if !message_menu_allowed(ui, msg) {continue}
 			if nendo.pointer_over(nendo.id("MsgRow", u32(i))) {
-				open_msg_menu(ui, i)
+				open_msg_menu(ui, msg.id, .Pointer)
 				return
 			}
 		}
@@ -1759,82 +1756,172 @@ handle_picker_keys :: proc(ui: ^Ui_State) -> bool {
 	return true
 }
 
-// Click/keyboard handling for the open message context menu.
-// Anything unhandled closes it (the backdrop dismiss).
-handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if ui.ctx_msg < 0 || ui.ctx_msg >= len(ui.messages) || rl.IsKeyPressed(.ESCAPE) {
-		ui.ctx_open = false
-		return
+@(private)
+context_message :: proc(ui: ^Ui_State) -> ^Msg_Ui {
+	for &msg in ui.messages {
+		if msg.id == ui.ctx_message && message_menu_allowed(ui, msg) {return &msg}
 	}
-	if rl.IsMouseButtonPressed(.RIGHT) && !nendo.pointer_over(nendo.id("CtxMenu")) {
-		ui.ctx_open = false
-		return
-	}
-	if !mouse_released() {
-		return
-	}
-	if menu_keep(nendo.id("CtxMenu")) {return}
-	msg := ui.messages[ui.ctx_msg]
+	return nil
+}
+
+@(private)
+close_msg_menu :: proc(ui: ^Ui_State) {
 	ui.ctx_open = false
+	delete(ui.ctx_message)
+	ui.ctx_message = ""
+	clear(&ui.ctx_items)
+	ui.ctx_focus, ui.ctx_return = 0, 0
+}
+
+@(private = "file")
+restore_menu_focus :: proc(ui: ^Ui_State, id: u32) {
+	timeline := nendo.id("Timeline")
+	button := nendo.Id {
+		id = id,
+	}
+	if nendo.element(button).found {
+		ui.timeline_focus = id
+		scroll_into_view(timeline, button)
+	} else {
+		ui.timeline_focus = timeline.id
+	}
+}
+
+handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	msg := context_message(ui)
+	if ui.selected < 0 || ui.selected >= len(ui.chats) || msg == nil {
+		// The menu owned this press. Keep the release out of the page even
+		// when a timeline update has removed the menu from the layout.
+		if !rl.IsMouseButtonDown(.LEFT) {
+			ui.timeline_focus = nendo.id("Timeline").id
+			close_msg_menu(ui)
+		}
+		return
+	}
+	menu := nendo.id("CtxMenu")
+	if rl.IsKeyPressed(.ESCAPE) || (rl.IsMouseButtonPressed(.RIGHT) && !nendo.pointer_over(menu)) {
+		restore_menu_focus(ui, ui.ctx_return)
+		close_msg_menu(ui)
+		return
+	}
+	move := rl.IsKeyPressed(.DOWN) ? 1 : rl.IsKeyPressed(.UP) ? -1 : tab_step()
+	if move != 0 && len(ui.ctx_items) > 0 {
+		index := move > 0 ? -1 : len(ui.ctx_items)
+		for id, i in ui.ctx_items {if id.id == ui.ctx_focus {index = i; break}}
+		id := ui.ctx_items[(index + move + len(ui.ctx_items)) % len(ui.ctx_items)]
+		ui.ctx_focus = id.id
+		scroll_into_view(menu, id)
+		strip := nendo.id("CtxStrip")
+		if scroll := nendo.scroll(strip); scroll.found {
+			view, box := nendo.element(strip).rect, nendo.element(id).rect
+			if box.y >= view.y && box.y < view.y + view.height {
+				scroll.position.x -= clamp(
+					0,
+					box.x + box.width - view.x - view.width,
+					box.x - view.x,
+				)
+			}
+		}
+		return
+	}
+	key := rl.IsKeyPressed(.ENTER) || rl.IsKeyPressed(.SPACE)
+	if !key && !mouse_released() {return}
+	if !key && menu_keep(menu) {return}
+	item: nendo.Id
+	for id in ui.ctx_items {
+		if key ? id.id == ui.ctx_focus : (id == menu_press && nendo.pointer_over(id)) {
+			item = id
+			break
+		}
+	}
+	if !key &&
+	   item.id != 0 &&
+	   rl.IsMouseButtonPressed(.LEFT) &&
+	   rl.IsMouseButtonReleased(.LEFT) &&
+	   !forced_press &&
+	   !forced_release {
+		press, release := rl.GetLeftClickPoints()
+		box := nendo.element(item).rect
+		if !pointer_in_bounds(box, {press.x / UI_ZOOM, press.y / UI_ZOOM}) ||
+		   !pointer_in_bounds(box, {release.x / UI_ZOOM, release.y / UI_ZOOM}) {return}
+	}
+	if key && item.id == 0 {return}
+	return_to := ui.ctx_return
+	close_msg_menu(ui)
+	if item.id != 0 && activate_ctx_item(ui, client, msg^, item) {
+		ui.timeline_focus = 0
+	} else {
+		restore_menu_focus(ui, return_to)
+	}
+}
+
+// True when the action gives input to another surface.
+@(private = "file")
+activate_ctx_item :: proc(
+	ui: ^Ui_State,
+	client: ^marmot.Client,
+	msg: Msg_Ui,
+	item: nendo.Id,
+) -> bool {
 	read_only := ui.selected >= 0 && ui.chats[ui.selected].archived
 
 	for emoji, i in ui.prefs.quick_reactions {
-		if !read_only && nendo.pointer_over(nendo.id("CtxQuick", u32(i))) {
+		if !read_only && item == nendo.id("CtxQuick", u32(i)) {
 			message_op(ui, client, .React, msg.id, emoji)
-			return
+			return false
 		}
 	}
-	if !read_only && nendo.pointer_over(nendo.id("CtxReply")) {
+	if !read_only && item == nendo.id("CtxReply") {
 		start_reply(ui, msg)
-		return
+		return true
 	}
-	if nendo.pointer_over(nendo.id("CtxThread")) {
+	if item == nendo.id("CtxThread") && msg.id != thread_cur(ui) {
 		thread_push(ui, msg.id)
-		return
+		return true
 	}
 	for slot, i in msg.attachments {
 		if slot.state == .Rejected {
 			continue
 		}
-		if nendo.pointer_over(nendo.id(fmt.tprintf("CtxSave%d", i))) {
+		if item == nendo.id(fmt.tprintf("CtxSave%d", i)) {
 			start_att_save({ui.chats[ui.selected].group_id, msg.id, i, slot.name})
-			return
+			return false
 		}
 	}
-	if nendo.pointer_over(nendo.id("CtxCopy")) {
+	if item == nendo.id("CtxCopy") {
 		copy_text(ui, msg.body, tr("Message copied"))
-		return
+		return false
 	}
-	if clicked("CtxCopyLink") {
+	if item == nendo.id("CtxCopyLink") {
 		copy_text(ui, message_url(msg), tr("Link copied"))
-		return
+		return false
 	}
-	if clicked("CtxOpenLink") {
+	if item == nendo.id("CtxOpenLink") {
 		open_link(ui, message_url(msg))
-		return
+		return true
 	}
-	if ui.prefs.tts_enabled && nendo.pointer_over(nendo.id("CtxRead")) {
+	if ui.prefs.tts_enabled && item == nendo.id("CtxRead") {
 		tts_read(ui, msg.body)
-		return
+		return false
 	}
-	if nendo.pointer_over(nendo.id("CtxTranslate")) {
+	if item == nendo.id("CtxTranslate") {
 		ui.translation.paused = false
 		translation_request(ui, msg)
-		return
+		return false
 	}
-	if !read_only && message_can_edit(msg) && nendo.pointer_over(nendo.id("CtxEdit")) {
+	if !read_only && message_can_edit(msg) && item == nendo.id("CtxEdit") {
 		start_edit(ui, msg)
-		return
+		return true
 	}
-	if !read_only && msg.mine && nendo.pointer_over(nendo.id("CtxDelAll")) {
+	if !read_only && msg.mine && item == nendo.id("CtxDelAll") {
 		confirm_ask(ui, .Delete_All, msg.id, msg_preview(msg))
-		return
+		return true
 	}
-	if !read_only && nendo.pointer_over(nendo.id("CtxDelMe")) {
+	if !read_only && item == nendo.id("CtxDelMe") {
 		confirm_ask(ui, .Delete_Me, msg.id, msg_preview(msg))
-		return
+		return true
 	}
-	if ui.prefs.dev_mode && nendo.pointer_over(nendo.id("CtxRaw")) {
+	if ui.prefs.dev_mode && item == nendo.id("CtxRaw") {
 		delete(ui.raw_json)
 		if record := timeline_record(msg.id); record != nil {
 			ui.raw_json = record_json(record)
@@ -1842,14 +1929,13 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			ui.raw_json = fmt.aprintf(tr("No record with id %s in this chat's window."), msg.id)
 		}
 		ui.raw_open = true
-		return
+		return true
 	}
-	if !read_only &&
-	   (nendo.pointer_over(nendo.id("CtxReact")) || nendo.pointer_over(nendo.id("CtxQuickPlus"))) {
+	if !read_only && (item == nendo.id("CtxReact") || item == nendo.id("CtxQuickPlus")) {
 		open_picker(ui, msg.id)
-		return
+		return true
 	}
-	if nendo.pointer_over(nendo.id("CtxForward")) {
+	if item == nendo.id("CtxForward") {
 		ui.fwd_open = true
 		ui.fwd_kind = .Message
 		delete(ui.fwd_msg)
@@ -1858,8 +1944,9 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.fwd_source = strings.clone(ui.chats[ui.selected].group_id)
 		clear(&ui.fwd_filter)
 		ui.focus = .Fwd
-		return
+		return true
 	}
+	return false
 }
 
 // Reply and Edit hand text entry to the user, so both focus the composer.
@@ -1932,15 +2019,38 @@ stash_staged :: proc(ui: ^Ui_State) {
 	ui.staged = {}
 }
 
-@(private = "file")
-open_msg_menu :: proc(ui: ^Ui_State, index: int) {
-	m := rl.GetMousePosition()
+@(private)
+Msg_Menu_Origin :: enum {
+	Pointer,
+	Button,
+	Keyboard,
+}
+
+@(private)
+open_msg_menu :: proc(ui: ^Ui_State, message: string, origin: Msg_Menu_Origin) {
+	close_msg_menu(ui)
+	menu_press = {}
+	fan_cancel()
+	scroll_residual = {}
+	timeline := nendo.id("Timeline")
+	cancel_drag_scroll(timeline)
+	if scroll_drag.container == timeline.id {scroll_drag.cancelled = true}
+	for name in ([2]string{"CtxMenu", "CtxStrip"}) {
+		if scroll := nendo.scroll(nendo.id(name)); scroll.found {scroll.position^ = {}}
+	}
 	ui.compose_more = false
 	ui.ctx_open = true
-	ui.ctx_msg = index
-	// ponytail: rough clamp from an estimated panel size;
-	// measure the laid-out panel if it ever overflows.
-	ui.ctx_x, ui.ctx_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 240, 330)
+	ui.ctx_message = strings.clone(message)
+	ui.ctx_keyboard = origin == .Keyboard
+	ui.ctx_return = message_more_id(message).id
+	if origin == .Keyboard {ui.ctx_return = ui.timeline_focus}
+	at := nendo.pointer().position
+	if origin != .Pointer {
+		if box := nendo.element({id = ui.ctx_return}); box.found {
+			at = {box.rect.x, box.rect.y + box.rect.height + 4}
+		}
+	}
+	ui.ctx_x, ui.ctx_y = at.x, at.y
 }
 
 // Forget the selected chat's persisted draft (it was sent or cleared),
@@ -1958,6 +2068,7 @@ drop_draft :: proc(ui: ^Ui_State) {
 // Select a chat, load its timeline, and clear the unread badge by
 // marking the newest message read.
 select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int) {
+	close_msg_menu(ui)
 	switching := ui.selected != requested_index
 	if switching {reading_remember(ui); voice_cancel()}
 	if ui.location_open {geo_picker_close(ui)}

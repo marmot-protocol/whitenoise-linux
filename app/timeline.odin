@@ -872,6 +872,36 @@ msg_actions :: proc(index: u32, msg: Msg_Ui) {
 	}
 }
 
+@(private)
+message_more_id :: proc(message: string) -> nendo.Id {
+	return nendo.id("MsgMore", nendo.id(message).id)
+}
+
+@(private)
+message_menu_allowed :: proc(ui: ^Ui_State, msg: Msg_Ui) -> bool {
+	return msg.id != "" && !msg.system && (!msg.deleted || ui.prefs.dev_mode)
+}
+
+@(private = "file")
+message_actions_button :: proc(ui: ^Ui_State, msg: Msg_Ui, reveal: bool, height: f32) {
+	id := message_more_id(msg.id)
+	focused := ui.timeline_focus == id.id
+	shown := reveal || focused || (ui.ctx_open && ui.ctx_message == msg.id)
+	if nendo.box(id)(
+	{
+		width = nendo.fixed(max(28, height)),
+		height = nendo.fixed(height),
+		align = {x = .Center, y = .Center},
+		radius = rr(6),
+		color = shown ? (hovered() ? HOVER : ROW_BG) : {},
+		border = focused ? kb_ring(ACCENT) : {},
+	},
+	) {
+		if shown {nendo.text("⋯", {font = FONT_TITLE, size = 16, color = TEXT})}
+		if shown && !ui.ctx_open && (focused || hovered()) {tooltip(tr("More actions"), .Above)}
+	}
+}
+
 MSG_PAD_Y :: u16(6) // a message row's vertical padding
 
 message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
@@ -929,6 +959,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 	},
 	) {
 		row_hovered := hovered()
+		more := g_ui != nil && message_menu_allowed(g_ui, msg)
 		message_ink := TEXT
 		if MESSAGE_SURFACE_TEXT {
 			fill := row_fill(base, editing || replying, row_hovered, glow)
@@ -966,7 +997,9 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 					)
 				}
 			}
-			if !tap_size() && row_hovered && !msg.deleted {
+		}
+		if head == .Continued || notes {
+			if more || (!tap_size() && row_hovered && !msg.deleted) {
 				if nendo.box(nendo.id("MsgActions", index))(
 				{
 					gap = 8,
@@ -980,7 +1013,8 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 					},
 				},
 				) {
-					msg_actions(index, msg)
+					if !tap_size() && row_hovered && !msg.deleted {msg_actions(index, msg)}
+					if more {message_actions_button(g_ui, msg, row_hovered && !rl.TouchActive(), 20)}
 				}
 			}
 		}
@@ -1036,11 +1070,8 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							}
 						}}
 
-					// Row actions, shown while a pointer hovers the row. Kept
-					// before any grow sibling (after-gap siblings drop in this
-					// nendo). Narrow layouts open the same actions from a
-					// right click, a long press, or a tap on touch screens.
-					// A tombstone offers none.
+					// Keep More in place when the shortcuts appear beside it.
+					if more {message_actions_button(g_ui, msg, row_hovered || tap_size(), chip_h())}
 					if !tap_size() && hovered() && !msg.deleted {
 						msg_actions(index, msg)
 					}

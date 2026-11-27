@@ -255,6 +255,7 @@ build_layout_pass :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Comm
 		timeline_draw_offset = data.position.y
 	}
 	settings_check_count = 0 // settings_check lists this frame's switches
+	if ui.ctx_open && (ui.page != .Chats || ui.selected < 0) {close_msg_menu(ui)}
 	if rl.IsKeyPressed(.ESCAPE) {touch_field = {}; compose_keyboard = false}
 	if mouse_pressed() {
 		menu_press = {}
@@ -1252,7 +1253,9 @@ app_main :: proc() {
 			// the model instead of scrolling the timeline.
 			wheel := rl.GetMouseWheelMoveV()
 			location_scroll := location_captured || ui.location_open
+			ctx_backdrop := ui.ctx_open && !nendo.pointer_over(nendo.id("CtxMenu"))
 			if photo_captured ||
+			   ctx_backdrop ||
 			   reaction_was_open != (ui.reaction_details_id != "") ||
 			   (location_scroll &&
 					   (!ui.location_open || !nendo.pointer_over(nendo.id("LocationModal")))) {
@@ -1261,7 +1264,11 @@ app_main :: proc() {
 			}
 			// Ctrl + wheel zooms the interface; the wheel is consumed so
 			// it doesn't also scroll.
-			if !location_scroll && !overlay_captured && ctrl_down() && wheel.y != 0 {
+			if !location_scroll &&
+			   !ui.ctx_open &&
+			   !overlay_captured &&
+			   ctrl_down() &&
+			   wheel.y != 0 {
 				ui.prefs.zoom_pct += wheel.y > 0 ? 10 : -10
 				apply_zoom(&ui)
 				save_settings(&ui)
@@ -1613,6 +1620,7 @@ app_main :: proc() {
 				&ui,
 				composer_captured ||
 				timeline_captured ||
+				ctx_backdrop ||
 				native_drag ||
 				text_drag != nil ||
 				orbit_hover != nil ||
@@ -1633,7 +1641,8 @@ app_main :: proc() {
 				photo_captured ||
 				location_captured ||
 				overlay_captured
-			background_captured := shell_captured || settings_modal(&ui)
+			ctx_captured := ui.ctx_open
+			background_captured := shell_captured || ctx_captured || settings_modal(&ui)
 			if ui.add_account_open && !background_captured {
 				for page in Page {
 					if clicked_indexed("Nav", u32(page)) {
@@ -1704,7 +1713,11 @@ app_main :: proc() {
 			foreground_captured := handle_shell_foreground(
 				&ui,
 				client,
-				shell_captured || shell_back || settings_captured || child_captured,
+				shell_captured ||
+				ctx_captured ||
+				shell_back ||
+				settings_captured ||
+				child_captured,
 			)
 
 			// After consumed input, dispatch the top visible modal.
@@ -1747,6 +1760,8 @@ app_main :: proc() {
 				// The overlay closed during a worker drain.
 			} else if nes_player.open {
 				handle_nes_input(&ui) // the game owns the keyboard
+			} else if ctx_captured {
+				handle_ctx_menu(&ui, client)
 			} else if ui.account_ref != "" &&
 			   !ui.add_account_open &&
 			   ctrl_down() &&
@@ -2100,8 +2115,7 @@ app_main :: proc() {
 			   ui.selected >= 0 &&
 			   len(ui.messages) > 0 &&
 			   os.get_env("WN_TEST_CTX", context.temp_allocator) != "" {
-				ui.ctx_open = true
-				ui.ctx_msg = len(ui.messages) - 1
+				open_msg_menu(&ui, ui.messages[len(ui.messages) - 1].id, .Pointer)
 				ui.ctx_x = 400
 				ui.ctx_y = 120
 			}
@@ -2139,6 +2153,8 @@ app_main :: proc() {
 		web_close()
 		nes_close()
 		lock_scrub_ui(&ui)
+		close_msg_menu(&ui)
+		delete(ui.ctx_items)
 		for done in failed_edits {edit_result_free(done)}
 		delete(failed_edits); failed_edits = {}
 		ops_stop()

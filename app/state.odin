@@ -757,7 +757,10 @@ Ui_State :: struct {
 	focus:                               Focus,
 	search_open:                         bool,
 	ctx_open:                            bool, // message context menu
-	ctx_msg:                             int, // index into messages
+	ctx_message:                         string, // owned message ID, not its current row index
+	ctx_items:                           [dynamic]nendo.Id, // current menu order, including quick reactions
+	ctx_focus, ctx_return:               u32, // selected menu item and timeline control to restore
+	ctx_keyboard:                        bool,
 	ctx_x:                               f32, // panel anchor, layout coords
 	ctx_y:                               f32,
 	hist_versions:                       [dynamic]Edit_Version,

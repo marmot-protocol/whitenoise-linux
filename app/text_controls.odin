@@ -100,13 +100,18 @@ scrollbar :: proc(container: nendo.Id, z: i16 = 5) {
 	thumb_id := nendo.id("ScrollThumb", container.id)
 	mouse_y := rl.GetMousePosition().y / UI_ZOOM
 	cancelled := scroll_drag.container == container.id && scroll_drag.cancelled
-	if !cancelled && scroll_thumb_pressed(thumb_id) {
+	blocked :=
+		g_ui != nil &&
+		g_ui.ctx_open &&
+		container != nendo.id("CtxMenu") &&
+		container != nendo.id("CtxStrip")
+	if !blocked && !cancelled && scroll_thumb_pressed(thumb_id) {
 		scroll_drag = {
 			container = container.id,
 			grab      = mouse_y - y,
 		}
 	}
-	dragging := scroll_drag.container == container.id && !scroll_drag.cancelled
+	dragging := !blocked && scroll_drag.container == container.id && !scroll_drag.cancelled
 	if dragging && travel > 0 {
 		y = clamp(mouse_y - scroll_drag.grab, 0, travel)
 		data.position.y = -y / travel * span
