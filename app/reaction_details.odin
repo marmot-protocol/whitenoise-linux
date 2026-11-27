@@ -140,7 +140,7 @@ timeline_pointer :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	released := rl.IsMouseButtonReleased(.LEFT) || forced_release
 	down := rl.IsMouseButtonDown(.LEFT)
 	if ui.ctx_open && (down || released) && context_message(ui) == nil {
-		handle_ctx_menu(ui, client)
+		// Dispatch dismisses the menu after layout has processed the press.
 		ui.timeline_press = 0
 		return true
 	}
@@ -348,7 +348,14 @@ timeline_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		}
 		if next.control.id.id != 0 {break}
 	}
-	target := step == 0 ? Target{} : (found_focus ? next : first)
+	if step == 0 {
+		ui.timeline_focus = {
+			id = timeline,
+		}
+		ui.timeline_retry_back = {}
+		return true
+	}
+	target := found_focus ? next : first
 	if scroll := nendo.scroll(timeline); scroll.found {
 		// Message controls only participate while visible. Remember the
 		// viewport before a Retry can scroll the previous control out of it.

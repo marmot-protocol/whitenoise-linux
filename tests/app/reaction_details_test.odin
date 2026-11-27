@@ -381,6 +381,24 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	timeline_apply(nil, &ui, &page)
 	layout(&ui)
 	key(&ui, &client, .TAB)
+	key(&ui, &client, .TAB)
+	if !testing.expect(t, shows(layout(&ui), last_name), "Tab reaches the reaction") {return}
+	record.reactions.by_emoji_len = 0
+	append(&ui.react_pending, Pending_React{msg_id = "trailhead", emoji = "🎉"})
+	defer delete(ui.react_pending)
+	timeline_apply(nil, &ui, &page)
+	layout(&ui)
+	if !testing.expect(
+		t,
+		nendo.element(reaction_chip_id(nendo.id("trailhead").id, "🎉")).found,
+	) {return}
+	key(&ui, &client, .ENTER)
+	testing.expect_value(t, ui.timeline_focus.id, nendo.id("Timeline"))
+	key(&ui, &client, .ENTER)
+	testing.expect_value(t, ui.reaction_details_id, "")
+	testing.expect_value(t, string(ui.compose[:]), "Unsent draft")
+	clear(&ui.react_pending)
+	record.reactions.by_emoji_len = 1
 	page.messages_len = 0
 	timeline_apply(nil, &ui, &page)
 	messages_collect()
@@ -407,21 +425,25 @@ reaction_details_dispatch :: proc(t: ^testing.T) {
 	layout(&ui)
 	view_item = nendo.element(nendo.id("CtxViewReactions"))
 	if !testing.expect(t, view_item.found) {return}
-	rl.PushMouseButton(.LEFT, true)
-	nendo.set_pointer({view_item.rect.x + 12, view_item.rect.y + 12}, .Down)
-	layout(&ui)
-	page.messages_len = 1
-	timeline_apply(nil, &ui, &page)
-	layout(&ui)
-	testing.expect(t, timeline_pointer(&ui, &client), "the dismissed menu retains the press")
-	testing.expect(t, !nendo.element(nendo.id("CtxMenu")).found, "the missing message has no menu")
 	chat_row := nendo.element(nendo.id("ChatRow", 0))
 	if !testing.expect(t, chat_row.found) {return}
-	nendo.set_pointer({chat_row.rect.x + 8, chat_row.rect.y + 8}, .Up)
-	rl.PushMouseButton(.LEFT, false)
-	testing.expect(t, timeline_pointer(&ui, &client), "release over the chat list is consumed")
-	testing.expect(t, !ui.ctx_open, "the menu releases its capture when the button lifts")
+	page.messages_len = 1
+	timeline_apply(nil, &ui, &page)
+	click(
+		t,
+		{view_item.rect.x + 12, view_item.rect.y + 12},
+		{chat_row.rect.x + 8, chat_row.rect.y + 8},
+	)
+	testing.expect(t, timeline_pointer(&ui, &client), "the dismissed menu owns both click edges")
+	layout(&ui)
+	testing.expect(t, !nendo.element(nendo.id("CtxMenu")).found, "the missing message has no menu")
+	if !testing.expect(t, ui.ctx_open, "the menu holds capture through layout") {return}
+	handle_ctx_menu(&ui, &client)
+	testing.expect(t, !ui.ctx_open)
+	testing.expect_value(t, ui.timeline_focus.id, nendo.id("Timeline"))
+	key(&ui, &client, .ENTER)
 	testing.expect_value(t, ui.reaction_details_id, "")
+	testing.expect_value(t, string(ui.compose[:]), "Unsent draft")
 
 	wide: [16]marmot.Timeline_Reaction_Emoji
 	wide[0] = tallies[0]

@@ -1723,6 +1723,8 @@ app_main :: proc() {
 			// After consumed input, dispatch the top visible modal.
 			if settings_captured {
 				settings_search_field(&ui)
+			} else if timeline_captured && ctx_captured && context_message(&ui) == nil {
+				handle_ctx_menu(&ui, client)
 			} else if composer_captured || timeline_captured || shell_back || foreground_captured {
 				// Already handled.
 			} else if photo_captured {
