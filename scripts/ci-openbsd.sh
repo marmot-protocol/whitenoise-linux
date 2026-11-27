@@ -16,18 +16,56 @@ fi
 cpus=$(getconf _NPROCESSORS_ONLN)
 
 out="$PWD/build/openbsd"
-mkdir -p "$out"
+diagnostics="$out/diagnostics"
+mkdir -p "$diagnostics"
 cache_dir="$out/cargo-cache"
 tmp=$(mktemp -d)
 unit="wn-openbsd-$$.scope"
+started=$(date '+%Y-%m-%d %H:%M:%S')
+sample_memory() {
+  local group
+  group=$(systemctl --user show "$unit" --property=ControlGroup --value 2>/dev/null) || return
+  if [[ -z $group ]]; then return 1; fi
+  local dir="/sys/fs/cgroup$group"
+  {
+    date -u '+%FT%TZ' &&
+    grep '^MemAvailable:' /proc/meminfo &&
+    grep -H . "$dir"/memory.{current,peak,max,events}
+  } >"$diagnostics/.memory.new" 2>/dev/null &&
+    mv "$diagnostics/.memory.new" "$diagnostics/memory.log"
+}
+
+stop_vm() {
+  systemctl --user stop "$unit" || kill "$vm_pid" 2>/dev/null
+}
+
 cleanup() {
+  local status=$? vm_status=0
+  if ((status != 0)) && [[ -n ${vm_pid:-} ]]; then
+    # The scope can vanish on OOM. Keep the last sample and capture the host log.
+    {
+      printf 'Build exit: %s\nGuest RAM: %s MiB\n' "$status" "$guest_mib"
+      if kill -0 "$vm_pid" 2>/dev/null; then
+        echo 'QEMU still running at cleanup'
+      else
+        wait "$vm_pid" || vm_status=$?
+        printf 'QEMU launcher exit: %s\n' "$vm_status"
+      fi
+      journalctl --user --unit "$unit" --since "$started" --no-pager || true
+      sudo -n journalctl -k -b --since "$started" --no-pager 2>&1 |
+        grep -Ei 'oom|out of memory|killed process|qemu|journal|sudo' || true
+    } >"$diagnostics/host.log" || echo 'Could not write OpenBSD host diagnostics.' >&2
+  fi
   if [[ -n ${vm_pid:-} ]]; then
-    if systemctl --user is-active --quiet "$unit"; then systemctl --user stop "$unit"; fi
+    stop_vm 2>/dev/null || true
     wait "$vm_pid" || true
   fi
+  if [[ -n ${watch_pid:-} ]]; then wait "$watch_pid" || true; fi
   rm -rf "$tmp"
+  return "$status"
 }
 trap cleanup EXIT
+trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
@@ -52,18 +90,20 @@ systemd-run --user --scope --quiet --unit "$unit" \
   -device scsi-hd,drive=res -drive "if=none,file=$tmp/resources.raw,id=res,format=raw" \
   -device scsi-hd,drive=build -drive "if=none,file=$tmp/build.qcow2,id=build,format=qcow2" \
   -device e1000,netdev=net -netdev user,id=net,hostfwd=tcp:127.0.0.1:22022-:22 \
-  -display none -monitor none -serial "file:$out/vm-console.log" &
+  -display none -monitor none -serial "file:$diagnostics/vm-console.log" \
+  >>"$diagnostics/qemu.log" 2>&1 &
 vm_pid=$!
 (
   while kill -0 "$vm_pid" 2>/dev/null; do
+    sample_memory || true
     if (($(available_kib) < reserve)); then
-      echo 'Stopping OpenBSD to preserve 8 GiB of available RAM.' >&2
-      systemctl --user stop "$unit"
-      exit 1
+      echo 'Stopping OpenBSD to preserve 8 GiB of available RAM.' | tee -a "$diagnostics/qemu.log" >&2 || true
+      if stop_vm; then exit 1; fi
     fi
     sleep 1
   done
 ) &
+watch_pid=$!
 ssh_args=(-i "$tmp/key" -p 22022 -o BatchMode=yes -o ConnectTimeout=2 -o StrictHostKeyChecking=accept-new -o "UserKnownHostsFile=$tmp/known_hosts")
 ready=no
 for attempt in $(seq 1 120); do
@@ -76,13 +116,14 @@ for attempt in $(seq 1 120); do
 done
 if [[ $ready != yes ]]; then
   echo 'OpenBSD did not accept SSH.' >&2
-  tail -n 50 "$out/vm-console.log" >&2
+  tail -n 50 "$diagnostics/vm-console.log" >&2 || true
   exit 1
 fi
 ssh "${ssh_args[@]}" runner@127.0.0.1 /usr/local/bin/bash -s <<'GUEST'
 set -euo pipefail
 sudo pkg_add -I bash git cmake ninja gmake coreutils llvm%21 rust unzip-- \
-    sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg zenity libnotify zstd gtar rsync
+    sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg zenity libnotify zstd gtar-- rsync
+gtar --version
 sudo fdisk -iy sd2
 printf '/mnt/build * 100%%\n' | sudo disklabel -wA -T - sd2
 sudo newfs /dev/rsd2a
@@ -124,7 +165,12 @@ export CARGO_TARGET_DIR=/mnt/build/target CARGO_HOME=/mnt/build/cargo
 export CARGO_BUILD_JOBS=3 WN_BUILD_JOBS=3 CMAKE_BUILD_PARALLEL_LEVEL=3
 bash scripts/openbsd-build.sh
 GUEST
-} | ssh "${ssh_args[@]}" "$guest" /usr/local/bin/bash -s
+} | ssh "${ssh_args[@]}" "$guest" /usr/local/bin/bash -s || {
+  status=$? inner_ssh=${PIPESTATUS[1]}
+  printf 'OpenBSD guest build pipeline exited %s (SSH: %s).\n' "$status" "$inner_ssh" |
+    tee "$diagnostics/guest-build-exit.log" >&2 || true
+  exit "$status"
+}
 mkdir -p dist
 rsync -a "$guest:/mnt/build/work/dist/" dist/
 rsync -a "$guest:/mnt/build/work/build/openbsd/wn-odin-shot.png" "$out/"
