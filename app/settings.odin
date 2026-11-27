@@ -38,7 +38,7 @@ Prefs :: struct {
 	chat_filter:           Chat_Filter,
 	window_w, window_h:    i32, // window points, not renderer pixels
 	notes_group:           string, // group id of the solo "Notes to self" chat
-	locale:                string, // en/it/de/ja/ko; catalogs applied via i18n.odin
+	locale:                string, // en/it/de/ja/ko/fi; catalogs applied via i18n.odin
 	hour12:                bool,
 	date_format:           int, // index into DATE_FORMATS
 	quick_reactions:       [dynamic]string,

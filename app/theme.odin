@@ -39,7 +39,7 @@ THEME_SOURCES := []struct {
 	{"Light", "light", #load("../themes/light.toml", string), .White_Noise},
 	{"AMOLED", "amoled", #load("../themes/amoled.toml", string), .White_Noise},
 	{"16-Bit", "16bit", #load("../themes/16bit.toml", string), .White_Noise},
-	{"Terminal", "terminal", #load("../themes/terminal.toml", string), .White_Noise},
+	{N_("Terminal"), "terminal", #load("../themes/terminal.toml", string), .White_Noise},
 	{"Crayon", "crayon", #load("../themes/crayon.toml", string), .White_Noise},
 	{"Synthwave", "synthwave", #load("../themes/synthwave.toml", string), .White_Noise},
 	{"Chalkboard", "chalkboard", #load("../themes/chalkboard.toml", string), .White_Noise},

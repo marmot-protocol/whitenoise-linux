@@ -71,7 +71,7 @@ keys_package_layout :: proc(t: ^testing.T) {
 		},
 	)
 	settings_open(&ui, nil, .Account, "KpStatus")
-	for locale in ([]string{"en", "it", "de", "ja", "ko"}) {
+	for locale in ([]string{"en", "it", "de", "ja", "ko", "fi"}) {
 		set_locale(locale)
 		for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
 		settings_resolve_scroll(&ui)
